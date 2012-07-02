@@ -1,0 +1,43 @@
+{
+  "name": "gtd-bot",
+  "preferGlobal": "false",
+  "version": "0.1.0",
+  "author": "Tobiasz Cudnik <tobiasz.cudnik@gmail.com>",
+  "description": "GTD bot service.",
+  "contributors": [],
+  "scripts": {
+    "start": "make start",
+    "test": "make test"
+  },
+  "main": "./src/boot.coffee",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TobiaszCudnik/gtd-bot/gtd-bot.git"
+  },
+  "keywords": [
+    "gtd",
+	  "tasks",
+	  "mail",
+	  "gdata",
+	  "api",
+	  "spreadsheets",
+	  "gmail",
+	  "google",
+	  "calendar",
+    "service"
+  ],
+  "dependencies" : {
+    "jsprops"   :  "*",
+    "imap"   :  "*"
+  },
+	"noAnalyze": true,
+  "bundleDependencies": [ ],
+	"devDependencies": {
+		"coffee-script" :  "*",
+		"contracts.coffee" :  "0.3.0"
+	},
+	"license": "MIT",
+  "engine": {
+    "node": ">=0.8"
+  }
+}
