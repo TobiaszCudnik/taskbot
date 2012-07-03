@@ -22,10 +22,10 @@ cb = (err) ->
 cmds = [ ->
 	imap.connect cb
 , ->
-	imap.openBox "INBOX", false, cb
+	imap.openBox "[Gmail]/All Mail", false, cb
 , (result) ->
 	box = result
-	imap.search [ "SEEN", [ "SINCE", "May 20, 2012" ] ], cb
+	imap.search [ [ 'X-GM-RAW', '( label:drafts OR label:s-pending ) -label:s-expired -label:s-finished' ] ], cb
 , (results) ->
 	fetch = imap.fetch(results,
 		request:
