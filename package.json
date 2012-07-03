@@ -30,7 +30,6 @@
     "jsprops"   :  "*",
     "imap"   :  "*"
   },
-	"noAnalyze": true,
   "bundleDependencies": [ ],
 	"devDependencies": {
 		"coffee-script" :  "*",
