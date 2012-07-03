@@ -1,9 +1,9 @@
 {
   "name": "gtd-bot",
   "preferGlobal": "false",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "author": "Tobiasz Cudnik <tobiasz.cudnik@gmail.com>",
-  "description": "GTD bot service.",
+  "description": "GTD Bot service.",
   "contributors": [],
   "scripts": {
     "start": "make start",
@@ -34,7 +34,10 @@
   "bundleDependencies": [ ],
 	"devDependencies": {
 		"coffee-script" :  "*",
-		"contracts.coffee" :  "0.3.0"
+		"contracts.coffee" :  "0.3.0",
+		"buzz" : "*",
+		"run": "*",
+		"mocha": "*"
 	},
 	"license": "MIT",
   "engine": {

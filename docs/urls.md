@@ -17,4 +17,5 @@ https://github.com/feliperazeek/geonode
 Others:
 - jsprops
 - contracts.coffee
-- when (promise)
+- when (promise B)
+- spahql
