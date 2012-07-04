@@ -27,8 +27,9 @@
     "service"
   ],
   "dependencies" : {
-    "jsprops"   :  "*",
-    "imap"   :  "*"
+    "jsprops":  "*",
+    "imap":  "*",
+	  "when": "*"
   },
   "bundleDependencies": [ ],
 	"devDependencies": {
@@ -36,7 +37,8 @@
 		"contracts.coffee" :  "0.3.0",
 		"buzz" : "*",
 		"run": "*",
-		"mocha": "*"
+		"mocha": "*",
+		"watch-tree": "*"
 	},
 	"license": "MIT",
   "engine": {

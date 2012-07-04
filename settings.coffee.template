@@ -1,0 +1,4 @@
+module.exports =
+	gmail_username: '@gmail.com'
+	gmail_password: ''
+	gmail_host: undefined

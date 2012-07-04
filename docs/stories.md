@@ -10,3 +10,11 @@ Architecture stories
 - node server talks to calendar
 - app client talks to node server for tasks, mails and spreadsheets
 - 3rd party tasks clients talk to google tasks API
+
+Sing up stories
+----------------
+- as a new user i want my default labels autocreated
+
+Gmail client stories
+---------------------
+- client gets push notification when new mail arrives
