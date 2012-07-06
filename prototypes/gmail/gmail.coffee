@@ -15,8 +15,8 @@ query = 'label:T-foo -label:T-test'
 flow.exec(
 	-> imap.connect @
 	-> imap.openBox "[Gmail]/All Mail", false, @
-	(box) -> imap.search [ [ 'X-GM-RAW', query ] ], @
-	(results) ->
+	(err, box) -> imap.search [ [ 'X-GM-RAW', query ] ], @
+	(err, results) ->
 		fetch = imap.fetch results,
 			request: headers: [ "from", "to", "subject", "date" ]
 
