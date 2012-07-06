@@ -29,7 +29,8 @@
   "dependencies" : {
     "jsprops":  "*",
     "imap":  "*",
-	  "when": "*"
+	  "when": "*",
+	  "flow": "*"
   },
   "bundleDependencies": [ ],
 	"devDependencies": {
