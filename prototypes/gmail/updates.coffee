@@ -11,60 +11,30 @@ imap = new ImapConnection
 	port: 993
 	secure: true
 
-#query = '( label:drafts OR label:s-pending ) -label:s-expired -label:s-finished'
-query = '*'
+# TODO add event emitter
+class BaseClass
+	repl: ->
+		repl.start(
+			  prompt: "repl> "
+			  input: process.stdin
+			  output: process.stdout
+			  context: { foo: @ }
+			).context = { foo: @ }
 
-#flow.exec(
-#	-> imap.connect @
-#	->
-#
-#		# Event listeners
-#		imap.on 'mail', (msg_num) ->
-#			console.log "got #{msg_num} new msgs"
-#
-#		imap.on 'msgupdate', (msg) ->
-#			console.log "got updated msg #{msg}"
-##			imap.openBox 'INBOX', false,
-##				(err, box) ->
-##					box.
-#
-#		imap.openBox "[Gmail]/All Mail", false, @
-#	(err, box) ->
-#
-#		# make a search
-#		console.log "searching for a query '#{query}"
-#		imap.search [ [ 'X-GM-RAW', query ] ], @
-#
-#	(err, results) ->
-#		fetch = imap.fetch results,
-#			request: headers: [ "from", "to", "subject", "date" ]
-#
-#		fetch.on "message", (msg) ->
-#			console.log "Got message: " + util.inspect msg, false, 5
-#
-#			msg.on "data", (chunk) ->
-#				console.log "Got message chunk of size " + chunk.length
-#
-#			msg.on "end", ->
-#				console.log "Finished message: " + util.inspect msg, false, 5
-#
-#		fetch.on "end", ->
-#			console.log "Done fetching all messages!"
-##			imap.logout
-#)
+	log: -> console.log.apply arguments
 
-repl.start(
-	  prompt: "repl> "
-	  input: process.stdin
-	  output: process.stdout
-	).context = { imap }
-
-class Gmail
+###
+TODO emit:
+- new-msg msg
+- changed-label {msg, new_labels, removed_labels}
+###
+class Gmail extends BaseClass
 	imap: null
 	connection: null
 	queries: null
+	monitored_ : []
 
-	constructor: (connection) ->
+	constructor: (connection, next) ->
 		connection_ctr = ? {
 			gmail_username: Str
 			gmail_password: Str
@@ -82,24 +52,66 @@ class Gmail
 		@queries :: [...query_ctr]
 		@queries = []
 
-		do @connection if @connect()
+#			if @connection then @connect @ else @
+		@connect next
+
+#		do @repl
 
 	connect: flow.define(
-		->
+		(@next) ->
+			console.log 'connecting'
 			data = @this.connection
-			@imap = new ImapConnection
+			@this.imap = new ImapConnection
 				username: data.gmail_username
 				password: data.gmail_password
 				host: data.gmail_host or "imap.gmail.com"
 				port: 993
 				secure: true
-			@imap.connect @
+			@this.imap.connect @
 		->
-			console.log 'c ok'
+			@this.imap.openBox "[Gmail]/All Mail", false, @next
 	)
 
 	addSearch: (query, update = 5) ->
+		console.log "adding a new search #{query}"
 		@queries.push { query, freq: update }
-		# TODO settimeout
+		# TODO extract check
+		check = => @fetchQuery query
+		# TODO use refresh manager with search request throttling
+		setInterval check, update*1000
+		do check
 
-box = new Gmail settings
+	fetchQuery: flow.define(
+
+		(query) ->
+			@this.log 'performing a search'
+			@this.imap.search [ [ 'X-GM-RAW', query ] ], @
+
+		(err, results) ->
+			# TODO labels
+			@this.log 'got search results'
+			content = headers: [ "id", "from", "to", "subject", "date" ]
+			fetch = @this.imap.fetch results, content
+
+			fetch.on "message", (msg) =>
+#					msg.on "data", (chunk) =>
+#						console.log "Got message chunk of size " + chunk.length
+				msg.on "end", =>
+#						console.log "Finished message: " + util.inspect msg, false, 5
+					if !~ @this.monitored_.indexOf msg.id
+						console.log 'new msg'
+						@this.monitored_.push msg.id
+#					else
+#						# TODO compare labels
+#						# TODO check new msgs in the thread
+	)
+
+	close: -> @imap.logout
+
+box = null
+
+flow.exec(
+	-> box = new Gmail settings, @
+	-> box.addSearch '*'
+)
+setTimeout box.close.bind box, 20
