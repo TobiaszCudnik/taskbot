@@ -62,7 +62,7 @@ repl.start(
 ###
 Live events
 -----------
-- msgupdate
+- msgupdate (broken on gmail https://github.com/mscdex/node-imap/issues/67 )
 	Msg props changed from external connection
 - deleted
 - mail
