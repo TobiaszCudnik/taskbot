@@ -10,6 +10,7 @@ Promise = require 'when'
 	GmailCtr
 	GmailManagerCtr
 } = require './updates_contracts'
+prop = require('jsprops').property
 
 imap = new ImapConnection
 	username: settings.gmail_username
@@ -36,12 +37,21 @@ TODO emit:
 ###
 class Gmail extends BaseClass
 
-	# TODO some contracts
+	# Singleton manager
 	@Manager: class GmailManager
-		addInstance: (instance) ->
-		removeInstance: (instance) ->
-		throttle: (connection) ->
+		@channels: prop('channels', null, {})
+
+		@createChannel: (name, update_interval) ->
+			@channels[name] = new Gmail.Channel
+
+
+		@removeInstance: (instance) ->
+		@throttle: (connection) ->
 			# TODO register to the promise
+
+	@Channel = class Channel
+		@cmd: prop('cmd')
+		@run: -> do @constructor.cmd
 
 	imap: null
 	connection: null
