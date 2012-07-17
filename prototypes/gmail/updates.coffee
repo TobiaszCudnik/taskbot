@@ -1,8 +1,15 @@
 flow = require '/usr/lib/node_modules/flow'
+def = flow.define
+ex = flow.exec
 settings = require '../../settings'
-{ ImapConnection } = require("imap")
-util = require("util")
+{ ImapConnection } = require "imap"
+util = require "util"
 repl = require 'repl'
+Promise = require 'when'
+{
+	GmailCtr
+	GmailManagerCtr
+} = require './updates_contracts'
 
 imap = new ImapConnection
 	username: settings.gmail_username
@@ -18,7 +25,6 @@ class BaseClass
 			  prompt: "repl> "
 			  input: process.stdin
 			  output: process.stdout
-			  context: { foo: @ }
 			).context = { foo: @ }
 
 	log: -> console.log.apply arguments
@@ -29,19 +35,25 @@ TODO emit:
 - changed-label {msg, new_labels, removed_labels}
 ###
 class Gmail extends BaseClass
+
+	# TODO some contracts
+	@Manager: class GmailManager
+		addInstance: (instance) ->
+		removeInstance: (instance) ->
+		throttle: (connection) ->
+			# TODO register to the promise
+
 	imap: null
 	connection: null
 	queries: null
 	monitored_ : []
 
 	constructor: (connection, next) ->
-		connection_ctr = ? {
+		@connection ::
 			gmail_username: Str
 			gmail_password: Str
 			gmail_host: Str?
-		}
 
-		@connection :: connection_ctr
 		@connection = connection
 
 		query_ctr = ? {
@@ -55,15 +67,15 @@ class Gmail extends BaseClass
 #			if @connection then @connect @ else @
 		@connect next
 
-#		do @repl
+		do @repl
 
-	connect: flow.define(
+	connect: def(
 		(@next) ->
-			console.log 'connecting'
+			@this.log 'connecting'
 			data = @this.connection
 			@this.imap = new ImapConnection
 				username: data.gmail_username
-				password: data.gmail_password
+				password: data.gmail_password 
 				host: data.gmail_host or "imap.gmail.com"
 				port: 993
 				secure: true
@@ -73,44 +85,60 @@ class Gmail extends BaseClass
 	)
 
 	addSearch: (query, update = 5) ->
-		console.log "adding a new search #{query}"
+		@log "adding a new search #{query}"
 		@queries.push { query, freq: update }
 		# TODO extract check
-		check = => @fetchQuery query
-		# TODO use refresh manager with search request throttling
-		setInterval check, update*1000
-		do check
+		channel = @.constructor.Manager.createChannel query
+		channel.cmd = =>
+			@fetchQuery query, channel.getConnection, @fetchQuery2_
+		channel.run()
 
-	fetchQuery: flow.define(
+	fetchQuery: (query, connection, next) ->
+		@this.log "performing a search for #{query}"
+		connection.then =>
+			@this.imap.search [ [ 'X-GM-RAW', query ] ], next
 
-		(query) ->
-			@this.log 'performing a search'
-			@this.imap.search [ [ 'X-GM-RAW', query ] ], @
+	fetchQuery2_: (err, results) ->
+		# TODO labels
+		@this.log 'got search results'
+		content = headers: [ "id", "from", "to", "subject", "date" ]
+		fetch = @this.imap.fetch results, content
 
-		(err, results) ->
-			# TODO labels
-			@this.log 'got search results'
-			content = headers: [ "id", "from", "to", "subject", "date" ]
-			fetch = @this.imap.fetch results, content
-
-			fetch.on "message", (msg) =>
+		deferred = Promise.defer()
+		fetch.on "message", (msg) =>
 #					msg.on "data", (chunk) =>
-#						console.log "Got message chunk of size " + chunk.length
-				msg.on "end", =>
-#						console.log "Finished message: " + util.inspect msg, false, 5
-					if !~ @this.monitored_.indexOf msg.id
-						console.log 'new msg'
-						@this.monitored_.push msg.id
+#						@this.log "Got message chunk of size " + chunk.length
+			msg.on "end", =>
+				@this.log "Finished message: " + util.inspect msg, false, 5
+				if !~ @this.monitored_.indexOf msg.id
+					# TODO event
+					@this.log 'new msg'
+					@this.monitored_.push msg.id
 #					else
 #						# TODO compare labels
 #						# TODO check new msgs in the thread
-	)
+				deferred.resolve msg
+		fetch.on "error", (err) =>
+			# new Error ???
+			deferred.reject err
+
+		deferred.promise
 
 	close: -> @imap.logout
 
-box = null
+Gmail.Manager :: GmailManagerCtr
+Gmail.Manager = Gmail.Manager
 
-flow.exec(
+# TServer is a contract
+# Server is a class
+for prop, ctr of GmailCtr.oc
+    continue if not Gmail::[prop] or
+        prop is 'constructor'
+    Gmail::[prop] :: ctr
+    Gmail::[prop] = Gmail::[prop]
+
+box = null
+ex(
 	-> box = new Gmail settings, @
 	-> box.addSearch '*'
 )

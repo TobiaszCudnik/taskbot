@@ -30,8 +30,11 @@
     "jsprops":  "*",
     "imap":  "*",
 	  "when": "*",
-	  "flow": "*"
+	  "sugar": "*"
   },
+	"mappings": {
+		"flow": [ "npm", "https://github.com/TobiaszCudnik/flow-js/tarball/848388a0146e279ab9725d4c286606e7022a539a" ]
+	},
   "bundleDependencies": [ ],
 	"devDependencies": {
 		"coffee-script" :  "*",
@@ -39,7 +42,8 @@
 		"buzz" : "*",
 		"run": "*",
 		"mocha": "*",
-		"watch-tree": "*"
+		"watch-tree": "*",
+		"node-dev": "*"
 	},
 	"license": "MIT",
   "engine": {
