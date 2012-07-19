@@ -9,8 +9,10 @@ Promise = require 'when'
 {
 	GmailCtr
 	GmailManagerCtr
+	GmailManagerCtr
 } = require './updates_contracts'
 prop = require('jsprops').property
+require "sugar"
 
 imap = new ImapConnection
 	username: settings.gmail_username
@@ -37,34 +39,61 @@ TODO emit:
 ###
 class Gmail extends BaseClass
 
+	class Channel
+		name: ""
+		active: yes
+		last_update: 0
+		update_interval: 10*1000
+		manager: null
+		constructor: (@manager, @name = "noname") ->
+		cmd: prop('cmd')
+			
+		connection: ->
+			@queue().push Promise.defer()
+			@queue()[-1]
+
 	# Singleton manager
+	manager: null,
 	@Manager: class GmailManager
-		@channels: prop('channels', null, {})
+		@lock = no
+		@cursor: 0
+		@channels: prop('channels', null, [])
 
 		@createChannel: (name, update_interval) ->
-			@channels[name] = new Gmail.Channel
-
-
-		@removeInstance: (instance) ->
-		@throttle: (connection) ->
-			# TODO register to the promise
-
-	@Channel = class Channel
-		@cmd: prop('cmd')
-		@run: -> do @constructor.cmd
+			@channels[name] = new Channel this, update_interval
+			
+		# basic schedule implementation
+		@activate: -> 
+			return if @lock
+			@lock = yes
+			channel = @channels.sortBy("last_update")[ @cursor_++ ]
+			if @cursor is @channels.length()
+				@cursor = 0
+			# get promise  resolvals for interval and request
+			resolve = Promise.defer().promise.resolve for i in [0, 1]
+			setTimeout resolve[0], @minInterval
+			# run channels command
+			channel.cmd resolve[1]
+			# run activate once more after above promises are fulfilled
+			Promise.all(promises).then @activate
+			
+		@minInterval_: ->
+			Math.min ch.update_interval for ch in @channels
 
 	imap: null
 	connection: null
 	queries: null
 	monitored_ : []
 
-	constructor: (connection, next) ->
+	constructor: (@connection, next) ->
+		@manager :: manager_ctr
+		@manager = @constructor.Manager
+		
 		@connection ::
 			gmail_username: Str
 			gmail_password: Str
 			gmail_host: Str?
-
-		@connection = connection
+		@connection = @connection
 
 		query_ctr = ? {
 			freq: Num
@@ -98,10 +127,14 @@ class Gmail extends BaseClass
 		@log "adding a new search #{query}"
 		@queries.push { query, freq: update }
 		# TODO extract check
-		channel = @.constructor.Manager.createChannel query
+		channel = @manager.createChannel query, update*1000
 		channel.cmd = =>
-			@fetchQuery query, channel.getConnection, @fetchQuery2_
-		channel.run()
+			@fetchQuery query, channel.getConnection, =>
+				promise = @fetchQuery2_ arguments
+				promise.then =>
+					# TODO later
+					# @emit "query-fetched"
+		@manager.start()
 
 	fetchQuery: (query, connection, next) ->
 		@this.log "performing a search for #{query}"
@@ -124,6 +157,8 @@ class Gmail extends BaseClass
 					# TODO event
 					@this.log 'new msg'
 					@this.monitored_.push msg.id
+					# TODO later
+					# @emit "new-msg"
 #					else
 #						# TODO compare labels
 #						# TODO check new msgs in the thread
@@ -132,9 +167,11 @@ class Gmail extends BaseClass
 			# new Error ???
 			deferred.reject err
 
+		# ret
 		deferred.promise
 
 	close: -> @imap.logout
+		# TODO remove channel from the manager
 
 Gmail.Manager :: GmailManagerCtr
 Gmail.Manager = Gmail.Manager
