@@ -18,3 +18,8 @@ Sing up stories
 Gmail client stories
 ---------------------
 - client gets push notification when new mail arrives
+
+UI client
+---------
+- wiki like pages (tomboy)
+- nested lists with \t completion (google tasks canvas app)

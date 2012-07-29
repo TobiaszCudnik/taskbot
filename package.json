@@ -43,7 +43,8 @@
 		"run": "*",
 		"mocha": "*",
 		"watch-tree": "*",
-		"node-dev": "*"
+		"node-dev": "*",
+		"longjohn": "*"
 	},
 	"license": "MIT",
   "engine": {
