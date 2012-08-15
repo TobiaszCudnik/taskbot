@@ -2,6 +2,7 @@ NODE = node --harmony
 NODE_DEBUG = node debug --harmony
 MOCHA = node_modules/.bin/mocha
 BUILDER = node_modules/contracts.coffee/bin/coffee
+COFFEE = ./node_modules/contracts.coffee/bin/coffee
 
 TESTS = build/vanilla/test/bootstrap.js
 
@@ -11,6 +12,19 @@ POST_PARAMS = -r should \
 		-R spec
 
 LIVE = buzz
+
+build-proto-gmail:
+	# build without contracts
+	$(COFFEE) -cw \
+		-o prototypes/gmail/build \
+		prototypes/gmail/*.coffee &
+	# build with contracts
+	$(COFFEE) -Ccw \
+		-o prototypes/gmail/build-ctrs \
+		prototypes/gmail/*.coffee
+
+run-proto-gmail:
+	node-dev --harmony prototypes/gmail/updates.js
 
 break:
 	$(NODE) --debug-brk \

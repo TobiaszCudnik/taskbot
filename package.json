@@ -33,7 +33,7 @@
 	  "sugar": "*"
   },
 	"mappings": {
-		"flow": [ "npm", "https://github.com/TobiaszCudnik/flow-js/tarball/848388a0146e279ab9725d4c286606e7022a539a" ]
+		"flow": "https://github.com/TobiaszCudnik/flow-js/tarball/master"
 	},
   "bundleDependencies": [ ],
 	"devDependencies": {
