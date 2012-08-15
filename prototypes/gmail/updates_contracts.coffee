@@ -16,8 +16,8 @@ GmailManagerCtr = ? {
 }
 
 GmailManagerCtr = ? {
-	lock: Bool
-	cursor: Num
+	locked: Bool
+#	cursor_: Num
 	channels: (Any?) -> Any?
 	createChannel: -> Any?
 #	activate: -> Promise
@@ -26,6 +26,5 @@ GmailManagerCtr = ? {
 
 module.exports = {
 	GmailCtr
-	GmailManagerCtr
 	GmailManagerCtr
 }

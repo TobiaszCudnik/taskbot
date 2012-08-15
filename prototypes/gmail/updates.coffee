@@ -27,13 +27,14 @@ imap = new ImapConnection
 # TODO add event emitter
 class BaseClass
 	repl: ->
-		repl.start(
+		repl = repl.start(
 				prompt: "repl> "
 				input: process.stdin
 				output: process.stdout
-			).context = { foo: @ }
+			)
+		repl.context.this = @
 
-	log: -> console.log.apply arguments
+	log: -> console.log.apply console, arguments
 
 # TODO config
 Object.merge settings, gmail_max_results: 300
@@ -51,38 +52,44 @@ class Gmail extends BaseClass
 		last_update: 0
 		update_interval: 10*1000
 		manager: null
-		constructor: (@manager, @name = "noname") ->
-		cmd: prop('cmd')
+		
+		constructor: (@manager, @name = "noname", update_interval = null) ->
+		cmd: null,
 						
 		connection: ->
 			@queue().push Promise.defer()
-			@queue()[-1]
+			@queue()[-1..-1]
 
 	# Singleton manager
 	manager: null
 	@Manager: class GmailManager
+		# TODO mixin BaseClass (staticaly include)
+		@log: -> console.log.apply console, arguments
 		@locked: no
-		@cursor: 0
 		@channels: prop('channels', null, [])
 
 		@createChannel: (name, update_interval) ->
-			@channels[name] = new Channel this, update_interval
-			@channels[name]
+			@log "creating channel '#{name}' (#{update_interval})"
+			@channels().push new Channel this, name, update_interval
+			# return the last channel
+			@channels()[ @channels().length-1 ].foo = 'bar'
+			@channels()[-1..-1][0]
 						
 		# basic schedule implementation
 		@activate: -> 
 			return if @locked
 			@locked = yes
-			channel = @channels().sortBy("last_update")[ @cursor_++ ]
-			if @cursor is @channels().length
-				@cursor = 0
+			channel = @channels().sortBy("last_update").first()
+			@log channel
+			if @cursor_ >= @channels().length
+				@cursor_ = 0
 			# get promise resolvals for the interval and the request
 			resolve = (Promise.defer().promise.resolve for i in [0, 1])
 			setTimeout resolve[0], @minInterval
 			# run channels command
 			channel.cmd resolve[1]
 			# run activate once more after above promises are fulfilled
-			Promise.all(resolve).then activate.bind @
+			Promise.all(resolve).then @activate.bind @
 						
 		@minInterval_: ->
 			Math.min ch.update_interval for ch in @channels
@@ -113,7 +120,7 @@ class Gmail extends BaseClass
 #			if @connection then @connect @ else @
 		@connect next
 
-		do @repl
+		do @repl if settings.repl
 
 	connect: def(
 		(@next) ->
@@ -136,7 +143,8 @@ class Gmail extends BaseClass
 		# TODO extract check
 		channel = @manager.createChannel query, update*1000
 		channel.cmd = (next) =>
-			@fetchQuery query, channel.getConnection, =>
+			@log "Running command for the channel #{query}"
+			@fetchQuery query, channel.connection, =>
 				promise = @fetchQuery2_ arguments
 				promise.then =>
 					next()
@@ -145,26 +153,26 @@ class Gmail extends BaseClass
 		@manager.activate()
 
 	fetchQuery: (query, connection, next) ->
-		@this.log "performing a search for #{query}"
+		@log "performing a search for #{query}"
 		connection.then =>
-			@this.imap.search [ [ 'X-GM-RAW', query ] ], next
+			@imap.search [ [ 'X-GM-RAW', query ] ], next
 
 	fetchQuery2_: (err, results) ->
 		# TODO labels
-		@this.log 'got search results'
+		@log 'got search results'
 		content = headers: [ "id", "from", "to", "subject", "date" ]
-		fetch = @this.imap.fetch results, content
+		fetch = @imap.fetch results, content
 
 		deferred = Promise.defer()
 		fetch.on "message", (msg) =>
 #					msg.on "data", (chunk) =>
-#						@this.log "Got message chunk of size " + chunk.length
+#						@log "Got message chunk of size " + chunk.length
 			msg.on "end", =>
-				@this.log "Finished message: " + util.inspect msg, false, 5
-				if !~ @this.monitored_.indexOf msg.id
+				@log "Finished message: " + util.inspect msg, false, 5
+				if !~ @monitored_.indexOf msg.id
 					# TODO event
-					@this.log 'new msg'
-					@this.monitored_.push msg.id
+					@log 'new msg'
+					@monitored_.push msg.id
 					# TODO later
 					# @emit "new-msg"
 #					else

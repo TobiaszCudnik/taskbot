@@ -24,7 +24,10 @@ build-proto-gmail:
 		prototypes/gmail/*.coffee
 
 run-proto-gmail:
-	node-dev --harmony prototypes/gmail/updates.js
+	node-dev --harmony prototypes/gmail/build/updates.js
+
+run-proto-gmail-ctrs:
+	node-dev --harmony prototypes/gmail/build-ctrs/updates.js
 
 break:
 	$(NODE) --debug-brk \
