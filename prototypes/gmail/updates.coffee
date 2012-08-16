@@ -44,16 +44,19 @@ class GmailSearch extends BaseClass
 	last_update: 0
 	update_interval: 10*1000
 	manager: null
+	monitored_: prop('monitored_', null, [])
 	
 	constructor: (@manager, @name, update_interval) ->
-		@update_interval = update_interval if update_interval
+		update_interval ?= @update_interval
+		@log "creating a serch for '#{name}' with interval=#{update_interval}"
+		@update_interval = update_interval
 		
 	fetch: (next) ->
 		@log "performing a search for #{@name}"
 		deferred = Promise.defer()
 		if next
 			deferred.promise.then next
-		@query_()
+		@query_ deferred
 		deferred.promise
 
 	query_: (deferred) ->
@@ -71,17 +74,19 @@ class GmailSearch extends BaseClass
 #					msg.on "data", (chunk) =>
 #						@log "Got message chunk of size " + chunk.length
 			msg.on "end", =>
-				@log "Finished message: " + util.inspect msg, false, 5
-				if !~ @monitored_.indexOf msg.id
+#				@log "Finished message: " + util.inspect msg, false, 5
+				if !~ @monitored_().indexOf msg.id
 					# TODO event
 					@log 'new msg'
-					@monitored_.push msg.id
+					@monitored_().push msg.id
 					# TODO later
 					# @emit "new-msg"
 #					else
 #						# TODO compare labels
 #						# TODO check new msgs in the thread
-				deferred.resolve msg
+		fetch.on "end", (err) =>
+			@log 'fetch ended'
+			deferred.resolve()
 		fetch.on "error", (err) =>
 			# new Error ???
 			deferred.reject err
@@ -108,20 +113,19 @@ class GmailManager extends BaseClass
 	# basic schedule implementation
 	activate: -> 
 		search = @searches().sortBy("last_update").first()
-		@log search
+		@log "activating #{search.name}"
 		if @cursor_ >= @searches().length
 			@cursor_ = 0
 		# get promise resolvals for the interval and the request
-		resolve = (Promise.defer().promise.resolve for i in [0, 1])
-		# TODO change to timeout
-		setTimeout resolve[0], @minInterval_
-		# run channels command
-		search.fetch resolve[1]
-		# run activate once more after above promises are fulfilled
-		Promise.any(resolve).then @activate.bind @
+		resolve = (Promise.defer() for i in [0, 1])
+		setTimeout resolve[0].resolve, @minInterval_()
+		# run the search query
+		search.fetch resolve[1].resolve
+		# run activate once more after both promises are fulfilled
+		Promise.all(resolve).then @activate.bind @
 					
 	minInterval_: ->
-		Math.min ch.update_interval for ch in @searches
+		(Math.min ch.update_interval for ch in @searches())[0]
 
 	connect: def(
 		(@next) ->
@@ -154,7 +158,7 @@ gmail = null
 ex(
 	-> gmail = new GmailManager settings, @
 	->
-		gmail.addSearch '*'
+		gmail.addSearch '*', 5000
 		gmail.activate()
 )
 setTimeout gmail.disconnect.bind gmail, 10*1000
