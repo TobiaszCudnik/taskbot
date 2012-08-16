@@ -12,14 +12,14 @@ GmailManagerChannel = ? {
 }
 
 GmailManagerCtr = ? {
-	createChannel: (Str) -> GmailManagerChannel
+	addSearch: (Str) -> GmailManagerChannel
 }
 
 GmailManagerCtr = ? {
 	locked: Bool
 #	cursor_: Num
-	channels: (Any?) -> Any?
-	createChannel: -> Any?
+	searched: (Any?) -> Any?
+	addSearch: -> Any?
 #	activate: -> Promise
 	activate: -> Any?
 }
