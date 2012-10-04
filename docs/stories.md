@@ -23,3 +23,19 @@ UI client
 ---------
 - wiki like pages (tomboy)
 - nested lists with \t completion (google tasks canvas app)
+- repl tcp client
+- web repl
+- xmpp repl
+
+Misc
+-----
+- TiddlyWiki5 integration
+- web filesystem integration (tabbed txt files to lists; via git?)
+	- dropbox
+	- google drive
+
+
+
+DB
+--------
+- mongodb backend
