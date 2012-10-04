@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+buzz 10 smarty_pants 2000 0.15 #kills smarty pants after 10 seconds

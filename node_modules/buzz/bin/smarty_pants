@@ -1,0 +1,42 @@
+#!/usr/bin/env coffee
+
+TIME = process.argv[2] ?= 3000
+DEATH_PROBABILITY = process.argv[3] ?= 0.10
+
+console.log "Hi. I'm Buzz's friend. Call me Smarty Pants."
+console.log("You've set my input to print statements every #{TIME} milliseconds and to die
+  approximately every #{TIME/DEATH_PROBABILITY} milliseconds.")
+
+
+phrases = [
+  "I'm still alive!",
+  "I'll never die!",
+  "You can't kill me!",
+  "I'm getting kind of bored...",
+  "Did you know that Samuel L Jackson often asks to have purple props used by his character?",
+  "Did you know that most of the skyscrapers in Dubai aren't connected to a central sewage system; tankers have to called in to haul away the waste from each individual building, including the world's tallest skyscraper, the Burj Khalifa?",
+  "Did you know that the average lead pencil will draw a line 35 miles long or about 50,000 English words?",
+  "Did you know that Australia celebrates Christmas in the summer?",
+  "Did you know that Geographically, China falls into five time zones; but officially the entire country adheres to the same time?",
+  "Did you know that '2' is the only even prime number?",
+  "Did you know that during your lifetime, you'll eat about 60,000 pounds of food, that's the weight of about 6 elephants?",
+  "Did you know that you can spell 'typewriter' with the first row of letters on a keyboard?",
+  "Did you know that 'Stewardesses' is the longest word that is typed with only the left hand?",
+  "Did you know that fortune cookies were actually invented in America, not China?"
+]
+
+
+infinityCallback = ->
+  console.log phrases[Math.floor(Math.random()*phrases.length)]
+
+  if Math.random() <= 0.25
+    console.error "Oh no! We had an error. But I won't die."
+  
+  if Math.random() <= DEATH_PROBABILITY
+    console.error "I guess I'm going to kill myself..."
+    process.exit()
+  
+
+setInterval infinityCallback, TIME
+
+
