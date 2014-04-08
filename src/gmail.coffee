@@ -58,15 +58,16 @@ class GmailSearchStates extends asyncmachine.Task
 
 	constructor: (manager, name, update_interval) ->
 		super()
-																																
+		
+		@register 'Fetched', 'Fetching', 'Idle', 'FetchingQuery', 'FetchingResults',
+			'ResultsFetchingError', 'FetchingMessage', 'MessageFetched'
+		
+		@debug '[search] '
+		@set 'Idle'
+
 		@manager = manager if manager
 		@name = name if name
 		@update_interval = update_interval if update_interval
-																																
-		@debugStates '[search] '
-		@initStates 'Idle'
-
-	# Transitions
 
 #	Idle_FetchingQuery: ->
 	FetchingQuery_enter: ->
@@ -109,7 +110,7 @@ class GmailSearchStates extends asyncmachine.Task
 		setTimeout @addStateLater('Idle'), 0
 		if err
 			throw new Error err
-																
+
 	# TODO FIXME
 	repl: ->
 		repl = repl.start(
@@ -120,8 +121,6 @@ class GmailSearchStates extends asyncmachine.Task
 		repl.context.this = @
 	log: (...msgs) ->
 		@log.apply console, msgs
-
-#class GmailManager extends BaseClass {
 
 # TODO IDLE state
 class GmailManager extends asyncmachine.AsyncMachine
@@ -135,68 +134,68 @@ class GmailManager extends asyncmachine.AsyncMachine
 	delayed_timer: number
 	concurrency: []
 	threads: []
-																
+	
 	# STATES
-																
+	
 	Disconnected:
 		blocks: ['Connected', 'Connecting', 'Disconnecting']
-																
+
 	Disconnecting:
 		blocks: ['Connected', 'Connecting', 'Disconnected']
-																
+
 	Connected:
-		blocks: [ 'Connecting', 'Disconnecting', 'Disconnected' ],
+		blocks: [ 'Connecting', 'Disconnecting', 'Disconnected' ]
 		implies: [ 'BoxClosed' ]
-																
+
 	Connecting:
 		blocks: ['Connected', 'Disconnecting', 'Disconnected']
-																
+
 	Idle:
 		requires: [ 'Connected' ]
-																
+
 	Active:
 		requires: [ 'Connected' ]
 
 	Fetched: {}
-																
+
 	Fetching:
-		requires: [ 'BoxOpened' ],
+		requires: [ 'BoxOpened' ]
 		blocks: [ 'Idle', 'Delayed' ]
-																
+
 	Delayed:
-		requires: [ 'Active' ], 
+		requires: [ 'Active' ] 
 		blocks: [ 'Fetching', 'Idle' ]
-																
+
 	BoxOpening:
-		requires: [ 'Active' ],
-		blocks: [ 'BoxOpened', 'BoxClosing', 'BoxClosed' ],
+		requires: [ 'Active' ]
+		blocks: [ 'BoxOpened', 'BoxClosing', 'BoxClosed' ]
 		group: 'OpenBox'
 
 	BoxOpened:
-		depends: [ 'Connected' ],
-		requires: [ 'Active' ],
-		blocks: [ 'BoxOpening', 'BoxClosed', 'BoxClosing' ],
+		depends: [ 'Connected' ]
+		requires: [ 'Active' ]
+		blocks: [ 'BoxOpening', 'BoxClosed', 'BoxClosing' ]
 		group: 'OpenBox'
-																
+
 	BoxClosing:
-		blocks: [ 'BoxOpened', 'BoxOpening', 'Box' ],
+		blocks: [ 'BoxOpened', 'BoxOpening', 'Box' ]
 		group: 'OpenBox'
 
 	BoxClosed:
-		requires: [ 'Active' ],
-		blocks: [ 'BoxOpened', 'BoxOpening', 'BoxClosing' ],
+		requires: [ 'Active' ]
+		blocks: [ 'BoxOpened', 'BoxOpening', 'BoxClosing' ]
 		group: 'OpenBox'
-																
+
 	settings: {}
-																
+
 	# API
-																																
+
 	constructor: (settings) ->
 		super()
 		@dispatcher = new asyncmachine.Dispatcher
 		@debugStates '[manager] '
 		@initStates 'Disconnected'
-																																
+
 		# # TODO no auto connect 
 		@setState 'Connecting'
 
@@ -205,12 +204,12 @@ class GmailManager extends asyncmachine.AsyncMachine
 
 	addSearch: (name, update_interval) ->
 		@searches.push new GmailSearch this, name, update_interval
-																
+
 	# STATE TRANSITIONS
 
 	Connected_enter: (states) ->
 		setTimeout (@setStateLater 'BoxClosed'), 0
-																
+
 	Connected_Disconnected: -> 
 		process.exit()
 
@@ -229,11 +228,11 @@ class GmailManager extends asyncmachine.AsyncMachine
 	Connecting_exit: (target_states) ->
 		if ~target_states.indexOf 'Disconnected'
 			# TODO cleanup
-																
+
 	Connected_exit: ->
 		# TODO callback?
 		@connection.logout @addStateLater('Disconnected'
-																
+
 	BoxOpening_enter ->
 		fetch = @addStateLater 'Fetching'
 		if @state('BoxOpened'
@@ -254,7 +253,7 @@ class GmailManager extends asyncmachine.AsyncMachine
 		# TODO move to boxopened_enter??/
 		@once( 'Box.Opened.enter', @setStateLater('Fetching') )
 	}
-																
+
 	BoxOpening_exit: ->
 		# TODO stop openbox
 		promise = @box_opening_promise
@@ -270,14 +269,14 @@ class GmailManager extends asyncmachine.AsyncMachine
 			if not @addState 'Fetching'
 				@log('Cant set Fetching', @state() )
 		, 0)
-																
+
 	Delayed_enter: ->
 		# schedule a task
 		@delayed_timer = setTimeout @addStateLater 'Fetching', @minInterval_()
-																
+
 	Delayed_exit: ->
 		clearTimeout @delayed_timer
-																
+
 	Fetching_enter: ->
 		# Add new search only if there's a free limit.
 		if @concurrency.length >= @max_concurrency
@@ -344,18 +343,17 @@ class GmailManager extends asyncmachine.AsyncMachine
 				@addState 'Fetching'
 			else if not @addState 'BoxOpening'
 				@log 'BoxOpening not set', @state()
-																
+
 	# PRIVATES
-																																																																																
+
 	minInterval_: ->
 		intervals: number[] = @searches.map (ch) =>
 			return ch.update_interval
 		return Math.min.apply @, intervals
-	}
-																
+
 #	repl: BaseClass.prototype.repl;
 #	log: BaseClass.prototype.log;
-																
+
 	# TODO FIXME
 	repl: ->
 		repl = repl.start(
@@ -364,7 +362,7 @@ class GmailManager extends asyncmachine.AsyncMachine
 			output: process.stdout
 		)
 		repl.context.this = @
-	}
+
 	log: (...msgs) ->
 		@log.apply console, msgs
 
@@ -375,12 +373,12 @@ class App extends GmailManager
 #			return no
 		# TODO support sync inner state change
 		setTimeout( =>
-			@log('adding searches')
-			@addSearch( '*', 1000 )
-			@addSearch( 'label:sent', 5000 )
-			@addSearch( 'label:T-foo', 5000 )
-			if (! @addState('Active') ) {
-				@log('cant activate', @state()
+			@log 'adding searches'
+			@addSearch '*', 1000
+			@addSearch 'label:sent', 5000
+			@addSearch 'label:T-foo', 5000
+			if not @addState('Active'
+				@log 'cant activate', @state()
 		, 0
 
 gmail = new App settings
