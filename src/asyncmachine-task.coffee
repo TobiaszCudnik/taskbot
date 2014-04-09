@@ -5,40 +5,39 @@ class Task extends AsyncMachine
 
 	constructor: ->
 		super()
-		@set 'Idle'
+		@set 'TaskIdle'
 
 	# Doing nothing right now (but may be waiting).
-	Idle = 
-		blocks: ['Running']
+	TaskIdle = 
+		blocks: ['TaskRunning']
 
 	# Waiting for a scheduled run.
-	# Sets timeout on this.schedule_timer.
-	Waiting = 
+	# Sets timeout on @schedule_timer.
+	TaskWaiting = 
 		blocks: ['Running']
 
 	# Executing async actions
-	Running: 
-		blocks: ['Idle', 'Waiting', 'Scheduled']
+	TaskRunning: 
+		blocks: ['TaskIdle', 'TaskWaiting']
 
 	# Cancelling a scheduled execution
-	Cancelling = 
-		blocks: ['Waiting']
+	TaskCancelling = 
+		blocks: ['TaskWaiting']
 
 	# Stopping the execution of async actions
-	Stopping = 
-		blocks: ['Running']
+	TaskStopping = 
+		blocks: ['TaskRunning']
 
-	Cancelling_enter: -> 
-		this.addS 'Idle'
-		this.drop 'Cancelling'
+	TaskCancelling_enter: -> 
+		@addS 'TaskIdle'
+		@drop 'TaskCancelling'
 
-	Stopping_enter: ->
-		this.addState 'Idle'
-		this.dropState 'Stopping'
+	TaskStopping_enter: ->
+		@addS 'TaskIdle'
+		@drop 'TaskStopping'
 
-	Running_exit: ->
-		this.cancelAsyncTimers_()
-		this.addState 'Idle'
+	TaskRunning_exit: ->
+		@add 'TaskIdle'
 
 	# Cancel a scheduled execution
 	cancel: -> @add 'Cancelling'

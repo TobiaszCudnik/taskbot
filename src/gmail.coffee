@@ -9,12 +9,13 @@ repl = require 'repl'
 #import sugar = module('sugar')
 require 'sugar'
 asyncmachine = require 'asyncmachine'
+am_task = require 'asyncmachine-task'
 rsvp = require 'rsvp'
 
 # TODO config
 Object.merge settings, gmail_max_results: 300
 
-class GmailSearchStates extends asyncmachine.Task
+class SearchAgent extends am_task.Task
 	#	private msg: imap.ImapMessage;
 
 	# Tells that the instance has some monitored messages.
@@ -58,10 +59,10 @@ class GmailSearchStates extends asyncmachine.Task
 
 	constructor: (manager, name, update_interval) ->
 		super()
-		
+				
 		@register 'Fetched', 'Fetching', 'Idle', 'FetchingQuery', 'FetchingResults',
 			'ResultsFetchingError', 'FetchingMessage', 'MessageFetched'
-		
+				
 		@debug '[search] '
 		@set 'Idle'
 
@@ -75,7 +76,7 @@ class GmailSearchStates extends asyncmachine.Task
 		@log  "performing a search for " + @name 
 		imap = @manager.connection
 		imap.search [ [ 'X-GM-RAW', @name ] ], (err, results) =>
-			@addState 'FetchingResults', err, results
+			@add 'FetchingResults', err, results
 
 	FetchingQuery_FetchingResults: (states, err, results) ->
 		# TODO handle err
@@ -83,18 +84,18 @@ class GmailSearchStates extends asyncmachine.Task
 		imap = @manager.connection
 		fetch = imap.fetch results, @headers
 		# Subscribe state changes to fetching events.
-		fetch.on "error", @addStateLater 'ResultsFetchingError'
+		fetch.on "error", @addLater 'ResultsFetchingError'
 		fetch.on "end", =>
-			@addState 'HasMonitored'
-			@dropState 'FetchingResults'
+			@add 'HasMonitored'
+			@drop 'FetchingResults'
 		# TODO fix when params will work
 		fetch.on "message", (msg: imap.ImapMessage) =>
-			 @addState 'FetchingMessage', msg
+			 @add 'FetchingMessage', msg
 
 #	FetchingMessage_enter( states, params, msg ) {
 	FetchingMessage_enter: (states, msg) ->
 		msg.on 'end', =>
-			@addState('MessageFetched', msg
+			@add 'MessageFetched', msg
 
 #	FetchingMessage_MessageFetched( states, params ) {
 	FetchingMessage_MessageFetched: (states, msg) ->
@@ -107,7 +108,7 @@ class GmailSearchStates extends asyncmachine.Task
 
 	ResultsFetchingError_enter: (err) ->
 		@log 'fetching error', err
-		setTimeout @addStateLater('Idle'), 0
+		setTimeout @addLater('Idle'), 0
 		if err
 			throw new Error err
 
@@ -134,9 +135,10 @@ class GmailManager extends asyncmachine.AsyncMachine
 	delayed_timer: number
 	concurrency: []
 	threads: []
-	
+	settings: {}
+		
 	# STATES
-	
+		
 	Disconnected:
 		blocks: ['Connected', 'Connecting', 'Disconnecting']
 
@@ -186,8 +188,6 @@ class GmailManager extends asyncmachine.AsyncMachine
 		blocks: [ 'BoxOpened', 'BoxOpening', 'BoxClosing' ]
 		group: 'OpenBox'
 
-	settings: {}
-
 	# API
 
 	constructor: (settings) ->
@@ -197,18 +197,18 @@ class GmailManager extends asyncmachine.AsyncMachine
 		@initStates 'Disconnected'
 
 		# # TODO no auto connect 
-		@setState 'Connecting'
+		@set 'Connecting'
 
 		if settings.repl
 			@repl()
 
 	addSearch: (name, update_interval) ->
-		@searches.push new GmailSearch this, name, update_interval
+		@searches.push new SearchAgent this, name, update_interval
 
 	# STATE TRANSITIONS
 
 	Connected_enter: (states) ->
-		setTimeout (@setStateLater 'BoxClosed'), 0
+		setTimeout (@setLater 'BoxClosed'), 0
 
 	Connected_Disconnected: -> 
 		process.exit()
@@ -222,20 +222,21 @@ class GmailManager extends asyncmachine.AsyncMachine
 			port: 993,
 			secure: true
 		)
-						
-		@connection.connect @addStateLater 'Connected'
+												
+		@connection.connect @addLater 'Connected'
 
 	Connecting_exit: (target_states) ->
 		if ~target_states.indexOf 'Disconnected'
+			yes
 			# TODO cleanup
 
 	Connected_exit: ->
 		# TODO callback?
-		@connection.logout @addStateLater('Disconnected'
+		@connection.logout @addLater 'Disconnected'
 
 	BoxOpening_enter ->
-		fetch = @addStateLater 'Fetching'
-		if @state('BoxOpened'
+		fetch = @addLater 'Fetching'
+		if @state 'BoxOpened'
 			setTimeout fetch, 0
 			return no
 		else
@@ -245,14 +246,12 @@ class GmailManager extends asyncmachine.AsyncMachine
 		# TODO try and set to Disconnected on catch
 		# Error: Not connected or authenticated
 		# TODO support err param to the callback
-		@connection.openBox( "[Gmail]/All Mail", no, 
-			(@addStateLater 'BoxOpened')
+		@connection.openBox "[Gmail]/All Mail", no, (@addLater 'BoxOpened')
 		@box_opening_promise = @last_promise
 
 	BoxOpening_BoxOpening: ->
 		# TODO move to boxopened_enter??/
-		@once( 'Box.Opened.enter', @setStateLater('Fetching') )
-	}
+		@once 'Box.Opened.enter', @setLater 'Fetching'
 
 	BoxOpening_exit: ->
 		# TODO stop openbox
@@ -261,18 +260,18 @@ class GmailManager extends asyncmachine.AsyncMachine
 			promise.reject()
 
 	BoxClosing_enter: ->
-		@connection.closeBox @addStateLater 'BoxClosed'
+		@connection.closeBox @addLater 'BoxClosed'
 
 	BoxOpened_enter: ->
 		# TODO Add inner state
 		setTimeout( =>
-			if not @addState 'Fetching'
+			if not @add 'Fetching'
 				@log('Cant set Fetching', @state() )
 		, 0)
 
 	Delayed_enter: ->
 		# schedule a task
-		@delayed_timer = setTimeout @addStateLater 'Fetching', @minInterval_()
+		@delayed_timer = setTimeout @addLater 'Fetching', @minInterval_()
 
 	Delayed_exit: ->
 		clearTimeout @delayed_timer
@@ -281,7 +280,7 @@ class GmailManager extends asyncmachine.AsyncMachine
 		# Add new search only if there's a free limit.
 		if @concurrency.length >= @max_concurrency
 			return no
-		# TODO skip searches which interval haven't passed yet
+		# TODO skip searches which interval hasn't passed yet
 		searches = @searches.sortBy "last_update"
 		search = searches.first()
 		i = 0
@@ -297,18 +296,16 @@ class GmailManager extends asyncmachine.AsyncMachine
 			return no
 		@log 'concurrency++'
 		@concurrency.push search
-		search.addState 'FetchingQuery'
+		search.add 'FetchingQuery'
 		# Subscribe to a finished query
 		search.once 'Fetching.Results.exit', =>
 #			@concurrency = @concurrency.exclude( search )
 			@concurrency = @concurrency.filter (row) =>
 				return row isnt search
 			@log 'concurrency--'
-#			@addStatesLater( 'HasMonitored', 'Delayed' )
-			@addStateLater 'Delayed'
-			@addStateLater 'HasMonitored'
-			# TODO GC?
-			search = undefined
+#			@addsLater( 'HasMonitored', 'Delayed' )
+			@addLater 'Delayed'
+			@addLater 'HasMonitored'
 			@newSearchThread @minInterval_()
 
 	# TODO move to AM
@@ -321,15 +318,13 @@ class GmailManager extends asyncmachine.AsyncMachine
 		if not ~states.indexOf 'Active'
 			# TODO wil appear anytime?
 			@log 'cancel fetching'
-		if @concurrency.length && ! args['force']
+		if @concurrency.length and not args['force']
 			return no
 		# Exit from all queries.
-		exits = @concurrency.map (search) =>
-			return search.dropState 'Fetching'
-		return not ~exits.indexOf no
+		exits = @concurrency.map (search) => search.drop 'Fetching'
+		not ~exits.indexOf no
 
-	Fetching_Fetching: ->
-		return @Fetching_enter.apply @, arguments
+	Fetching_Fetching: @Fetching_enter
 
 	Active_enter: ->
 		while @threads.length < @max_concurrency
@@ -340,16 +335,14 @@ class GmailManager extends asyncmachine.AsyncMachine
 		@threads.push task
 		task.schedule =>
 			if @state 'BoxOpened'
-				@addState 'Fetching'
-			else if not @addState 'BoxOpening'
+				@add 'Fetching'
+			else if not @add 'BoxOpening'
 				@log 'BoxOpening not set', @state()
 
 	# PRIVATES
 
 	minInterval_: ->
-		intervals: number[] = @searches.map (ch) =>
-			return ch.update_interval
-		return Math.min.apply @, intervals
+		Math.min.apply null, @searches.map (ch) => ch.update_interval
 
 #	repl: BaseClass.prototype.repl;
 #	log: BaseClass.prototype.log;
@@ -368,7 +361,7 @@ class GmailManager extends asyncmachine.AsyncMachine
 
 class App extends GmailManager
 	Connected_enter: (states) ->
-		super
+		super()
 #		if ( super.Connected_enter( states ) === no )
 #			return no
 		# TODO support sync inner state change
@@ -377,7 +370,7 @@ class App extends GmailManager
 			@addSearch '*', 1000
 			@addSearch 'label:sent', 5000
 			@addSearch 'label:T-foo', 5000
-			if not @addState('Active'
+			if not @add('Active'
 				@log 'cant activate', @state()
 		, 0
 
@@ -385,8 +378,8 @@ gmail = new App settings
 
 timeout = =>
 	if gmail.state 'Connecting'
-		gmail.addState 'Disconnected'
+		gmail.add 'Disconnected'
 	else
-		setTimeout gmail.addStateLater 'Disconnected', 10*1000
+		setTimeout gmail.addLater 'Disconnected', 10*1000
 
 setTimeout timeout, 10*1000
