@@ -19,7 +19,7 @@ class SearchAgent extends am_task.Task
 	#	private msg: imap.ImapMessage;
 
 	# Tells that the instance has some monitored messages.
-	Fetched: {}
+	HasMonitored: {}
 
 	# Aggregating state
 	Fetching:
@@ -47,6 +47,7 @@ class SearchAgent extends am_task.Task
 		blocks: [ 'FetchingMessage' ],
 		requires: [ 'FetchingResults' ]
 
+		
 	# Attributes
 
 	active: true
@@ -60,8 +61,9 @@ class SearchAgent extends am_task.Task
 	constructor: (manager, name, update_interval) ->
 		super()
 				
-		@register 'Fetched', 'Fetching', 'Idle', 'FetchingQuery', 'FetchingResults',
-			'ResultsFetchingError', 'FetchingMessage', 'MessageFetched'
+		@register 'HasMonitored', 'Fetching', 'Idle', 'FetchingQuery',
+			'FetchingResults', 'ResultsFetchingError', 'FetchingMessage',
+			'MessageFetched'
 				
 		@debug '[search] '
 		@set 'Idle'
@@ -89,7 +91,7 @@ class SearchAgent extends am_task.Task
 			@add 'HasMonitored'
 			@drop 'FetchingResults'
 		# TODO fix when params will work
-		fetch.on "message", (msg: imap.ImapMessage) =>
+		fetch.on "message", (msg) =>
 			 @add 'FetchingMessage', msg
 
 #	FetchingMessage_enter( states, params, msg ) {

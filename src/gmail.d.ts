@@ -11,3 +11,7 @@ class GmailManager extends asyncmachine.AsyncMachine {
 	concurrency: GmailSearch[] = [];
 	threads: number[] = [];
 }
+
+class SearchAgent extends am_task.Task {
+	
+}
