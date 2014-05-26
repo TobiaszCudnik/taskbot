@@ -108,13 +108,13 @@ class GmailManager extends BaseClass
 		do @repl if settings.repl
 
 	addSearch: (name, update_interval) ->
-		@searches().push new GmailSearch @, name, update_interval
+		@queries().push new GmailSearch @, name, update_interval
 					
 	# basic schedule implementation
 	activate: -> 
-		search = @searches().sortBy("last_update").first()
+		search = @queries().sortBy("last_update").first()
 		@log "activating #{search.name}"
-		if @cursor_ >= @searches().length
+		if @cursor_ >= @queries().length
 			@cursor_ = 0
 		# get promise resolvals for the interval and the request
 		resolve = (Promise.defer() for i in [0, 1])
@@ -125,7 +125,7 @@ class GmailManager extends BaseClass
 		Promise.all(resolve).then @activate.bind @
 					
 	minInterval_: ->
-		(Math.min ch.update_interval for ch in @searches())[0]
+		(Math.min ch.update_interval for ch in @queries())[0]
 
 	connect: def(
 		(@next) ->

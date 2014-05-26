@@ -15,7 +15,7 @@ rsvp = require 'rsvp'
 # TODO config
 Object.merge settings, gmail_max_results: 300
 
-class SearchAgent extends am_task.Task
+class Query extends am_task.Task
 	#	private msg: imap.ImapMessage;
 
 	# Tells that the instance has some monitored messages.
@@ -54,21 +54,21 @@ class SearchAgent extends am_task.Task
 	last_update: 0
 	headers: [ "id", "from", "to", "subject", "date" ]
 	monitored: []		
-	manager: null
+	connection: null
 	name: "*"
 	update_interval: 10*1000
 
-	constructor: (manager, name, update_interval) ->
+	constructor: (connection, name, update_interval) ->
 		super()
 				
 		@register 'HasMonitored', 'Fetching', 'Idle', 'FetchingQuery',
 			'FetchingResults', 'ResultsFetchingError', 'FetchingMessage',
 			'MessageFetched'
 				
-		@debug '[search] '
+		@debug '[query] '
 		@set 'Idle'
 
-		@manager = manager if manager
+		@connection = connection if connection
 		@name = name if name
 		@update_interval = update_interval if update_interval
 
@@ -76,14 +76,14 @@ class SearchAgent extends am_task.Task
 	FetchingQuery_enter: ->
 		@last_update = Date.now()
 		@log  "performing a search for " + @name 
-		imap = @manager.connection
+		imap = @connection.imap
 		imap.search [ [ 'X-GM-RAW', @name ] ], (err, results) =>
 			@add 'FetchingResults', err, results
 
 	FetchingQuery_FetchingResults: (states, err, results) ->
 		# TODO handle err
 		@log 'got search results'
-		imap = @manager.connection
+		imap = @connection.imap
 		fetch = imap.fetch results, @headers
 		# Subscribe state changes to fetching events.
 		fetch.on "error", @addLater 'ResultsFetchingError'
@@ -126,12 +126,12 @@ class SearchAgent extends am_task.Task
 		@log.apply console, msgs
 
 # TODO IDLE state
-class GmailManager extends asyncmachine.AsyncMachine
+class Connection extends asyncmachine.AsyncMachine
 
 	# ATTRIBUTES
 
 	max_concurrency: 3
-	searches: []
+	queries: []
 	connection: imap.ImapConnection
 	box_opening_promise: null
 	delayed_timer: number
@@ -173,39 +173,46 @@ class GmailManager extends asyncmachine.AsyncMachine
 	BoxOpening:
 		requires: [ 'Active' ]
 		blocks: [ 'BoxOpened', 'BoxClosing', 'BoxClosed' ]
-		group: 'OpenBox'
+#		group: 'OpenBox'
 
 	BoxOpened:
 		depends: [ 'Connected' ]
 		requires: [ 'Active' ]
 		blocks: [ 'BoxOpening', 'BoxClosed', 'BoxClosing' ]
-		group: 'OpenBox'
+#		group: 'OpenBox'
 
 	BoxClosing:
 		blocks: [ 'BoxOpened', 'BoxOpening', 'Box' ]
-		group: 'OpenBox'
+#		group: 'OpenBox'
 
 	BoxClosed:
 		requires: [ 'Active' ]
 		blocks: [ 'BoxOpened', 'BoxOpening', 'BoxClosing' ]
-		group: 'OpenBox'
+#		group: 'OpenBox'
 
 	# API
 
 	constructor: (settings) ->
 		super()
-		@dispatcher = new asyncmachine.Dispatcher
-		@debugStates '[manager] '
-		@initStates 'Disconnected'
-
-		# # TODO no auto connect 
+				
+		@register 'Disconnected', 'Disconnecting', 'Connected', 'Connecting',
+			'Idle', 'Active', 'Fetched', 'Fetching', 'Delayed', 'BoxOpening',
+			'BoxOpened', 'BoxClosing', 'BoxClosed'
+				
+		@debug '[connection] '
+		# TODO no auto connect 
 		@set 'Connecting'
 
 		if settings.repl
 			@repl()
 
-	addSearch: (name, update_interval) ->
-		@searches.push new SearchAgent this, name, update_interval
+	addQuery: (query, update_interval) ->
+		query = new Query
+		@threads.push new Query @, name, update_interval
+		if @state 'BoxOpened'
+			@add 'Fetching'
+		else if not @add 'BoxOpening'
+			@log 'BoxOpening not set', @state()
 
 	# STATE TRANSITIONS
 
@@ -265,12 +272,10 @@ class GmailManager extends asyncmachine.AsyncMachine
 		@connection.closeBox @addLater 'BoxClosed'
 
 	BoxOpened_enter: ->
-		# TODO Add inner state
-		setTimeout( =>
-			if not @add 'Fetching'
-				@log('Cant set Fetching', @state() )
-		, 0)
+		if not @add 'Fetching'
+			@log('Cant set Fetching', @state() )
 
+	# TODO this doesnt look OK...
 	Delayed_enter: ->
 		# schedule a task
 		@delayed_timer = setTimeout @addLater 'Fetching', @minInterval_()
@@ -283,38 +288,32 @@ class GmailManager extends asyncmachine.AsyncMachine
 		if @concurrency.length >= @max_concurrency
 			return no
 		# TODO skip searches which interval hasn't passed yet
-		searches = @searches.sortBy "last_update"
-		search = searches.first()
+		queries = @queries.sortBy "last_update"
+		query = queries.first()
 		i = 0
 		# Optimise for more justice selection.
 		# TODO encapsulate to needsUpdate()
-		while search.last_update + search.update_interval > Date.now()
-			search = searches[ i++ ]
-			if not search
+		while query.last_update + query.update_interval > Date.now()
+			query = queries[ i++ ]
+			if not query
 				return no
-		@log "activating " + search.name
+		@log "activating " + query.name
 		# Performe the search
-		if @concurrency.some (s) => s.name == search.name
+		if @concurrency.some (s) => s.name == query.name
 			return no
 		@log 'concurrency++'
-		@concurrency.push search
-		search.add 'FetchingQuery'
+		@concurrency.push query
+		query.add 'FetchingQuery'
 		# Subscribe to a finished query
-		search.once 'Fetching.Results.exit', =>
+		query.once 'Fetching.Results.exit', =>
 #			@concurrency = @concurrency.exclude( search )
 			@concurrency = @concurrency.filter (row) =>
-				return row isnt search
+				return row isnt query
 			@log 'concurrency--'
-#			@addsLater( 'HasMonitored', 'Delayed' )
+#			@addsLater 'HasMonitored', 'Delayed'
 			@addLater 'Delayed'
 			@addLater 'HasMonitored'
-			@newSearchThread @minInterval_()
-
-	# TODO move to AM
-	statesLog_: ->
-		if not @log_handler_
-			return
-		@log_handler_.apply @, arguments
+			@addQuery @minInterval_()
 
 	Fetching_exit: (states, args) ->
 		if not ~states.indexOf 'Active'
@@ -323,28 +322,18 @@ class GmailManager extends asyncmachine.AsyncMachine
 		if @concurrency.length and not args['force']
 			return no
 		# Exit from all queries.
-		exits = @concurrency.map (search) => search.drop 'Fetching'
+		exits = @concurrency.map (query) => query.drop 'Fetching'
 		not ~exits.indexOf no
 
 	Fetching_Fetching: @Fetching_enter
 
 	Active_enter: ->
-		while @threads.length < @max_concurrency
-			@newSearchThread()
-
-	newSearchThread: (delay: number = 0) ->
-		task = new asyncmachine.Task
-		@threads.push task
-		task.schedule =>
-			if @state 'BoxOpened'
-				@add 'Fetching'
-			else if not @add 'BoxOpening'
-				@log 'BoxOpening not set', @state()
+		@add 'BoxOpening'
 
 	# PRIVATES
 
 	minInterval_: ->
-		Math.min.apply null, @searches.map (ch) => ch.update_interval
+		Math.min.apply null, @queries.map (ch) => ch.update_interval
 
 #	repl: BaseClass.prototype.repl;
 #	log: BaseClass.prototype.log;
@@ -361,20 +350,15 @@ class GmailManager extends asyncmachine.AsyncMachine
 	log: (...msgs) ->
 		@log.apply console, msgs
 
-class App extends GmailManager
-	Connected_enter: (states) ->
-		super()
-#		if ( super.Connected_enter( states ) === no )
-#			return no
-		# TODO support sync inner state change
-		setTimeout( =>
-			@log 'adding searches'
-			@addSearch '*', 1000
-			@addSearch 'label:sent', 5000
-			@addSearch 'label:T-foo', 5000
-			if not @add('Active'
-				@log 'cant activate', @state()
-		, 0
+class App extends Connection
+	Connected_enter: (settings) ->
+		super settings
+		@log 'adding queries'
+		@addQuery '*', 1000
+		@addQuery 'label:sent', 5000
+		@addQuery 'label:T-foo', 5000
+		if not @add 'Active'
+			@log 'cant activate', @state()
 
 gmail = new App settings
 

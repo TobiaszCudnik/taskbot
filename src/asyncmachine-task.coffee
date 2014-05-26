@@ -11,8 +11,7 @@ class Task extends AsyncMachine
 	TaskIdle = 
 		blocks: ['TaskRunning']
 
-	# Waiting for a scheduled run.
-	# Sets timeout on @schedule_timer.
+	# Waiting for some event to procced.
 	TaskWaiting = 
 		blocks: ['Running']
 
@@ -24,23 +23,23 @@ class Task extends AsyncMachine
 	TaskCancelling = 
 		blocks: ['TaskWaiting']
 
-	# Stopping the execution of async actions
+	# Stopping the execution of an async actions
 	TaskStopping = 
 		blocks: ['TaskRunning']
 
 	TaskCancelling_enter: -> 
-		@addS 'TaskIdle'
+		@add 'TaskIdle'
 		@drop 'TaskCancelling'
 
 	TaskStopping_enter: ->
-		@addS 'TaskIdle'
+		@add 'TaskIdle'
 		@drop 'TaskStopping'
 
 	TaskRunning_exit: ->
 		@add 'TaskIdle'
 
-	# Cancel a scheduled execution
-	cancel: -> @add 'Cancelling'
+	# Cancel a scheduled execution, which means drop the TaskWaiting
+	taskCancel: -> @add 'TaskCancelling'
 
-	# Stop an async execution.
-	stop: -> @add 'Stopping'
+	# Stop an async execution, which means drop the TaskRunning
+	taskStop: -> @add 'TaskStopping'
