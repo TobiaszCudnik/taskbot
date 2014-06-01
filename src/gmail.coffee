@@ -122,7 +122,7 @@ class Query extends am_task.Task
 			output: process.stdout
 		)
 		repl.context.this = @
-	log: (...msgs) ->
+	log: (msgs...) ->
 		@log.apply console, msgs
 
 # TODO IDLE state
@@ -243,13 +243,13 @@ class Connection extends asyncmachine.AsyncMachine
 		# TODO callback?
 		@connection.logout @addLater 'Disconnected'
 
-	BoxOpening_enter ->
+	BoxOpening_enter: ->
 		fetch = @addLater 'Fetching'
 		if @state 'BoxOpened'
 			setTimeout fetch, 0
 			return no
 		else
-			@once('Box.Opened.enter', fetch
+			@once 'Box.Opened.enter', fetch
 		if @box_opening_promise
 			@box_opening_promise.reject()
 		# TODO try and set to Disconnected on catch
@@ -298,9 +298,8 @@ class Connection extends asyncmachine.AsyncMachine
 			if not query
 				return no
 		@log "activating " + query.name
+		return no if @concurrency.some (s) => s.name == query.name
 		# Performe the search
-		if @concurrency.some (s) => s.name == query.name
-			return no
 		@log 'concurrency++'
 		@concurrency.push query
 		query.add 'FetchingQuery'
@@ -347,7 +346,7 @@ class Connection extends asyncmachine.AsyncMachine
 		)
 		repl.context.this = @
 
-	log: (...msgs) ->
+	log: (msgs...) ->
 		@log.apply console, msgs
 
 class App extends Connection

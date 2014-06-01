@@ -38,6 +38,7 @@
   "bundleDependencies": [ ],
 	"devDependencies": {
 		"coffee-script" :  "*",
+		"compiled-coffee" :  "latest",
 		"contracts.coffee" :  "0.3.0",
 		"buzz" : "*",
 		"run": "*",
