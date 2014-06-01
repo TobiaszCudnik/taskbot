@@ -1,4 +1,7 @@
-
+///<reference path="../d.ts/node.d.ts"/>
+///<reference path="../d.ts/sugar.d.ts"/>
+///<reference path="../node_modules/asyncmachine/build/asyncmachine.d.ts"/>
+	
 class GmailManager extends asyncmachine.AsyncMachine {
 
 	// ATTRIBUTES
@@ -12,6 +15,5 @@ class GmailManager extends asyncmachine.AsyncMachine {
 	threads: number[] = [];
 }
 
-class SearchAgent extends am_task.Task {
-	
-}
+//class Connection extends asyncmachine.AsyncMachine {
+//}

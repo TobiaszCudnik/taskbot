@@ -1,0 +1,1 @@
+///<reference path="../node_modules/asyncmachine/build/asyncmachine.d.ts"/>

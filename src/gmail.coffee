@@ -1,15 +1,11 @@
-#<reference path="externs.d.ts"/>
-#<reference path="node.d.ts"/>
-# #<reference path="../../node_modules/multistatemachine/build/lib/multistatemachine.d.ts"/>
-
-settings = require '../../settings'
+settings = require '../settings'
 imap = require "imap"
 ImapConnection = imap.ImapConnection
 repl = require 'repl'
 #import sugar = module('sugar')
 require 'sugar'
 asyncmachine = require 'asyncmachine'
-am_task = require 'asyncmachine-task'
+am_task = require './asyncmachine-task'
 rsvp = require 'rsvp'
 
 # TODO config
@@ -47,7 +43,6 @@ class Query extends am_task.Task
 		blocks: [ 'FetchingMessage' ],
 		requires: [ 'FetchingResults' ]
 
-		
 	# Attributes
 
 	active: true
@@ -122,6 +117,7 @@ class Query extends am_task.Task
 			output: process.stdout
 		)
 		repl.context.this = @
+
 	log: (msgs...) ->
 		@log.apply console, msgs
 
@@ -134,7 +130,7 @@ class Connection extends asyncmachine.AsyncMachine
 	queries: []
 	connection: imap.ImapConnection
 	box_opening_promise: null
-	delayed_timer: number
+	delayed_timer: null
 	concurrency: []
 	threads: []
 	settings: {}
@@ -207,12 +203,12 @@ class Connection extends asyncmachine.AsyncMachine
 			@repl()
 
 	addQuery: (query, update_interval) ->
-		query = new Query
-		@threads.push new Query @, name, update_interval
-		if @state 'BoxOpened'
+		# TODO tokenize query?
+		@threads.push new Query @, query, update_interval
+		if @is 'BoxOpened'
 			@add 'Fetching'
 		else if not @add 'BoxOpening'
-			@log 'BoxOpening not set', @state()
+			@log 'BoxOpening not set', @is()
 
 	# STATE TRANSITIONS
 
@@ -257,10 +253,12 @@ class Connection extends asyncmachine.AsyncMachine
 		# TODO support err param to the callback
 		@connection.openBox "[Gmail]/All Mail", no, (@addLater 'BoxOpened')
 		@box_opening_promise = @last_promise
+		yes
 
 	BoxOpening_BoxOpening: ->
 		# TODO move to boxopened_enter??/
 		@once 'Box.Opened.enter', @setLater 'Fetching'
+#		yes
 
 	BoxOpening_exit: ->
 		# TODO stop openbox
@@ -273,12 +271,12 @@ class Connection extends asyncmachine.AsyncMachine
 
 	BoxOpened_enter: ->
 		if not @add 'Fetching'
-			@log('Cant set Fetching', @state() )
+			@log 'Cant set Fetching', @is()
 
 	# TODO this doesnt look OK...
 	Delayed_enter: ->
 		# schedule a task
-		@delayed_timer = setTimeout @addLater 'Fetching', @minInterval_()
+		@delayed_timer = setTimeout (@addLater 'Fetching'), @minInterval_()
 
 	Delayed_exit: ->
 		clearTimeout @delayed_timer
@@ -312,6 +310,7 @@ class Connection extends asyncmachine.AsyncMachine
 #			@addsLater 'HasMonitored', 'Delayed'
 			@addLater 'Delayed'
 			@addLater 'HasMonitored'
+			# TODO continue the query somehow differently?
 			@addQuery @minInterval_()
 
 	Fetching_exit: (states, args) ->
@@ -348,23 +347,3 @@ class Connection extends asyncmachine.AsyncMachine
 
 	log: (msgs...) ->
 		@log.apply console, msgs
-
-class App extends Connection
-	Connected_enter: (settings) ->
-		super settings
-		@log 'adding queries'
-		@addQuery '*', 1000
-		@addQuery 'label:sent', 5000
-		@addQuery 'label:T-foo', 5000
-		if not @add 'Active'
-			@log 'cant activate', @state()
-
-gmail = new App settings
-
-timeout = =>
-	if gmail.state 'Connecting'
-		gmail.add 'Disconnected'
-	else
-		setTimeout gmail.addLater 'Disconnected', 10*1000
-
-setTimeout timeout, 10*1000
