@@ -1,18 +1,18 @@
 asyncmachine = require 'asyncmachine'
 
 # Promise-like setTimeout wrapper imitating a task.
-class Task extends AsyncMachine
+class Task extends asyncmachine.AsyncMachine
 
 	constructor: ->
 		super()
 		@set 'TaskIdle'
 
 	# Doing nothing right now (but may be waiting).
-	TaskIdle = 
+	TaskIdle:
 		blocks: ['TaskRunning']
 
 	# Waiting for some event to procced.
-	TaskWaiting = 
+	TaskWaiting:
 		blocks: ['Running']
 
 	# Executing async actions
@@ -20,14 +20,14 @@ class Task extends AsyncMachine
 		blocks: ['TaskIdle', 'TaskWaiting']
 
 	# Cancelling a scheduled execution
-	TaskCancelling = 
+	TaskCancelling:
 		blocks: ['TaskWaiting']
 
 	# Stopping the execution of an async actions
-	TaskStopping = 
+	TaskStopping:
 		blocks: ['TaskRunning']
 
-	TaskCancelling_enter: -> 
+	TaskCancelling_enter: ->
 		@add 'TaskIdle'
 		@drop 'TaskCancelling'
 

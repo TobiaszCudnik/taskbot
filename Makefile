@@ -3,6 +3,7 @@ NODE_DEBUG = node debug --harmony
 MOCHA = node_modules/.bin/mocha
 BUILDER = node_modules/contracts.coffee/bin/coffee
 COFFEE = ./node_modules/contracts.coffee/bin/coffee
+CCOFFEE = ../compiled-coffee/bin/ccoffee
 
 TESTS = build/vanilla/test/bootstrap.js
 
@@ -65,20 +66,17 @@ build-deps:
 	make -C node_modules/jsprops
 
 build:
-	$(BUILDER) \
-		-o build/vanilla/ \
-		-c build/_sources/
+	$(CCOFFEE) \
+		-o build/ \
+		--yield \
+		-i src/
 
-build-contracts:
-	$(BUILDER) \
-		--contracts \
-		-o build/vanilla \
-		-c build/vanilla-sources
-
-build-live:
-	$(BUILDER) \
-		-o build/vanilla \
-		-cw build/vanilla-sources
+build-watch:
+	$(CCOFFEE) \
+		--watch \
+		-o build/ \
+		--yield \
+		-i src/
 
 build-contracts-live:
 	$(BUILDER) \
