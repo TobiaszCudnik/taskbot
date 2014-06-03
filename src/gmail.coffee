@@ -128,7 +128,7 @@ class Connection extends asyncmachine.AsyncMachine
 
 	max_concurrency: 3
 	queries: []
-	connection: imap.ImapConnection
+	connection: null
 	box_opening_promise: null
 	delayed_timer: null
 	concurrency: []

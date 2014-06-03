@@ -9,7 +9,15 @@ declare module imap {
 		connTimeout?: number;
 		debug?: (string) => void;
 	}
-	export interface ImapConnectionObject {
+	interface IOptions {
+		username: string;
+		password: string;
+		host: string;
+		port: number;
+		secure?: boolean;
+	}
+	export class ImapConnection {
+		constructor(options: IOptions);
 		connect: any;
 		logout: any;
 		openBox: any;
@@ -31,7 +39,7 @@ declare module imap {
 		delKeywords: any;
 		// [index: number]: any;
 	}
-	export var ImapConnection: new(Options?) => ImapConnectionObject;
+//	export var ImapConnection: new(Options?) => ImapConnectionObject;
 }
 
 declare module "imap" {
