@@ -1,19 +1,26 @@
 ///<reference path="../d.ts/node.d.ts"/>
 ///<reference path="../d.ts/sugar.d.ts"/>
+///<reference path="../d.ts/imap.d.ts"/>
+///<reference path="../d.ts/gtd-bot.d.ts"/>
 ///<reference path="../node_modules/asyncmachine/build/asyncmachine.d.ts"/>
 	
-class GmailManager extends asyncmachine.AsyncMachine {
+//c lass Connection extends asyncmachine.AsyncMachine {
+class Connection {
 
 	// ATTRIBUTES
 
-	max_concurrency: number = 3;
-	searches: GmailSearch[] = [];
+	max_concurrency: number;
+	searches: Query[];
 	connection: imap.ImapConnection;
 	box_opening_promise: rsvp.Promise;
 	delayed_timer: number;
-	concurrency: GmailSearch[] = [];
-	threads: number[] = [];
+	concurrency: Query[];
+//	threads: number[] = [];
+	settings: IGtdBotSettings;
 }
 
-//class Connection extends asyncmachine.AsyncMachine {
+class Query {
+}
+
+//c lass Search extends asyncmachine.AsyncMachine {
 //}

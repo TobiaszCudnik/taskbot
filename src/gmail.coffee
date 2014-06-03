@@ -9,7 +9,7 @@ am_task = require './asyncmachine-task'
 rsvp = require 'rsvp'
 
 # TODO config
-Object.merge settings, gmail_max_results: 300
+settings.merge gmail_max_results: 300
 
 class Query extends am_task.Task
 	#	private msg: imap.ImapMessage;
@@ -133,7 +133,7 @@ class Connection extends asyncmachine.AsyncMachine
 	delayed_timer: null
 	concurrency: []
 	threads: []
-	settings: {}
+	settings: null
 		
 	# STATES
 		
@@ -241,7 +241,7 @@ class Connection extends asyncmachine.AsyncMachine
 
 	BoxOpening_enter: ->
 		fetch = @addLater 'Fetching'
-		if @state 'BoxOpened'
+		if @is 'BoxOpened'
 			setTimeout fetch, 0
 			return no
 		else

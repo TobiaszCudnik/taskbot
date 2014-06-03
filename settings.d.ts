@@ -1,3 +1,5 @@
-declare var username: string;
-declare var password: string;
-declare var host: string;
+///<reference path="d.ts/gtd-bot.d.ts"/>
+
+declare var settings: IGtdBotSettings;
+
+export = settings;
