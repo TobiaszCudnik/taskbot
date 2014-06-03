@@ -204,7 +204,8 @@ class Connection extends asyncmachine.AsyncMachine
 
 	addQuery: (query, update_interval) ->
 		# TODO tokenize query?
-		@threads.push new Query @, query, update_interval
+		@queries.push new Query @, query, update_interval
+		# TODO make it a state
 		if @is 'BoxOpened'
 			@add 'Fetching'
 		else if not @add 'BoxOpening'
@@ -310,8 +311,8 @@ class Connection extends asyncmachine.AsyncMachine
 #			@addsLater 'HasMonitored', 'Delayed'
 			@addLater 'Delayed'
 			@addLater 'HasMonitored'
-			# TODO continue the query somehow differently?
-			@addQuery @minInterval_()
+			# Loop the fetching process
+			@add 'Fetching'
 
 	Fetching_exit: (states, args) ->
 		if not ~states.indexOf 'Active'
