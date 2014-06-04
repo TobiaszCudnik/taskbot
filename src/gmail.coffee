@@ -2,14 +2,12 @@ settings = require '../settings'
 imap = require "imap"
 ImapConnection = imap.ImapConnection
 repl = require 'repl'
-#import sugar = module('sugar')
 require 'sugar'
 asyncmachine = require 'asyncmachine'
 am_task = require './asyncmachine-task'
 rsvp = require 'rsvp'
 
-# TODO config
-settings.merge gmail_max_results: 300
+Object.merge settings, gmail_max_results: 300
 
 class Query extends am_task.Task
 	#	private msg: imap.ImapMessage;
