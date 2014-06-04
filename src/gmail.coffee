@@ -177,7 +177,7 @@ class Connection extends asyncmachine.AsyncMachine
 		blocks: [ 'BoxOpening', 'BoxClosed', 'BoxClosing' ]
 #		group: 'OpenBox'
 
-	BoxClosing:
+	BoxClosing:imap
 		blocks: [ 'BoxOpened', 'BoxOpening', 'Box' ]
 #		group: 'OpenBox'
 

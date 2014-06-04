@@ -1,7 +1,5 @@
-///<reference path="../d.ts/node.d.ts"/>
-///<reference path="../d.ts/sugar.d.ts"/>
+///<reference path="../d.ts/global.d.ts"/>
 ///<reference path="../d.ts/imap.d.ts"/>
-///<reference path="../d.ts/gtd-bot.d.ts"/>
 ///<reference path="../node_modules/asyncmachine/build/asyncmachine.d.ts"/>
 	
 //c lass Connection extends asyncmachine.AsyncMachine {
