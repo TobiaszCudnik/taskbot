@@ -1,1 +1,0 @@
-{"ts":1349340351333,"silentsave":true,"restoring":false,"patch":[[{"diffs":[[1,"export var define: (...funcs: Function[]) => void\nexport var exec: (...funcs: Function[]) => void"]],"start1":0,"start2":0,"length1":0,"length2":97}]],"length":97}
