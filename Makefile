@@ -46,6 +46,9 @@ break-live:
 
 debug:
 	$(NODE) --debug-brk build/app.js
+
+run:
+	$(NODE) build/app.js
 	
 # TODO debug-watch
 
@@ -66,15 +69,15 @@ build-deps:
 
 build:
 	$(CCOFFEE) \
-		-o build/ \
 		--yield \
+		-o build/ \
 		-i src/
 
 build-watch:
 	$(CCOFFEE) \
 		--watch \
-		-o build/ \
 		--yield \
+		-o build/ \
 		-i src/
 
 build-contracts-live:

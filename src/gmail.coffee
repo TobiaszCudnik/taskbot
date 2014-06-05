@@ -188,7 +188,9 @@ class Connection extends asyncmachine.AsyncMachine
 	# API
 
 	constructor: (settings) ->
-		super settings
+		super()
+		
+		@settings = settings
 				
 		@register 'Disconnected', 'Disconnecting', 'Connected', 'Connecting',
 			'Idle', 'Active', 'Fetched', 'Fetching', 'Delayed', 'BoxOpening',
