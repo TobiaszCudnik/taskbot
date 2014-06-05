@@ -10,8 +10,9 @@ class Connection {
 	max_concurrency: number;
 	searches: Query[];
 	connection: imap.ImapConnection;
-	box_opening_promise: rsvp.Promise;
-	last_promise: rsvp.Promise;
+	last_promise: rsvp.Defered;
+	box_opening_promise: rsvp.Defered;
+>>>>>>> Promise fixes.
 	delayed_timer: number;
 	concurrency: Query[];
 //	threads: number[] = [];

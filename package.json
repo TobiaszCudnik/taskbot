@@ -27,26 +27,14 @@
     "service"
   ],
   "dependencies" : {
-    "jsprops":  "*",
-    "imap":  "*",
-	  "when": "*",
-	  "sugar": "*"
+    "imap":  "latest",
+	  "asyncmachine": "TobiaszCudnik/asyncmachine#coffee",
+	  "sugar": "latest",
+		"suspend": "latest",
+		"compiled-coffee": "TobiaszCudnik/compiled-coffee"
   },
-	"mappings": {
-		"flow": "https://github.com/TobiaszCudnik/flow-js/tarball/master"
-	},
   "bundleDependencies": [ ],
-	"devDependencies": {
-		"coffee-script" :  "*",
-		"compiled-coffee" :  "latest",
-		"contracts.coffee" :  "0.3.0",
-		"buzz" : "*",
-		"run": "*",
-		"mocha": "*",
-		"watch-tree": "*",
-		"node-dev": "*",
-		"longjohn": "*"
-	},
+	"devDependencies": {},
 	"license": "MIT",
   "engine": {
     "node": ">=0.8"
