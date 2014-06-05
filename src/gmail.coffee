@@ -132,6 +132,7 @@ class Connection extends asyncmachine.AsyncMachine
 	concurrency: []
 	threads: []
 	settings: null
+	last_promise: null
 		
 	# STATES
 		
@@ -187,7 +188,7 @@ class Connection extends asyncmachine.AsyncMachine
 	# API
 
 	constructor: (settings) ->
-		super()
+		super settings
 				
 		@register 'Disconnected', 'Disconnecting', 'Connected', 'Connecting',
 			'Idle', 'Active', 'Fetched', 'Fetching', 'Delayed', 'BoxOpening',
@@ -211,8 +212,7 @@ class Connection extends asyncmachine.AsyncMachine
 
 	# STATE TRANSITIONS
 
-	Connected_enter: (states) ->
-		setTimeout (@setLater 'BoxClosed'), 0
+	Connected_enter: (states) -> @set 'BoxClosed'
 
 	Connected_Disconnected: -> 
 		process.exit()
@@ -239,12 +239,11 @@ class Connection extends asyncmachine.AsyncMachine
 		@connection.logout @addLater 'Disconnected'
 
 	BoxOpening_enter: ->
-		fetch = @addLater 'Fetching'
 		if @is 'BoxOpened'
-			setTimeout fetch, 0
+			@add 'Fetching', 0
 			return no
 		else
-			@once 'Box.Opened.enter', fetch
+			@once 'Box.Opened.enter', @addLater 'Fetching'
 		if @box_opening_promise
 			@box_opening_promise.reject()
 		# TODO try and set to Disconnected on catch
@@ -282,8 +281,7 @@ class Connection extends asyncmachine.AsyncMachine
 
 	Fetching_enter: ->
 		# Add new search only if there's a free limit.
-		if @concurrency.length >= @max_concurrency
-			return no
+		return no if @concurrency.length >= @max_concurrency
 		# TODO skip searches which interval hasn't passed yet
 		queries = @queries.sortBy "last_update"
 		query = queries.first()
@@ -304,11 +302,12 @@ class Connection extends asyncmachine.AsyncMachine
 		query.once 'Fetching.Results.exit', =>
 #			@concurrency = @concurrency.exclude( search )
 			@concurrency = @concurrency.filter (row) =>
-				return row isnt query
+				return (row isnt query)
 			@log 'concurrency--'
 #			@addsLater 'HasMonitored', 'Delayed'
-			@addLater 'Delayed'
-			@addLater 'HasMonitored'
+			# TODO Delayed?
+			# TODO transaction?
+			@add ['Delayed', 'HasMonitored']
 			# Loop the fetching process
 			@add 'Fetching'
 

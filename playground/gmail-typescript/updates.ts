@@ -8,7 +8,7 @@ var ImapConnection = imap.ImapConnection
 import repl = module( 'repl')
 //import sugar = module('sugar')
 require('sugar')
-import asyncmachine = module('asyncmachine/asyncmachine')
+import asyncmachine = module('asyncmachine')
 import rsvp = module('rsvp')
 
 // TODO config

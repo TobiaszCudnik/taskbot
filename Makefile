@@ -45,10 +45,9 @@ break-live:
 		--timeout 600000
 
 debug:
-	$(NODE_DEBUG) \
-		$(MOCHA) \
-		$(TESTS) \
-		$(POST_PARAMS)
+	$(NODE) --debug-brk build/app.js
+	
+# TODO debug-watch
 
 test:
 	$(NODE) \

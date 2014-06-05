@@ -11,6 +11,7 @@ class Connection {
 	searches: Query[];
 	connection: imap.ImapConnection;
 	box_opening_promise: rsvp.Promise;
+	last_promise: rsvp.Promise;
 	delayed_timer: number;
 	concurrency: Query[];
 //	threads: number[] = [];
