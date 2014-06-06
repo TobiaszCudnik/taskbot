@@ -1,4 +1,5 @@
-NODE = node --harmony
+# NODE = node --harmony
+NODE = ~/.nvm/v0.11.13/bin/node --harmony
 NODE_DEBUG = node debug --harmony
 MOCHA = node_modules/.bin/mocha
 BUILDER = node_modules/contracts.coffee/bin/coffee

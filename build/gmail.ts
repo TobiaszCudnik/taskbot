@@ -134,7 +134,7 @@ export class Query extends am_task.Task {
         return this.log.apply(console, msgs);
     }
 }
-export class Connection  extends asyncmachine.AsyncMachine {
+export class Connection extends asyncmachine.AsyncMachine {
     max_concurrency: number = 3;
 
     queries = [];
@@ -245,14 +245,16 @@ export class Connection  extends asyncmachine.AsyncMachine {
     Connecting_enter(states) {
         var data = this.settings;
         this.connection = new Imap({
-            username: data.gmail_username,
+            user: data.gmail_username,
             password: data.gmail_password,
             host: data.gmail_host || "imap.gmail.com",
             port: 993,
-            secure: true
+            tls: true,
+            debug: console.log.bind(console)
         });
 
-        return this.connection.connect(this.addLater("Connected"));
+        this.connection.connect();
+        return this.connection.once("ready", this.addLater("Connected"));
     }
 
     Connecting_exit(target_states) {

@@ -6,7 +6,7 @@ import settings = require('../settings');
 export var go = suspend.resume;
 export var async = suspend.async;
 
-export class App  extends gmail.Connection {
+export class App extends gmail.Connection {
     Connected_enter(states: string[]) {
         super.Connected_enter(states);
         this.log("adding searches");

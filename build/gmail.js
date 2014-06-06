@@ -229,14 +229,16 @@ var Connection = (function (_super) {
     Connection.prototype.Connecting_enter = function (states) {
         var data = this.settings;
         this.connection = new Imap({
-            username: data.gmail_username,
+            user: data.gmail_username,
             password: data.gmail_password,
             host: data.gmail_host || "imap.gmail.com",
             port: 993,
-            secure: true
+            tls: true,
+            debug: console.log.bind(console)
         });
 
-        return this.connection.connect(this.addLater("Connected"));
+        this.connection.connect();
+        return this.connection.once("ready", this.addLater("Connected"));
     };
 
     Connection.prototype.Connecting_exit = function (target_states) {

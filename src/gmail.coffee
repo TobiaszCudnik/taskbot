@@ -220,15 +220,16 @@ class Connection extends asyncmachine.AsyncMachine
 
 	Connecting_enter: (states) ->
 		data = @settings
-		@connection = new Imap(
-			username: data.gmail_username,
-			password: data.gmail_password,
-			host: data.gmail_host || "imap.gmail.com",
-			port: 993,
-			secure: true
-		)
+		@connection = new Imap
+			user: data.gmail_username
+			password: data.gmail_password
+			host: data.gmail_host || "imap.gmail.com"
+			port: 993
+			tls: yes
+			debug: console.log.bind console
 												
-		@connection.connect @addLater 'Connected'
+		@connection.connect()
+		@connection.once 'ready', @addLater 'Connected'
 
 	Connecting_exit: (target_states) ->
 		if ~target_states.indexOf 'Disconnected'
