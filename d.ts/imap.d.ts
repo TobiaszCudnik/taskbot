@@ -9,15 +9,16 @@ declare module "imap" {
 
 declare module imap {
 	export interface IOptions {
-		username: string;
+		user: string;
 		password: string;
 		xoauth?: string;
 		host: string;
 		port?: number;
-		secure?: boolean;
+		tls?: boolean;
 		connTimeout?: number;
 		debug?: (string) => void;
 	}
+	// TODO extend event emitter
 	export class Imap {
 		constructor(options: IOptions);
 		connect: any;

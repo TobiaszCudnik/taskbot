@@ -2,8 +2,7 @@
 ///<reference path="../d.ts/imap.d.ts"/>
 ///<reference path="../node_modules/asyncmachine/build/asyncmachine.d.ts"/>
 	
-//c lass Connection extends asyncmachine.AsyncMachine {
-class Connection {
+class Connection extends asyncmachine.AsyncMachine {
 
 	// ATTRIBUTES
 
