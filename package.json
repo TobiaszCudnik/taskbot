@@ -1,12 +1,12 @@
 {
   "name": "gtd-bot",
   "preferGlobal": "false",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "author": "Tobiasz Cudnik <tobiasz.cudnik@gmail.com>",
   "description": "GTD Bot service.",
   "contributors": [],
   "scripts": {
-    "start": "make start",
+    "start": "make run",
     "test": "make test"
   },
   "main": "./src/boot.coffee",

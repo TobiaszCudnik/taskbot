@@ -1,5 +1,14 @@
+declare module "imap" {
+	interface IExport {
+		new(options:imap.IOptions): imap.Imap;
+	}
+	var exported: IExport;
+	export = exported;
+//	export var ImapConnection: new(Options?) => ImapConnectionObject;
+}
+
 declare module imap {
-	export interface Options {
+	export interface IOptions {
 		username: string;
 		password: string;
 		xoauth?: string;
@@ -9,14 +18,7 @@ declare module imap {
 		connTimeout?: number;
 		debug?: (string) => void;
 	}
-	interface IOptions {
-		username: string;
-		password: string;
-		host: string;
-		port: number;
-		secure?: boolean;
-	}
-	export class ImapConnection {
+	export class Imap {
 		constructor(options: IOptions);
 		connect: any;
 		logout: any;
@@ -39,9 +41,4 @@ declare module imap {
 		delKeywords: any;
 		// [index: number]: any;
 	}
-//	export var ImapConnection: new(Options?) => ImapConnectionObject;
-}
-
-declare module "imap" {
-	export = imap;
 }

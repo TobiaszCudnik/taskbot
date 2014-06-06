@@ -1,6 +1,5 @@
 settings = require '../settings'
-imap = require "imap"
-ImapConnection = imap.ImapConnection
+Imap = require "imap"
 repl = require 'repl'
 require 'sugar'
 asyncmachine = require 'asyncmachine'
@@ -221,7 +220,7 @@ class Connection extends asyncmachine.AsyncMachine
 
 	Connecting_enter: (states) ->
 		data = @settings
-		@connection = new ImapConnection(
+		@connection = new Imap(
 			username: data.gmail_username,
 			password: data.gmail_password,
 			host: data.gmail_host || "imap.gmail.com",

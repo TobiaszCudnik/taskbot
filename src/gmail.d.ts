@@ -9,7 +9,7 @@ class Connection {
 
 	max_concurrency: number;
 	searches: Query[];
-	connection: imap.ImapConnection;
+	connection: imap.Imap;
 	last_promise: rsvp.Defered;
 	box_opening_promise: rsvp.Defered;
 	delayed_timer: number;
