@@ -1,3 +1,4 @@
+///<reference path="asyncmachine-task.d.ts"/>
 ///<reference path="../node_modules/asyncmachine/build/asyncmachine.d.ts"/>
 ///<reference path="../d.ts/imap.d.ts"/>
 ///<reference path="../d.ts/global.d.ts"/>
@@ -68,17 +69,10 @@ export class Query extends am_task.Task {
         this.register("HasMonitored", "Fetching", "Idle", "FetchingQuery", "FetchingResults", "ResultsFetchingError", "FetchingMessage", "MessageFetched");
 
         this.debug("[query] ");
-        this.set("Idle");
 
-        if (connection) {
-            this.connection = connection;
-        }
-        if (name) {
-            this.name = name;
-        }
-        if (update_interval) {
-            this.update_interval = update_interval;
-        }
+        this.connection = connection;
+        this.name = name;
+        this.update_interval = update_interval;
     }
 
     FetchingQuery_enter() {
@@ -135,23 +129,21 @@ export class Query extends am_task.Task {
     }
 }
 export class Connection extends asyncmachine.AsyncMachine {
-    max_concurrency: number = 3;
+    queries_running_limit: number = 3;
 
-    queries = [];
+    queries: Query[] = [];
 
-    connection: imap.Imap = null;
+    	connection: imap.Imap = null;
 
     box_opening_promise: rsvp.Defered = null;
 
     delayed_timer: number = null;
 
-    concurrency: Query[] = [];
-
-    threads = [];
+    queries_running: Query[] = [];
 
     settings: IGtdBotSettings = null;
 
-    last_promise: rsvp.Defered = null;
+    	last_promise: rsvp.Defered = null;
 
     Disconnected = {
         blocks: ["Connected", "Connecting", "Disconnecting"]
@@ -206,7 +198,6 @@ export class Connection extends asyncmachine.AsyncMachine {
     };
 
     BoxClosed = {
-        requires: ["Active"],
         blocks: ["BoxOpened", "BoxOpening", "BoxClosing"]
     };
 
@@ -226,16 +217,8 @@ export class Connection extends asyncmachine.AsyncMachine {
     }
 
     addQuery(query, update_interval) {
-        this.queries.push(new Query(this, query, update_interval));
-        if (this.is("BoxOpened")) {
-            return this.add("Fetching");
-        } else if (!this.add("BoxOpening")) {
-            return this.log("BoxOpening not set", this.is());
-        }
-    }
-
-    Connected_enter(states) {
-        return this.set("BoxClosed");
+        this.log("Adding query '" + query + "'");
+        return this.queries.push(new Query(this, query, update_interval));
     }
 
     Connected_Disconnected() {
@@ -250,7 +233,7 @@ export class Connection extends asyncmachine.AsyncMachine {
             host: data.gmail_host || "imap.gmail.com",
             port: 993,
             tls: true,
-            debug: console.log.bind(console)
+            debug: this.settings.debug ? console.log : void 0
         });
 
         this.connection.connect();
@@ -312,7 +295,7 @@ export class Connection extends asyncmachine.AsyncMachine {
     }
 
     Fetching_enter() {
-        if (this.concurrency.length >= this.max_concurrency) {
+        if (this.queries_running.length >= this.queries_running_limit) {
             return false;
         }
         var queries = this.queries.sortBy("last_update");
@@ -325,28 +308,29 @@ export class Connection extends asyncmachine.AsyncMachine {
             }
         }
         this.log("activating " + query.name);
-        if (this.concurrency.some((s) => s.name === query.name)) {
+        if (this.queries_running.some((s) => s.name === query.name)) {
             return false;
         }
         this.log("concurrency++");
-        this.concurrency.push(query);
+        this.queries_running.push(query);
         query.add("FetchingQuery");
-        return query.once("Fetching.Results.exit", () => {
-            this.concurrency = this.concurrency.filter((row) => row !== query);
+        query.once("Fetching.Results.exit", () => {
+            this.queries_running = this.queries_running.filter((row) => row !== query);
             this.log("concurrency--");
             this.add(["Delayed", "HasMonitored"]);
             return this.add("Fetching");
         });
+        return true;
     }
 
     Fetching_exit(states, args) {
-        if (!~states.indexOf("Active")) {
+        if (!states.find("Active")) {
             this.log("cancel fetching");
         }
-        if (this.concurrency.length && !args["force"]) {
+        if (this.queries_running.length && !args["force"]) {
             return false;
         }
-        var exits = this.concurrency.map((query) => query.drop("Fetching"));
+        var exits = this.queries_running.map((query) => query.drop("Fetching"));
         return !~exits.indexOf(false);
     }
 

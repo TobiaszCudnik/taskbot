@@ -3,6 +3,9 @@ import asyncmachine = require('asyncmachine');
 export class Task extends asyncmachine.AsyncMachine {
     constructor() {
         super();
+
+        this.register("TaskIdle", "TaskWaiting", "TaskRunning", "TaskCancelling", "TaskStopping");
+
         this.set("TaskIdle");
     }
 

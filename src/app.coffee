@@ -6,18 +6,19 @@ async = suspend.async
 
 class App extends gmail.Connection
 	Connected_enter: (states) ->
-		super states
+#		super states
 		# if ( super.Connected_enter( states ) === false )
 		#   return false
-		@log 'adding searches'
+		@log 'adding search queries'
 		@addQuery '*', 1000
-		@addQuery 'label:sent', 5000
-		@addQuery 'label:T-foo', 5000
+		@addQuery 'label:S-Pending', 5000
+#		@addQuery 'label:sent', 5000
+		@addQuery 'label:P-test', 5000
 		if not @add 'Active'
 			@log 'cant activate', @is()
 		yes
 
-do async ->
+do suspend.fn ->
 	client = new App settings
 	
 	# disconnect after 10 seconds

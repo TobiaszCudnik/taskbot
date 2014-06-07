@@ -18,11 +18,10 @@ var App = (function (_super) {
         _super.apply(this, arguments);
     }
     App.prototype.Connected_enter = function (states) {
-        _super.prototype.Connected_enter.call(this, states);
-        this.log("adding searches");
+        this.log("adding search queries");
         this.addQuery("*", 1000);
-        this.addQuery("label:sent", 5000);
-        this.addQuery("label:T-foo", 5000);
+        this.addQuery("label:S-Pending", 5000);
+        this.addQuery("label:P-test", 5000);
         if (!this.add("Active")) {
             this.log("cant activate", this.is());
         }
@@ -32,7 +31,7 @@ var App = (function (_super) {
 })(gmail.Connection);
 exports.App = App;
 
-suspend(function* () {
+suspend.fn(function* () {
     var client = new App(settings);
     yield setTimeout(exports.go(), 10 * 1000);
     return client.add("Disconnected");

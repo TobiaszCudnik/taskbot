@@ -58,11 +58,10 @@ class Query extends am_task.Task
 			'MessageFetched'
 				
 		@debug '[query] '
-		@set 'Idle'
 
-		@connection = connection if connection
-		@name = name if name
-		@update_interval = update_interval if update_interval
+		@connection = connection
+		@name = name
+		@update_interval = update_interval
 
 #	Idle_FetchingQuery: ->
 	FetchingQuery_enter: ->
@@ -123,13 +122,13 @@ class Connection extends asyncmachine.AsyncMachine
 
 	# ATTRIBUTES
 
-	max_concurrency: 3
+	queries_running_limit: 3
 	queries: []
 	connection: null
 	box_opening_promise: null
 	delayed_timer: null
-	concurrency: []
-	threads: []
+	queries_running: []
+#	threads: []
 	settings: null
 	last_promise: null
 		
@@ -180,7 +179,7 @@ class Connection extends asyncmachine.AsyncMachine
 #		group: 'OpenBox'
 
 	BoxClosed:
-		requires: [ 'Active' ]
+#		requires: [ 'Active' ]
 		blocks: [ 'BoxOpened', 'BoxOpening', 'BoxClosing' ]
 #		group: 'OpenBox'
 
@@ -204,16 +203,17 @@ class Connection extends asyncmachine.AsyncMachine
 
 	addQuery: (query, update_interval) ->
 		# TODO tokenize query?
+		@log "Adding query '#{query}'"
 		@queries.push new Query @, query, update_interval
 		# TODO make it a state
-		if @is 'BoxOpened'
-			@add 'Fetching'
-		else if not @add 'BoxOpening'
-			@log 'BoxOpening not set', @is()
+#		if @is 'BoxOpened'
+#			@add 'Fetching'
+#		else if not @add 'BoxOpening'
+#			@log 'BoxOpening not set', @is()
 
 	# STATE TRANSITIONS
 
-	Connected_enter: (states) -> @set 'BoxClosed'
+#	Connected_enter: (states) -> @set 'BoxClosed'
 
 	Connected_Disconnected: -> 
 		process.exit()
@@ -226,7 +226,7 @@ class Connection extends asyncmachine.AsyncMachine
 			host: data.gmail_host || "imap.gmail.com"
 			port: 993
 			tls: yes
-			debug: console.log.bind console
+			debug: console.log if @settings.debug
 												
 		@connection.connect()
 		@connection.once 'ready', @addLater 'Connected'
@@ -283,7 +283,7 @@ class Connection extends asyncmachine.AsyncMachine
 
 	Fetching_enter: ->
 		# Add new search only if there's a free limit.
-		return no if @concurrency.length >= @max_concurrency
+		return no if @queries_running.length >= @queries_running_limit
 		# TODO skip searches which interval hasn't passed yet
 		queries = @queries.sortBy "last_update"
 		query = queries.first()
@@ -295,15 +295,15 @@ class Connection extends asyncmachine.AsyncMachine
 			if not query
 				return no
 		@log "activating " + query.name
-		return no if @concurrency.some (s) => s.name == query.name
+		return no if @queries_running.some (s) => s.name == query.name
 		# Performe the search
 		@log 'concurrency++'
-		@concurrency.push query
+		@queries_running.push query
 		query.add 'FetchingQuery'
 		# Subscribe to a finished query
 		query.once 'Fetching.Results.exit', =>
 #			@concurrency = @concurrency.exclude( search )
-			@concurrency = @concurrency.filter (row) =>
+			@queries_running = @queries_running.filter (row) =>
 				return (row isnt query)
 			@log 'concurrency--'
 #			@addsLater 'HasMonitored', 'Delayed'
@@ -312,21 +312,21 @@ class Connection extends asyncmachine.AsyncMachine
 			@add ['Delayed', 'HasMonitored']
 			# Loop the fetching process
 			@add 'Fetching'
+		yes
 
 	Fetching_exit: (states, args) ->
-		if not ~states.indexOf 'Active'
-			# TODO wil appear anytime?
+		if not states.find 'Active'
+			# TODO will appear anytime? (?)
 			@log 'cancel fetching'
-		if @concurrency.length and not args['force']
+		if @queries_running.length and not args['force']
 			return no
 		# Exit from all queries.
-		exits = @concurrency.map (query) => query.drop 'Fetching'
+		exits = @queries_running.map (query) => query.drop 'Fetching'
 		not ~exits.indexOf no
 
 	Fetching_Fetching: @Fetching_enter
 
-	Active_enter: ->
-		@add 'BoxOpening'
+	Active_enter: -> @add 'BoxOpening'
 
 	# PRIVATES
 

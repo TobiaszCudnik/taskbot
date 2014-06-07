@@ -25,6 +25,9 @@ var Task = (function (_super) {
         this.TaskStopping = {
             blocks: ["TaskRunning"]
         };
+
+        this.register("TaskIdle", "TaskWaiting", "TaskRunning", "TaskCancelling", "TaskStopping");
+
         this.set("TaskIdle");
     }
     Task.prototype.TaskCancelling_enter = function () {

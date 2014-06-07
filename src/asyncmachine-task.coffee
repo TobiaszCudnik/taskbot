@@ -5,6 +5,10 @@ class Task extends asyncmachine.AsyncMachine
 
 	constructor: ->
 		super()
+						
+		@register 'TaskIdle', 'TaskWaiting', 'TaskRunning', 'TaskCancelling',
+			'TaskStopping'
+
 		@set 'TaskIdle'
 
 	# Doing nothing right now (but may be waiting).

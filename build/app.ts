@@ -8,11 +8,10 @@ export var async = suspend.async;
 
 export class App extends gmail.Connection {
     Connected_enter(states: string[]) {
-        super.Connected_enter(states);
-        this.log("adding searches");
+        this.log("adding search queries");
         this.addQuery("*", 1000);
-        this.addQuery("label:sent", 5000);
-        this.addQuery("label:T-foo", 5000);
+        this.addQuery("label:S-Pending", 5000);
+        this.addQuery("label:P-test", 5000);
         if (!this.add("Active")) {
             this.log("cant activate", this.is());
         }
@@ -20,7 +19,7 @@ export class App extends gmail.Connection {
     }
 }
 
-suspend(() => {
+suspend.fn(() => {
     var client = new App(settings);
     yield(setTimeout(go(), 10 * 1000));
     return client.add("Disconnected");
