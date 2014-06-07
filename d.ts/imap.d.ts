@@ -1,3 +1,5 @@
+///<reference path="global.d.ts"/>
+
 declare module "imap" {
 	interface IExport {
 		new(options:imap.IOptions): imap.Imap;
@@ -18,9 +20,8 @@ declare module imap {
 		connTimeout?: number;
 		debug?: (string) => void;
 	}
-	// TODO extend event emitter
-	export class Imap {
-		constructor(options: IOptions);
+	export interface Imap extends EventEmitter {
+		new(options: IOptions);
 		connect: any;
 		logout: any;
 		openBox: any;

@@ -17,7 +17,7 @@ class App extends gmail.Connection
 			@log 'cant activate', @is()
 		yes
 
-do suspend ->
+do async ->
 	client = new App settings
 	
 	# disconnect after 10 seconds
