@@ -66,20 +66,18 @@ var Query = (function (_super) {
         this.update_interval = update_interval;
     }
     Query.prototype.FetchingQuery_enter = function () {
-        var _this = this;
         this.last_update = Date.now();
         this.log("performing a search for " + this.name);
-        var imap = this.connection.imap;
-        return imap.search([["X-GM-RAW", this.name]], function (err, results) {
-            return _this.add("FetchingResults", err, results);
+        this.connection.imap.search([["X-GM-RAW", this.name]], function (err, results) {
+            return this.add("FetchingResults", err, results);
         });
+        return true;
     };
 
     Query.prototype.FetchingQuery_FetchingResults = function (states, err, results) {
         var _this = this;
         this.log("got search results");
-        var imap = this.connection.imap;
-        var fetch = imap.fetch(results, this.headers);
+        var fetch = this.connection.imap.fetch(results, this.headers);
         fetch.on("error", this.addLater("ResultsFetchingError"));
         fetch.on("end", function () {
             _this.add("HasMonitored");
@@ -254,13 +252,6 @@ var Connection = (function (_super) {
         return this.once("Box.Opened.enter", this.setLater("Fetching"));
     };
 
-    Connection.prototype.BoxOpening_exit = function () {
-        var promise = this.box_opening_promise;
-        if (promise && !promise.isResolved) {
-            return promise.reject();
-        }
-    };
-
     Connection.prototype.BoxClosing_enter = function () {
         return this.connection.closeBox(this.addLater("BoxClosed"));
     };
@@ -280,7 +271,6 @@ var Connection = (function (_super) {
     };
 
     Connection.prototype.Fetching_enter = function () {
-        var _this = this;
         if (this.queries_running.length >= this.queries_running_limit) {
             return false;
         }
@@ -303,18 +293,18 @@ var Connection = (function (_super) {
         this.queries_running.push(query);
         query.add("FetchingQuery");
         query.once("Fetching.Results.exit", function () {
-            _this.queries_running = _this.queries_running.filter(function (row) {
+            this.queries_running = this.queries_running.filter(function (row) {
                 return row !== query;
             });
-            _this.log("concurrency--");
-            _this.add(["Delayed", "HasMonitored"]);
-            return _this.add("Fetching");
+            this.log("concurrency--");
+            this.add(["Delayed", "HasMonitored"]);
+            return this.add("Fetching");
         });
         return true;
     };
 
     Connection.prototype.Fetching_exit = function (states, args) {
-        if (!states.find("Active")) {
+        if (!~states.indexOf("Active")) {
             this.log("cancel fetching");
         }
         if (this.queries_running.length && !args["force"]) {

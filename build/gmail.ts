@@ -78,14 +78,15 @@ export class Query extends am_task.Task {
     FetchingQuery_enter() {
         this.last_update = Date.now();
         this.log("performing a search for " + this.name);
-        var imap = this.connection.imap;
-        return imap.search([["X-GM-RAW", this.name]], (err, results) => this.add("FetchingResults", err, results));
+        this.connection.imap.search([["X-GM-RAW", this.name]], function(err, results) {
+            return this.add("FetchingResults", err, results);
+        });
+        return true;
     }
 
     FetchingQuery_FetchingResults(states, err, results) {
         this.log("got search results");
-        var imap = this.connection.imap;
-        var fetch = imap.fetch(results, this.headers);
+        var fetch = this.connection.imap.fetch(results, this.headers);
         fetch.on("error", this.addLater("ResultsFetchingError"));
         fetch.on("end", () => {
             this.add("HasMonitored");
@@ -269,13 +270,6 @@ export class Connection extends asyncmachine.AsyncMachine {
         return this.once("Box.Opened.enter", this.setLater("Fetching"));
     }
 
-    BoxOpening_exit() {
-        var promise = this.box_opening_promise;
-        if (promise && !promise.isResolved) {
-            return promise.reject();
-        }
-    }
-
     BoxClosing_enter() {
         return this.connection.closeBox(this.addLater("BoxClosed"));
     }
@@ -314,7 +308,7 @@ export class Connection extends asyncmachine.AsyncMachine {
         this.log("concurrency++");
         this.queries_running.push(query);
         query.add("FetchingQuery");
-        query.once("Fetching.Results.exit", () => {
+        query.once("Fetching.Results.exit", function() {
             this.queries_running = this.queries_running.filter((row) => row !== query);
             this.log("concurrency--");
             this.add(["Delayed", "HasMonitored"]);
@@ -324,7 +318,7 @@ export class Connection extends asyncmachine.AsyncMachine {
     }
 
     Fetching_exit(states, args) {
-        if (!states.find("Active")) {
+        if (!~states.indexOf("Active")) {
             this.log("cancel fetching");
         }
         if (this.queries_running.length && !args["force"]) {

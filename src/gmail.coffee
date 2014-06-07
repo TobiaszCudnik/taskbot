@@ -66,16 +66,16 @@ class Query extends am_task.Task
 #	Idle_FetchingQuery: ->
 	FetchingQuery_enter: ->
 		@last_update = Date.now()
-		@log  "performing a search for " + @name 
-		imap = @connection.imap
-		imap.search [ [ 'X-GM-RAW', @name ] ], (err, results) =>
+		@log "performing a search for " + @name 
+		# TODO addLater???
+		@connection.imap.search [ [ 'X-GM-RAW', @name ] ], (err, results) ->
 			@add 'FetchingResults', err, results
+		yes
 
 	FetchingQuery_FetchingResults: (states, err, results) ->
 		# TODO handle err
 		@log 'got search results'
-		imap = @connection.imap
-		fetch = imap.fetch results, @headers
+		fetch = @connection.imap.fetch results, @headers
 		# Subscribe state changes to fetching events.
 		fetch.on "error", @addLater 'ResultsFetchingError'
 		fetch.on "end", =>
@@ -242,6 +242,7 @@ class Connection extends asyncmachine.AsyncMachine
 
 	BoxOpening_enter: ->
 		if @is 'BoxOpened'
+			# TODO 0?
 			@add 'Fetching', 0
 			return no
 		else
@@ -260,11 +261,12 @@ class Connection extends asyncmachine.AsyncMachine
 		@once 'Box.Opened.enter', @setLater 'Fetching'
 #		yes
 
-	BoxOpening_exit: ->
-		# TODO stop openbox
-		promise = @box_opening_promise
-		if promise and not promise.isResolved
-			promise.reject()
+	# TODO `promise.reject()` undefined is not a function
+#	BoxOpening_exit: ->
+#		# TODO stop openbox
+#		promise = @box_opening_promise
+#		if promise and not promise.isResolved
+#			promise.reject()
 
 	BoxClosing_enter: ->
 		@connection.closeBox @addLater 'BoxClosed'
@@ -301,12 +303,12 @@ class Connection extends asyncmachine.AsyncMachine
 		@queries_running.push query
 		query.add 'FetchingQuery'
 		# Subscribe to a finished query
-		query.once 'Fetching.Results.exit', =>
-#			@concurrency = @concurrency.exclude( search )
+		query.once 'Fetching.Results.exit', ->
+	#			@concurrency = @concurrency.exclude( search )
 			@queries_running = @queries_running.filter (row) =>
 				return (row isnt query)
 			@log 'concurrency--'
-#			@addsLater 'HasMonitored', 'Delayed'
+	#			@addsLater 'HasMonitored', 'Delayed'
 			# TODO Delayed?
 			# TODO transaction?
 			@add ['Delayed', 'HasMonitored']
@@ -315,7 +317,9 @@ class Connection extends asyncmachine.AsyncMachine
 		yes
 
 	Fetching_exit: (states, args) ->
-		if not states.find 'Active'
+		# TODO sugar.js issue?
+#		if not states.find 'Active'
+		if not ~states.indexOf 'Active'
 			# TODO will appear anytime? (?)
 			@log 'cancel fetching'
 		if @queries_running.length and not args['force']
