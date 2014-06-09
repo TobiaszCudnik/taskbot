@@ -16,29 +16,30 @@ class Query extends am_task.Task
 
 	# Aggregating state
 	Fetching:
-		blocks: [ 'Idle' ]
+		blocks: ['Idle']
 
 	Idle:
-		blocks: [ 'Fetching' ]
+		blocks: ['Fetching']
 
 	FetchingQuery:
-		implies: [ 'Fetching' ],
-		blocks: [ 'FetchingResults' ]
+		implies: ['Fetching'],
+		blocks: ['FetchingResults']
 
 	FetchingResults:
-		implies: [ 'Fetching' ],
-		blocks: [ 'FetchingQuery' ]
+		implies: ['Fetching'],
+		blocks: ['FetchingQuery']
 
 	ResultsFetchingError:
-		implies: [ 'Idle' ]
+		implies: ['Idle']
+		blocks: ['FetchingResults']
 
 	FetchingMessage:
-		blocks: [ 'MessageFetched' ],
-		requires: [ 'FetchingResults' ]
+		blocks: ['MessageFetched'],
+		requires: ['FetchingResults']
 
 	MessageFetched:
-		blocks: [ 'FetchingMessage' ],
-		requires: [ 'FetchingResults' ]
+		blocks: ['FetchingMessage'],
+		requires: ['FetchingResults']
 
 	# Attributes
 
@@ -49,6 +50,7 @@ class Query extends am_task.Task
 	connection: null
 	name: "*"
 	update_interval: 10*1000
+	fetching_counter: 0
 
 	constructor: (connection, name, update_interval) ->
 		super()
@@ -68,36 +70,52 @@ class Query extends am_task.Task
 		@last_update = Date.now()
 		@log "performing a search for " + @name 
 		# TODO addLater???
-		@connection.imap.search [ [ 'X-GM-RAW', @name ] ], (err, results) =>
+		@connection.imap.search [ ['X-GM-RAW', @name ] ], (err, results) =>
 			@add 'FetchingResults', err, results
 		yes
 
-	FetchingQuery_FetchingResults: (states, err, results) ->
-		# TODO handle err
+	# TODO unpack args to real arguments
+	FetchingQuery_FetchingResults: (states, args) ->
 		@log 'got search results'
+		# TODO handle err
+		err = args[0]
+		results = args[1]
 		fetch = @connection.imap.fetch results, @headers
 		# Subscribe state changes to fetching events.
+		# TODO use children tasks for several messages, bind to all
 		fetch.on "error", @addLater 'ResultsFetchingError'
-		fetch.on "end", =>
-			@add 'HasMonitored'
-			@drop 'FetchingResults'
-		# TODO fix when params will work
 		fetch.on "message", (msg) =>
-			 @add 'FetchingMessage', msg
+			@fetching_counter++
+			@add 'FetchingMessage', msg
 
 #	FetchingMessage_enter( states, params, msg ) {
-	FetchingMessage_enter: (states, msg) ->
-		msg.on 'end', =>
-			@add 'MessageFetched', msg
+	# TODO unpack args to real arguments
+	FetchingMessage_enter: (states, args) ->
+		msg = args[0]
+		attrs = null
+		info = null
+		msg.on 'body', (stream, data) => info = data
+		msg.on 'attributes', (data) => attrs = data
+		msg.on 'end', => @add 'MessageFetched', msg, attrs, info
 
 #	FetchingMessage_MessageFetched( states, params ) {
-	FetchingMessage_MessageFetched: (states, msg) ->
-		id = msg['x-gm-msgid']
+	# TODO unpack args to real arguments
+	FetchingMessage_MessageFetched: (states, args) ->
+		msg = args[0]
+		attrs = args[1]
+		info = args[2]
+		id = attrs['x-gm-msgid']
 		if not ~@monitored.indexOf id
-			# # TODO event
-			labels = msg['x-gm-labels'].join ', '
-			@log 'New msg "' + msg.headers.subject + '" (' + labels + ')'
+			# TODO event
+			labels = attrs['x-gm-labels'] || []
+			console.log 'info', info
+#			@log "New msg \"#{msg.headers.subject}\" (#{labels})"
+			@log "New msg \"XXXXX\" (#{labels.join ','})"
 			@monitored.push id
+			@add 'HasMonitored'
+		# TODO drop when children processes are implemented
+		--@fetching_counter
+		@drop 'FetchingResults' if not @fetching_counter
 
 	ResultsFetchingError_enter: (err) ->
 		@log 'fetching error', err
@@ -121,11 +139,10 @@ class Connection extends asyncmachine.AsyncMachine
 
 	queries_running_limit: 3
 	queries: []
-	connection: null
+	imap: null
 	box_opening_promise: null
 	delayed_timer: null
 	queries_running: []
-#	threads: []
 	settings: null
 	last_promise: null
 		
@@ -138,46 +155,46 @@ class Connection extends asyncmachine.AsyncMachine
 		blocks: ['Connected', 'Connecting', 'Disconnected']
 
 	Connected:
-		blocks: [ 'Connecting', 'Disconnecting', 'Disconnected' ]
-		implies: [ 'BoxClosed' ]
+		blocks: ['Connecting', 'Disconnecting', 'Disconnected']
+		implies: ['BoxClosed']
 
 	Connecting:
 		blocks: ['Connected', 'Disconnecting', 'Disconnected']
 
 	Idle:
-		requires: [ 'Connected' ]
+		requires: ['Connected']
 
 	Active:
-		requires: [ 'Connected' ]
+		requires: ['Connected']
 
 	Fetched: {}
 
 	Fetching:
-		requires: [ 'BoxOpened' ]
-		blocks: [ 'Idle', 'Delayed' ]
+		requires: ['BoxOpened']
+		blocks: ['Idle', 'Delayed']
 
 	Delayed:
-		requires: [ 'Active' ] 
-		blocks: [ 'Fetching', 'Idle' ]
+		requires: ['Active'] 
+		blocks: ['Fetching', 'Idle']
 
 	BoxOpening:
-		requires: [ 'Active' ]
-		blocks: [ 'BoxOpened', 'BoxClosing', 'BoxClosed' ]
+		requires: ['Active']
+		blocks: ['BoxOpened', 'BoxClosing', 'BoxClosed']
 #		group: 'OpenBox'
 
 	BoxOpened:
-		depends: [ 'Connected' ]
-		requires: [ 'Active' ]
-		blocks: [ 'BoxOpening', 'BoxClosed', 'BoxClosing' ]
+		depends: ['Connected']
+		requires: ['Active']
+		blocks: ['BoxOpening', 'BoxClosed', 'BoxClosing']
 #		group: 'OpenBox'
 
 	BoxClosing:
-		blocks: [ 'BoxOpened', 'BoxOpening', 'Box' ]
+		blocks: ['BoxOpened', 'BoxOpening', 'Box']
 #		group: 'OpenBox'
 
 	BoxClosed:
-#		requires: [ 'Active' ]
-		blocks: [ 'BoxOpened', 'BoxOpening', 'BoxClosing' ]
+#		requires: ['Active']
+		blocks: ['BoxOpened', 'BoxOpening', 'BoxClosing']
 #		group: 'OpenBox'
 
 	# API
@@ -233,9 +250,7 @@ class Connection extends asyncmachine.AsyncMachine
 			yes
 			# TODO cleanup
 
-	Connected_exit: ->
-		# TODO callback?
-		@imap.logout @addLater 'Disconnected'
+	Connected_exit: -> @imap.end @addLater 'Disconnected'
 
 	BoxOpening_enter: ->
 		if @is 'BoxOpened'
@@ -300,7 +315,7 @@ class Connection extends asyncmachine.AsyncMachine
 		@queries_running.push query
 		query.add 'FetchingQuery'
 		# Subscribe to a finished query
-		query.once 'Fetching.Results.exit', ->
+		query.once 'Fetching.Results.exit', =>
 	#			@concurrency = @concurrency.exclude( search )
 			@queries_running = @queries_running.filter (row) =>
 				return (row isnt query)
@@ -319,7 +334,8 @@ class Connection extends asyncmachine.AsyncMachine
 		if not ~states.indexOf 'Active'
 			# TODO will appear anytime? (?)
 			@log 'cancel fetching'
-		if @queries_running.length and not args['force']
+		# TODO fix param and suuport in Disconnected too
+		if @queries_running.length and not args?[0].force
 			return no
 		# Exit from all queries.
 		exits = @queries_running.map (query) => query.drop 'Fetching'

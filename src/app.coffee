@@ -23,4 +23,4 @@ do suspend.fn ->
 	
 	# disconnect after 10 seconds
 	yield setTimeout go(), 10*1000
-	client.add 'Disconnected'
+	client.add 'Disconnected', force: yes

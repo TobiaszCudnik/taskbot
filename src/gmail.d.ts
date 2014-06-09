@@ -7,7 +7,7 @@ class Connection extends asyncmachine.AsyncMachine {
 
 	// ATTRIBUTES
 	
-	connection: imap.Imap;
+	imap: imap.Imap;
 	settings: IGtdBotSettings;
 
 	queries: Query[];

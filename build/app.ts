@@ -22,5 +22,7 @@ export class App extends gmail.Connection {
 suspend.fn(() => {
     var client = new App(settings);
     yield(setTimeout(go(), 10 * 1000));
-    return client.add("Disconnected");
+    return client.add("Disconnected", {
+        force: true
+    });
 })();

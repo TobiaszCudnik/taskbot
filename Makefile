@@ -4,7 +4,7 @@ NODE_DEBUG = node debug --harmony
 MOCHA = node_modules/.bin/mocha
 BUILDER = node_modules/contracts.coffee/bin/coffee
 COFFEE = node_modules/contracts.coffee/bin/coffee
-CCOFFEE = node_modules/compiled-coffee/bin/ccoffee-osx
+CCOFFEE = node_modules/compiled-coffee/bin/ccoffee
 
 TESTS = build/vanilla/test/bootstrap.js
 

@@ -34,6 +34,8 @@ exports.App = App;
 suspend.fn(function* () {
     var client = new App(settings);
     yield setTimeout(exports.go(), 10 * 1000);
-    return client.add("Disconnected");
+    return client.add("Disconnected", {
+        force: true
+    });
 })();
 //# sourceMappingURL=app.js.map

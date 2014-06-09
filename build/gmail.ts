@@ -36,7 +36,8 @@ export class Query extends am_task.Task {
     };
 
     ResultsFetchingError = {
-        implies: ["Idle"]
+        implies: ["Idle"],
+        blocks: ["FetchingResults"]
     };
 
     FetchingMessage = {
@@ -63,6 +64,8 @@ export class Query extends am_task.Task {
 
     update_interval = 10 * 1000;
 
+    fetching_counter = 0;
+
     constructor(connection, name, update_interval) {
         super();
 
@@ -82,27 +85,42 @@ export class Query extends am_task.Task {
         return true;
     }
 
-    FetchingQuery_FetchingResults(states, err, results) {
+    FetchingQuery_FetchingResults(states, args) {
         this.log("got search results");
+        var err = args[0];
+        var results = args[1];
         var fetch = this.connection.imap.fetch(results, this.headers);
         fetch.on("error", this.addLater("ResultsFetchingError"));
-        fetch.on("end", () => {
-            this.add("HasMonitored");
-            return this.drop("FetchingResults");
+        return fetch.on("message", (msg) => {
+            this.fetching_counter++;
+            return this.add("FetchingMessage", msg);
         });
-        return fetch.on("message", (msg) => this.add("FetchingMessage", msg));
     }
 
-    FetchingMessage_enter(states, msg) {
-        return msg.on("end", () => this.add("MessageFetched", msg));
+    FetchingMessage_enter(states, args) {
+        var msg = args[0];
+        var attrs = null;
+        var info = null;
+        msg.on("body", (stream, data) => info = data);
+        msg.on("attributes", (data) => attrs = data);
+        return msg.on("end", () => this.add("MessageFetched", msg, attrs, info));
     }
 
-    FetchingMessage_MessageFetched(states, msg) {
-        var id = msg["x-gm-msgid"];
+    FetchingMessage_MessageFetched(states, args) {
+        var msg = args[0];
+        var attrs = args[1];
+        var info = args[2];
+        var id = attrs["x-gm-msgid"];
         if (!~this.monitored.indexOf(id)) {
-            var labels = msg["x-gm-labels"].join(", ");
-            this.log("New msg \"" + msg.headers.subject + "\" (" + labels + ")");
-            return this.monitored.push(id);
+            var labels = attrs["x-gm-labels"] || [];
+            console.log("info", info);
+            this.log("New msg \"XXXXX\" (" + (labels.join(",")) + ")");
+            this.monitored.push(id);
+            this.add("HasMonitored");
+        }
+        --this.fetching_counter;
+        if (!this.fetching_counter) {
+            return this.drop("FetchingResults");
         }
     }
 
@@ -128,7 +146,7 @@ export class Connection extends asyncmachine.AsyncMachine {
 
     queries: Query[] = [];
 
-    	connection: imap.Imap = null;
+    	imap: imap.Imap = null;
 
     box_opening_promise: rsvp.Defered = null;
 
@@ -242,7 +260,7 @@ export class Connection extends asyncmachine.AsyncMachine {
     }
 
     Connected_exit() {
-        return this.imap.logout(this.addLater("Disconnected"));
+        return this.imap.end(this.addLater("Disconnected"));
     }
 
     BoxOpening_enter() {
@@ -302,7 +320,7 @@ export class Connection extends asyncmachine.AsyncMachine {
         this.log("concurrency++");
         this.queries_running.push(query);
         query.add("FetchingQuery");
-        query.once("Fetching.Results.exit", function() {
+        query.once("Fetching.Results.exit", () => {
             this.queries_running = this.queries_running.filter((row) => row !== query);
             this.log("concurrency--");
             this.add(["Delayed", "HasMonitored"]);
@@ -315,7 +333,7 @@ export class Connection extends asyncmachine.AsyncMachine {
         if (!~states.indexOf("Active")) {
             this.log("cancel fetching");
         }
-        if (this.queries_running.length && !args["force"]) {
+        if (this.queries_running.length && !(args != null ? args[0].force : void 0)) {
             return false;
         }
         var exits = this.queries_running.map((query) => query.drop("Fetching"));
