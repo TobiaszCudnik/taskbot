@@ -57,7 +57,7 @@ class Query extends am_task.Task
 			'FetchingResults', 'ResultsFetchingError', 'FetchingMessage',
 			'MessageFetched'
 				
-		@debug '[query] '
+		@debug '[query]'
 
 		@connection = connection
 		@name = name
@@ -68,7 +68,7 @@ class Query extends am_task.Task
 		@last_update = Date.now()
 		@log "performing a search for " + @name 
 		# TODO addLater???
-		@connection.imap.search [ [ 'X-GM-RAW', @name ] ], (err, results) ->
+		@connection.imap.search [ [ 'X-GM-RAW', @name ] ], (err, results) =>
 			@add 'FetchingResults', err, results
 		yes
 
@@ -113,9 +113,6 @@ class Query extends am_task.Task
 			output: process.stdout
 		)
 		repl.context.this = @
-
-	log: (msgs...) ->
-		@log.apply console, msgs
 
 # TODO IDLE state
 class Connection extends asyncmachine.AsyncMachine
@@ -194,7 +191,7 @@ class Connection extends asyncmachine.AsyncMachine
 			'Idle', 'Active', 'Fetched', 'Fetching', 'Delayed', 'BoxOpening',
 			'BoxOpened', 'BoxClosing', 'BoxClosed'
 				
-		@debug '[connection] '
+		@debug '[connection]'
 		# TODO no auto connect 
 		@set 'Connecting'
 
@@ -220,7 +217,7 @@ class Connection extends asyncmachine.AsyncMachine
 
 	Connecting_enter: (states) ->
 		data = @settings
-		@connection = new Imap
+		@imap = new Imap
 			user: data.gmail_username
 			password: data.gmail_password
 			host: data.gmail_host || "imap.gmail.com"
@@ -228,8 +225,8 @@ class Connection extends asyncmachine.AsyncMachine
 			tls: yes
 			debug: console.log if @settings.debug
 												
-		@connection.connect()
-		@connection.once 'ready', @addLater 'Connected'
+		@imap.connect()
+		@imap.once 'ready', @addLater 'Connected'
 
 	Connecting_exit: (target_states) ->
 		if ~target_states.indexOf 'Disconnected'
@@ -238,7 +235,7 @@ class Connection extends asyncmachine.AsyncMachine
 
 	Connected_exit: ->
 		# TODO callback?
-		@connection.logout @addLater 'Disconnected'
+		@imap.logout @addLater 'Disconnected'
 
 	BoxOpening_enter: ->
 		if @is 'BoxOpened'
@@ -252,7 +249,7 @@ class Connection extends asyncmachine.AsyncMachine
 		# TODO try and set to Disconnected on catch
 		# Error: Not connected or authenticated
 		# TODO support err param to the callback
-		@connection.openBox "[Gmail]/All Mail", no, (@addLater 'BoxOpened')
+		@imap.openBox "[Gmail]/All Mail", no, (@addLater 'BoxOpened')
 		@box_opening_promise = @last_promise
 		yes
 
@@ -269,7 +266,7 @@ class Connection extends asyncmachine.AsyncMachine
 #			promise.reject()
 
 	BoxClosing_enter: ->
-		@connection.closeBox @addLater 'BoxClosed'
+		@imap.closeBox @addLater 'BoxClosed'
 
 	BoxOpened_enter: ->
 		if not @add 'Fetching'
@@ -348,6 +345,3 @@ class Connection extends asyncmachine.AsyncMachine
 			output: process.stdout
 		)
 		repl.context.this = @
-
-	log: (msgs...) ->
-		@log.apply console, msgs

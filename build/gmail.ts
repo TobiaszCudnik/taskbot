@@ -68,7 +68,7 @@ export class Query extends am_task.Task {
 
         this.register("HasMonitored", "Fetching", "Idle", "FetchingQuery", "FetchingResults", "ResultsFetchingError", "FetchingMessage", "MessageFetched");
 
-        this.debug("[query] ");
+        this.debug("[query]");
 
         this.connection = connection;
         this.name = name;
@@ -78,9 +78,7 @@ export class Query extends am_task.Task {
     FetchingQuery_enter() {
         this.last_update = Date.now();
         this.log("performing a search for " + this.name);
-        this.connection.imap.search([["X-GM-RAW", this.name]], function(err, results) {
-            return this.add("FetchingResults", err, results);
-        });
+        this.connection.imap.search([["X-GM-RAW", this.name]], (err, results) => this.add("FetchingResults", err, results));
         return true;
     }
 
@@ -123,10 +121,6 @@ export class Query extends am_task.Task {
             output: process.stdout
         });
         return repl.context["this"] = this;
-    }
-
-    log(...msgs) {
-        return this.log.apply(console, msgs);
     }
 }
 export class Connection extends asyncmachine.AsyncMachine {
@@ -209,7 +203,7 @@ export class Connection extends asyncmachine.AsyncMachine {
 
         this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "Fetched", "Fetching", "Delayed", "BoxOpening", "BoxOpened", "BoxClosing", "BoxClosed");
 
-        this.debug("[connection] ");
+        this.debug("[connection]");
         this.set("Connecting");
 
         if (settings.repl) {
@@ -228,7 +222,7 @@ export class Connection extends asyncmachine.AsyncMachine {
 
     Connecting_enter(states) {
         var data = this.settings;
-        this.connection = new Imap({
+        this.imap = new Imap({
             user: data.gmail_username,
             password: data.gmail_password,
             host: data.gmail_host || "imap.gmail.com",
@@ -237,8 +231,8 @@ export class Connection extends asyncmachine.AsyncMachine {
             debug: this.settings.debug ? console.log : void 0
         });
 
-        this.connection.connect();
-        return this.connection.once("ready", this.addLater("Connected"));
+        this.imap.connect();
+        return this.imap.once("ready", this.addLater("Connected"));
     }
 
     Connecting_exit(target_states) {
@@ -248,7 +242,7 @@ export class Connection extends asyncmachine.AsyncMachine {
     }
 
     Connected_exit() {
-        return this.connection.logout(this.addLater("Disconnected"));
+        return this.imap.logout(this.addLater("Disconnected"));
     }
 
     BoxOpening_enter() {
@@ -261,7 +255,7 @@ export class Connection extends asyncmachine.AsyncMachine {
         if (this.box_opening_promise) {
             this.box_opening_promise.reject();
         }
-        this.connection.openBox("[Gmail]/All Mail", false, this.addLater("BoxOpened"));
+        this.imap.openBox("[Gmail]/All Mail", false, this.addLater("BoxOpened"));
         this.box_opening_promise = this.last_promise;
         return true;
     }
@@ -271,7 +265,7 @@ export class Connection extends asyncmachine.AsyncMachine {
     }
 
     BoxClosing_enter() {
-        return this.connection.closeBox(this.addLater("BoxClosed"));
+        return this.imap.closeBox(this.addLater("BoxClosed"));
     }
 
     BoxOpened_enter() {
@@ -345,9 +339,5 @@ export class Connection extends asyncmachine.AsyncMachine {
             output: process.stdout
         });
         return repl.context["this"] = this;
-    }
-
-    log(...msgs) {
-        return this.log.apply(console, msgs);
     }
 }
