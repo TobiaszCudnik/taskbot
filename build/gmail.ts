@@ -54,7 +54,10 @@ export class Query extends am_task.Task {
 
     last_update = 0;
 
-    headers = ["id", "from", "to", "subject", "date"];
+    headers = {
+        bodies: "HEADER.FIELDS (FROM TO SUBJECT DATE)",
+        struct: true
+    };
 
     monitored = [];
 
@@ -100,21 +103,23 @@ export class Query extends am_task.Task {
     FetchingMessage_enter(states, args) {
         var msg = args[0];
         var attrs = null;
-        var info = null;
-        msg.on("body", (stream, data) => info = data);
-        msg.on("attributes", (data) => attrs = data);
-        return msg.on("end", () => this.add("MessageFetched", msg, attrs, info));
+        var body = "";
+        msg.on("body", (stream, data) => {
+            stream.on("data", (chunk) => body += chunk.toString("utf8"));
+            return stream.once("end", () => body = Imap.parseHeader(body));
+        });
+        msg.once("attributes", (data) => attrs = data);
+        return msg.once("end", () => this.add("MessageFetched", msg, attrs, body));
     }
 
     FetchingMessage_MessageFetched(states, args) {
         var msg = args[0];
         var attrs = args[1];
-        var info = args[2];
+        var body = args[2];
         var id = attrs["x-gm-msgid"];
         if (!~this.monitored.indexOf(id)) {
             var labels = attrs["x-gm-labels"] || [];
-            console.log("info", info);
-            this.log("New msg \"XXXXX\" (" + (labels.join(",")) + ")");
+            this.log("New msg \"" + body.subject + "\" (" + (labels.join(",")) + ")");
             this.monitored.push(id);
             this.add("HasMonitored");
         }

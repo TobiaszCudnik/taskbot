@@ -45,7 +45,9 @@ class Query extends am_task.Task
 
 	active: true
 	last_update: 0
-	headers: [ "id", "from", "to", "subject", "date" ]
+	headers:
+		bodies: 'HEADER.FIELDS (FROM TO SUBJECT DATE)'
+		struct: yes
 	monitored: []		
 	connection: null
 	name: "*"
@@ -54,11 +56,11 @@ class Query extends am_task.Task
 
 	constructor: (connection, name, update_interval) ->
 		super()
-				
+								
 		@register 'HasMonitored', 'Fetching', 'Idle', 'FetchingQuery',
 			'FetchingResults', 'ResultsFetchingError', 'FetchingMessage',
 			'MessageFetched'
-				
+								
 		@debug '[query]'
 
 		@connection = connection
@@ -93,24 +95,28 @@ class Query extends am_task.Task
 	FetchingMessage_enter: (states, args) ->
 		msg = args[0]
 		attrs = null
-		info = null
-		msg.on 'body', (stream, data) => info = data
-		msg.on 'attributes', (data) => attrs = data
-		msg.on 'end', => @add 'MessageFetched', msg, attrs, info
+		body = ''
+		# TODO garbage collect these bindings?
+		msg.on 'body', (stream, data) =>
+			stream.on 'data', (chunk) ->
+				body += chunk.toString 'utf8'
+			stream.once 'end', ->
+				body = Imap.parseHeader body
+		msg.once 'attributes', (data) => attrs = data
+		msg.once 'end', => @add 'MessageFetched', msg, attrs, body
 
 #	FetchingMessage_MessageFetched( states, params ) {
 	# TODO unpack args to real arguments
 	FetchingMessage_MessageFetched: (states, args) ->
 		msg = args[0]
 		attrs = args[1]
-		info = args[2]
+		body = args[2]
 		id = attrs['x-gm-msgid']
 		if not ~@monitored.indexOf id
 			# TODO event
 			labels = attrs['x-gm-labels'] || []
-			console.log 'info', info
 #			@log "New msg \"#{msg.headers.subject}\" (#{labels})"
-			@log "New msg \"XXXXX\" (#{labels.join ','})"
+			@log "New msg \"#{body.subject}\" (#{labels.join ','})"
 			@monitored.push id
 			@add 'HasMonitored'
 		# TODO drop when children processes are implemented
@@ -145,9 +151,9 @@ class Connection extends asyncmachine.AsyncMachine
 	queries_running: []
 	settings: null
 	last_promise: null
-		
+				
 	# STATES
-		
+				
 	Disconnected:
 		blocks: ['Connected', 'Connecting', 'Disconnecting']
 
@@ -201,13 +207,13 @@ class Connection extends asyncmachine.AsyncMachine
 
 	constructor: (settings) ->
 		super()
-		
-		@settings = settings
 				
+		@settings = settings
+								
 		@register 'Disconnected', 'Disconnecting', 'Connected', 'Connecting',
 			'Idle', 'Active', 'Fetched', 'Fetching', 'Delayed', 'BoxOpening',
 			'BoxOpened', 'BoxClosing', 'BoxClosed'
-				
+								
 		@debug '[connection]'
 		# TODO no auto connect 
 		@set 'Connecting'
@@ -241,7 +247,7 @@ class Connection extends asyncmachine.AsyncMachine
 			port: 993
 			tls: yes
 			debug: console.log if @settings.debug
-												
+																								
 		@imap.connect()
 		@imap.once 'ready', @addLater 'Connected'
 

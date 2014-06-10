@@ -52,7 +52,10 @@ var Query = (function (_super) {
         };
         this.active = true;
         this.last_update = 0;
-        this.headers = ["id", "from", "to", "subject", "date"];
+        this.headers = {
+            bodies: "HEADER.FIELDS (FROM TO SUBJECT DATE)",
+            struct: true
+        };
         this.monitored = [];
         this.connection = null;
         this.name = "*";
@@ -94,27 +97,31 @@ var Query = (function (_super) {
         var _this = this;
         var msg = args[0];
         var attrs = null;
-        var info = null;
+        var body = "";
         msg.on("body", function (stream, data) {
-            return info = data;
+            stream.on("data", function (chunk) {
+                return body += chunk.toString("utf8");
+            });
+            return stream.once("end", function () {
+                return body = Imap.parseHeader(body);
+            });
         });
-        msg.on("attributes", function (data) {
+        msg.once("attributes", function (data) {
             return attrs = data;
         });
-        return msg.on("end", function () {
-            return _this.add("MessageFetched", msg, attrs, info);
+        return msg.once("end", function () {
+            return _this.add("MessageFetched", msg, attrs, body);
         });
     };
 
     Query.prototype.FetchingMessage_MessageFetched = function (states, args) {
         var msg = args[0];
         var attrs = args[1];
-        var info = args[2];
+        var body = args[2];
         var id = attrs["x-gm-msgid"];
         if (!~this.monitored.indexOf(id)) {
             var labels = attrs["x-gm-labels"] || [];
-            console.log("info", info);
-            this.log("New msg \"XXXXX\" (" + (labels.join(",")) + ")");
+            this.log("New msg \"" + body.subject + "\" (" + (labels.join(",")) + ")");
             this.monitored.push(id);
             this.add("HasMonitored");
         }
