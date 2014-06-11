@@ -15,7 +15,7 @@ class App extends gmail.Connection
 #		@addQuery 'label:sent', 5000
 		@addQuery 'label:P-test', 5000
 		if not @add 'Active'
-			@log 'cant activate', @is()
+			@log "cant activate #{@is()}"
 		yes
 
 do suspend.fn ->

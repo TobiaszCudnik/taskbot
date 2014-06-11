@@ -80,11 +80,9 @@ var Query = (function (_super) {
         return true;
     };
 
-    Query.prototype.FetchingQuery_FetchingResults = function (states, args) {
+    Query.prototype.FetchingQuery_FetchingResults = function (states, err, results) {
         var _this = this;
         this.log("got search results");
-        var err = args[0];
-        var results = args[1];
         var fetch = this.connection.imap.fetch(results, this.headers);
         fetch.on("error", this.addLater("ResultsFetchingError"));
         return fetch.on("message", function (msg) {
@@ -93,17 +91,17 @@ var Query = (function (_super) {
         });
     };
 
-    Query.prototype.FetchingMessage_enter = function (states, args) {
+    Query.prototype.FetchingMessage_enter = function (states, msg) {
         var _this = this;
-        var msg = args[0];
         var attrs = null;
-        var body = "";
+        var body_buffer = "";
+        var body = null;
         msg.on("body", function (stream, data) {
             stream.on("data", function (chunk) {
-                return body += chunk.toString("utf8");
+                return body_buffer += chunk.toString("utf8");
             });
             return stream.once("end", function () {
-                return body = Imap.parseHeader(body);
+                return body = Imap.parseHeader(body_buffer);
             });
         });
         msg.once("attributes", function (data) {
@@ -114,10 +112,7 @@ var Query = (function (_super) {
         });
     };
 
-    Query.prototype.FetchingMessage_MessageFetched = function (states, args) {
-        var msg = args[0];
-        var attrs = args[1];
-        var body = args[2];
+    Query.prototype.FetchingMessage_MessageFetched = function (states, msg, attrs, body) {
         var id = attrs["x-gm-msgid"];
         if (!~this.monitored.indexOf(id)) {
             var labels = attrs["x-gm-labels"] || [];
@@ -254,7 +249,7 @@ var Connection = (function (_super) {
 
     Connection.prototype.BoxOpening_enter = function () {
         if (this.is("BoxOpened")) {
-            this.add("Fetching", 0);
+            this.add("Fetching");
             return false;
         } else {
             this.once("Box.Opened.enter", this.addLater("Fetching"));
@@ -277,7 +272,7 @@ var Connection = (function (_super) {
 
     Connection.prototype.BoxOpened_enter = function () {
         if (!this.add("Fetching")) {
-            return this.log("Cant set Fetching", this.is());
+            return this.log("Cant set Fetching " + (this.is()));
         }
     };
 

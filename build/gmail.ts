@@ -88,10 +88,8 @@ export class Query extends am_task.Task {
         return true;
     }
 
-    FetchingQuery_FetchingResults(states, args) {
+    FetchingQuery_FetchingResults(states, err, results) {
         this.log("got search results");
-        var err = args[0];
-        var results = args[1];
         var fetch = this.connection.imap.fetch(results, this.headers);
         fetch.on("error", this.addLater("ResultsFetchingError"));
         return fetch.on("message", (msg) => {
@@ -100,22 +98,19 @@ export class Query extends am_task.Task {
         });
     }
 
-    FetchingMessage_enter(states, args) {
-        var msg = args[0];
+    FetchingMessage_enter(states, msg) {
         var attrs = null;
-        var body = "";
+        var body_buffer = "";
+        var body = null;
         msg.on("body", (stream, data) => {
-            stream.on("data", (chunk) => body += chunk.toString("utf8"));
-            return stream.once("end", () => body = Imap.parseHeader(body));
+            stream.on("data", (chunk) => body_buffer += chunk.toString("utf8"));
+            return stream.once("end", () => body = Imap.parseHeader(body_buffer));
         });
         msg.once("attributes", (data) => attrs = data);
         return msg.once("end", () => this.add("MessageFetched", msg, attrs, body));
     }
 
-    FetchingMessage_MessageFetched(states, args) {
-        var msg = args[0];
-        var attrs = args[1];
-        var body = args[2];
+    FetchingMessage_MessageFetched(states, msg, attrs, body) {
         var id = attrs["x-gm-msgid"];
         if (!~this.monitored.indexOf(id)) {
             var labels = attrs["x-gm-labels"] || [];
@@ -270,7 +265,7 @@ export class Connection extends asyncmachine.AsyncMachine {
 
     BoxOpening_enter() {
         if (this.is("BoxOpened")) {
-            this.add("Fetching", 0);
+            this.add("Fetching");
             return false;
         } else {
             this.once("Box.Opened.enter", this.addLater("Fetching"));
@@ -293,7 +288,7 @@ export class Connection extends asyncmachine.AsyncMachine {
 
     BoxOpened_enter() {
         if (!this.add("Fetching")) {
-            return this.log("Cant set Fetching", this.is());
+            return this.log("Cant set Fetching " + (this.is()));
         }
     }
 

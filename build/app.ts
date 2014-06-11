@@ -13,7 +13,7 @@ export class App extends gmail.Connection {
         this.addQuery("label:S-Pending", 5000);
         this.addQuery("label:P-test", 5000);
         if (!this.add("Active")) {
-            this.log("cant activate", this.is());
+            this.log("cant activate " + (this.is()));
         }
         return true;
     }

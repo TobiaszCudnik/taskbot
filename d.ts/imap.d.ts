@@ -3,6 +3,7 @@
 declare module "imap" {
 	interface IExport {
 		new(options:imap.IOptions): imap.Imap;
+		parseHeader(headers: Object): Object;
 	}
 	var exported: IExport;
 	export = exported;
@@ -37,10 +38,14 @@ declare module imap {
 		fetch: any;
 		copy: any;
 		move: any;
+		end(cb: Function): any;
 		addFlags: any;
 		delFlags: any;
 		addKeywords: any;
 		delKeywords: any;
 		// [index: number]: any;
 	}
+	
+	// TODO remove the duplicate (somehow) 
+	export function parseHeader(headers: Object): Object;
 }

@@ -76,12 +76,9 @@ class Query extends am_task.Task
 			@add 'FetchingResults', err, results
 		yes
 
-	# TODO unpack args to real arguments
-	FetchingQuery_FetchingResults: (states, args) ->
+	FetchingQuery_FetchingResults: (states, err, results) ->
 		@log 'got search results'
 		# TODO handle err
-		err = args[0]
-		results = args[1]
 		fetch = @connection.imap.fetch results, @headers
 		# Subscribe state changes to fetching events.
 		# TODO use children tasks for several messages, bind to all
@@ -90,32 +87,24 @@ class Query extends am_task.Task
 			@fetching_counter++
 			@add 'FetchingMessage', msg
 
-#	FetchingMessage_enter( states, params, msg ) {
-	# TODO unpack args to real arguments
-	FetchingMessage_enter: (states, args) ->
-		msg = args[0]
+	FetchingMessage_enter: (states, msg) ->
 		attrs = null
-		body = ''
+		body_buffer = ''
+		body = null
 		# TODO garbage collect these bindings?
 		msg.on 'body', (stream, data) =>
 			stream.on 'data', (chunk) ->
-				body += chunk.toString 'utf8'
+				body_buffer += chunk.toString 'utf8'
 			stream.once 'end', ->
-				body = Imap.parseHeader body
+				body = Imap.parseHeader body_buffer
 		msg.once 'attributes', (data) => attrs = data
 		msg.once 'end', => @add 'MessageFetched', msg, attrs, body
 
-#	FetchingMessage_MessageFetched( states, params ) {
-	# TODO unpack args to real arguments
-	FetchingMessage_MessageFetched: (states, args) ->
-		msg = args[0]
-		attrs = args[1]
-		body = args[2]
+	FetchingMessage_MessageFetched: (states, msg, attrs, body) ->
 		id = attrs['x-gm-msgid']
 		if not ~@monitored.indexOf id
 			# TODO event
 			labels = attrs['x-gm-labels'] || []
-#			@log "New msg \"#{msg.headers.subject}\" (#{labels})"
 			@log "New msg \"#{body.subject}\" (#{labels.join ','})"
 			@monitored.push id
 			@add 'HasMonitored'
@@ -180,7 +169,7 @@ class Connection extends asyncmachine.AsyncMachine
 		blocks: ['Idle', 'Delayed']
 
 	Delayed:
-		requires: ['Active'] 
+		requires: ['Active']
 		blocks: ['Fetching', 'Idle']
 
 	BoxOpening:
@@ -260,8 +249,7 @@ class Connection extends asyncmachine.AsyncMachine
 
 	BoxOpening_enter: ->
 		if @is 'BoxOpened'
-			# TODO 0?
-			@add 'Fetching', 0
+			@add 'Fetching'
 			return no
 		else
 			@once 'Box.Opened.enter', @addLater 'Fetching'
@@ -291,7 +279,7 @@ class Connection extends asyncmachine.AsyncMachine
 
 	BoxOpened_enter: ->
 		if not @add 'Fetching'
-			@log 'Cant set Fetching', @is()
+			@log "Cant set Fetching #{@is()}"
 
 	# TODO this doesnt look OK...
 	Delayed_enter: ->
