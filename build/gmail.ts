@@ -14,8 +14,16 @@ Object.merge(settings, {
     gmail_max_results: 300
 });
 
+export class Message extends am_task.Task {
+
+}
+
 export class Query extends am_task.Task {
     HasMonitored = {};
+
+    ResultsFetched = {
+        blocks: ["FetchingMessage", "FetchingResults", "FetchingQuery"]
+    };
 
     Fetching = {
         blocks: ["Idle"]
@@ -27,7 +35,7 @@ export class Query extends am_task.Task {
 
     FetchingQuery = {
         implies: ["Fetching"],
-        blocks: ["FetchingResults"]
+        blocks: ["FetchingResults", "ResultsFetched"]
     };
 
     FetchingResults = {
@@ -72,9 +80,9 @@ export class Query extends am_task.Task {
     constructor(connection, name, update_interval) {
         super();
 
-        this.register("HasMonitored", "Fetching", "Idle", "FetchingQuery", "FetchingResults", "ResultsFetchingError", "FetchingMessage", "MessageFetched");
+        this.register("HasMonitored", "Fetching", "Idle", "FetchingQuery", "FetchingResults", "ResultsFetchingError", "FetchingMessage", "MessageFetched", "ResultsFetched");
 
-        this.debug("[query]");
+        this.debug("[query:\"" + name + "\"]", 3);
 
         this.connection = connection;
         this.name = name;
@@ -120,7 +128,7 @@ export class Query extends am_task.Task {
         }
         --this.fetching_counter;
         if (!this.fetching_counter) {
-            return this.drop("FetchingResults");
+            return this.add("ResultsFetched");
         }
     }
 
@@ -214,14 +222,18 @@ export class Connection extends asyncmachine.AsyncMachine {
         blocks: ["BoxOpened", "BoxOpening", "BoxClosing"]
     };
 
+    HasMonitored = {
+        requires: ["Connected", "BoxOpened"]
+    };
+
     constructor(settings) {
         super();
 
         this.settings = settings;
 
-        this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "Fetched", "Fetching", "Delayed", "BoxOpening", "BoxOpened", "BoxClosing", "BoxClosed");
+        this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "Fetched", "Fetching", "Delayed", "BoxOpening", "BoxOpened", "BoxClosing", "BoxClosed", "HasMonitored");
 
-        this.debug("[connection]");
+        this.debug("[connection]", 2);
         this.set("Connecting");
 
         if (settings.repl) {
@@ -320,27 +332,30 @@ export class Connection extends asyncmachine.AsyncMachine {
         this.log("concurrency++");
         this.queries_running.push(query);
         query.add("FetchingQuery");
-        query.once("Fetching.Results.exit", () => {
+        query.once("ResultsFetched", () => {
             this.queries_running = this.queries_running.filter((row) => row !== query);
             this.log("concurrency--");
-            this.add(["Delayed", "HasMonitored"]);
-            return this.add("Fetching");
+            return this.add(["Delayed", "HasMonitored"]);
         });
         return true;
     }
 
-    Fetching_exit(states, args) {
-        if (!~states.indexOf("Active")) {
-            this.log("cancel fetching");
-        }
-        if (this.queries_running.length && !(args != null ? args[0].force : void 0)) {
-            return false;
-        }
-        var exits = this.queries_running.map((query) => query.drop("Fetching"));
-        return !~exits.indexOf(false);
+    Disconnected_exit(states, force) {
+        return this.drop("Fetching", force);
     }
 
-    Fetching_Fetching = this.Fetching_enter;
+    Fetching_exit(states, force) {
+        if (this.queries_running.length && !force) {
+            console.log("Running queries present and Disconnect isn't forced");
+            return false;
+        }
+        this.queries_running.forEach((query) => query.drop("Fetching"));
+        return this.queries_running.every((query) => !query.is("Fetching"));
+    }
+
+    Fetching_Fetching(...args) {
+        return this.Fetching_enter.apply(this, args);
+    }
 
     Active_enter() {
         return this.add("BoxOpening");

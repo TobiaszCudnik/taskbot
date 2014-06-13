@@ -19,11 +19,23 @@ Object.merge(settings, {
     gmail_max_results: 300
 });
 
+var Message = (function (_super) {
+    __extends(Message, _super);
+    function Message() {
+        _super.apply(this, arguments);
+    }
+    return Message;
+})(am_task.Task);
+exports.Message = Message;
+
 var Query = (function (_super) {
     __extends(Query, _super);
     function Query(connection, name, update_interval) {
         _super.call(this);
         this.HasMonitored = {};
+        this.ResultsFetched = {
+            blocks: ["FetchingMessage", "FetchingResults", "FetchingQuery"]
+        };
         this.Fetching = {
             blocks: ["Idle"]
         };
@@ -32,7 +44,7 @@ var Query = (function (_super) {
         };
         this.FetchingQuery = {
             implies: ["Fetching"],
-            blocks: ["FetchingResults"]
+            blocks: ["FetchingResults", "ResultsFetched"]
         };
         this.FetchingResults = {
             implies: ["Fetching"],
@@ -62,9 +74,9 @@ var Query = (function (_super) {
         this.update_interval = 10 * 1000;
         this.fetching_counter = 0;
 
-        this.register("HasMonitored", "Fetching", "Idle", "FetchingQuery", "FetchingResults", "ResultsFetchingError", "FetchingMessage", "MessageFetched");
+        this.register("HasMonitored", "Fetching", "Idle", "FetchingQuery", "FetchingResults", "ResultsFetchingError", "FetchingMessage", "MessageFetched", "ResultsFetched");
 
-        this.debug("[query]");
+        this.debug("[query:\"" + name + "\"]", 3);
 
         this.connection = connection;
         this.name = name;
@@ -122,7 +134,7 @@ var Query = (function (_super) {
         }
         --this.fetching_counter;
         if (!this.fetching_counter) {
-            return this.drop("FetchingResults");
+            return this.add("ResultsFetched");
         }
     };
 
@@ -200,13 +212,15 @@ var Connection = (function (_super) {
         this.BoxClosed = {
             blocks: ["BoxOpened", "BoxOpening", "BoxClosing"]
         };
-        this.Fetching_Fetching = this.Fetching_enter;
+        this.HasMonitored = {
+            requires: ["Connected", "BoxOpened"]
+        };
 
         this.settings = settings;
 
-        this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "Fetched", "Fetching", "Delayed", "BoxOpening", "BoxOpened", "BoxClosing", "BoxClosed");
+        this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "Fetched", "Fetching", "Delayed", "BoxOpening", "BoxOpened", "BoxClosing", "BoxClosed", "HasMonitored");
 
-        this.debug("[connection]");
+        this.debug("[connection]", 2);
         this.set("Connecting");
 
         if (settings.repl) {
@@ -307,28 +321,39 @@ var Connection = (function (_super) {
         this.log("concurrency++");
         this.queries_running.push(query);
         query.add("FetchingQuery");
-        query.once("Fetching.Results.exit", function () {
+        query.once("ResultsFetched", function () {
             _this.queries_running = _this.queries_running.filter(function (row) {
                 return row !== query;
             });
             _this.log("concurrency--");
-            _this.add(["Delayed", "HasMonitored"]);
-            return _this.add("Fetching");
+            return _this.add(["Delayed", "HasMonitored"]);
         });
         return true;
     };
 
-    Connection.prototype.Fetching_exit = function (states, args) {
-        if (!~states.indexOf("Active")) {
-            this.log("cancel fetching");
-        }
-        if (this.queries_running.length && !(args != null ? args[0].force : void 0)) {
+    Connection.prototype.Disconnected_exit = function (states, force) {
+        return this.drop("Fetching", force);
+    };
+
+    Connection.prototype.Fetching_exit = function (states, force) {
+        if (this.queries_running.length && !force) {
+            console.log("Running queries present and Disconnect isn't forced");
             return false;
         }
-        var exits = this.queries_running.map(function (query) {
+        this.queries_running.forEach(function (query) {
             return query.drop("Fetching");
         });
-        return !~exits.indexOf(false);
+        return this.queries_running.every(function (query) {
+            return !query.is("Fetching");
+        });
+    };
+
+    Connection.prototype.Fetching_Fetching = function () {
+        var args = [];
+        for (var _i = 0; _i < (arguments.length - 0); _i++) {
+            args[_i] = arguments[_i + 0];
+        }
+        return this.Fetching_enter.apply(this, args);
     };
 
     Connection.prototype.Active_enter = function () {

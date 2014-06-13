@@ -8,11 +8,17 @@ rsvp = require 'rsvp'
 
 Object.merge settings, gmail_max_results: 300
 
+class Message extends am_task.Task
+
 class Query extends am_task.Task
 	#	private msg: imap.ImapMessage;
 
 	# Tells that the instance has some monitored messages.
 	HasMonitored: {}
+
+	# TODO block in blocked states
+	ResultsFetched: 
+		blocks: ['FetchingMessage', 'FetchingResults', 'FetchingQuery']
 
 	# Aggregating state
 	Fetching:
@@ -23,7 +29,7 @@ class Query extends am_task.Task
 
 	FetchingQuery:
 		implies: ['Fetching'],
-		blocks: ['FetchingResults']
+		blocks: ['FetchingResults', 'ResultsFetched']
 
 	FetchingResults:
 		implies: ['Fetching'],
@@ -59,9 +65,9 @@ class Query extends am_task.Task
 								
 		@register 'HasMonitored', 'Fetching', 'Idle', 'FetchingQuery',
 			'FetchingResults', 'ResultsFetchingError', 'FetchingMessage',
-			'MessageFetched'
+			'MessageFetched', 'ResultsFetched'
 								
-		@debug '[query]'
+		@debug "[query:\"#{name}\"]", 3
 
 		@connection = connection
 		@name = name
@@ -98,7 +104,8 @@ class Query extends am_task.Task
 			stream.once 'end', ->
 				body = Imap.parseHeader body_buffer
 		msg.once 'attributes', (data) => attrs = data
-		msg.once 'end', => @add 'MessageFetched', msg, attrs, body
+		msg.once 'end', =>
+			@add 'MessageFetched', msg, attrs, body
 
 	FetchingMessage_MessageFetched: (states, msg, attrs, body) ->
 		id = attrs['x-gm-msgid']
@@ -110,7 +117,7 @@ class Query extends am_task.Task
 			@add 'HasMonitored'
 		# TODO drop when children processes are implemented
 		--@fetching_counter
-		@drop 'FetchingResults' if not @fetching_counter
+		@add 'ResultsFetched' if not @fetching_counter
 
 	ResultsFetchingError_enter: (err) ->
 		@log 'fetching error', err
@@ -192,18 +199,22 @@ class Connection extends asyncmachine.AsyncMachine
 		blocks: ['BoxOpened', 'BoxOpening', 'BoxClosing']
 #		group: 'OpenBox'
 
+	# Tells that the instance has some monitored messages.
+	HasMonitored: 
+		requires: ['Connected', 'BoxOpened']
+
 	# API
 
 	constructor: (settings) ->
 		super()
-				
+
 		@settings = settings
 								
 		@register 'Disconnected', 'Disconnecting', 'Connected', 'Connecting',
 			'Idle', 'Active', 'Fetched', 'Fetching', 'Delayed', 'BoxOpening',
-			'BoxOpened', 'BoxClosing', 'BoxClosed'
+			'BoxOpened', 'BoxClosing', 'BoxClosed', 'HasMonitored'
 								
-		@debug '[connection]'
+		@debug '[connection]', 2
 		# TODO no auto connect 
 		@set 'Connecting'
 
@@ -245,7 +256,8 @@ class Connection extends asyncmachine.AsyncMachine
 			yes
 			# TODO cleanup
 
-	Connected_exit: -> @imap.end @addLater 'Disconnected'
+	Connected_exit: ->
+		@imap.end @addLater 'Disconnected'
 
 	BoxOpening_enter: ->
 		if @is 'BoxOpened'
@@ -309,33 +321,33 @@ class Connection extends asyncmachine.AsyncMachine
 		@queries_running.push query
 		query.add 'FetchingQuery'
 		# Subscribe to a finished query
-		query.once 'Fetching.Results.exit', =>
+		query.once 'ResultsFetched', =>
 	#			@concurrency = @concurrency.exclude( search )
 			@queries_running = @queries_running.filter (row) =>
 				return (row isnt query)
 			@log 'concurrency--'
 	#			@addsLater 'HasMonitored', 'Delayed'
-			# TODO Delayed?
-			# TODO transaction?
+			# TODO Combine Delayed with Fetching for the next query
+			# TODO Aggregate HasMonitored from the queries
 			@add ['Delayed', 'HasMonitored']
-			# Loop the fetching process
-			@add 'Fetching'
 		yes
+		
+	Disconnected_exit: (states, force) ->
+		# pass the force param to the dropped Fetching state
+		@drop 'Fetching', force
 
-	Fetching_exit: (states, args) ->
-		# TODO sugar.js issue?
-#		if not states.find 'Active'
-		if not ~states.indexOf 'Active'
-			# TODO will appear anytime? (?)
-			@log 'cancel fetching'
-		# TODO fix param and suuport in Disconnected too
-		if @queries_running.length and not args?[0].force
+	Fetching_exit: (states, force) ->
+		# TODO support in Disconnected too
+		if @queries_running.length and not force
+			console.log "Running queries present and Disconnect isn't forced"
 			return no
 		# Exit from all queries.
-		exits = @queries_running.map (query) => query.drop 'Fetching'
-		not ~exits.indexOf no
+		@queries_running.forEach (query) =>
+			query.drop 'Fetching'
+		@queries_running.every (query) =>
+			not query.is 'Fetching'
 
-	Fetching_Fetching: @Fetching_enter
+	Fetching_Fetching: -> @Fetching_enter.apply @, arguments
 
 	Active_enter: -> @add 'BoxOpening'
 
