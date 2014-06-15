@@ -67,7 +67,7 @@ class Query extends am_task.Task
 			'FetchingResults', 'ResultsFetchingError', 'FetchingMessage',
 			'MessageFetched', 'ResultsFetched'
 								
-		@debug "[query:\"#{name}\"]", 3
+		@debug "[query:\"#{name}\"]", 1
 
 		@connection = connection
 		@name = name
@@ -106,6 +106,9 @@ class Query extends am_task.Task
 		msg.once 'attributes', (data) => attrs = data
 		msg.once 'end', =>
 			@add 'MessageFetched', msg, attrs, body
+
+	# TODO make it cancellable?
+	FetchingMessage_exit: (states) -> @fetching_counter is 0
 
 	FetchingMessage_MessageFetched: (states, msg, attrs, body) ->
 		id = attrs['x-gm-msgid']
@@ -214,7 +217,7 @@ class Connection extends asyncmachine.AsyncMachine
 			'Idle', 'Active', 'Fetched', 'Fetching', 'Delayed', 'BoxOpening',
 			'BoxOpened', 'BoxClosing', 'BoxClosed', 'HasMonitored'
 								
-		@debug '[connection]', 2
+		@debug '[connection]', 3
 		# TODO no auto connect 
 		@set 'Connecting'
 
@@ -290,8 +293,8 @@ class Connection extends asyncmachine.AsyncMachine
 		@imap.closeBox @addLater 'BoxClosed'
 
 	BoxOpened_enter: ->
-		if not @add 'Fetching'
-			@log "Cant set Fetching #{@is()}"
+		if not (@add 'Fetching') and not @duringTransition()
+			@log "Cant set Fetching (states: #{@is()})"
 
 	# TODO this doesnt look OK...
 	Delayed_enter: ->
@@ -332,18 +335,29 @@ class Connection extends asyncmachine.AsyncMachine
 			@add ['Delayed', 'HasMonitored']
 		yes
 		
-	Disconnected_exit: (states, force) ->
-		# pass the force param to the dropped Fetching state
+	Disconnecting_enter: (states, force) ->
 		@drop 'Fetching', force
-
+		# Exit from all queries.
+		# TODO utilize some event aggregation util
+		counter = @queries_running.length
+		exit = =>
+			if --counter is 0
+				@add 'Disconnected'
+		@queries_running.forEach (query) =>
+			query.drop 'Fetching'
+			query.once 'Idle', exit
+			
+		
+	Disconnected_enter: (states) ->
+		if @is 'Connected'
+			@add 'Disconnecting'
+			no
+			
 	Fetching_exit: (states, force) ->
 		# TODO support in Disconnected too
 		if @queries_running.length and not force
 			console.log "Running queries present and Disconnect isn't forced"
 			return no
-		# Exit from all queries.
-		@queries_running.forEach (query) =>
-			query.drop 'Fetching'
 		@queries_running.every (query) =>
 			not query.is 'Fetching'
 

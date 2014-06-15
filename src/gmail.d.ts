@@ -1,6 +1,6 @@
 ///<reference path="../d.ts/global.d.ts"/>
 ///<reference path="../d.ts/imap.d.ts"/>
-///<reference path="../node_modules/asyncmachine/build/asyncmachine.d.ts"/>
+///<reference path="../node_modules/asyncmachine/lib/asyncmachine.d.ts"/>
 ///<reference path="asyncmachine-task.d.ts"/>
 	
 class Connection extends asyncmachine.AsyncMachine {

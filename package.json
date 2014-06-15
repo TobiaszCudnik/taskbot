@@ -9,7 +9,6 @@
     "start": "make run",
     "test": "make test"
   },
-  "main": "./src/boot.coffee",
   "repository": {
     "type": "git",
     "url": "https://github.com/TobiaszCudnik/gtd-bot/gtd-bot.git"

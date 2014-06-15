@@ -4,7 +4,8 @@ var __extends = this.__extends || function (d, b) {
     __.prototype = b.prototype;
     d.prototype = new __();
 };
-///<reference path="../node_modules/asyncmachine/build/asyncmachine.d.ts"/>
+///<reference path="../node_modules/asyncmachine/lib/asyncmachine.d.ts"/>
+///<reference path="../d.ts/global.d.ts" />
 var asyncmachine = require('asyncmachine');
 var Task = (function (_super) {
     __extends(Task, _super);

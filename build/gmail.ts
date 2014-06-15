@@ -1,5 +1,5 @@
 ///<reference path="asyncmachine-task.d.ts"/>
-///<reference path="../node_modules/asyncmachine/build/asyncmachine.d.ts"/>
+///<reference path="../node_modules/asyncmachine/lib/asyncmachine.d.ts"/>
 ///<reference path="../d.ts/imap.d.ts"/>
 ///<reference path="../d.ts/global.d.ts"/>
 import settings = require('../settings');
@@ -82,7 +82,7 @@ export class Query extends am_task.Task {
 
         this.register("HasMonitored", "Fetching", "Idle", "FetchingQuery", "FetchingResults", "ResultsFetchingError", "FetchingMessage", "MessageFetched", "ResultsFetched");
 
-        this.debug("[query:\"" + name + "\"]", 3);
+        this.debug("[query:\"" + name + "\"]", 1);
 
         this.connection = connection;
         this.name = name;
@@ -116,6 +116,10 @@ export class Query extends am_task.Task {
         });
         msg.once("attributes", (data) => attrs = data);
         return msg.once("end", () => this.add("MessageFetched", msg, attrs, body));
+    }
+
+    FetchingMessage_exit(states) {
+        return this.fetching_counter === 0;
     }
 
     FetchingMessage_MessageFetched(states, msg, attrs, body) {
@@ -233,7 +237,7 @@ export class Connection extends asyncmachine.AsyncMachine {
 
         this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "Fetched", "Fetching", "Delayed", "BoxOpening", "BoxOpened", "BoxClosing", "BoxClosed", "HasMonitored");
 
-        this.debug("[connection]", 2);
+        this.debug("[connection]", 3);
         this.set("Connecting");
 
         if (settings.repl) {
@@ -299,8 +303,8 @@ export class Connection extends asyncmachine.AsyncMachine {
     }
 
     BoxOpened_enter() {
-        if (!this.add("Fetching")) {
-            return this.log("Cant set Fetching " + (this.is()));
+        if (!(this.add("Fetching")) && !this.duringTransition()) {
+            return this.log("Cant set Fetching (states: " + (this.is()) + ")");
         }
     }
 
@@ -340,8 +344,25 @@ export class Connection extends asyncmachine.AsyncMachine {
         return true;
     }
 
-    Disconnected_exit(states, force) {
-        return this.drop("Fetching", force);
+    Disconnecting_enter(states, force) {
+        this.drop("Fetching", force);
+        var counter = this.queries_running.length;
+        var exit = () => {
+            if (--counter === 0) {
+                return this.add("Disconnected");
+            }
+        };
+        return this.queries_running.forEach((query) => {
+            query.drop("Fetching");
+            return query.once("Idle", exit);
+        });
+    }
+
+    Disconnected_enter(states) {
+        if (this.is("Connected")) {
+            this.add("Disconnecting");
+            return false;
+        }
     }
 
     Fetching_exit(states, force) {
@@ -349,7 +370,6 @@ export class Connection extends asyncmachine.AsyncMachine {
             console.log("Running queries present and Disconnect isn't forced");
             return false;
         }
-        this.queries_running.forEach((query) => query.drop("Fetching"));
         return this.queries_running.every((query) => !query.is("Fetching"));
     }
 

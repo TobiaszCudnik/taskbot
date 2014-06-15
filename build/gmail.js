@@ -5,7 +5,7 @@ var __extends = this.__extends || function (d, b) {
     d.prototype = new __();
 };
 ///<reference path="asyncmachine-task.d.ts"/>
-///<reference path="../node_modules/asyncmachine/build/asyncmachine.d.ts"/>
+///<reference path="../node_modules/asyncmachine/lib/asyncmachine.d.ts"/>
 ///<reference path="../d.ts/imap.d.ts"/>
 ///<reference path="../d.ts/global.d.ts"/>
 var settings = require('../settings');
@@ -76,7 +76,7 @@ var Query = (function (_super) {
 
         this.register("HasMonitored", "Fetching", "Idle", "FetchingQuery", "FetchingResults", "ResultsFetchingError", "FetchingMessage", "MessageFetched", "ResultsFetched");
 
-        this.debug("[query:\"" + name + "\"]", 3);
+        this.debug("[query:\"" + name + "\"]", 1);
 
         this.connection = connection;
         this.name = name;
@@ -122,6 +122,10 @@ var Query = (function (_super) {
         return msg.once("end", function () {
             return _this.add("MessageFetched", msg, attrs, body);
         });
+    };
+
+    Query.prototype.FetchingMessage_exit = function (states) {
+        return this.fetching_counter === 0;
     };
 
     Query.prototype.FetchingMessage_MessageFetched = function (states, msg, attrs, body) {
@@ -220,7 +224,7 @@ var Connection = (function (_super) {
 
         this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "Fetched", "Fetching", "Delayed", "BoxOpening", "BoxOpened", "BoxClosing", "BoxClosed", "HasMonitored");
 
-        this.debug("[connection]", 2);
+        this.debug("[connection]", 3);
         this.set("Connecting");
 
         if (settings.repl) {
@@ -285,8 +289,8 @@ var Connection = (function (_super) {
     };
 
     Connection.prototype.BoxOpened_enter = function () {
-        if (!this.add("Fetching")) {
-            return this.log("Cant set Fetching " + (this.is()));
+        if (!(this.add("Fetching")) && !this.duringTransition()) {
+            return this.log("Cant set Fetching (states: " + (this.is()) + ")");
         }
     };
 
@@ -331,8 +335,26 @@ var Connection = (function (_super) {
         return true;
     };
 
-    Connection.prototype.Disconnected_exit = function (states, force) {
-        return this.drop("Fetching", force);
+    Connection.prototype.Disconnecting_enter = function (states, force) {
+        var _this = this;
+        this.drop("Fetching", force);
+        var counter = this.queries_running.length;
+        var exit = function () {
+            if (--counter === 0) {
+                return _this.add("Disconnected");
+            }
+        };
+        return this.queries_running.forEach(function (query) {
+            query.drop("Fetching");
+            return query.once("Idle", exit);
+        });
+    };
+
+    Connection.prototype.Disconnected_enter = function (states) {
+        if (this.is("Connected")) {
+            this.add("Disconnecting");
+            return false;
+        }
     };
 
     Connection.prototype.Fetching_exit = function (states, force) {
@@ -340,9 +362,6 @@ var Connection = (function (_super) {
             console.log("Running queries present and Disconnect isn't forced");
             return false;
         }
-        this.queries_running.forEach(function (query) {
-            return query.drop("Fetching");
-        });
         return this.queries_running.every(function (query) {
             return !query.is("Fetching");
         });

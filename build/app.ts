@@ -1,5 +1,6 @@
-/// <reference path="../node_modules/compiled-coffee/node_modules/typescript-yield/d.ts/suspend.d.ts" />
-/// <reference path="../d.ts/global.d.ts" />
+///<reference path="../node_modules/asyncmachine/lib/asyncmachine.d.ts"/>
+///<reference path="../node_modules/compiled-coffee/node_modules/typescript-yield/d.ts/suspend.d.ts" />
+///<reference path="../d.ts/global.d.ts" />
 import suspend = require('suspend');
 import gmail = require('./gmail');
 import settings = require('../settings');
@@ -8,10 +9,9 @@ export var async = suspend.async;
 
 export class App extends gmail.Connection {
     Connected_enter(states: string[]) {
-        this.log("adding search queries");
         this.addQuery("*", 1000);
         if (!this.add("Active")) {
-            this.log("cant activate " + (this.is()));
+            this.log("cant activate Active (states: " + (this.is()) + ")");
         }
         return true;
     }

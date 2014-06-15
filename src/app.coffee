@@ -6,14 +6,13 @@ async = suspend.async
 
 class App extends gmail.Connection
 	Connected_enter: (states) ->
-		@log 'adding search queries'
 		# TODO move queries to the config
 		@addQuery '*', 1000
 #		@addQuery 'label:S-Pending', 5000
 #		@addQuery 'label:sent', 5000
 #		@addQuery 'label:P-test', 5000
 		if not @add 'Active'
-			@log "cant activate #{@is()}"
+			@log "cant activate Active (states: #{@is()})"
 		yes
 
 do suspend.fn ->
