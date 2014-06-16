@@ -142,12 +142,12 @@ class Connection extends asyncmachine.AsyncMachine
 
 	# ATTRIBUTES
 
-	queries_running_limit: 3
 	queries: []
+	queries_running: []
+	queries_running_limit: 3
 	imap: null
 	box_opening_promise: null
 	delayed_timer: null
-	queries_running: []
 	settings: null
 	last_promise: null
 				
@@ -235,11 +235,6 @@ class Connection extends asyncmachine.AsyncMachine
 #			@log 'BoxOpening not set', @is()
 
 	# STATE TRANSITIONS
-
-#	Connected_enter: (states) -> @set 'BoxClosed'
-
-	Connected_Disconnected: -> 
-		process.exit()
 
 	Connecting_enter: (states) ->
 		data = @settings
@@ -335,31 +330,28 @@ class Connection extends asyncmachine.AsyncMachine
 			@add ['Delayed', 'HasMonitored']
 		yes
 		
-	Disconnecting_enter: (states, force) ->
-		@drop 'Fetching', force
+	Fetching_exit: (states, force) ->
 		# Exit from all queries.
-		# TODO utilize some event aggregation util
+		# TODO utilize some event aggregation util?
+		@drop 'Active'
+		return yes if @queries_running.every (query) ->
+			query.is 'Idle'
+		# TODO manage @queries_running in a better way
 		counter = @queries_running.length
 		exit = =>
 			if --counter is 0
-				@add 'Disconnected'
+				@add states
 		@queries_running.forEach (query) =>
 			query.drop 'Fetching'
 			query.once 'Idle', exit
-			
+		no
 		
 	Disconnected_enter: (states) ->
-		if @is 'Connected'
+		if @any 'Connected', 'Connecting'
 			@add 'Disconnecting'
 			no
-			
-	Fetching_exit: (states, force) ->
-		# TODO support in Disconnected too
-		if @queries_running.length and not force
-			console.log "Running queries present and Disconnect isn't forced"
-			return no
-		@queries_running.every (query) =>
-			not query.is 'Fetching'
+		else if @is 'Disconnecting'
+			no
 
 	Fetching_Fetching: -> @Fetching_enter.apply @, arguments
 

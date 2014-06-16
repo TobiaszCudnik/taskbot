@@ -154,17 +154,17 @@ export class Query extends am_task.Task {
     }
 }
 export class Connection extends asyncmachine.AsyncMachine {
-    queries_running_limit: number = 3;
-
     queries: Query[] = [];
+
+    queries_running: Query[] = [];
+
+    queries_running_limit: number = 3;
 
     	imap: imap.Imap = null;
 
     box_opening_promise: rsvp.Defered = null;
 
     delayed_timer: number = null;
-
-    queries_running: Query[] = [];
 
     settings: IGtdBotSettings = null;
 
@@ -248,10 +248,6 @@ export class Connection extends asyncmachine.AsyncMachine {
     addQuery(query, update_interval) {
         this.log("Adding query '" + query + "'");
         return this.queries.push(new Query(this, query, update_interval));
-    }
-
-    Connected_Disconnected() {
-        return process.exit();
     }
 
     Connecting_enter(states) {
@@ -344,33 +340,31 @@ export class Connection extends asyncmachine.AsyncMachine {
         return true;
     }
 
-    Disconnecting_enter(states, force) {
-        this.drop("Fetching", force);
+    Fetching_exit(states, force) {
+        this.drop("Active");
+        if (this.queries_running.every((query) => query.is("Idle"))) {
+            return true;
+        }
         var counter = this.queries_running.length;
         var exit = () => {
             if (--counter === 0) {
-                return this.add("Disconnected");
+                return this.add(states);
             }
         };
-        return this.queries_running.forEach((query) => {
+        this.queries_running.forEach((query) => {
             query.drop("Fetching");
             return query.once("Idle", exit);
         });
+        return false;
     }
 
     Disconnected_enter(states) {
-        if (this.is("Connected")) {
+        if (this.any("Connected", "Connecting")) {
             this.add("Disconnecting");
             return false;
-        }
-    }
-
-    Fetching_exit(states, force) {
-        if (this.queries_running.length && !force) {
-            console.log("Running queries present and Disconnect isn't forced");
+        } else if (this.is("Disconnecting")) {
             return false;
         }
-        return this.queries_running.every((query) => !query.is("Fetching"));
     }
 
     Fetching_Fetching(...args) {

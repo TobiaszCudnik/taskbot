@@ -165,12 +165,12 @@ var Connection = (function (_super) {
     __extends(Connection, _super);
     function Connection(settings) {
         _super.call(this);
-        this.queries_running_limit = 3;
         this.queries = [];
+        this.queries_running = [];
+        this.queries_running_limit = 3;
         this.imap = null;
         this.box_opening_promise = null;
         this.delayed_timer = null;
-        this.queries_running = [];
         this.settings = null;
         this.last_promise = null;
         this.Disconnected = {
@@ -234,10 +234,6 @@ var Connection = (function (_super) {
     Connection.prototype.addQuery = function (query, update_interval) {
         this.log("Adding query '" + query + "'");
         return this.queries.push(new Query(this, query, update_interval));
-    };
-
-    Connection.prototype.Connected_Disconnected = function () {
-        return process.exit();
     };
 
     Connection.prototype.Connecting_enter = function (states) {
@@ -335,36 +331,34 @@ var Connection = (function (_super) {
         return true;
     };
 
-    Connection.prototype.Disconnecting_enter = function (states, force) {
+    Connection.prototype.Fetching_exit = function (states, force) {
         var _this = this;
-        this.drop("Fetching", force);
+        this.drop("Active");
+        if (this.queries_running.every(function (query) {
+            return query.is("Idle");
+        })) {
+            return true;
+        }
         var counter = this.queries_running.length;
         var exit = function () {
             if (--counter === 0) {
-                return _this.add("Disconnected");
+                return _this.add(states);
             }
         };
-        return this.queries_running.forEach(function (query) {
+        this.queries_running.forEach(function (query) {
             query.drop("Fetching");
             return query.once("Idle", exit);
         });
+        return false;
     };
 
     Connection.prototype.Disconnected_enter = function (states) {
-        if (this.is("Connected")) {
+        if (this.any("Connected", "Connecting")) {
             this.add("Disconnecting");
             return false;
-        }
-    };
-
-    Connection.prototype.Fetching_exit = function (states, force) {
-        if (this.queries_running.length && !force) {
-            console.log("Running queries present and Disconnect isn't forced");
+        } else if (this.is("Disconnecting")) {
             return false;
         }
-        return this.queries_running.every(function (query) {
-            return !query.is("Fetching");
-        });
     };
 
     Connection.prototype.Fetching_Fetching = function () {
