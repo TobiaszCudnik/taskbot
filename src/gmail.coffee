@@ -108,7 +108,7 @@ class Query extends am_task.Task
 			@add 'MessageFetched', msg, attrs, body
 
 	# TODO make it cancellable?
-	FetchingMessage_exit: (states) -> @fetching_counter is 0
+	FetchingMessage_exit: -> yes if @fetching_counter is 0
 
 	FetchingMessage_MessageFetched: (states, msg, attrs, body) ->
 		id = attrs['x-gm-msgid']
@@ -124,7 +124,7 @@ class Query extends am_task.Task
 
 	ResultsFetchingError_enter: (err) ->
 		@log 'fetching error', err
-		setTimeout @addLater('Idle'), 0
+		@add 'Idle'
 		if err
 			throw new Error err
 
@@ -158,6 +158,9 @@ class Connection extends asyncmachine.AsyncMachine
 
 	Disconnecting:
 		blocks: ['Connected', 'Connecting', 'Disconnected']
+
+	DisconnectingFetching:
+		requires: ['Disconnecting']
 
 	Connected:
 		blocks: ['Connecting', 'Disconnecting', 'Disconnected']

@@ -124,8 +124,10 @@ var Query = (function (_super) {
         });
     };
 
-    Query.prototype.FetchingMessage_exit = function (states) {
-        return this.fetching_counter === 0;
+    Query.prototype.FetchingMessage_exit = function () {
+        if (this.fetching_counter === 0) {
+            return true;
+        }
     };
 
     Query.prototype.FetchingMessage_MessageFetched = function (states, msg, attrs, body) {
@@ -144,7 +146,7 @@ var Query = (function (_super) {
 
     Query.prototype.ResultsFetchingError_enter = function (err) {
         this.log("fetching error", err);
-        setTimeout(this.addLater("Idle"), 0);
+        this.add("Idle");
         if (err) {
             throw new Error(err);
         }
@@ -178,6 +180,9 @@ var Connection = (function (_super) {
         };
         this.Disconnecting = {
             blocks: ["Connected", "Connecting", "Disconnected"]
+        };
+        this.DisconnectingFetching = {
+            requires: ["Disconnecting"]
         };
         this.Connected = {
             blocks: ["Connecting", "Disconnecting", "Disconnected"],

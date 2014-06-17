@@ -118,8 +118,10 @@ export class Query extends am_task.Task {
         return msg.once("end", () => this.add("MessageFetched", msg, attrs, body));
     }
 
-    FetchingMessage_exit(states) {
-        return this.fetching_counter === 0;
+    FetchingMessage_exit() {
+        if (this.fetching_counter === 0) {
+            return true;
+        }
     }
 
     FetchingMessage_MessageFetched(states, msg, attrs, body) {
@@ -138,7 +140,7 @@ export class Query extends am_task.Task {
 
     ResultsFetchingError_enter(err) {
         this.log("fetching error", err);
-        setTimeout(this.addLater("Idle"), 0);
+        this.add("Idle");
         if (err) {
             throw new Error(err);
         }
@@ -176,6 +178,10 @@ export class Connection extends asyncmachine.AsyncMachine {
 
     Disconnecting = {
         blocks: ["Connected", "Connecting", "Disconnected"]
+    };
+
+    DisconnectingFetching = {
+        requires: ["Disconnecting"]
     };
 
     Connected = {
