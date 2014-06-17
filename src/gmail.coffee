@@ -10,7 +10,8 @@ Object.merge settings, gmail_max_results: 300
 
 class Message extends am_task.Task
 
-class Query extends am_task.Task
+class Query extends asyncmachine.AsyncMachine
+#class Query extends am_task.Task
 	#	private msg: imap.ImapMessage;
 
 	# Tells that the instance has some monitored messages.
@@ -18,7 +19,7 @@ class Query extends am_task.Task
 
 	# TODO block in blocked states
 	ResultsFetched: 
-		blocks: ['FetchingMessage', 'FetchingResults', 'FetchingQuery']
+		blocks: ['FetchingMessage', 'FetchingResults', 'FetchingQuery', 'Fetching']
 
 	# Aggregating state
 	Fetching:
@@ -67,7 +68,7 @@ class Query extends am_task.Task
 			'FetchingResults', 'ResultsFetchingError', 'FetchingMessage',
 			'MessageFetched', 'ResultsFetched'
 								
-		@debug "[query:\"#{name}\"]", 1
+		@debug "[query:\"#{name}\"]", 3
 
 		@connection = connection
 		@name = name
@@ -90,8 +91,8 @@ class Query extends am_task.Task
 		# TODO use children tasks for several messages, bind to all
 		fetch.on "error", @addLater 'ResultsFetchingError'
 		fetch.on "message", (msg) =>
-			@fetching_counter++
 			@add 'FetchingMessage', msg
+		fetch.on "end", @addLater 'ResultsFetched'
 
 	FetchingMessage_enter: (states, msg) ->
 		attrs = null
@@ -118,9 +119,6 @@ class Query extends am_task.Task
 			@log "New msg \"#{body.subject}\" (#{labels.join ','})"
 			@monitored.push id
 			@add 'HasMonitored'
-		# TODO drop when children processes are implemented
-		--@fetching_counter
-		@add 'ResultsFetched' if not @fetching_counter
 
 	ResultsFetchingError_enter: (err) ->
 		@log 'fetching error', err
@@ -220,7 +218,7 @@ class Connection extends asyncmachine.AsyncMachine
 			'Idle', 'Active', 'Fetched', 'Fetching', 'Delayed', 'BoxOpening',
 			'BoxOpened', 'BoxClosing', 'BoxClosed', 'HasMonitored'
 								
-		@debug '[connection]', 3
+		@debug '[connection]', 1
 		# TODO no auto connect 
 		@set 'Connecting'
 
@@ -320,9 +318,11 @@ class Connection extends asyncmachine.AsyncMachine
 		# Performe the search
 		@log 'concurrency++'
 		@queries_running.push query
+		@log "query.add 'FetchingQuery'"
 		query.add 'FetchingQuery'
 		# Subscribe to a finished query
-		query.once 'ResultsFetched', =>
+		@log "query.once 'ResultsFetched.enter'"
+		query.once 'ResultsFetched.enter', =>
 	#			@concurrency = @concurrency.exclude( search )
 			@queries_running = @queries_running.filter (row) =>
 				return (row isnt query)

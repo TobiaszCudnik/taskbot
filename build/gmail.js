@@ -34,7 +34,7 @@ var Query = (function (_super) {
         _super.call(this);
         this.HasMonitored = {};
         this.ResultsFetched = {
-            blocks: ["FetchingMessage", "FetchingResults", "FetchingQuery"]
+            blocks: ["FetchingMessage", "FetchingResults", "FetchingQuery", "Fetching"]
         };
         this.Fetching = {
             blocks: ["Idle"]
@@ -76,7 +76,7 @@ var Query = (function (_super) {
 
         this.register("HasMonitored", "Fetching", "Idle", "FetchingQuery", "FetchingResults", "ResultsFetchingError", "FetchingMessage", "MessageFetched", "ResultsFetched");
 
-        this.debug("[query:\"" + name + "\"]", 1);
+        this.debug("[query:\"" + name + "\"]", 3);
 
         this.connection = connection;
         this.name = name;
@@ -97,10 +97,10 @@ var Query = (function (_super) {
         this.log("got search results");
         var fetch = this.connection.imap.fetch(results, this.headers);
         fetch.on("error", this.addLater("ResultsFetchingError"));
-        return fetch.on("message", function (msg) {
-            _this.fetching_counter++;
+        fetch.on("message", function (msg) {
             return _this.add("FetchingMessage", msg);
         });
+        return fetch.on("end", this.addLater("ResultsFetched"));
     };
 
     Query.prototype.FetchingMessage_enter = function (states, msg) {
@@ -136,11 +136,7 @@ var Query = (function (_super) {
             var labels = attrs["x-gm-labels"] || [];
             this.log("New msg \"" + body.subject + "\" (" + (labels.join(",")) + ")");
             this.monitored.push(id);
-            this.add("HasMonitored");
-        }
-        --this.fetching_counter;
-        if (!this.fetching_counter) {
-            return this.add("ResultsFetched");
+            return this.add("HasMonitored");
         }
     };
 
@@ -161,7 +157,7 @@ var Query = (function (_super) {
         return repl.context["this"] = this;
     };
     return Query;
-})(am_task.Task);
+})(asyncmachine.AsyncMachine);
 exports.Query = Query;
 var Connection = (function (_super) {
     __extends(Connection, _super);
@@ -229,7 +225,7 @@ var Connection = (function (_super) {
 
         this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "Fetched", "Fetching", "Delayed", "BoxOpening", "BoxOpened", "BoxClosing", "BoxClosed", "HasMonitored");
 
-        this.debug("[connection]", 3);
+        this.debug("[connection]", 1);
         this.set("Connecting");
 
         if (settings.repl) {
@@ -325,8 +321,10 @@ var Connection = (function (_super) {
         }
         this.log("concurrency++");
         this.queries_running.push(query);
+        this.log("query.add 'FetchingQuery'");
         query.add("FetchingQuery");
-        query.once("ResultsFetched", function () {
+        this.log("query.once 'ResultsFetched.enter'");
+        query.once("ResultsFetched.enter", function () {
             _this.queries_running = _this.queries_running.filter(function (row) {
                 return row !== query;
             });

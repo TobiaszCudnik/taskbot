@@ -18,11 +18,11 @@ export class Message extends am_task.Task {
 
 }
 
-export class Query extends am_task.Task {
+export class Query extends asyncmachine.AsyncMachine {
     HasMonitored = {};
 
     ResultsFetched = {
-        blocks: ["FetchingMessage", "FetchingResults", "FetchingQuery"]
+        blocks: ["FetchingMessage", "FetchingResults", "FetchingQuery", "Fetching"]
     };
 
     Fetching = {
@@ -82,7 +82,7 @@ export class Query extends am_task.Task {
 
         this.register("HasMonitored", "Fetching", "Idle", "FetchingQuery", "FetchingResults", "ResultsFetchingError", "FetchingMessage", "MessageFetched", "ResultsFetched");
 
-        this.debug("[query:\"" + name + "\"]", 1);
+        this.debug("[query:\"" + name + "\"]", 3);
 
         this.connection = connection;
         this.name = name;
@@ -100,10 +100,8 @@ export class Query extends am_task.Task {
         this.log("got search results");
         var fetch = this.connection.imap.fetch(results, this.headers);
         fetch.on("error", this.addLater("ResultsFetchingError"));
-        return fetch.on("message", (msg) => {
-            this.fetching_counter++;
-            return this.add("FetchingMessage", msg);
-        });
+        fetch.on("message", (msg) => this.add("FetchingMessage", msg));
+        return fetch.on("end", this.addLater("ResultsFetched"));
     }
 
     FetchingMessage_enter(states, msg) {
@@ -130,11 +128,7 @@ export class Query extends am_task.Task {
             var labels = attrs["x-gm-labels"] || [];
             this.log("New msg \"" + body.subject + "\" (" + (labels.join(",")) + ")");
             this.monitored.push(id);
-            this.add("HasMonitored");
-        }
-        --this.fetching_counter;
-        if (!this.fetching_counter) {
-            return this.add("ResultsFetched");
+            return this.add("HasMonitored");
         }
     }
 
@@ -243,7 +237,7 @@ export class Connection extends asyncmachine.AsyncMachine {
 
         this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "Fetched", "Fetching", "Delayed", "BoxOpening", "BoxOpened", "BoxClosing", "BoxClosed", "HasMonitored");
 
-        this.debug("[connection]", 3);
+        this.debug("[connection]", 1);
         this.set("Connecting");
 
         if (settings.repl) {
@@ -337,8 +331,10 @@ export class Connection extends asyncmachine.AsyncMachine {
         }
         this.log("concurrency++");
         this.queries_running.push(query);
+        this.log("query.add 'FetchingQuery'");
         query.add("FetchingQuery");
-        query.once("ResultsFetched", () => {
+        this.log("query.once 'ResultsFetched.enter'");
+        query.once("ResultsFetched.enter", () => {
             this.queries_running = this.queries_running.filter((row) => row !== query);
             this.log("concurrency--");
             return this.add(["Delayed", "HasMonitored"]);

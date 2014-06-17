@@ -20,6 +20,9 @@ var App = (function (_super) {
     }
     App.prototype.Connected_enter = function (states) {
         this.addQuery("*", 1000);
+        this.addQuery("label:S-Pending", 5000);
+        this.addQuery("label:sent", 5000);
+        this.addQuery("label:P-test", 5000);
         if (!this.add("Active")) {
             this.log("cant activate Active (states: " + (this.is()) + ")");
         }
@@ -28,10 +31,5 @@ var App = (function (_super) {
     return App;
 })(gmail.Connection);
 exports.App = App;
-
-suspend.fn(function* () {
-    var client = new App(settings);
-    yield setTimeout(exports.go(), 10 * 1000);
-    return client.add("Disconnected", true);
-})();
+exports.client = new App(settings);
 //# sourceMappingURL=app.js.map
