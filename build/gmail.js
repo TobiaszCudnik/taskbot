@@ -10,7 +10,6 @@ var __extends = this.__extends || function (d, b) {
 ///<reference path="../d.ts/global.d.ts"/>
 var settings = require('../settings');
 var Imap = require("imap");
-
 require("sugar");
 var asyncmachine = require('asyncmachine');
 var am_task = require('./asyncmachine-task');
@@ -73,11 +72,12 @@ var Query = (function (_super) {
         this.connection = null;
         this.name = "*";
         this.update_interval = 10 * 1000;
-        this.fetching_counter = 0;
+        this.fetch = null;
+        this.msg = null;
 
         this.register("HasMonitored", "Fetching", "Idle", "FetchingQuery", "FetchingResults", "ResultsFetchingError", "FetchingMessage", "MessageFetched", "ResultsFetched");
 
-        this.debug("[query:\"" + name + "\"]", 3);
+        this.debug("[query:\"" + name + "\"]", 1);
 
         this.connection = connection;
         this.name = name;
@@ -95,18 +95,20 @@ var Query = (function (_super) {
     };
 
     Query.prototype.FetchingQuery_FetchingResults = function (states, err, results) {
-        var _this = this;
         this.log("got search results");
         if (!results.length) {
             this.add("ResultsFetched");
             return true;
         }
-        var fetch = this.connection.imap.fetch(results, this.headers);
-        fetch.on("error", this.addLater("ResultsFetchingError"));
-        fetch.on("message", function (msg) {
-            return _this.add("FetchingMessage", msg);
-        });
-        return fetch.on("end", this.addLater("ResultsFetched"));
+        this.fetch = this.connection.imap.fetch(results, this.headers);
+        this.fetch.on("message", this.addLater("FetchingMessage"));
+        this.fetch.once("error", this.addLater("ResultsFetchingError"));
+        return this.fetch.once("end", this.addLater("ResultsFetched"));
+    };
+
+    Query.prototype.FetchingResults_exit = function () {
+        this.fetch.unbindAll();
+        return this.fetch = null;
     };
 
     Query.prototype.FetchingMessage_enter = function (states, msg) {
@@ -114,7 +116,7 @@ var Query = (function (_super) {
         var attrs = null;
         var body_buffer = "";
         var body = null;
-        msg.on("body", function (stream, data) {
+        this.msg.on("body", function (stream, data) {
             stream.on("data", function (chunk) {
                 return body_buffer += chunk.toString("utf8");
             });
@@ -122,18 +124,17 @@ var Query = (function (_super) {
                 return body = Imap.parseHeader(body_buffer);
             });
         });
-        msg.once("attributes", function (data) {
+        this.msg.once("attributes", function (data) {
             return attrs = data;
         });
-        return msg.once("end", function () {
+        return this.msg.once("end", function () {
             return _this.add("MessageFetched", msg, attrs, body);
         });
     };
 
     Query.prototype.FetchingMessage_exit = function () {
-        if (this.fetching_counter === 0) {
-            return true;
-        }
+        this.msg.unbindAll();
+        return this.msg = null;
     };
 
     Query.prototype.FetchingMessage_MessageFetched = function (states, msg, attrs, body) {
@@ -153,15 +154,6 @@ var Query = (function (_super) {
             throw new Error(err);
         }
     };
-
-    Query.prototype.repl = function () {
-        var repl = repl.start({
-            prompt: "repl> ",
-            input: process.stdin,
-            output: process.stdout
-        });
-        return repl.context["this"] = this;
-    };
     return Query;
 })(asyncmachine.AsyncMachine);
 exports.Query = Query;
@@ -174,7 +166,7 @@ var Connection = (function (_super) {
         this.queries_running_limit = 3;
         this.imap = null;
         this.box_opening_promise = null;
-        this.delayed_timer = null;
+        this.query_timer = null;
         this.settings = null;
         this.last_promise = null;
         this.Disconnected = {
@@ -226,6 +218,7 @@ var Connection = (function (_super) {
         this.HasMonitored = {
             requires: ["Connected", "BoxOpened"]
         };
+        this.box = null;
 
         this.settings = settings;
 
@@ -233,10 +226,6 @@ var Connection = (function (_super) {
 
         this.debug("[connection]", 1);
         this.set("Connecting");
-
-        if (settings.repl) {
-            this.repl();
-        }
     }
     Connection.prototype.addQuery = function (query, update_interval) {
         this.log("Adding query '" + query + "'");
@@ -269,6 +258,7 @@ var Connection = (function (_super) {
     };
 
     Connection.prototype.BoxOpening_enter = function () {
+        var _this = this;
         if (this.is("BoxOpened")) {
             this.add("Fetching");
             return false;
@@ -278,37 +268,32 @@ var Connection = (function (_super) {
         if (this.box_opening_promise) {
             this.box_opening_promise.reject();
         }
-        this.imap.openBox("[Gmail]/All Mail", false, this.addLater("BoxOpened"));
+        var tick = this.clock("BoxOpening");
+        this.imap.openBox("[Gmail]/All Mail", false, function () {
+            if (_this.is("BoxOpening", tick)) {
+                return _this.add("BoxOpened");
+            }
+        });
         this.box_opening_promise = this.last_promise;
         return true;
-    };
-
-    Connection.prototype.BoxOpening_BoxOpening = function () {
-        return this.once("Box.Opened.enter", this.setLater("Fetching"));
     };
 
     Connection.prototype.BoxClosing_enter = function () {
         return this.imap.closeBox(this.addLater("BoxClosed"));
     };
 
-    Connection.prototype.BoxOpened_enter = function () {
+    Connection.prototype.BoxOpened_enter = function (err, box) {
+        this.box = box;
         if (!(this.add("Fetching")) && !this.duringTransition()) {
             return this.log("Cant set Fetching (states: " + (this.is()) + ")");
         }
     };
 
-    Connection.prototype.Delayed_enter = function () {
-        return this.delayed_timer = setTimeout(this.addLater("Fetching"), this.minInterval_());
-    };
-
     Connection.prototype.Delayed_exit = function () {
-        return clearTimeout(this.delayed_timer);
     };
 
     Connection.prototype.Fetching_enter = function () {
         var _this = this;
-        var _results;
-        _results = [];
         while (this.queries_running.length < this.queries_running_limit) {
             var queries = this.queries.sortBy("next_update");
             queries = queries.filter(function (item) {
@@ -328,21 +313,23 @@ var Connection = (function (_super) {
             this.log("concurrency++");
             this.queries_running.push(query);
             query.add("FetchingQuery");
-            _results.push(query.once("Results.Fetched.enter", function () {
+            query.once("Results.Fetched.enter", function () {
                 _this.queries_running = _this.queries_running.filter(function (row) {
                     return row !== query;
                 });
                 _this.log("concurrency--");
-                _this.add("HasMonitored");
-                return setTimeout(_this.addLater("Fetching"), query.update_interval);
-            }));
+                return _this.add("HasMonitored");
+            });
         }
-        return _results;
+        return this.query_timer = setTimeout(this.addLater("Fetching"), this.minInterval_());
     };
 
     Connection.prototype.Fetching_exit = function (states, force) {
         var _this = this;
         this.drop("Active");
+        if (this.query_timer) {
+            clearTimeout(this.query_timer);
+        }
         if (this.queries_running.every(function (query) {
             return query.is("Idle");
         })) {
@@ -370,6 +357,10 @@ var Connection = (function (_super) {
         }
     };
 
+    Connection.prototype.Disconnecting_exit = function () {
+        return this.add("Disconnected");
+    };
+
     Connection.prototype.Fetching_Fetching = function () {
         var args = [];
         for (var _i = 0; _i < (arguments.length - 0); _i++) {
@@ -386,15 +377,6 @@ var Connection = (function (_super) {
         return Math.min.apply(null, this.queries.map(function (ch) {
             return ch.update_interval;
         }));
-    };
-
-    Connection.prototype.repl = function () {
-        var repl = repl.start({
-            prompt: "repl> ",
-            input: process.stdin,
-            output: process.stdout
-        });
-        return repl.context["this"] = this;
     };
     return Connection;
 })(asyncmachine.AsyncMachine);

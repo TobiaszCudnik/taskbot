@@ -1,6 +1,5 @@
 settings = require '../settings'
 Imap = require "imap"
-repl = require 'repl'
 require 'sugar'
 asyncmachine = require 'asyncmachine'
 am_task = require './asyncmachine-task'
@@ -60,7 +59,11 @@ class Query extends asyncmachine.AsyncMachine
 	connection: null
 	name: "*"
 	update_interval: 10*1000
-	fetching_counter: 0
+	
+	# TODO type me!
+	fetch: null
+	# TODO type me!
+	msg: null
 
 	constructor: (connection, name, update_interval) ->
 		super()
@@ -69,7 +72,7 @@ class Query extends asyncmachine.AsyncMachine
 			'FetchingResults', 'ResultsFetchingError', 'FetchingMessage',
 			'MessageFetched', 'ResultsFetched'
 								
-		@debug "[query:\"#{name}\"]", 3
+		@debug "[query:\"#{name}\"]", 1
 
 		@connection = connection
 		@name = name
@@ -91,30 +94,33 @@ class Query extends asyncmachine.AsyncMachine
 		if not results.length
 			@add 'ResultsFetched'
 			return yes
-		fetch = @connection.imap.fetch results, @headers
+		@fetch = @connection.imap.fetch results, @headers
 		# Subscribe state changes to fetching events.
-		# TODO use children tasks for several messages, bind to all
-		fetch.on "error", @addLater 'ResultsFetchingError'
-		fetch.on "message", (msg) =>
-			@add 'FetchingMessage', msg
-		fetch.on "end", @addLater 'ResultsFetched'
+		@fetch.on "message", @addLater 'FetchingMessage'
+		@fetch.once "error", @addLater 'ResultsFetchingError'
+		@fetch.once "end", @addLater 'ResultsFetched'
+		
+	FetchingResults_exit: ->
+		@fetch.unbindAll()
+		@fetch = null
 
 	FetchingMessage_enter: (states, msg) ->
 		attrs = null
 		body_buffer = ''
 		body = null
 		# TODO garbage collect these bindings?
-		msg.on 'body', (stream, data) =>
+		@msg.on 'body', (stream, data) =>
 			stream.on 'data', (chunk) ->
 				body_buffer += chunk.toString 'utf8'
 			stream.once 'end', ->
 				body = Imap.parseHeader body_buffer
-		msg.once 'attributes', (data) => attrs = data
-		msg.once 'end', =>
+		@msg.once 'attributes', (data) => attrs = data
+		@msg.once 'end', =>
 			@add 'MessageFetched', msg, attrs, body
 
-	# TODO make it cancellable?
-	FetchingMessage_exit: -> yes if @fetching_counter is 0
+	FetchingMessage_exit: ->
+		@msg.unbindAll()
+		@msg = null
 
 	FetchingMessage_MessageFetched: (states, msg, attrs, body) ->
 		id = attrs['x-gm-msgid']
@@ -131,15 +137,6 @@ class Query extends asyncmachine.AsyncMachine
 		if err
 			throw new Error err
 
-	# TODO FIXME
-	repl: ->
-		repl = repl.start(
-			prompt: "repl> "
-			input: process.stdin
-			output: process.stdout
-		)
-		repl.context.this = @
-
 # TODO IDLE state
 class Connection extends asyncmachine.AsyncMachine
 
@@ -150,7 +147,7 @@ class Connection extends asyncmachine.AsyncMachine
 	queries_running_limit: 3
 	imap: null
 	box_opening_promise: null
-	delayed_timer: null
+	query_timer: null
 	settings: null
 	last_promise: null
 				
@@ -211,6 +208,9 @@ class Connection extends asyncmachine.AsyncMachine
 	# Tells that the instance has some monitored messages.
 	HasMonitored: 
 		requires: ['Connected', 'BoxOpened']
+		
+	# TODO Type me!
+	box: null
 
 	# API
 
@@ -226,9 +226,6 @@ class Connection extends asyncmachine.AsyncMachine
 		@debug '[connection]', 1
 		# TODO no auto connect 
 		@set 'Connecting'
-
-		if settings.repl
-			@repl()
 
 	addQuery: (query, update_interval) ->
 		# TODO tokenize query?
@@ -274,36 +271,24 @@ class Connection extends asyncmachine.AsyncMachine
 		# TODO try and set to Disconnected on catch
 		# Error: Not connected or authenticated
 		# TODO support err param to the callback
-		@imap.openBox "[Gmail]/All Mail", no, (@addLater 'BoxOpened')
+		tick = @clock 'BoxOpening'
+		@imap.openBox "[Gmail]/All Mail", no, =>
+			@add 'BoxOpened' if @is 'BoxOpening', tick
 		@box_opening_promise = @last_promise
 		yes
-
-	BoxOpening_BoxOpening: ->
-		# TODO move to boxopened_enter??/
-		@once 'Box.Opened.enter', @setLater 'Fetching'
-#		yes
-
-	# TODO `promise.reject()` undefined is not a function
-#	BoxOpening_exit: ->
-#		# TODO stop openbox
-#		promise = @box_opening_promise
-#		if promise and not promise.isResolved
-#			promise.reject()
 
 	BoxClosing_enter: ->
 		@imap.closeBox @addLater 'BoxClosed'
 
-	BoxOpened_enter: ->
+	BoxOpened_enter: (err, box) ->
+		# TODO
+#		if err
+#			@add 'BoxOpeningError', err
+		@box = box
 		if not (@add 'Fetching') and not @duringTransition()
 			@log "Cant set Fetching (states: #{@is()})"
 
-	# TODO this doesnt look OK...
-	Delayed_enter: ->
-		# schedule a task
-		@delayed_timer = setTimeout (@addLater 'Fetching'), @minInterval_()
-
 	Delayed_exit: ->
-		clearTimeout @delayed_timer
 
 	# TODO refactor this logic to the Active state ???
 	Fetching_enter: ->
@@ -334,13 +319,15 @@ class Connection extends asyncmachine.AsyncMachine
 				# TODO Aggregate HasMonitored from the queries
 				# @add ['Delayed', 'HasMonitored']
 				@add 'HasMonitored'
-				# TODO reference and GC this timer
-				setTimeout (@addLater 'Fetching'), query.update_interval
+				
+		# Loop the fetching process
+		@query_timer = setTimeout (@addLater 'Fetching'), @minInterval_()
 		
 	Fetching_exit: (states, force) ->
 		# Exit from all queries.
 		# TODO utilize some event aggregation util?
 		@drop 'Active'
+		clearTimeout @query_timer if @query_timer
 		return yes if @queries_running.every (query) ->
 			query.is 'Idle'
 		# TODO manage @queries_running in a better way
@@ -359,6 +346,8 @@ class Connection extends asyncmachine.AsyncMachine
 			no
 		else if @is 'Disconnecting'
 			no
+			
+	Disconnecting_exit: -> @add 'Disconnected'
 
 	Fetching_Fetching: -> @Fetching_enter.apply @, arguments
 
@@ -366,18 +355,5 @@ class Connection extends asyncmachine.AsyncMachine
 
 	# PRIVATES
 
-	# TODO not needed anymore?
 	minInterval_: ->
 		Math.min.apply null, @queries.map (ch) => ch.update_interval
-
-#	repl: BaseClass.prototype.repl;
-#	log: BaseClass.prototype.log;
-
-	# TODO FIXME
-	repl: ->
-		repl = repl.start(
-			prompt: "repl> "
-			input: process.stdin
-			output: process.stdout
-		)
-		repl.context.this = @

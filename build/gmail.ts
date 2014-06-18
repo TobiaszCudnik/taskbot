@@ -4,7 +4,6 @@
 ///<reference path="../d.ts/global.d.ts"/>
 import settings = require('../settings');
 import Imap = require("imap");
-import repl = require('repl');
 require("sugar");
 import asyncmachine = require('asyncmachine');
 import am_task = require('./asyncmachine-task');
@@ -77,14 +76,16 @@ export class Query extends asyncmachine.AsyncMachine {
 
     update_interval = 10 * 1000;
 
-    fetching_counter = 0;
+    fetch = null;
+
+    msg = null;
 
     constructor(connection, name, update_interval) {
         super();
 
         this.register("HasMonitored", "Fetching", "Idle", "FetchingQuery", "FetchingResults", "ResultsFetchingError", "FetchingMessage", "MessageFetched", "ResultsFetched");
 
-        this.debug("[query:\"" + name + "\"]", 3);
+        this.debug("[query:\"" + name + "\"]", 1);
 
         this.connection = connection;
         this.name = name;
@@ -105,28 +106,32 @@ export class Query extends asyncmachine.AsyncMachine {
             this.add("ResultsFetched");
             return true;
         }
-        var fetch = this.connection.imap.fetch(results, this.headers);
-        fetch.on("error", this.addLater("ResultsFetchingError"));
-        fetch.on("message", (msg) => this.add("FetchingMessage", msg));
-        return fetch.on("end", this.addLater("ResultsFetched"));
+        this.fetch = this.connection.imap.fetch(results, this.headers);
+        this.fetch.on("message", this.addLater("FetchingMessage"));
+        this.fetch.once("error", this.addLater("ResultsFetchingError"));
+        return this.fetch.once("end", this.addLater("ResultsFetched"));
+    }
+
+    FetchingResults_exit() {
+        this.fetch.unbindAll();
+        return this.fetch = null;
     }
 
     FetchingMessage_enter(states, msg) {
         var attrs = null;
         var body_buffer = "";
         var body = null;
-        msg.on("body", (stream, data) => {
+        this.msg.on("body", (stream, data) => {
             stream.on("data", (chunk) => body_buffer += chunk.toString("utf8"));
             return stream.once("end", () => body = Imap.parseHeader(body_buffer));
         });
-        msg.once("attributes", (data) => attrs = data);
-        return msg.once("end", () => this.add("MessageFetched", msg, attrs, body));
+        this.msg.once("attributes", (data) => attrs = data);
+        return this.msg.once("end", () => this.add("MessageFetched", msg, attrs, body));
     }
 
     FetchingMessage_exit() {
-        if (this.fetching_counter === 0) {
-            return true;
-        }
+        this.msg.unbindAll();
+        return this.msg = null;
     }
 
     FetchingMessage_MessageFetched(states, msg, attrs, body) {
@@ -146,15 +151,6 @@ export class Query extends asyncmachine.AsyncMachine {
             throw new Error(err);
         }
     }
-
-    repl() {
-        var repl = repl.start({
-            prompt: "repl> ",
-            input: process.stdin,
-            output: process.stdout
-        });
-        return repl.context["this"] = this;
-    }
 }
 export class Connection extends asyncmachine.AsyncMachine {
     queries: Query[] = [];
@@ -167,7 +163,7 @@ export class Connection extends asyncmachine.AsyncMachine {
 
     box_opening_promise: rsvp.Defered = null;
 
-    delayed_timer: number = null;
+    query_timer = null;
 
     settings: IGtdBotSettings = null;
 
@@ -237,6 +233,8 @@ export class Connection extends asyncmachine.AsyncMachine {
         requires: ["Connected", "BoxOpened"]
     };
 
+    box = null;
+
     constructor(settings) {
         super();
 
@@ -246,10 +244,6 @@ export class Connection extends asyncmachine.AsyncMachine {
 
         this.debug("[connection]", 1);
         this.set("Connecting");
-
-        if (settings.repl) {
-            this.repl();
-        }
     }
 
     addQuery(query, update_interval) {
@@ -292,36 +286,30 @@ export class Connection extends asyncmachine.AsyncMachine {
         if (this.box_opening_promise) {
             this.box_opening_promise.reject();
         }
-        this.imap.openBox("[Gmail]/All Mail", false, this.addLater("BoxOpened"));
+        var tick = this.clock("BoxOpening");
+        this.imap.openBox("[Gmail]/All Mail", false, () => {
+            if (this.is("BoxOpening", tick)) {
+                return this.add("BoxOpened");
+            }
+        });
         this.box_opening_promise = this.last_promise;
         return true;
-    }
-
-    BoxOpening_BoxOpening() {
-        return this.once("Box.Opened.enter", this.setLater("Fetching"));
     }
 
     BoxClosing_enter() {
         return this.imap.closeBox(this.addLater("BoxClosed"));
     }
 
-    BoxOpened_enter() {
+    BoxOpened_enter(err, box) {
+        this.box = box;
         if (!(this.add("Fetching")) && !this.duringTransition()) {
             return this.log("Cant set Fetching (states: " + (this.is()) + ")");
         }
     }
 
-    Delayed_enter() {
-        return this.delayed_timer = setTimeout(this.addLater("Fetching"), this.minInterval_());
-    }
-
-    Delayed_exit() {
-        return clearTimeout(this.delayed_timer);
-    }
+    Delayed_exit() {}
 
     Fetching_enter() {
-        var _results;
-        _results = [];
         while (this.queries_running.length < this.queries_running_limit) {
             var queries = this.queries.sortBy("next_update");
             queries = queries.filter((item) => !this.queries_running.some((s) => s.name === item.name));
@@ -335,18 +323,20 @@ export class Connection extends asyncmachine.AsyncMachine {
             this.log("concurrency++");
             this.queries_running.push(query);
             query.add("FetchingQuery");
-            _results.push(query.once("Results.Fetched.enter", () => {
+            query.once("Results.Fetched.enter", () => {
                 this.queries_running = this.queries_running.filter((row) => row !== query);
                 this.log("concurrency--");
-                this.add("HasMonitored");
-                return setTimeout(this.addLater("Fetching"), query.update_interval);
-            }));
+                return this.add("HasMonitored");
+            });
         }
-        return _results;
+        return this.query_timer = setTimeout(this.addLater("Fetching"), this.minInterval_());
     }
 
     Fetching_exit(states, force) {
         this.drop("Active");
+        if (this.query_timer) {
+            clearTimeout(this.query_timer);
+        }
         if (this.queries_running.every((query) => query.is("Idle"))) {
             return true;
         }
@@ -372,6 +362,10 @@ export class Connection extends asyncmachine.AsyncMachine {
         }
     }
 
+    Disconnecting_exit() {
+        return this.add("Disconnected");
+    }
+
     Fetching_Fetching(...args) {
         return this.Fetching_enter.apply(this, args);
     }
@@ -382,14 +376,5 @@ export class Connection extends asyncmachine.AsyncMachine {
 
     minInterval_() {
         return Math.min.apply(null, this.queries.map((ch) => ch.update_interval));
-    }
-
-    repl() {
-        var repl = repl.start({
-            prompt: "repl> ",
-            input: process.stdin,
-            output: process.stdout
-        });
-        return repl.context["this"] = this;
     }
 }
