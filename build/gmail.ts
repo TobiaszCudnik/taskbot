@@ -62,6 +62,8 @@ export class Query extends asyncmachine.AsyncMachine {
 
     last_update = 0;
 
+    next_update = 0;
+
     headers = {
         bodies: "HEADER.FIELDS (FROM TO SUBJECT DATE)",
         struct: true
@@ -91,6 +93,7 @@ export class Query extends asyncmachine.AsyncMachine {
 
     FetchingQuery_enter() {
         this.last_update = Date.now();
+        this.next_update = this.last_update + this.update_interval;
         this.log("performing a search for " + this.name);
         this.connection.imap.search([["X-GM-RAW", this.name]], (err, results) => this.add("FetchingResults", err, results));
         return true;
@@ -98,6 +101,10 @@ export class Query extends asyncmachine.AsyncMachine {
 
     FetchingQuery_FetchingResults(states, err, results) {
         this.log("got search results");
+        if (!results.length) {
+            this.add("ResultsFetched");
+            return true;
+        }
         var fetch = this.connection.imap.fetch(results, this.headers);
         fetch.on("error", this.addLater("ResultsFetchingError"));
         fetch.on("message", (msg) => this.add("FetchingMessage", msg));
@@ -313,33 +320,29 @@ export class Connection extends asyncmachine.AsyncMachine {
     }
 
     Fetching_enter() {
-        if (this.queries_running.length >= this.queries_running_limit) {
-            return false;
-        }
-        var queries = this.queries.sortBy("last_update");
-        var query = queries.first();
-        var i = 0;
-        while (query.last_update + query.update_interval > Date.now()) {
-            query = queries[i++];
+        var _results;
+        _results = [];
+        while (this.queries_running.length < this.queries_running_limit) {
+            var queries = this.queries.sortBy("next_update");
+            queries = queries.filter((item) => !this.queries_running.some((s) => s.name === item.name));
+            queries = queries.filter((item) => !item.next_update || item.next_update < Date.now());
+            var query = queries.first();
             if (!query) {
-                return false;
+                break;
             }
+
+            this.log("activating " + query.name);
+            this.log("concurrency++");
+            this.queries_running.push(query);
+            query.add("FetchingQuery");
+            _results.push(query.once("Results.Fetched.enter", () => {
+                this.queries_running = this.queries_running.filter((row) => row !== query);
+                this.log("concurrency--");
+                this.add("HasMonitored");
+                return setTimeout(this.addLater("Fetching"), query.update_interval);
+            }));
         }
-        this.log("activating " + query.name);
-        if (this.queries_running.some((s) => s.name === query.name)) {
-            return false;
-        }
-        this.log("concurrency++");
-        this.queries_running.push(query);
-        this.log("query.add 'FetchingQuery'");
-        query.add("FetchingQuery");
-        this.log("query.once 'ResultsFetched.enter'");
-        query.once("ResultsFetched.enter", () => {
-            this.queries_running = this.queries_running.filter((row) => row !== query);
-            this.log("concurrency--");
-            return this.add(["Delayed", "HasMonitored"]);
-        });
-        return true;
+        return _results;
     }
 
     Fetching_exit(states, force) {

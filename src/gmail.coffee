@@ -52,6 +52,7 @@ class Query extends asyncmachine.AsyncMachine
 
 	active: true
 	last_update: 0
+	next_update: 0
 	headers:
 		bodies: 'HEADER.FIELDS (FROM TO SUBJECT DATE)'
 		struct: yes
@@ -76,7 +77,9 @@ class Query extends asyncmachine.AsyncMachine
 
 #	Idle_FetchingQuery: ->
 	FetchingQuery_enter: ->
+		# TODO set once results are ready???
 		@last_update = Date.now()
+		@next_update = @last_update + @update_interval
 		@log "performing a search for " + @name 
 		# TODO addLater???
 		@connection.imap.search [ ['X-GM-RAW', @name ] ], (err, results) =>
@@ -85,7 +88,9 @@ class Query extends asyncmachine.AsyncMachine
 
 	FetchingQuery_FetchingResults: (states, err, results) ->
 		@log 'got search results'
-		# TODO handle err
+		if not results.length
+			@add 'ResultsFetched'
+			return yes
 		fetch = @connection.imap.fetch results, @headers
 		# Subscribe state changes to fetching events.
 		# TODO use children tasks for several messages, bind to all
@@ -300,38 +305,37 @@ class Connection extends asyncmachine.AsyncMachine
 	Delayed_exit: ->
 		clearTimeout @delayed_timer
 
+	# TODO refactor this logic to the Active state ???
 	Fetching_enter: ->
 		# Add new search only if there's a free limit.
-		return no if @queries_running.length >= @queries_running_limit
-		# TODO skip searches which interval hasn't passed yet
-		queries = @queries.sortBy "last_update"
-		query = queries.first()
-		i = 0
-		# Optimise for more justice selection.
-		# TODO encapsulate to needsUpdate()
-		while query.last_update + query.update_interval > Date.now()
-			query = queries[ i++ ]
-			if not query
-				return no
-		@log "activating " + query.name
-		return no if @queries_running.some (s) => s.name == query.name
-		# Performe the search
-		@log 'concurrency++'
-		@queries_running.push query
-		@log "query.add 'FetchingQuery'"
-		query.add 'FetchingQuery'
-		# Subscribe to a finished query
-		@log "query.once 'ResultsFetched.enter'"
-		query.once 'ResultsFetched.enter', =>
-	#			@concurrency = @concurrency.exclude( search )
-			@queries_running = @queries_running.filter (row) =>
-				return (row isnt query)
-			@log 'concurrency--'
-	#			@addsLater 'HasMonitored', 'Delayed'
-			# TODO Combine Delayed with Fetching for the next query
-			# TODO Aggregate HasMonitored from the queries
-			@add ['Delayed', 'HasMonitored']
-		yes
+		while @queries_running.length < @queries_running_limit
+			# Select the next query (based on last update + interval)
+			queries = @queries.sortBy "next_update"
+			# Skip active queries
+			queries = queries.filter (item) =>
+				not @queries_running.some (s) => s.name == item.name
+			queries = queries.filter (item) =>
+				 not item.next_update or item.next_update < Date.now()
+			query = queries.first()
+			break if not query
+			
+			@log "activating #{query.name}"
+			# Performe the search
+			@log 'concurrency++'
+			@queries_running.push query
+			query.add 'FetchingQuery'
+			# Subscribe to a finished query
+			# TODO GC on the exit transition
+			query.once 'Results.Fetched.enter', =>
+				# @concurrency = @concurrency.exclude( search )
+				@queries_running = @queries_running.filter (row) =>
+					return (row isnt query)
+				@log 'concurrency--'
+				# TODO Aggregate HasMonitored from the queries
+				# @add ['Delayed', 'HasMonitored']
+				@add 'HasMonitored'
+				# TODO reference and GC this timer
+				setTimeout (@addLater 'Fetching'), query.update_interval
 		
 	Fetching_exit: (states, force) ->
 		# Exit from all queries.
@@ -362,6 +366,7 @@ class Connection extends asyncmachine.AsyncMachine
 
 	# PRIVATES
 
+	# TODO not needed anymore?
 	minInterval_: ->
 		Math.min.apply null, @queries.map (ch) => ch.update_interval
 

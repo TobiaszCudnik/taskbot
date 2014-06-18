@@ -64,6 +64,7 @@ var Query = (function (_super) {
         };
         this.active = true;
         this.last_update = 0;
+        this.next_update = 0;
         this.headers = {
             bodies: "HEADER.FIELDS (FROM TO SUBJECT DATE)",
             struct: true
@@ -85,6 +86,7 @@ var Query = (function (_super) {
     Query.prototype.FetchingQuery_enter = function () {
         var _this = this;
         this.last_update = Date.now();
+        this.next_update = this.last_update + this.update_interval;
         this.log("performing a search for " + this.name);
         this.connection.imap.search([["X-GM-RAW", this.name]], function (err, results) {
             return _this.add("FetchingResults", err, results);
@@ -95,6 +97,10 @@ var Query = (function (_super) {
     Query.prototype.FetchingQuery_FetchingResults = function (states, err, results) {
         var _this = this;
         this.log("got search results");
+        if (!results.length) {
+            this.add("ResultsFetched");
+            return true;
+        }
         var fetch = this.connection.imap.fetch(results, this.headers);
         fetch.on("error", this.addLater("ResultsFetchingError"));
         fetch.on("message", function (msg) {
@@ -301,37 +307,37 @@ var Connection = (function (_super) {
 
     Connection.prototype.Fetching_enter = function () {
         var _this = this;
-        if (this.queries_running.length >= this.queries_running_limit) {
-            return false;
-        }
-        var queries = this.queries.sortBy("last_update");
-        var query = queries.first();
-        var i = 0;
-        while (query.last_update + query.update_interval > Date.now()) {
-            query = queries[i++];
-            if (!query) {
-                return false;
-            }
-        }
-        this.log("activating " + query.name);
-        if (this.queries_running.some(function (s) {
-            return s.name === query.name;
-        })) {
-            return false;
-        }
-        this.log("concurrency++");
-        this.queries_running.push(query);
-        this.log("query.add 'FetchingQuery'");
-        query.add("FetchingQuery");
-        this.log("query.once 'ResultsFetched.enter'");
-        query.once("ResultsFetched.enter", function () {
-            _this.queries_running = _this.queries_running.filter(function (row) {
-                return row !== query;
+        var _results;
+        _results = [];
+        while (this.queries_running.length < this.queries_running_limit) {
+            var queries = this.queries.sortBy("next_update");
+            queries = queries.filter(function (item) {
+                return !_this.queries_running.some(function (s) {
+                    return s.name === item.name;
+                });
             });
-            _this.log("concurrency--");
-            return _this.add(["Delayed", "HasMonitored"]);
-        });
-        return true;
+            queries = queries.filter(function (item) {
+                return !item.next_update || item.next_update < Date.now();
+            });
+            var query = queries.first();
+            if (!query) {
+                break;
+            }
+
+            this.log("activating " + query.name);
+            this.log("concurrency++");
+            this.queries_running.push(query);
+            query.add("FetchingQuery");
+            _results.push(query.once("Results.Fetched.enter", function () {
+                _this.queries_running = _this.queries_running.filter(function (row) {
+                    return row !== query;
+                });
+                _this.log("concurrency--");
+                _this.add("HasMonitored");
+                return setTimeout(_this.addLater("Fetching"), query.update_interval);
+            }));
+        }
+        return _results;
     };
 
     Connection.prototype.Fetching_exit = function (states, force) {
