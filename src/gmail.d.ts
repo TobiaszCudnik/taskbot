@@ -14,9 +14,6 @@ class Connection extends asyncmachine.AsyncMachine {
 	queries_running: Query[];
 	queries_running_limit: number;
 	
-	last_promise: rsvp.Defered;
-	box_opening_promise: rsvp.Defered;
-	delayed_timer: number;
 }
 
 class Query extends Task {
