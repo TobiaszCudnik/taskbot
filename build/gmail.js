@@ -6,6 +6,7 @@ var __extends = this.__extends || function (d, b) {
 };
 ///<reference path="asyncmachine-task.d.ts"/>
 ///<reference path="../node_modules/asyncmachine/lib/asyncmachine.d.ts"/>
+///<reference path="../d.ts/async.d.ts"/>
 ///<reference path="../d.ts/imap.d.ts"/>
 ///<reference path="../d.ts/global.d.ts"/>
 var settings = require('../settings');
@@ -13,6 +14,8 @@ var Imap = require("imap");
 require("sugar");
 var asyncmachine = require('asyncmachine');
 var am_task = require('./asyncmachine-task');
+
+var async = require('async');
 
 Object.merge(settings, {
     gmail_max_results: 300
@@ -88,7 +91,11 @@ var Query = (function (_super) {
         this.last_update = Date.now();
         this.next_update = this.last_update + this.update_interval;
         this.log("performing a search for " + this.name);
+        var tick = this.clock("Fetching");
         this.connection.imap.search([["X-GM-RAW", this.name]], function (err, results) {
+            if (!_this.is("FetchingQuery", tick)) {
+                return;
+            }
             return _this.add("FetchingResults", err, results);
         });
         return true;
@@ -116,7 +123,7 @@ var Query = (function (_super) {
         var attrs = null;
         var body_buffer = "";
         var body = null;
-        this.msg.on("body", function (stream, data) {
+        this.msg.once("body", function (stream, data) {
             stream.on("data", function (chunk) {
                 return body_buffer += chunk.toString("utf8");
             });
@@ -162,43 +169,37 @@ var Connection = (function (_super) {
     function Connection(settings) {
         _super.call(this);
         this.queries = [];
-        this.queries_running = [];
-        this.queries_running_limit = 3;
+        this.queries_executing = [];
+        this.queries_executing_limit = 3;
         this.imap = null;
-        this.box_opening_promise = null;
         this.query_timer = null;
         this.settings = null;
-        this.last_promise = null;
-        this.Disconnected = {
-            blocks: ["Connected", "Connecting", "Disconnecting"]
-        };
-        this.Disconnecting = {
-            blocks: ["Connected", "Connecting", "Disconnected"]
-        };
-        this.DisconnectingFetching = {
-            requires: ["Disconnecting"]
+        this.box = null;
+        this.fetch = null;
+        this.Connecting = {
+            blocks: ["Connected", "Disconnecting", "Disconnected"]
         };
         this.Connected = {
             blocks: ["Connecting", "Disconnecting", "Disconnected"],
             implies: ["BoxClosed"]
         };
-        this.Connecting = {
-            blocks: ["Connected", "Disconnecting", "Disconnected"]
+        this.Ready = {
+            requires: ["BoxOpened"]
         };
         this.Idle = {
-            requires: ["Connected"]
+            requires: ["Ready"],
+            block: ["ExecutingQueries"]
         };
         this.Active = {
-            requires: ["Connected"]
+            requires: ["Ready"]
         };
-        this.Fetched = {};
-        this.Fetching = {
-            requires: ["BoxOpened"],
-            blocks: ["Idle", "Delayed"]
-        };
-        this.Delayed = {
+        this.ExecutingQueries = {
             requires: ["Active"],
-            blocks: ["Fetching", "Idle"]
+            blocks: ["Idle"]
+        };
+        this.Fetching = {
+            blocks: ["Idle"],
+            requires: ["ExecutingQueries"]
         };
         this.BoxOpening = {
             requires: ["Active"],
@@ -206,7 +207,6 @@ var Connection = (function (_super) {
         };
         this.BoxOpened = {
             depends: ["Connected"],
-            requires: ["Active"],
             blocks: ["BoxOpening", "BoxClosed", "BoxClosing"]
         };
         this.BoxClosing = {
@@ -215,14 +215,13 @@ var Connection = (function (_super) {
         this.BoxClosed = {
             blocks: ["BoxOpened", "BoxOpening", "BoxClosing"]
         };
-        this.HasMonitored = {
-            requires: ["Connected", "BoxOpened"]
+        this.BoxOpeningError = {
+            drops: ["BoxOpeningError"]
         };
-        this.box = null;
 
         this.settings = settings;
 
-        this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "Fetched", "Fetching", "Delayed", "BoxOpening", "BoxOpened", "BoxClosing", "BoxClosed", "HasMonitored");
+        this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "Fetched", "ExecutingQueries", "Delayed", "BoxOpening", "BoxOpened", "BoxClosing", "BoxClosed", "HasMonitored");
 
         this.debug("[connection]", 1);
         this.set("Connecting");
@@ -233,6 +232,7 @@ var Connection = (function (_super) {
     };
 
     Connection.prototype.Connecting_enter = function (states) {
+        var _this = this;
         var data = this.settings;
         this.imap = new Imap({
             user: data.gmail_username,
@@ -244,113 +244,155 @@ var Connection = (function (_super) {
         });
 
         this.imap.connect();
-        return this.imap.once("ready", this.addLater("Connected"));
+        var tick = this.clock("Connecting");
+        return this.imap.once("ready", function () {
+            if (!_this.is("Connecting", tick)) {
+                return;
+            }
+            return _this.add("Connected");
+        });
     };
 
     Connection.prototype.Connecting_exit = function (target_states) {
         if (~target_states.indexOf("Disconnected")) {
-            return true;
+            true;
         }
+        this.imap.removeAllListeners("ready");
+        return this.imap = null;
     };
 
     Connection.prototype.Connected_exit = function () {
-        return this.imap.end(this.addLater("Disconnected"));
+        var _this = this;
+        var tick = this.clock("Connected");
+        return this.imap.end(function () {
+            if (tick !== _this.clock("Connected")) {
+                return;
+            }
+            return _this.add("Disconnected");
+        });
     };
 
     Connection.prototype.BoxOpening_enter = function () {
         var _this = this;
         if (this.is("BoxOpened")) {
-            this.add("Fetching");
+            this.add("ExecutingQueries");
             return false;
         } else {
-            this.once("Box.Opened.enter", this.addLater("Fetching"));
-        }
-        if (this.box_opening_promise) {
-            this.box_opening_promise.reject();
+            this.once("Box.Opened.enter", this.addLater("ExecutingQueries"));
         }
         var tick = this.clock("BoxOpening");
-        this.imap.openBox("[Gmail]/All Mail", false, function () {
-            if (_this.is("BoxOpening", tick)) {
-                return _this.add("BoxOpened");
+        this.imap.openBox("[Gmail]/All Mail", false, function (err, box) {
+            if (!_this.is("BoxOpening", tick)) {
+                return;
             }
+            return _this.add(["BoxOpened", "Ready"], err, box);
         });
-        this.box_opening_promise = this.last_promise;
         return true;
     };
 
-    Connection.prototype.BoxClosing_enter = function () {
-        return this.imap.closeBox(this.addLater("BoxClosed"));
-    };
-
     Connection.prototype.BoxOpened_enter = function (err, box) {
-        this.box = box;
-        if (!(this.add("Fetching")) && !this.duringTransition()) {
-            return this.log("Cant set Fetching (states: " + (this.is()) + ")");
+        if (err) {
+            this.add("BoxOpeningError", err);
+            return false;
         }
+        return this.box = box;
     };
 
-    Connection.prototype.Delayed_exit = function () {
+    Connection.prototype.BoxOpeningError_enter = function (err) {
+        throw new Error(err);
     };
 
-    Connection.prototype.Fetching_enter = function () {
+    Connection.prototype.BoxClosing_enter = function () {
         var _this = this;
-        while (this.queries_running.length < this.queries_running_limit) {
-            var queries = this.queries.sortBy("next_update");
-            queries = queries.filter(function (item) {
-                return !_this.queries_running.some(function (s) {
+        var tick = this.clock("BoxClosing");
+        return this.imap.closeBox(function () {
+            if (!_this.is("BoxClosing", tick)) {
+                return;
+            }
+            return _this.add("BoxClosed");
+        });
+    };
+
+    Connection.prototype.Active_enter = function () {
+        return this.add("ExecutingQueries");
+    };
+
+    Connection.prototype.ExecutingQueries_enter = function () {
+        var _this = this;
+        while (this.queries_executing.length < this.queries_executing_limit) {
+            var query = this.queries.sortBy("next_update").filter(function (item) {
+                return !_this.queries_executing.some(function (s) {
                     return s.name === item.name;
                 });
-            });
-            queries = queries.filter(function (item) {
+            }).filter(function (item) {
                 return !item.next_update || item.next_update < Date.now();
-            });
-            var query = queries.first();
+            }).first();
+
             if (!query) {
                 break;
             }
 
             this.log("activating " + query.name);
             this.log("concurrency++");
-            this.queries_running.push(query);
+            this.queries_executing.push(query);
             query.add("FetchingQuery");
+            this.add("Fetching");
+            var tick = query.clock("FetchingQuery");
             query.once("Results.Fetched.enter", function () {
-                _this.queries_running = _this.queries_running.filter(function (row) {
+                if (tick !== query.clock("FetchingQuery")) {
+                    return;
+                }
+                _this.queries_executing = _this.queries_executing.filter(function (row) {
                     return row !== query;
                 });
-                _this.log("concurrency--");
-                return _this.add("HasMonitored");
+                _this.drop("Fetching");
+                return _this.log("concurrency--");
             });
         }
-        return this.query_timer = setTimeout(this.addLater("Fetching"), this.minInterval_());
+        return this.query_timer = setTimeout(this.addLater("ExecutingQueries"), this.minInterval_());
     };
 
-    Connection.prototype.Fetching_exit = function (states, force) {
+    Connection.prototype.ExecutingQueries_ExecutingQueries = function () {
+        var args = [];
+        for (var _i = 0; _i < (arguments.length - 0); _i++) {
+            args[_i] = arguments[_i + 0];
+        }
+        return this.ExecutingQueries_ExecutingQueries.apply(this, args);
+    };
+
+    Connection.prototype.ExecutingQueries_Disconnecting = function (states, force) {
         var _this = this;
         this.drop("Active");
         if (this.query_timer) {
             clearTimeout(this.query_timer);
         }
-        if (this.queries_running.every(function (query) {
+        if (this.queries_executing.every(function (query) {
             return query.is("Idle");
         })) {
-            return true;
+            return;
         }
-        var counter = this.queries_running.length;
-        var exit = function () {
-            if (--counter === 0) {
-                return _this.add(states);
-            }
-        };
-        this.queries_running.forEach(function (query) {
+        this.add("DisconnectingQueries");
+        var tick = this.clock("BoxClosing");
+        return async.forEach(this.queries_executing, function (query, done) {
             query.drop("Fetching");
-            return query.once("Idle", exit);
+            return query.once("Idle", done);
+        }, function () {
+            if (!_this.is("ExecutingQueries", tick)) {
+                return;
+            }
+            return _this.add("BoxClosing");
         });
-        return false;
     };
 
-    Connection.prototype.Disconnected_enter = function (states) {
+    Connection.prototype.Fetching_exit = function () {
+        return !this.queries_executing.some(function (query) {
+            return query.is("Fetching");
+        });
+    };
+
+    Connection.prototype.Disconnected_enter = function (states, force) {
         if (this.any("Connected", "Connecting")) {
-            this.add("Disconnecting");
+            this.add("Disconnecting", force);
             return false;
         } else if (this.is("Disconnecting")) {
             return false;
@@ -361,16 +403,10 @@ var Connection = (function (_super) {
         return this.add("Disconnected");
     };
 
-    Connection.prototype.Fetching_Fetching = function () {
-        var args = [];
-        for (var _i = 0; _i < (arguments.length - 0); _i++) {
-            args[_i] = arguments[_i + 0];
-        }
-        return this.Fetching_enter.apply(this, args);
-    };
-
-    Connection.prototype.Active_enter = function () {
-        return this.add("BoxOpening");
+    Connection.prototype.hasMonitoredMsgs = function () {
+        return this.queries.some(function (query) {
+            return query.is("HasMonitored");
+        });
     };
 
     Connection.prototype.minInterval_ = function () {

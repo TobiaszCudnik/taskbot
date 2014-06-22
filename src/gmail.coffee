@@ -79,14 +79,14 @@ class Query extends asyncmachine.AsyncMachine
 		@name = name
 		@update_interval = update_interval
 
-#	Idle_FetchingQuery: ->
 	FetchingQuery_enter: ->
 		# TODO set once results are ready???
 		@last_update = Date.now()
 		@next_update = @last_update + @update_interval
 		@log "performing a search for " + @name 
-		# TODO addLater???
-		@connection.imap.search [ ['X-GM-RAW', @name ] ], (err, results) =>
+		tick = @clock 'Fetching'
+		@connection.imap.search [['X-GM-RAW', @name]], (err, results) =>
+			return if not @is 'FetchingQuery', tick
 			@add 'FetchingResults', err, results
 		yes
 
@@ -110,14 +110,14 @@ class Query extends asyncmachine.AsyncMachine
 		body_buffer = ''
 		body = null
 		@msg.once 'body', (stream, data) =>
-      # stream's bindings don't have to be unbound, as we're not passing
-      # the object further
+			# stream's bindings don't have to be unbound, as we're not passing
+			# the object further
 			stream.on 'data', (chunk) ->
 				body_buffer += chunk.toString 'utf8'
 			stream.once 'end', ->
 				body = Imap.parseHeader body_buffer
 		@msg.once 'attributes', (data) =>
-      attrs = data 
+			attrs = data 
 		@msg.once 'end', =>
 			@add 'MessageFetched', msg, attrs, body
 
@@ -146,57 +146,51 @@ class Connection extends asyncmachine.AsyncMachine
 	# ATTRIBUTES
 
 	queries: []
-	queries_running: []
-	queries_running_limit: 3
+	queries_executing: []
+	queries_executing_limit: 3
 	imap: null
 	query_timer: null
 	settings: null
 		
 	# TODO Type me!
 	box: null
-  fetch: null
+	fetch: null
 				
-	# STATES
-				
-	Disconnected:
-		blocks: ['Connected', 'Connecting', 'Disconnecting']
+	# MAIN STATES
 
-	Disconnecting:
-		blocks: ['Connected', 'Connecting', 'Disconnected']
-
-	DisconnectingQueries:
-		requires: ['Disconnecting']
+	Connecting:
+		blocks: ['Connected', 'Disconnecting', 'Disconnected']
 
 	Connected:
 		blocks: ['Connecting', 'Disconnecting', 'Disconnected']
 		implies: ['BoxClosed']
 
-	Connecting:
-		blocks: ['Connected', 'Disconnecting', 'Disconnected']
-
+	Ready:
+		# TODO auto: yes
+		requires: ['BoxOpened']
+		
 	Idle:
-		requires: ['Connected']
-    block: ['Fetching']
+		requires: ['Ready']
+		block: ['ExecutingQueries']
 
 	Active:
-		requires: ['Connected']
-
-	Fetching: 
-    requires: ['ExecutingQueries']
+		requires: ['Ready']
 
 	ExecutingQueries:
-		requires: ['BoxOpened']
 		requires: ['Active']
-		blocks: ['Idle', 'Delayed']
+		blocks: ['Idle']
+		
+	# FORWARDED STATES
 
-	Fetching: {}
+	Fetching:
+		blocks: ['Idle']
+		requires: ['ExecutingQueries']
+		
+	# BOX RELATED STATES
 
 	BoxOpening:
 		requires: ['Active']
 		blocks: ['BoxOpened', 'BoxClosing', 'BoxClosed']
-    
-  BoxOpeningError:
-    drops: ['BoxOpeningError']
 
 	BoxOpened:
 		depends: ['Connected']
@@ -207,10 +201,11 @@ class Connection extends asyncmachine.AsyncMachine
 
 	BoxClosed:
 		blocks: ['BoxOpened', 'BoxOpening', 'BoxClosing']
-
-	# Tells that the instance has some monitored messages.
-#	HasMonitored: 
-#		requires: ['Connected', 'BoxOpened']
+		
+	# ERROR STATES
+		
+	BoxOpeningError:
+		drops: ['BoxOpeningError']
 
 	# API
 
@@ -244,16 +239,22 @@ class Connection extends asyncmachine.AsyncMachine
 			debug: console.log if @settings.debug
 									
 		@imap.connect()
-		@imap.once 'ready', @addLater 'Connected'
+		tick = @clock 'Connecting'
+		@imap.once 'ready', =>
+			return if not @is 'Connecting', tick
+			@add 'Connected'
 
 	Connecting_exit: (target_states) ->
 		if ~target_states.indexOf 'Disconnected'
 			yes
-    @imap.unbindAll()
-    @imap = null
+		@imap.removeAllListeners 'ready'
+		@imap = null
 
 	Connected_exit: ->
-		@imap.end @addLater 'Disconnected'
+		tick = @clock 'Connected'
+		@imap.end =>
+			return if tick isnt @clock 'Connected'
+			@add 'Disconnected'
 
 	BoxOpening_enter: ->
 		if @is 'BoxOpened'
@@ -266,101 +267,109 @@ class Connection extends asyncmachine.AsyncMachine
 		# TODO support err param to the callback
 		tick = @clock 'BoxOpening'
 		@imap.openBox "[Gmail]/All Mail", no, (err, box) =>
-      return if not @is 'BoxOpening', tick
-			@add 'BoxOpened', err, box
+			return if not @is 'BoxOpening', tick
+			@add ['BoxOpened', 'Ready'], err, box
 		yes
 
 	BoxOpened_enter: (err, box) ->
 		# TODO
 		if err
 			@add 'BoxOpeningError', err
-      return no
+			return no
 		@box = box
-    
-  BoxOpeningError_enter: (err) ->
-    throw new Error err
+		
+	BoxOpeningError_enter: (err) ->
+		throw new Error err
 
 	BoxClosing_enter: ->
-    tick = @clock 'BoxClosing'
+		tick = @clock 'BoxClosing'
 		@imap.closeBox =>
-      return if not @is 'BoxClosing', tick
-      @add 'BoxClosed'
-      
-  # CONNECTED
+			return if not @is 'BoxClosing', tick
+			@add 'BoxClosed'
+			
+	# CONNECTED
 
 	Active_enter: -> @add 'ExecutingQueries'
 
 	# TODO refactor this logic to the Active state ???
 	ExecutingQueries_enter: ->
 		# Add new search only if there's a free limit.
-		while @queries_running.length < @queries_running_limit
-			# Select the next query (based on last update + interval)
-			queries = @queries.sortBy "next_update"
-			# Skip active queries
-			queries = queries.filter (item) =>
-				not @queries_running.some (s) => s.name == item.name
-			queries = queries.filter (item) =>
-				 not item.next_update or item.next_update < Date.now()
-			query = queries.first()
+		while @queries_executing.length < @queries_executing_limit
+			query = @queries
+				# Select the next query (based on last update + interval)
+				.sortBy("next_update")
+				# Skip active queries
+				.filter( (item) =>
+					not @queries_executing.some (s) => s.name == item.name)
+				# Skip queries not queued yet
+				.filter( (item) =>
+					 not item.next_update or item.next_update < Date.now())
+				# Skip queries still working
+				# .filter( (item) =>
+				#   not item.is 'Fetching')
+				.first()
+			
 			break if not query
 			
 			@log "activating #{query.name}"
 			# Performe the search
 			@log 'concurrency++'
-			@queries_running.push query
+			@queries_executing.push query
 			query.add 'FetchingQuery'
-      @add 'Fetching'
+			@add 'Fetching'
 			# Subscribe to a finished query
-			# TODO GC on the exit transition
+			tick = query.clock 'FetchingQuery'
 			query.once 'Results.Fetched.enter', =>
-				# @concurrency = @concurrency.exclude( search )
-				@queries_running = @queries_running.filter (row) =>
+				return if tick isnt query.clock 'FetchingQuery'
+				# @concurrency = @concurrency.exclude search
+				@queries_executing = @queries_executing.filter (row) =>
 					return (row isnt query)
-        @drop 'Fetching'
+				# Try to drop the fetching state
+				@drop 'Fetching'
 				@log 'concurrency--'
-				# TODO Aggregate HasMonitored from the queries
-				# @add ['Delayed', 'HasMonitored']
-				@add 'HasMonitored'
 				
 		# Loop the fetching process
 		@query_timer = setTimeout (@addLater 'ExecutingQueries'), @minInterval_()
 
 	ExecutingQueries_ExecutingQueries: ->
-    @ExecutingQueries_ExecutingQueries.apply @, arguments
+		@ExecutingQueries_ExecutingQueries.apply @, arguments
 		
 	ExecutingQueries_Disconnecting: (states, force) ->
 		# Disconnected mean not Active
 		@drop 'Active'
-    # Clear the scheduler's timer, if any
+		# Clear the scheduler's timer, if any
 		clearTimeout @query_timer if @query_timer
-    # If no query is Fetching, accept the transition
-		return if @queries_running.every (query) ->
+		# If no query is Fetching, accept the transition
+		return if @queries_executing.every (query) ->
 			query.is 'Idle'
-    # If not, we're waiting (by a state) while asserting on a current tick
-    @add 'DisconnectingQueries'
-    tick = clock 'BoxClosing'
-    async.parrarel(@queries_running,
-      (query, done) =>
-        query.drop 'Fetching'
-        query.once 'Idle', done
-      =>
-        return if not @is 'ExecutingQueries', tick
-        # Continue with closing the box
-        @add 'BoxClosing'
-    )
-  
-  Fetching_exit: ->
-		not @queries_running.some (query) ->
+		# If not, we're waiting (by a state) while asserting on a current tick
+		@add 'DisconnectingQueries'
+		tick = @clock 'BoxClosing'
+		async.forEach(@queries_executing,
+			(query, done) =>
+				query.drop 'Fetching'
+				query.once 'Idle', done
+			=>
+				return if not @is 'ExecutingQueries', tick
+				# Continue with closing the box
+				@add 'BoxClosing'
+		)
+	
+	Fetching_exit: ->
+		not @queries_executing.some (query) ->
 			query.is 'Fetching'
 		
-	Disconnected_enter: (states) ->
+	Disconnected_enter: (states, force) ->
 		if @any 'Connected', 'Connecting'
-			@add 'Disconnecting'
+			@add 'Disconnecting', force
 			no
 		else if @is 'Disconnecting'
 			no
-			
+
 	Disconnecting_exit: -> @add 'Disconnected'
+
+	hasMonitoredMsgs: ->
+		@queries.some (query) -> query.is 'HasMonitored'
 
 	# PRIVATES
 
