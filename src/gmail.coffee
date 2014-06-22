@@ -179,6 +179,15 @@ class Connection extends asyncmachine.AsyncMachine
 	ExecutingQueries:
 		requires: ['Active']
 		blocks: ['Idle']
+
+	Disconnecting:
+		blocks: ['Connected', 'Connecting', 'Disconnected']
+
+	DisconnectingQueries:
+		requires: ['Disconnecting']
+				
+	Disconnected:
+		blocks: ['Connected', 'Connecting', 'Disconnecting']
 		
 	# FORWARDED STATES
 
@@ -215,8 +224,8 @@ class Connection extends asyncmachine.AsyncMachine
 		@settings = settings
 								
 		@register 'Disconnected', 'Disconnecting', 'Connected', 'Connecting',
-			'Idle', 'Active', 'Fetched', 'ExecutingQueries', 'Delayed', 'BoxOpening',
-			'BoxOpened', 'BoxClosing', 'BoxClosed', 'HasMonitored'
+			'Idle', 'Active', 'ExecutingQueries', 'BoxOpening', 'Fetching',
+			'BoxOpened', 'BoxClosing', 'BoxClosed', 'Ready'
 								
 		@debug '[connection]', 1
 		# TODO no auto connect 

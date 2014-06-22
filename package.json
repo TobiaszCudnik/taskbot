@@ -27,6 +27,7 @@
   ],
   "dependencies" : {
     "imap":  "latest",
+    "async":  "latest",
 	  "asyncmachine": "TobiaszCudnik/asyncmachine#coffee",
 	  "sugar": "latest",
 		"suspend": "latest",
