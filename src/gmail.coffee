@@ -9,6 +9,21 @@ async = require 'async'
 Object.merge settings, gmail_max_results: 300
 
 class Message
+	
+	subject: null
+	body: null
+	labels: null
+	id: null
+	query: null
+	
+	constructor: (id, subject, labels, body) ->
+		@id = id
+		@subject = subject
+		@labels = labels
+		@body = body
+		
+	setQuery: (query) ->
+		@query = query
 
 class Query extends asyncmachine.AsyncMachine
 #class Query extends am_task.Task
@@ -56,9 +71,8 @@ class Query extends asyncmachine.AsyncMachine
 	headers:
 		bodies: 'HEADER.FIELDS (FROM TO SUBJECT DATE)'
 		struct: yes
-	monitored: []		
 	connection: null
-	name: "*"
+	query: "*"
 	update_interval: 10*1000
 	
 	# TODO type me!
@@ -66,26 +80,26 @@ class Query extends asyncmachine.AsyncMachine
 	# TODO type me!
 	msg: null
 
-	constructor: (connection, name, update_interval) ->
+	constructor: (connection, query, update_interval) ->
 		super()
 								
 		@register 'HasMonitored', 'Fetching', 'Idle', 'FetchingQuery',
 			'FetchingResults', 'ResultsFetchingError', 'FetchingMessage',
 			'MessageFetched', 'ResultsFetched'
 								
-		@debug "[query:\"#{name}\"]", 1
+		@debug "[query:\"#{query}\"]", 1
 
 		@connection = connection
-		@name = name
+		@query = query
 		@update_interval = update_interval
 
 	FetchingQuery_enter: ->
 		# TODO set once results are ready???
 		@last_update = Date.now()
 		@next_update = @last_update + @update_interval
-		@log "performing a search for " + @name 
+		@log "performing a search for #{@query}" 
 		tick = @clock 'FetchingQuery'
-		@connection.imap.search [['X-GM-RAW', @name]], (err, results) =>
+		@connection.imap.search [['X-GM-RAW', @query]], (err, results) =>
 			return if not @is 'FetchingQuery', tick + 1
 			@add 'FetchingResults', err, results
 		yes
@@ -131,11 +145,12 @@ class Query extends asyncmachine.AsyncMachine
 
 	FetchingMessage_MessageFetched: (states, msg, attrs, body) ->
 		id = attrs['x-gm-msgid']
-		if not ~@monitored.indexOf id
+		if @connection.monitored[id]
 			# TODO event
 			labels = attrs['x-gm-labels'] || []
 			@log "New msg \"#{body.subject}\" (#{labels.join ','})"
-			@monitored.push id
+			@connection.monitored[id] = new Message id, body.subject, labels
+			@connection.monitored[id].setQuery @
 			@add 'HasMonitored'
 
 	ResultsFetchingError_enter: (err) ->
@@ -155,17 +170,19 @@ class Connection extends asyncmachine.AsyncMachine
 	imap: null
 	query_timer: null
 	settings: null
+	monitored: {}
 		
-	# TODO Type me!
 	box: null
 	fetch: null
 				
 	# MAIN STATES
 
 	Connecting:
+		requires: ['Active']
 		blocks: ['Connected', 'Disconnecting', 'Disconnected']
 
 	Connected:
+		requires: ['Active']
 		blocks: ['Connecting', 'Disconnecting', 'Disconnected']
 		implies: ['BoxClosed']
 
@@ -177,11 +194,9 @@ class Connection extends asyncmachine.AsyncMachine
 		requires: ['Ready']
 		block: ['ExecutingQueries']
 
-	Active:
-		requires: ['Ready']
+	Active: {}
 
 	ExecutingQueries:
-		requires: ['Active']
 		blocks: ['Idle']
 		
 	QueryFetched:
@@ -209,6 +224,7 @@ class Connection extends asyncmachine.AsyncMachine
 		blocks: ['BoxOpened', 'BoxClosing', 'BoxClosed']
 
 	BoxOpened:
+		requires: ['Connected']
 		depends: ['Connected']
 		blocks: ['BoxOpening', 'BoxClosed', 'BoxClosing']
 
@@ -221,7 +237,7 @@ class Connection extends asyncmachine.AsyncMachine
 	# ERROR STATES
 		
 	BoxOpeningError:
-		drops: ['BoxOpeningError']
+		drops: ['BoxOpened', 'BoxOpening']
 
 	# API
 
@@ -236,8 +252,6 @@ class Connection extends asyncmachine.AsyncMachine
 			'BoxOpeningError'
 		
 		@debug '[connection]', 1
-		# TODO no auto connect 
-		@set 'Connecting'
 
 	addQuery: (query, update_interval) ->
 		@log "Adding query '#{query}'"
@@ -302,7 +316,11 @@ class Connection extends asyncmachine.AsyncMachine
 			
 	# CONNECTED
 
-	Active_enter: -> @add 'ExecutingQueries'
+	Ready_enter: -> @add 'ExecutingQueries'
+
+	Active_enter: -> @add 'Connecting'
+	
+	Connected_Active: -> @add 'Connecting'
 
 	# TODO refactor this logic to the Active state ???
 	ExecutingQueries_enter: ->
@@ -313,7 +331,7 @@ class Connection extends asyncmachine.AsyncMachine
 				.sortBy("next_update")
 				# Skip active queries
 				.filter( (item) =>
-					not @queries_executing.some (s) => s.name == item.name)
+					not @queries_executing.some (s) => s.query == item.query)
 				# Skip queries not queued yet
 				.filter( (item) =>
 					 not item.next_update or item.next_update < Date.now())
@@ -324,7 +342,7 @@ class Connection extends asyncmachine.AsyncMachine
 			
 			break if not query
 			
-			@log "activating #{query.name}"
+			@log "activating #{query.query}"
 			# Performe the search
 			@log 'concurrency++'
 			@queries_executing.push query
@@ -343,8 +361,8 @@ class Connection extends asyncmachine.AsyncMachine
 				@log 'concurrency--'
 				
 		# Loop the fetching process
-		# TODO compiler warning
-		@query_timer = setTimeout @ExecutingQueries_enter.bind(@), @minInterval_()
+		func = => @ExecutingQueries_enter()
+		@query_timer = setTimeout func, @minInterval_()
 		
 	ExecutingQueries_Disconnecting: (states, force) ->
 		# Disconnected mean not Active

@@ -16,7 +16,26 @@ Object.merge(settings, {
 });
 
 export class Message {
+    subject: string = null;
 
+    body: string = null;
+
+    labels: string[] = null;
+
+    id: number = null;
+
+    query: Query = null;
+
+    	constructor(id: number, subject: string, labels: string[], body?: string) {
+        this.id = id;
+        this.subject = subject;
+        this.labels = labels;
+        this.body = body;
+    }
+
+    	setQuery(query: Query) {
+        return this.query = query;
+    }
 }
 
 export class Query extends asyncmachine.AsyncMachine {
@@ -70,11 +89,9 @@ export class Query extends asyncmachine.AsyncMachine {
         struct: true
     };
 
-    monitored = [];
-
     connection = null;
 
-    name = "*";
+    query = "*";
 
     update_interval = 10 * 1000;
 
@@ -82,24 +99,24 @@ export class Query extends asyncmachine.AsyncMachine {
 
     msg = null;
 
-    constructor(connection, name, update_interval) {
+    constructor(connection, query, update_interval) {
         super();
 
         this.register("HasMonitored", "Fetching", "Idle", "FetchingQuery", "FetchingResults", "ResultsFetchingError", "FetchingMessage", "MessageFetched", "ResultsFetched");
 
-        this.debug("[query:\"" + name + "\"]", 1);
+        this.debug("[query:\"" + query + "\"]", 1);
 
         this.connection = connection;
-        this.name = name;
+        this.query = query;
         this.update_interval = update_interval;
     }
 
     FetchingQuery_enter() {
         this.last_update = Date.now();
         this.next_update = this.last_update + this.update_interval;
-        this.log("performing a search for " + this.name);
+        this.log("performing a search for " + this.query);
         var tick = this.clock("FetchingQuery");
-        this.connection.imap.search([["X-GM-RAW", this.name]], (err, results) => {
+        this.connection.imap.search([["X-GM-RAW", this.query]], (err, results) => {
             if (!this.is("FetchingQuery", tick + 1)) {
                 return;
             }
@@ -148,10 +165,11 @@ export class Query extends asyncmachine.AsyncMachine {
 
     FetchingMessage_MessageFetched(states, msg, attrs, body) {
         var id = attrs["x-gm-msgid"];
-        if (!~this.monitored.indexOf(id)) {
+        if (this.connection.monitored[id]) {
             var labels = attrs["x-gm-labels"] || [];
             this.log("New msg \"" + body.subject + "\" (" + (labels.join(",")) + ")");
-            this.monitored.push(id);
+            this.connection.monitored[id] = new Message(id, body.subject, labels);
+            this.connection.monitored[id].setQuery(this);
             return this.add("HasMonitored");
         }
     }
@@ -177,15 +195,19 @@ export class Connection extends asyncmachine.AsyncMachine {
 
     settings: IGtdBotSettings = null;
 
+    	monitored: MessagesHash = {};
+
     box = null;
 
     fetch = null;
 
     Connecting = {
+        requires: ["Active"],
         blocks: ["Connected", "Disconnecting", "Disconnected"]
     };
 
     Connected = {
+        requires: ["Active"],
         blocks: ["Connecting", "Disconnecting", "Disconnected"],
         implies: ["BoxClosed"]
     };
@@ -199,12 +221,9 @@ export class Connection extends asyncmachine.AsyncMachine {
         block: ["ExecutingQueries"]
     };
 
-    Active = {
-        requires: ["Ready"]
-    };
+    Active = {};
 
     ExecutingQueries = {
-        requires: ["Active"],
         blocks: ["Idle"]
     };
 
@@ -235,6 +254,7 @@ export class Connection extends asyncmachine.AsyncMachine {
     };
 
     BoxOpened = {
+        requires: ["Connected"],
         depends: ["Connected"],
         blocks: ["BoxOpening", "BoxClosed", "BoxClosing"]
     };
@@ -248,7 +268,7 @@ export class Connection extends asyncmachine.AsyncMachine {
     };
 
     BoxOpeningError = {
-        drops: ["BoxOpeningError"]
+        drops: ["BoxOpened", "BoxOpening"]
     };
 
     constructor(settings) {
@@ -259,7 +279,6 @@ export class Connection extends asyncmachine.AsyncMachine {
         this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "ExecutingQueries", "BoxOpening", "Fetching", "BoxOpened", "BoxClosing", "BoxClosed", "Ready", "QueryFetched", "BoxOpeningError");
 
         this.debug("[connection]", 1);
-        this.set("Connecting");
     }
 
     addQuery(query, update_interval) {
@@ -343,19 +362,27 @@ export class Connection extends asyncmachine.AsyncMachine {
         });
     }
 
-    Active_enter() {
+    Ready_enter() {
         return this.add("ExecutingQueries");
+    }
+
+    Active_enter() {
+        return this.add("Connecting");
+    }
+
+    Connected_Active() {
+        return this.add("Connecting");
     }
 
     ExecutingQueries_enter() {
         while (this.queries_executing.length < this.queries_executing_limit) {
-            var query = this.queries.sortBy("next_update").filter((item) => !this.queries_executing.some((s) => s.name === item.name)).filter((item) => !item.next_update || item.next_update < Date.now()).first();
+            var query = this.queries.sortBy("next_update").filter((item) => !this.queries_executing.some((s) => s.query === item.query)).filter((item) => !item.next_update || item.next_update < Date.now()).first();
 
             if (!query) {
                 break;
             }
 
-            this.log("activating " + query.name);
+            this.log("activating " + query.query);
             this.log("concurrency++");
             this.queries_executing.push(query);
             query.add("FetchingQuery");
@@ -371,7 +398,8 @@ export class Connection extends asyncmachine.AsyncMachine {
                 return this.log("concurrency--");
             });
         }
-        return this.query_timer = setTimeout(this.ExecutingQueries_enter.bind(this), this.minInterval_());
+        var func = () => this.ExecutingQueries_enter();
+        return this.query_timer = setTimeout(func, this.minInterval_());
     }
 
     ExecutingQueries_Disconnecting(states, force) {
@@ -419,4 +447,8 @@ export class Connection extends asyncmachine.AsyncMachine {
     minInterval_() {
         return Math.min.apply(null, this.queries.map((ch) => ch.update_interval));
     }
+}
+
+interface MessagesHash {
+	[index: string]: Message;
 }

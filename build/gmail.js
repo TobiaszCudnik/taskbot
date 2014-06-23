@@ -21,15 +21,27 @@ Object.merge(settings, {
 });
 
 var Message = (function () {
-    function Message() {
+    function Message(id, subject, labels, body) {
+        this.subject = null;
+        this.body = null;
+        this.labels = null;
+        this.id = null;
+        this.query = null;
+        this.id = id;
+        this.subject = subject;
+        this.labels = labels;
+        this.body = body;
     }
+    Message.prototype.setQuery = function (query) {
+        return this.query = query;
+    };
     return Message;
 })();
 exports.Message = Message;
 
 var Query = (function (_super) {
     __extends(Query, _super);
-    function Query(connection, name, update_interval) {
+    function Query(connection, query, update_interval) {
         _super.call(this);
         this.HasMonitored = {};
         this.ResultsFetched = {
@@ -68,28 +80,27 @@ var Query = (function (_super) {
             bodies: "HEADER.FIELDS (FROM TO SUBJECT DATE)",
             struct: true
         };
-        this.monitored = [];
         this.connection = null;
-        this.name = "*";
+        this.query = "*";
         this.update_interval = 10 * 1000;
         this.fetch = null;
         this.msg = null;
 
         this.register("HasMonitored", "Fetching", "Idle", "FetchingQuery", "FetchingResults", "ResultsFetchingError", "FetchingMessage", "MessageFetched", "ResultsFetched");
 
-        this.debug("[query:\"" + name + "\"]", 1);
+        this.debug("[query:\"" + query + "\"]", 1);
 
         this.connection = connection;
-        this.name = name;
+        this.query = query;
         this.update_interval = update_interval;
     }
     Query.prototype.FetchingQuery_enter = function () {
         var _this = this;
         this.last_update = Date.now();
         this.next_update = this.last_update + this.update_interval;
-        this.log("performing a search for " + this.name);
+        this.log("performing a search for " + this.query);
         var tick = this.clock("FetchingQuery");
-        this.connection.imap.search([["X-GM-RAW", this.name]], function (err, results) {
+        this.connection.imap.search([["X-GM-RAW", this.query]], function (err, results) {
             if (!_this.is("FetchingQuery", tick + 1)) {
                 return;
             }
@@ -153,10 +164,11 @@ var Query = (function (_super) {
 
     Query.prototype.FetchingMessage_MessageFetched = function (states, msg, attrs, body) {
         var id = attrs["x-gm-msgid"];
-        if (!~this.monitored.indexOf(id)) {
+        if (this.connection.monitored[id]) {
             var labels = attrs["x-gm-labels"] || [];
             this.log("New msg \"" + body.subject + "\" (" + (labels.join(",")) + ")");
-            this.monitored.push(id);
+            this.connection.monitored[id] = new Message(id, body.subject, labels);
+            this.connection.monitored[id].setQuery(this);
             return this.add("HasMonitored");
         }
     };
@@ -181,12 +193,15 @@ var Connection = (function (_super) {
         this.imap = null;
         this.query_timer = null;
         this.settings = null;
+        this.monitored = {};
         this.box = null;
         this.fetch = null;
         this.Connecting = {
+            requires: ["Active"],
             blocks: ["Connected", "Disconnecting", "Disconnected"]
         };
         this.Connected = {
+            requires: ["Active"],
             blocks: ["Connecting", "Disconnecting", "Disconnected"],
             implies: ["BoxClosed"]
         };
@@ -197,11 +212,8 @@ var Connection = (function (_super) {
             requires: ["Ready"],
             block: ["ExecutingQueries"]
         };
-        this.Active = {
-            requires: ["Ready"]
-        };
+        this.Active = {};
         this.ExecutingQueries = {
-            requires: ["Active"],
             blocks: ["Idle"]
         };
         this.QueryFetched = {
@@ -225,6 +237,7 @@ var Connection = (function (_super) {
             blocks: ["BoxOpened", "BoxClosing", "BoxClosed"]
         };
         this.BoxOpened = {
+            requires: ["Connected"],
             depends: ["Connected"],
             blocks: ["BoxOpening", "BoxClosed", "BoxClosing"]
         };
@@ -235,7 +248,7 @@ var Connection = (function (_super) {
             blocks: ["BoxOpened", "BoxOpening", "BoxClosing"]
         };
         this.BoxOpeningError = {
-            drops: ["BoxOpeningError"]
+            drops: ["BoxOpened", "BoxOpening"]
         };
 
         this.settings = settings;
@@ -243,7 +256,6 @@ var Connection = (function (_super) {
         this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "ExecutingQueries", "BoxOpening", "Fetching", "BoxOpened", "BoxClosing", "BoxClosed", "Ready", "QueryFetched", "BoxOpeningError");
 
         this.debug("[connection]", 1);
-        this.set("Connecting");
     }
     Connection.prototype.addQuery = function (query, update_interval) {
         this.log("Adding query '" + query + "'");
@@ -330,8 +342,16 @@ var Connection = (function (_super) {
         });
     };
 
-    Connection.prototype.Active_enter = function () {
+    Connection.prototype.Ready_enter = function () {
         return this.add("ExecutingQueries");
+    };
+
+    Connection.prototype.Active_enter = function () {
+        return this.add("Connecting");
+    };
+
+    Connection.prototype.Connected_Active = function () {
+        return this.add("Connecting");
     };
 
     Connection.prototype.ExecutingQueries_enter = function () {
@@ -339,7 +359,7 @@ var Connection = (function (_super) {
         while (this.queries_executing.length < this.queries_executing_limit) {
             var query = this.queries.sortBy("next_update").filter(function (item) {
                 return !_this.queries_executing.some(function (s) {
-                    return s.name === item.name;
+                    return s.query === item.query;
                 });
             }).filter(function (item) {
                 return !item.next_update || item.next_update < Date.now();
@@ -349,7 +369,7 @@ var Connection = (function (_super) {
                 break;
             }
 
-            this.log("activating " + query.name);
+            this.log("activating " + query.query);
             this.log("concurrency++");
             this.queries_executing.push(query);
             query.add("FetchingQuery");
@@ -367,7 +387,10 @@ var Connection = (function (_super) {
                 return _this.log("concurrency--");
             });
         }
-        return this.query_timer = setTimeout(this.ExecutingQueries_enter.bind(this), this.minInterval_());
+        var func = function () {
+            return _this.ExecutingQueries_enter();
+        };
+        return this.query_timer = setTimeout(func, this.minInterval_());
     };
 
     Connection.prototype.ExecutingQueries_Disconnecting = function (states, force) {

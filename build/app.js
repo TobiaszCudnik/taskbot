@@ -15,10 +15,8 @@ exports.async = suspend.async;
 
 var App = (function (_super) {
     __extends(App, _super);
-    function App() {
-        _super.apply(this, arguments);
-    }
-    App.prototype.Ready_enter = function (states) {
+    function App(settings) {
+        _super.call(this, settings);
         this.addQuery("*", 1000);
         this.addQuery("label:S-Pending", 5000);
         this.addQuery("label:sent", 5000);
@@ -26,10 +24,10 @@ var App = (function (_super) {
         if (!this.add("Active")) {
             this.log("cant activate Active (states: " + (this.is()) + ")");
         }
-        return true;
-    };
+    }
     return App;
 })(gmail.Connection);
 exports.App = App;
+
 exports.client = new App(settings);
 //# sourceMappingURL=app.js.map

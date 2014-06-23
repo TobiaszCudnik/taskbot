@@ -8,7 +8,8 @@ export var go = suspend.resume;
 export var async = suspend.async;
 
 export class App extends gmail.Connection {
-    Ready_enter(states) {
+    constructor(settings) {
+        super(settings);
         this.addQuery("*", 1000);
         this.addQuery("label:S-Pending", 5000);
         this.addQuery("label:sent", 5000);
@@ -16,7 +17,7 @@ export class App extends gmail.Connection {
         if (!this.add("Active")) {
             this.log("cant activate Active (states: " + (this.is()) + ")");
         }
-        return true;
     }
 }
+
 export var client = new App(settings);
