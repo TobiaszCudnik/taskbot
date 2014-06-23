@@ -91,7 +91,7 @@ class Query extends asyncmachine.AsyncMachine
 		yes
 
 	FetchingQuery_FetchingResults: (states, err, results) ->
-		@log 'got search results'
+		@log "Found #{results.length} search results"
 		if not results.length
 			@add 'ResultsFetched'
 			return yes
@@ -103,13 +103,15 @@ class Query extends asyncmachine.AsyncMachine
 		
 	FetchingResults_exit: ->
 		if @fetch
-			@fetch.unbindAll()
+			events = ['message', 'error', 'end']
+			@fetch.removeAllListeners event for event in events 
 			@fetch = null
 
 	FetchingMessage_enter: (states, msg) ->
 		attrs = null
 		body_buffer = ''
 		body = null
+		# TODO how the error is handled?
 		@msg.once 'body', (stream, data) =>
 			# stream's bindings don't have to be unbound, as we're not passing
 			# the object further
@@ -123,7 +125,8 @@ class Query extends asyncmachine.AsyncMachine
 			@add 'MessageFetched', msg, attrs, body
 
 	FetchingMessage_exit: ->
-		@msg.unbindAll()
+		events = ['body', 'attributes', 'end']
+		@msg.removeAllListeners event for event in events 
 		@msg = null
 
 	FetchingMessage_MessageFetched: (states, msg, attrs, body) ->
@@ -232,7 +235,7 @@ class Connection extends asyncmachine.AsyncMachine
 			'BoxOpened', 'BoxClosing', 'BoxClosed', 'Ready', 'QueryFetched', 
 			'BoxOpeningError'
 		
-		@debug '[connection]', 2
+		@debug '[connection]', 1
 		# TODO no auto connect 
 		@set 'Connecting'
 
@@ -340,10 +343,8 @@ class Connection extends asyncmachine.AsyncMachine
 				@log 'concurrency--'
 				
 		# Loop the fetching process
-		@query_timer = setTimeout (@addLater 'ExecutingQueries'), @minInterval_()
-
-	ExecutingQueries_ExecutingQueries: ->
-		@ExecutingQueries_ExecutingQueries.apply @, arguments
+		# TODO compiler warning
+		@query_timer = setTimeout @ExecutingQueries_enter.bind(@), @minInterval_()
 		
 	ExecutingQueries_Disconnecting: (states, force) ->
 		# Disconnected mean not Active
@@ -385,4 +386,5 @@ class Connection extends asyncmachine.AsyncMachine
 	# PRIVATES
 
 	minInterval_: ->
+		# TODO return a min diff between next_update and Date.now()
 		Math.min.apply null, @queries.map (ch) => ch.update_interval

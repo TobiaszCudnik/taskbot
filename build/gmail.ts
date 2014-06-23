@@ -109,7 +109,7 @@ export class Query extends asyncmachine.AsyncMachine {
     }
 
     FetchingQuery_FetchingResults(states, err, results) {
-        this.log("got search results");
+        this.log("Found " + results.length + " search results");
         if (!results.length) {
             this.add("ResultsFetched");
             return true;
@@ -122,7 +122,8 @@ export class Query extends asyncmachine.AsyncMachine {
 
     FetchingResults_exit() {
         if (this.fetch) {
-            this.fetch.unbindAll();
+            var events = ["message", "error", "end"];
+            events.forEach((event) => this.fetch.removeAllListeners(event));
             return this.fetch = null;
         }
     }
@@ -140,7 +141,8 @@ export class Query extends asyncmachine.AsyncMachine {
     }
 
     FetchingMessage_exit() {
-        this.msg.unbindAll();
+        var events = ["body", "attributes", "end"];
+        events.forEach((event) => this.msg.removeAllListeners(event));
         return this.msg = null;
     }
 
@@ -256,7 +258,7 @@ export class Connection extends asyncmachine.AsyncMachine {
 
         this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "ExecutingQueries", "BoxOpening", "Fetching", "BoxOpened", "BoxClosing", "BoxClosed", "Ready", "QueryFetched", "BoxOpeningError");
 
-        this.debug("[connection]", 2);
+        this.debug("[connection]", 1);
         this.set("Connecting");
     }
 
@@ -369,11 +371,7 @@ export class Connection extends asyncmachine.AsyncMachine {
                 return this.log("concurrency--");
             });
         }
-        return this.query_timer = setTimeout(this.addLater("ExecutingQueries"), this.minInterval_());
-    }
-
-    ExecutingQueries_ExecutingQueries(...args) {
-        return this.ExecutingQueries_ExecutingQueries.apply(this, args);
+        return this.query_timer = setTimeout(this.ExecutingQueries_enter.bind(this), this.minInterval_());
     }
 
     ExecutingQueries_Disconnecting(states, force) {

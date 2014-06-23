@@ -99,7 +99,7 @@ var Query = (function (_super) {
     };
 
     Query.prototype.FetchingQuery_FetchingResults = function (states, err, results) {
-        this.log("got search results");
+        this.log("Found " + results.length + " search results");
         if (!results.length) {
             this.add("ResultsFetched");
             return true;
@@ -111,8 +111,12 @@ var Query = (function (_super) {
     };
 
     Query.prototype.FetchingResults_exit = function () {
+        var _this = this;
         if (this.fetch) {
-            this.fetch.unbindAll();
+            var events = ["message", "error", "end"];
+            events.forEach(function (event) {
+                return _this.fetch.removeAllListeners(event);
+            });
             return this.fetch = null;
         }
     };
@@ -139,7 +143,11 @@ var Query = (function (_super) {
     };
 
     Query.prototype.FetchingMessage_exit = function () {
-        this.msg.unbindAll();
+        var _this = this;
+        var events = ["body", "attributes", "end"];
+        events.forEach(function (event) {
+            return _this.msg.removeAllListeners(event);
+        });
         return this.msg = null;
     };
 
@@ -234,7 +242,7 @@ var Connection = (function (_super) {
 
         this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "ExecutingQueries", "BoxOpening", "Fetching", "BoxOpened", "BoxClosing", "BoxClosed", "Ready", "QueryFetched", "BoxOpeningError");
 
-        this.debug("[connection]", 2);
+        this.debug("[connection]", 1);
         this.set("Connecting");
     }
     Connection.prototype.addQuery = function (query, update_interval) {
@@ -359,15 +367,7 @@ var Connection = (function (_super) {
                 return _this.log("concurrency--");
             });
         }
-        return this.query_timer = setTimeout(this.addLater("ExecutingQueries"), this.minInterval_());
-    };
-
-    Connection.prototype.ExecutingQueries_ExecutingQueries = function () {
-        var args = [];
-        for (var _i = 0; _i < (arguments.length - 0); _i++) {
-            args[_i] = arguments[_i + 0];
-        }
-        return this.ExecutingQueries_ExecutingQueries.apply(this, args);
+        return this.query_timer = setTimeout(this.ExecutingQueries_enter.bind(this), this.minInterval_());
     };
 
     Connection.prototype.ExecutingQueries_Disconnecting = function (states, force) {
