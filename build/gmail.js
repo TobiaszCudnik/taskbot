@@ -13,7 +13,6 @@ var settings = require('../settings');
 var Imap = require("imap");
 require("sugar");
 var asyncmachine = require('asyncmachine');
-var am_task = require('./asyncmachine-task');
 
 var async = require('async');
 
@@ -21,13 +20,11 @@ Object.merge(settings, {
     gmail_max_results: 300
 });
 
-var Message = (function (_super) {
-    __extends(Message, _super);
+var Message = (function () {
     function Message() {
-        _super.apply(this, arguments);
     }
     return Message;
-})(am_task.Task);
+})();
 exports.Message = Message;
 
 var Query = (function (_super) {
@@ -197,6 +194,9 @@ var Connection = (function (_super) {
             requires: ["Active"],
             blocks: ["Idle"]
         };
+        this.QueryFetched = {
+            requires: ["Ready"]
+        };
         this.Disconnecting = {
             blocks: ["Connected", "Connecting", "Disconnected"]
         };
@@ -230,7 +230,7 @@ var Connection = (function (_super) {
 
         this.settings = settings;
 
-        this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "ExecutingQueries", "BoxOpening", "Fetching", "BoxOpened", "BoxClosing", "BoxClosed", "Ready");
+        this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "ExecutingQueries", "BoxOpening", "Fetching", "BoxOpened", "BoxClosing", "BoxClosed", "Ready", "QueryFetched");
 
         this.debug("[connection]", 1);
         this.set("Connecting");
@@ -355,6 +355,7 @@ var Connection = (function (_super) {
                     return row !== query;
                 });
                 _this.drop("Fetching");
+                _this.add("QueryFetched", query);
                 return _this.log("concurrency--");
             });
         }

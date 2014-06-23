@@ -15,7 +15,7 @@ Object.merge(settings, {
     gmail_max_results: 300
 });
 
-export class Message extends am_task.Task {
+export class Message {
 
 }
 
@@ -204,6 +204,10 @@ export class Connection extends asyncmachine.AsyncMachine {
         blocks: ["Idle"]
     };
 
+    QueryFetched = {
+        requires: ["Ready"]
+    };
+
     Disconnecting = {
         blocks: ["Connected", "Connecting", "Disconnected"]
     };
@@ -248,7 +252,7 @@ export class Connection extends asyncmachine.AsyncMachine {
 
         this.settings = settings;
 
-        this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "ExecutingQueries", "BoxOpening", "Fetching", "BoxOpened", "BoxClosing", "BoxClosed", "Ready");
+        this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "ExecutingQueries", "BoxOpening", "Fetching", "BoxOpened", "BoxClosing", "BoxClosed", "Ready", "QueryFetched");
 
         this.debug("[connection]", 1);
         this.set("Connecting");
@@ -361,6 +365,7 @@ export class Connection extends asyncmachine.AsyncMachine {
                 }
                 this.queries_executing = this.queries_executing.filter((row) => row !== query);
                 this.drop("Fetching");
+                this.add("QueryFetched", query);
                 return this.log("concurrency--");
             });
         }

@@ -8,7 +8,7 @@ async = require 'async'
 
 Object.merge settings, gmail_max_results: 300
 
-class Message extends am_task.Task
+class Message
 
 class Query extends asyncmachine.AsyncMachine
 #class Query extends am_task.Task
@@ -179,6 +179,9 @@ class Connection extends asyncmachine.AsyncMachine
 	ExecutingQueries:
 		requires: ['Active']
 		blocks: ['Idle']
+		
+	QueryFetched:
+		requires: ['Ready']
 
 	Disconnecting:
 		blocks: ['Connected', 'Connecting', 'Disconnected']
@@ -225,7 +228,7 @@ class Connection extends asyncmachine.AsyncMachine
 								
 		@register 'Disconnected', 'Disconnecting', 'Connected', 'Connecting',
 			'Idle', 'Active', 'ExecutingQueries', 'BoxOpening', 'Fetching',
-			'BoxOpened', 'BoxClosing', 'BoxClosed', 'Ready'
+			'BoxOpened', 'BoxClosing', 'BoxClosed', 'Ready', 'QueryFetched'
 								
 		@debug '[connection]', 1
 		# TODO no auto connect 
@@ -335,6 +338,7 @@ class Connection extends asyncmachine.AsyncMachine
 					return (row isnt query)
 				# Try to drop the fetching state
 				@drop 'Fetching'
+				@add 'QueryFetched', query
 				@log 'concurrency--'
 				
 		# Loop the fetching process
