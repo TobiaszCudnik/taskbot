@@ -197,6 +197,15 @@ var Connection = (function (_super) {
             requires: ["Active"],
             blocks: ["Idle"]
         };
+        this.Disconnecting = {
+            blocks: ["Connected", "Connecting", "Disconnected"]
+        };
+        this.DisconnectingQueries = {
+            requires: ["Disconnecting"]
+        };
+        this.Disconnected = {
+            blocks: ["Connected", "Connecting", "Disconnecting"]
+        };
         this.Fetching = {
             blocks: ["Idle"],
             requires: ["ExecutingQueries"]
@@ -221,7 +230,7 @@ var Connection = (function (_super) {
 
         this.settings = settings;
 
-        this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "Fetched", "ExecutingQueries", "Delayed", "BoxOpening", "BoxOpened", "BoxClosing", "BoxClosed", "HasMonitored");
+        this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "ExecutingQueries", "BoxOpening", "Fetching", "BoxOpened", "BoxClosing", "BoxClosed", "Ready");
 
         this.debug("[connection]", 1);
         this.set("Connecting");

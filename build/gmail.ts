@@ -204,6 +204,18 @@ export class Connection extends asyncmachine.AsyncMachine {
         blocks: ["Idle"]
     };
 
+    Disconnecting = {
+        blocks: ["Connected", "Connecting", "Disconnected"]
+    };
+
+    DisconnectingQueries = {
+        requires: ["Disconnecting"]
+    };
+
+    Disconnected = {
+        blocks: ["Connected", "Connecting", "Disconnecting"]
+    };
+
     Fetching = {
         blocks: ["Idle"],
         requires: ["ExecutingQueries"]
@@ -236,7 +248,7 @@ export class Connection extends asyncmachine.AsyncMachine {
 
         this.settings = settings;
 
-        this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "Fetched", "ExecutingQueries", "Delayed", "BoxOpening", "BoxOpened", "BoxClosing", "BoxClosed", "HasMonitored");
+        this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "ExecutingQueries", "BoxOpening", "Fetching", "BoxOpened", "BoxClosing", "BoxClosed", "Ready");
 
         this.debug("[connection]", 1);
         this.set("Connecting");
