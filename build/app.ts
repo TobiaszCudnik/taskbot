@@ -8,7 +8,7 @@ export var go = suspend.resume;
 export var async = suspend.async;
 
 export class App extends gmail.Connection {
-    Connected_enter(states: string[]) {
+    Ready_enter(states) {
         this.addQuery("*", 1000);
         this.addQuery("label:S-Pending", 5000);
         this.addQuery("label:sent", 5000);

@@ -98,9 +98,9 @@ export class Query extends asyncmachine.AsyncMachine {
         this.last_update = Date.now();
         this.next_update = this.last_update + this.update_interval;
         this.log("performing a search for " + this.name);
-        var tick = this.clock("Fetching");
+        var tick = this.clock("FetchingQuery");
         this.connection.imap.search([["X-GM-RAW", this.name]], (err, results) => {
-            if (!this.is("FetchingQuery", tick)) {
+            if (!this.is("FetchingQuery", tick + 1)) {
                 return;
             }
             return this.add("FetchingResults", err, results);
@@ -121,8 +121,10 @@ export class Query extends asyncmachine.AsyncMachine {
     }
 
     FetchingResults_exit() {
-        this.fetch.unbindAll();
-        return this.fetch = null;
+        if (this.fetch) {
+            this.fetch.unbindAll();
+            return this.fetch = null;
+        }
     }
 
     FetchingMessage_enter(states, msg) {
@@ -226,7 +228,7 @@ export class Connection extends asyncmachine.AsyncMachine {
     };
 
     BoxOpening = {
-        requires: ["Active"],
+        requires: ["Connected"],
         blocks: ["BoxOpened", "BoxClosing", "BoxClosed"]
     };
 
@@ -252,9 +254,9 @@ export class Connection extends asyncmachine.AsyncMachine {
 
         this.settings = settings;
 
-        this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "ExecutingQueries", "BoxOpening", "Fetching", "BoxOpened", "BoxClosing", "BoxClosed", "Ready", "QueryFetched");
+        this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "ExecutingQueries", "BoxOpening", "Fetching", "BoxOpened", "BoxClosing", "BoxClosed", "Ready", "QueryFetched", "BoxOpeningError");
 
-        this.debug("[connection]", 1);
+        this.debug("[connection]", 2);
         this.set("Connecting");
     }
 
@@ -277,19 +279,22 @@ export class Connection extends asyncmachine.AsyncMachine {
         this.imap.connect();
         var tick = this.clock("Connecting");
         return this.imap.once("ready", () => {
-            if (!this.is("Connecting", tick)) {
+            if (!this.is("Connecting", tick + 1)) {
                 return;
             }
             return this.add("Connected");
         });
     }
 
-    Connecting_exit(target_states) {
-        if (~target_states.indexOf("Disconnected")) {
-            true;
+    Connecting_exit(states) {
+        if (!~states.indexOf("Connected")) {
+            this.imap.removeAllListeners("ready");
+            return this.imap = null;
         }
-        this.imap.removeAllListeners("ready");
-        return this.imap = null;
+    }
+
+    Connected_enter() {
+        return this.add("BoxOpening");
     }
 
     Connected_exit() {
@@ -298,20 +303,15 @@ export class Connection extends asyncmachine.AsyncMachine {
             if (tick !== this.clock("Connected")) {
                 return;
             }
+            this.imap = null;
             return this.add("Disconnected");
         });
     }
 
     BoxOpening_enter() {
-        if (this.is("BoxOpened")) {
-            this.add("ExecutingQueries");
-            return false;
-        } else {
-            this.once("Box.Opened.enter", this.addLater("ExecutingQueries"));
-        }
         var tick = this.clock("BoxOpening");
         this.imap.openBox("[Gmail]/All Mail", false, (err, box) => {
-            if (!this.is("BoxOpening", tick)) {
+            if (!this.is("BoxOpening", tick + 1)) {
                 return;
             }
             return this.add(["BoxOpened", "Ready"], err, box);
@@ -319,7 +319,7 @@ export class Connection extends asyncmachine.AsyncMachine {
         return true;
     }
 
-    BoxOpened_enter(err, box) {
+    BoxOpened_enter(states, err, box) {
         if (err) {
             this.add("BoxOpeningError", err);
             return false;
@@ -334,7 +334,7 @@ export class Connection extends asyncmachine.AsyncMachine {
     BoxClosing_enter() {
         var tick = this.clock("BoxClosing");
         return this.imap.closeBox(() => {
-            if (!this.is("BoxClosing", tick)) {
+            if (!this.is("BoxClosing", tick + 1)) {
                 return;
             }
             return this.add("BoxClosed");

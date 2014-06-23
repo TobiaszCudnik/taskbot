@@ -88,9 +88,9 @@ var Query = (function (_super) {
         this.last_update = Date.now();
         this.next_update = this.last_update + this.update_interval;
         this.log("performing a search for " + this.name);
-        var tick = this.clock("Fetching");
+        var tick = this.clock("FetchingQuery");
         this.connection.imap.search([["X-GM-RAW", this.name]], function (err, results) {
-            if (!_this.is("FetchingQuery", tick)) {
+            if (!_this.is("FetchingQuery", tick + 1)) {
                 return;
             }
             return _this.add("FetchingResults", err, results);
@@ -111,8 +111,10 @@ var Query = (function (_super) {
     };
 
     Query.prototype.FetchingResults_exit = function () {
-        this.fetch.unbindAll();
-        return this.fetch = null;
+        if (this.fetch) {
+            this.fetch.unbindAll();
+            return this.fetch = null;
+        }
     };
 
     Query.prototype.FetchingMessage_enter = function (states, msg) {
@@ -211,7 +213,7 @@ var Connection = (function (_super) {
             requires: ["ExecutingQueries"]
         };
         this.BoxOpening = {
-            requires: ["Active"],
+            requires: ["Connected"],
             blocks: ["BoxOpened", "BoxClosing", "BoxClosed"]
         };
         this.BoxOpened = {
@@ -230,9 +232,9 @@ var Connection = (function (_super) {
 
         this.settings = settings;
 
-        this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "ExecutingQueries", "BoxOpening", "Fetching", "BoxOpened", "BoxClosing", "BoxClosed", "Ready", "QueryFetched");
+        this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "ExecutingQueries", "BoxOpening", "Fetching", "BoxOpened", "BoxClosing", "BoxClosed", "Ready", "QueryFetched", "BoxOpeningError");
 
-        this.debug("[connection]", 1);
+        this.debug("[connection]", 2);
         this.set("Connecting");
     }
     Connection.prototype.addQuery = function (query, update_interval) {
@@ -255,19 +257,22 @@ var Connection = (function (_super) {
         this.imap.connect();
         var tick = this.clock("Connecting");
         return this.imap.once("ready", function () {
-            if (!_this.is("Connecting", tick)) {
+            if (!_this.is("Connecting", tick + 1)) {
                 return;
             }
             return _this.add("Connected");
         });
     };
 
-    Connection.prototype.Connecting_exit = function (target_states) {
-        if (~target_states.indexOf("Disconnected")) {
-            true;
+    Connection.prototype.Connecting_exit = function (states) {
+        if (!~states.indexOf("Connected")) {
+            this.imap.removeAllListeners("ready");
+            return this.imap = null;
         }
-        this.imap.removeAllListeners("ready");
-        return this.imap = null;
+    };
+
+    Connection.prototype.Connected_enter = function () {
+        return this.add("BoxOpening");
     };
 
     Connection.prototype.Connected_exit = function () {
@@ -277,21 +282,16 @@ var Connection = (function (_super) {
             if (tick !== _this.clock("Connected")) {
                 return;
             }
+            _this.imap = null;
             return _this.add("Disconnected");
         });
     };
 
     Connection.prototype.BoxOpening_enter = function () {
         var _this = this;
-        if (this.is("BoxOpened")) {
-            this.add("ExecutingQueries");
-            return false;
-        } else {
-            this.once("Box.Opened.enter", this.addLater("ExecutingQueries"));
-        }
         var tick = this.clock("BoxOpening");
         this.imap.openBox("[Gmail]/All Mail", false, function (err, box) {
-            if (!_this.is("BoxOpening", tick)) {
+            if (!_this.is("BoxOpening", tick + 1)) {
                 return;
             }
             return _this.add(["BoxOpened", "Ready"], err, box);
@@ -299,7 +299,7 @@ var Connection = (function (_super) {
         return true;
     };
 
-    Connection.prototype.BoxOpened_enter = function (err, box) {
+    Connection.prototype.BoxOpened_enter = function (states, err, box) {
         if (err) {
             this.add("BoxOpeningError", err);
             return false;
@@ -315,7 +315,7 @@ var Connection = (function (_super) {
         var _this = this;
         var tick = this.clock("BoxClosing");
         return this.imap.closeBox(function () {
-            if (!_this.is("BoxClosing", tick)) {
+            if (!_this.is("BoxClosing", tick + 1)) {
                 return;
             }
             return _this.add("BoxClosed");

@@ -5,7 +5,7 @@ go = suspend.resume
 async = suspend.async
 
 class App extends gmail.Connection
-	Connected_enter: (states) ->
+	Ready_enter: (states) ->
 		# TODO move queries to the config
 		@addQuery '*', 1000
 		@addQuery 'label:S-Pending', 5000

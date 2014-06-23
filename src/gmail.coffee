@@ -84,9 +84,9 @@ class Query extends asyncmachine.AsyncMachine
 		@last_update = Date.now()
 		@next_update = @last_update + @update_interval
 		@log "performing a search for " + @name 
-		tick = @clock 'Fetching'
+		tick = @clock 'FetchingQuery'
 		@connection.imap.search [['X-GM-RAW', @name]], (err, results) =>
-			return if not @is 'FetchingQuery', tick
+			return if not @is 'FetchingQuery', tick + 1
 			@add 'FetchingResults', err, results
 		yes
 
@@ -102,8 +102,9 @@ class Query extends asyncmachine.AsyncMachine
 		@fetch.once "end", @addLater 'ResultsFetched'
 		
 	FetchingResults_exit: ->
-		@fetch.unbindAll()
-		@fetch = null
+		if @fetch
+			@fetch.unbindAll()
+			@fetch = null
 
 	FetchingMessage_enter: (states, msg) ->
 		attrs = null
@@ -201,7 +202,7 @@ class Connection extends asyncmachine.AsyncMachine
 	# BOX RELATED STATES
 
 	BoxOpening:
-		requires: ['Active']
+		requires: ['Connected']
 		blocks: ['BoxOpened', 'BoxClosing', 'BoxClosed']
 
 	BoxOpened:
@@ -228,9 +229,10 @@ class Connection extends asyncmachine.AsyncMachine
 								
 		@register 'Disconnected', 'Disconnecting', 'Connected', 'Connecting',
 			'Idle', 'Active', 'ExecutingQueries', 'BoxOpening', 'Fetching',
-			'BoxOpened', 'BoxClosing', 'BoxClosed', 'Ready', 'QueryFetched'
-								
-		@debug '[connection]', 1
+			'BoxOpened', 'BoxClosing', 'BoxClosed', 'Ready', 'QueryFetched', 
+			'BoxOpeningError'
+		
+		@debug '[connection]', 2
 		# TODO no auto connect 
 		@set 'Connecting'
 
@@ -253,38 +255,34 @@ class Connection extends asyncmachine.AsyncMachine
 		@imap.connect()
 		tick = @clock 'Connecting'
 		@imap.once 'ready', =>
-			return if not @is 'Connecting', tick
+			return if not @is 'Connecting', tick + 1
 			@add 'Connected'
 
-	Connecting_exit: (target_states) ->
-		if ~target_states.indexOf 'Disconnected'
-			yes
-		@imap.removeAllListeners 'ready'
-		@imap = null
+	Connecting_exit: (states) ->
+		if not ~states.indexOf 'Connected'
+			@imap.removeAllListeners 'ready'
+			@imap = null
+
+	Connected_enter: -> @add 'BoxOpening'
 
 	Connected_exit: ->
 		tick = @clock 'Connected'
 		@imap.end =>
 			return if tick isnt @clock 'Connected'
+			@imap = null
 			@add 'Disconnected'
 
 	BoxOpening_enter: ->
-		if @is 'BoxOpened'
-			@add 'ExecutingQueries'
-			return no
-		else
-			@once 'Box.Opened.enter', @addLater 'ExecutingQueries'
 		# TODO try and set to Disconnected on catch
 		# Error: Not connected or authenticated
 		# TODO support err param to the callback
 		tick = @clock 'BoxOpening'
 		@imap.openBox "[Gmail]/All Mail", no, (err, box) =>
-			return if not @is 'BoxOpening', tick
+			return if not @is 'BoxOpening', tick + 1
 			@add ['BoxOpened', 'Ready'], err, box
 		yes
 
-	BoxOpened_enter: (err, box) ->
-		# TODO
+	BoxOpened_enter: (states, err, box) ->
 		if err
 			@add 'BoxOpeningError', err
 			return no
@@ -296,7 +294,7 @@ class Connection extends asyncmachine.AsyncMachine
 	BoxClosing_enter: ->
 		tick = @clock 'BoxClosing'
 		@imap.closeBox =>
-			return if not @is 'BoxClosing', tick
+			return if not @is 'BoxClosing', tick + 1
 			@add 'BoxClosed'
 			
 	# CONNECTED

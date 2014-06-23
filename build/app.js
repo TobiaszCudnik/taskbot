@@ -18,7 +18,7 @@ var App = (function (_super) {
     function App() {
         _super.apply(this, arguments);
     }
-    App.prototype.Connected_enter = function (states) {
+    App.prototype.Ready_enter = function (states) {
         this.addQuery("*", 1000);
         this.addQuery("label:S-Pending", 5000);
         this.addQuery("label:sent", 5000);
