@@ -1,19 +1,19 @@
 ///<reference path="global.d.ts"/>
 
 declare module "imap" {
-	interface IExport {
-		new(options:imap.ImapOptions): imap.Imap;
-        ImapMessage: imap.ImapMessage;
-        Box: imap.Box;
-        ImapFetch: imap.ImapFetch;
-		parseHeader(headers: Object): Object;
-	}
-	var exported: IExport;
+	var exported: imap.IExport;
 	export = exported;
-//	export var ImapConnection: new(Options?) => ImapConnectionObject;
 }
 
 declare module imap {
+    
+	interface IExport {
+		new(options: ImapOptions): Imap;
+        ImapMessage: ImapMessage;
+        Box: Box;
+        ImapFetch: ImapFetch;
+		parseHeader(headers: Object): Object;
+	}
 
     export class ImapEventEmitter {
         addListener(event: string, listener: Function);

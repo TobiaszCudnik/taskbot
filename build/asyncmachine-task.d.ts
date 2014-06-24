@@ -1,4 +1,5 @@
-/// <reference path="../node_modules/asyncmachine/build/asyncmachine.d.ts" />
+/// <reference path="../node_modules/asyncmachine/lib/asyncmachine.d.ts" />
+/// <reference path="../d.ts/global.d.ts" />
 import asyncmachine = require('asyncmachine');
 export declare class Task extends asyncmachine.AsyncMachine {
     constructor();

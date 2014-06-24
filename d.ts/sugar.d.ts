@@ -28,6 +28,11 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
 
+// Helper interface to infer objects better. Should be an Object generic ???
+interface IHash<T> {
+	[index: string]: T;
+}
+
 interface String {
 
 	/**
@@ -3070,6 +3075,13 @@ interface Object {
 	* @see map
 	**/
 	map<T, U>(obj: T, map: (key: string, value: any) => any): U;
+
+	/**
+	* @see map
+	**/
+	each<T>(obj: IHash<T>, map: (key: string, value: T) => any);
+  // TODO the second one is ignored...
+	each<T>(obj: Object, map: (key: string, value: any) => any);
 
 	/**
 	* @see map

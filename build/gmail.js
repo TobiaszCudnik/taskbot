@@ -27,14 +27,12 @@ var Message = (function () {
         this.labels = null;
         this.id = null;
         this.query = null;
+        this.fetch_id = 0;
         this.id = id;
         this.subject = subject;
         this.labels = labels;
         this.body = body;
     }
-    Message.prototype.setQuery = function (query) {
-        return this.query = query;
-    };
     return Message;
 })();
 exports.Message = Message;
@@ -43,10 +41,6 @@ var Query = (function (_super) {
     __extends(Query, _super);
     function Query(connection, query, update_interval) {
         _super.call(this);
-        this.HasMonitored = {};
-        this.ResultsFetched = {
-            blocks: ["FetchingMessage", "FetchingResults", "FetchingQuery", "Fetching"]
-        };
         this.Fetching = {
             blocks: ["Idle"]
         };
@@ -55,23 +49,33 @@ var Query = (function (_super) {
         };
         this.FetchingQuery = {
             implies: ["Fetching"],
-            blocks: ["FetchingResults", "ResultsFetched"]
+            blocks: ["FetchingResults", "QueryFetched"]
+        };
+        this.QueryFetched = {
+            implies: ["Fetching"],
+            blocks: ["FetchingQuery", "FetchingResults"]
         };
         this.FetchingResults = {
             implies: ["Fetching"],
+            requires: ["QueryFetched"],
             blocks: ["FetchingQuery"]
         };
-        this.ResultsFetchingError = {
-            implies: ["Idle"],
-            blocks: ["FetchingResults"]
+        this.ResultsFetched = {
+            blocks: ["FetchingMessage", "FetchingResults", "FetchingQuery"]
         };
         this.FetchingMessage = {
+            implies: ["Fetching"],
             blocks: ["MessageFetched"],
             requires: ["FetchingResults"]
         };
         this.MessageFetched = {
+            implies: ["Fetching"],
             blocks: ["FetchingMessage"],
             requires: ["FetchingResults"]
+        };
+        this.ResultsFetchingError = {
+            implies: ["Idle"],
+            blocks: ["FetchingResults", "ResultsFetched"]
         };
         this.active = true;
         this.last_update = 0;
@@ -85,11 +89,13 @@ var Query = (function (_super) {
         this.update_interval = 10 * 1000;
         this.fetch = null;
         this.msg = null;
+        this.results = null;
 
-        this.register("HasMonitored", "Fetching", "Idle", "FetchingQuery", "FetchingResults", "ResultsFetchingError", "FetchingMessage", "MessageFetched", "ResultsFetched");
+        this.register("QueryFetched", "Fetching", "Idle", "FetchingQuery", "FetchingResults", "ResultsFetchingError", "FetchingMessage", "MessageFetched", "ResultsFetched");
 
         this.debug("[query:\"" + query + "\"]", 1);
 
+        this.results = {};
         this.connection = connection;
         this.query = query;
         this.update_interval = update_interval;
@@ -119,17 +125,6 @@ var Query = (function (_super) {
         this.fetch.on("message", this.addLater("FetchingMessage"));
         this.fetch.once("error", this.addLater("ResultsFetchingError"));
         return this.fetch.once("end", this.addLater("ResultsFetched"));
-    };
-
-    Query.prototype.FetchingResults_exit = function () {
-        var _this = this;
-        if (this.fetch) {
-            var events = ["message", "error", "end"];
-            events.forEach(function (event) {
-                return _this.fetch.removeAllListeners(event);
-            });
-            return this.fetch = null;
-        }
     };
 
     Query.prototype.FetchingMessage_enter = function (states, msg) {
@@ -164,12 +159,35 @@ var Query = (function (_super) {
 
     Query.prototype.FetchingMessage_MessageFetched = function (states, msg, attrs, body) {
         var id = attrs["x-gm-msgid"];
-        if (this.connection.monitored[id]) {
-            var labels = attrs["x-gm-labels"] || [];
+        var labels = attrs["x-gm-labels"] || [];
+        if (!this.results[id]) {
             this.log("New msg \"" + body.subject + "\" (" + (labels.join(",")) + ")");
-            this.connection.monitored[id] = new Message(id, body.subject, labels);
-            this.connection.monitored[id].setQuery(this);
-            return this.add("HasMonitored");
+            this.results[id] = new Message(id, body.subject, labels);
+            this.results[id].fetch_id = this.clock("FetchingResults");
+            this.trigger("new-msg", this.results[id]);
+        } else {
+            this.results[id].fetch_id = this.clock("FetchingResults");
+        }
+        return this.add("HasMonitored");
+    };
+
+    Query.prototype.FetchingResults_exit = function () {
+        var _this = this;
+        var tick = this.clock("FetchingResults");
+        Object.each(this.results, function (id, msg) {
+            console.log(msg.fetch_id4);
+            if (msg.fetch_id === tick) {
+                return;
+            }
+            this.trigger("removed-msg", msg);
+            return delete this.results[id];
+        });
+        if (this.fetch) {
+            var events = ["message", "error", "end"];
+            events.forEach(function (event) {
+                return _this.fetch.removeAllListeners(event);
+            });
+            return this.fetch = null;
         }
     };
 
@@ -187,13 +205,12 @@ var Connection = (function (_super) {
     __extends(Connection, _super);
     function Connection(settings) {
         _super.call(this);
-        this.queries = [];
-        this.queries_executing = [];
+        this.queries = null;
+        this.queries_executing = null;
         this.queries_executing_limit = 3;
         this.imap = null;
         this.query_timer = null;
         this.settings = null;
-        this.monitored = {};
         this.box = null;
         this.fetch = null;
         this.Connecting = {
@@ -232,28 +249,30 @@ var Connection = (function (_super) {
             blocks: ["Idle"],
             requires: ["ExecutingQueries"]
         };
-        this.BoxOpening = {
+        this.OpeningBox = {
             requires: ["Connected"],
             blocks: ["BoxOpened", "BoxClosing", "BoxClosed"]
         };
         this.BoxOpened = {
             requires: ["Connected"],
             depends: ["Connected"],
-            blocks: ["BoxOpening", "BoxClosed", "BoxClosing"]
+            blocks: ["OpeningBox", "BoxClosed", "BoxClosing"]
         };
         this.BoxClosing = {
-            blocks: ["BoxOpened", "BoxOpening", "Box"]
+            blocks: ["BoxOpened", "OpeningBox", "Box"]
         };
         this.BoxClosed = {
-            blocks: ["BoxOpened", "BoxOpening", "BoxClosing"]
+            blocks: ["BoxOpened", "OpeningBox", "BoxClosing"]
         };
         this.BoxOpeningError = {
-            drops: ["BoxOpened", "BoxOpening"]
+            drops: ["BoxOpened", "OpeningBox"]
         };
 
+        this.queries = [];
+        this.queries_executing = [];
         this.settings = settings;
 
-        this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "ExecutingQueries", "BoxOpening", "Fetching", "BoxOpened", "BoxClosing", "BoxClosed", "Ready", "QueryFetched", "BoxOpeningError");
+        this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "ExecutingQueries", "OpeningBox", "Fetching", "BoxOpened", "BoxClosing", "BoxClosed", "Ready", "QueryFetched", "BoxOpeningError");
 
         this.debug("[connection]", 1);
     }
@@ -292,7 +311,7 @@ var Connection = (function (_super) {
     };
 
     Connection.prototype.Connected_enter = function () {
-        return this.add("BoxOpening");
+        return this.add("OpeningBox");
     };
 
     Connection.prototype.Connected_exit = function () {
@@ -307,11 +326,11 @@ var Connection = (function (_super) {
         });
     };
 
-    Connection.prototype.BoxOpening_enter = function () {
+    Connection.prototype.OpeningBox_enter = function () {
         var _this = this;
-        var tick = this.clock("BoxOpening");
+        var tick = this.clock("OpeningBox");
         this.imap.openBox("[Gmail]/All Mail", false, function (err, box) {
-            if (!_this.is("BoxOpening", tick + 1)) {
+            if (!_this.is("OpeningBox", tick + 1)) {
                 return;
             }
             return _this.add(["BoxOpened", "Ready"], err, box);

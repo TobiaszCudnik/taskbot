@@ -15,53 +15,62 @@ class Message
 	labels: null
 	id: null
 	query: null
+	# Determines in which query tick the msg was fetched
+	fetch_id: 0
 	
 	constructor: (id, subject, labels, body) ->
 		@id = id
 		@subject = subject
 		@labels = labels
 		@body = body
-		
-	setQuery: (query) ->
-		@query = query
 
 class Query extends asyncmachine.AsyncMachine
 #class Query extends am_task.Task
-	#	private msg: imap.ImapMessage;
-
-	# Tells that the instance has some monitored messages.
-	HasMonitored: {}
-
-	# TODO block in blocked states
-	ResultsFetched: 
-		blocks: ['FetchingMessage', 'FetchingResults', 'FetchingQuery', 'Fetching']
 
 	# Aggregating state
+	
 	Fetching:
 		blocks: ['Idle']
 
 	Idle:
 		blocks: ['Fetching']
+		
+	# Flow states
 
 	FetchingQuery:
-		implies: ['Fetching'],
-		blocks: ['FetchingResults', 'ResultsFetched']
+		implies: ['Fetching']
+		blocks: ['FetchingResults', 'QueryFetched']
+
+	QueryFetched:
+		implies: ['Fetching']
+		blocks: ['FetchingQuery', 'FetchingResults']
 
 	FetchingResults:
-		implies: ['Fetching'],
+		implies: ['Fetching']
+		requires: ['QueryFetched']
 		blocks: ['FetchingQuery']
 
-	ResultsFetchingError:
-		implies: ['Idle']
-		blocks: ['FetchingResults']
+	# Old resuts are available even during fetching of the new ones.
+	ResultsFetched: 
+		blocks: ['FetchingMessage', 'FetchingResults', 'FetchingQuery']
+
+	# Message fetching states
 
 	FetchingMessage:
-		blocks: ['MessageFetched'],
+		implies: ['Fetching']
+		blocks: ['MessageFetched']
 		requires: ['FetchingResults']
 
 	MessageFetched:
-		blocks: ['FetchingMessage'],
+		implies: ['Fetching']
+		blocks: ['FetchingMessage']
 		requires: ['FetchingResults']
+		
+	# Error states
+
+	ResultsFetchingError:
+		implies: ['Idle']
+		blocks: ['FetchingResults', 'ResultsFetched']
 
 	# Attributes
 
@@ -75,20 +84,20 @@ class Query extends asyncmachine.AsyncMachine
 	query: "*"
 	update_interval: 10*1000
 	
-	# TODO type me!
 	fetch: null
-	# TODO type me!
 	msg: null
+	results: null
 
 	constructor: (connection, query, update_interval) ->
 		super()
 								
-		@register 'HasMonitored', 'Fetching', 'Idle', 'FetchingQuery',
+		@register 'QueryFetched', 'Fetching', 'Idle', 'FetchingQuery',
 			'FetchingResults', 'ResultsFetchingError', 'FetchingMessage',
 			'MessageFetched', 'ResultsFetched'
 								
 		@debug "[query:\"#{query}\"]", 1
-
+		
+		@results = {}
 		@connection = connection
 		@query = query
 		@update_interval = update_interval
@@ -114,12 +123,6 @@ class Query extends asyncmachine.AsyncMachine
 		@fetch.on "message", @addLater 'FetchingMessage'
 		@fetch.once "error", @addLater 'ResultsFetchingError'
 		@fetch.once "end", @addLater 'ResultsFetched'
-		
-	FetchingResults_exit: ->
-		if @fetch
-			events = ['message', 'error', 'end']
-			@fetch.removeAllListeners event for event in events 
-			@fetch = null
 
 	FetchingMessage_enter: (states, msg) ->
 		attrs = null
@@ -145,15 +148,34 @@ class Query extends asyncmachine.AsyncMachine
 
 	FetchingMessage_MessageFetched: (states, msg, attrs, body) ->
 		id = attrs['x-gm-msgid']
-		if @connection.monitored[id]
-			# TODO event
-			labels = attrs['x-gm-labels'] || []
+		labels = attrs['x-gm-labels'] || []
+		if not @results[id]
 			@log "New msg \"#{body.subject}\" (#{labels.join ','})"
-			@connection.monitored[id] = new Message id, body.subject, labels
-			@connection.monitored[id].setQuery @
-			@add 'HasMonitored'
+			@results[id] = new Message id, body.subject, labels
+			# Set the fetch ID
+			@results[id].fetch_id = @clock 'FetchingResults'
+			@trigger 'new-msg', @results[id]
+		else
+			# Update the fetch ID
+			@results[id].fetch_id = @clock 'FetchingResults'
+			# TODO check for labels change
+		@add 'HasMonitored'
+		
+	FetchingResults_exit: ->
+		tick = @clock 'FetchingResults'
+		# Remove all old msgs, not present in the current results
+		Object.each @results, (id, msg) ->
+			return if msg.fetch_id is tick
+			@trigger 'removed-msg', msg
+			delete @results[id]
+		# GC
+		if @fetch
+			events = ['message', 'error', 'end']
+			@fetch.removeAllListeners event for event in events 
+			@fetch = null
 
 	ResultsFetchingError_enter: (err) ->
+		# TODO handle the erro (log/retry, dont exit)
 		@log 'fetching error', err
 		@add 'Idle'
 		if err
@@ -164,13 +186,12 @@ class Connection extends asyncmachine.AsyncMachine
 
 	# ATTRIBUTES
 
-	queries: []
-	queries_executing: []
+	queries: null
+	queries_executing: null
 	queries_executing_limit: 3
 	imap: null
 	query_timer: null
 	settings: null
-	monitored: {}
 		
 	box: null
 	fetch: null
@@ -219,39 +240,42 @@ class Connection extends asyncmachine.AsyncMachine
 		
 	# BOX RELATED STATES
 
-	BoxOpening:
+	OpeningBox:
 		requires: ['Connected']
 		blocks: ['BoxOpened', 'BoxClosing', 'BoxClosed']
 
 	BoxOpened:
 		requires: ['Connected']
 		depends: ['Connected']
-		blocks: ['BoxOpening', 'BoxClosed', 'BoxClosing']
+		blocks: ['OpeningBox', 'BoxClosed', 'BoxClosing']
 
 	BoxClosing:
-		blocks: ['BoxOpened', 'BoxOpening', 'Box']
+		blocks: ['BoxOpened', 'OpeningBox', 'Box']
 
 	BoxClosed:
-		blocks: ['BoxOpened', 'BoxOpening', 'BoxClosing']
+		blocks: ['BoxOpened', 'OpeningBox', 'BoxClosing']
 		
 	# ERROR STATES
 		
 	BoxOpeningError:
-		drops: ['BoxOpened', 'BoxOpening']
+		drops: ['BoxOpened', 'OpeningBox']
 
 	# API
 
 	constructor: (settings) ->
 		super()
 
+		@queries = []
+		@queries_executing = []
 		@settings = settings
 								
 		@register 'Disconnected', 'Disconnecting', 'Connected', 'Connecting',
-			'Idle', 'Active', 'ExecutingQueries', 'BoxOpening', 'Fetching',
+			'Idle', 'Active', 'ExecutingQueries', 'OpeningBox', 'Fetching',
 			'BoxOpened', 'BoxClosing', 'BoxClosed', 'Ready', 'QueryFetched', 
 			'BoxOpeningError'
 		
 		@debug '[connection]', 1
+		
 
 	addQuery: (query, update_interval) ->
 		@log "Adding query '#{query}'"
@@ -280,7 +304,7 @@ class Connection extends asyncmachine.AsyncMachine
 			@imap.removeAllListeners 'ready'
 			@imap = null
 
-	Connected_enter: -> @add 'BoxOpening'
+	Connected_enter: -> @add 'OpeningBox'
 
 	Connected_exit: ->
 		tick = @clock 'Connected'
@@ -289,13 +313,13 @@ class Connection extends asyncmachine.AsyncMachine
 			@imap = null
 			@add 'Disconnected'
 
-	BoxOpening_enter: ->
+	OpeningBox_enter: ->
 		# TODO try and set to Disconnected on catch
 		# Error: Not connected or authenticated
 		# TODO support err param to the callback
-		tick = @clock 'BoxOpening'
+		tick = @clock 'OpeningBox'
 		@imap.openBox "[Gmail]/All Mail", no, (err, box) =>
-			return if not @is 'BoxOpening', tick + 1
+			return if not @is 'OpeningBox', tick + 1
 			@add ['BoxOpened', 'Ready'], err, box
 		yes
 

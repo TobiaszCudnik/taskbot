@@ -24,7 +24,9 @@ export class Message {
 
     id: number = null;
 
-    query: Query = null;
+    query = null;
+
+    fetch_id = 0;
 
     	constructor(id: number, subject: string, labels: string[], body?: string) {
         this.id = id;
@@ -32,19 +34,9 @@ export class Message {
         this.labels = labels;
         this.body = body;
     }
-
-    	setQuery(query: Query) {
-        return this.query = query;
-    }
 }
 
 export class Query extends asyncmachine.AsyncMachine {
-    HasMonitored = {};
-
-    ResultsFetched = {
-        blocks: ["FetchingMessage", "FetchingResults", "FetchingQuery", "Fetching"]
-    };
-
     Fetching = {
         blocks: ["Idle"]
     };
@@ -55,27 +47,39 @@ export class Query extends asyncmachine.AsyncMachine {
 
     FetchingQuery = {
         implies: ["Fetching"],
-        blocks: ["FetchingResults", "ResultsFetched"]
+        blocks: ["FetchingResults", "QueryFetched"]
+    };
+
+    QueryFetched = {
+        implies: ["Fetching"],
+        blocks: ["FetchingQuery", "FetchingResults"]
     };
 
     FetchingResults = {
         implies: ["Fetching"],
+        requires: ["QueryFetched"],
         blocks: ["FetchingQuery"]
     };
 
-    ResultsFetchingError = {
-        implies: ["Idle"],
-        blocks: ["FetchingResults"]
+    ResultsFetched = {
+        blocks: ["FetchingMessage", "FetchingResults", "FetchingQuery"]
     };
 
     FetchingMessage = {
+        implies: ["Fetching"],
         blocks: ["MessageFetched"],
         requires: ["FetchingResults"]
     };
 
     MessageFetched = {
+        implies: ["Fetching"],
         blocks: ["FetchingMessage"],
         requires: ["FetchingResults"]
+    };
+
+    ResultsFetchingError = {
+        implies: ["Idle"],
+        blocks: ["FetchingResults", "ResultsFetched"]
     };
 
     active = true;
@@ -99,13 +103,16 @@ export class Query extends asyncmachine.AsyncMachine {
 
     msg = null;
 
+    	results: IHash<Message> = null;
+
     constructor(connection, query, update_interval) {
         super();
 
-        this.register("HasMonitored", "Fetching", "Idle", "FetchingQuery", "FetchingResults", "ResultsFetchingError", "FetchingMessage", "MessageFetched", "ResultsFetched");
+        this.register("QueryFetched", "Fetching", "Idle", "FetchingQuery", "FetchingResults", "ResultsFetchingError", "FetchingMessage", "MessageFetched", "ResultsFetched");
 
         this.debug("[query:\"" + query + "\"]", 1);
 
+        this.results = {};
         this.connection = connection;
         this.query = query;
         this.update_interval = update_interval;
@@ -137,14 +144,6 @@ export class Query extends asyncmachine.AsyncMachine {
         return this.fetch.once("end", this.addLater("ResultsFetched"));
     }
 
-    FetchingResults_exit() {
-        if (this.fetch) {
-            var events = ["message", "error", "end"];
-            events.forEach((event) => this.fetch.removeAllListeners(event));
-            return this.fetch = null;
-        }
-    }
-
     FetchingMessage_enter(states, msg) {
         var attrs = null;
         var body_buffer = "";
@@ -165,12 +164,32 @@ export class Query extends asyncmachine.AsyncMachine {
 
     FetchingMessage_MessageFetched(states, msg, attrs, body) {
         var id = attrs["x-gm-msgid"];
-        if (this.connection.monitored[id]) {
-            var labels = attrs["x-gm-labels"] || [];
+        var labels = attrs["x-gm-labels"] || [];
+        if (!this.results[id]) {
             this.log("New msg \"" + body.subject + "\" (" + (labels.join(",")) + ")");
-            this.connection.monitored[id] = new Message(id, body.subject, labels);
-            this.connection.monitored[id].setQuery(this);
-            return this.add("HasMonitored");
+            this.results[id] = new Message(id, body.subject, labels);
+            this.results[id].fetch_id = this.clock("FetchingResults");
+            this.trigger("new-msg", this.results[id]);
+        } else {
+            this.results[id].fetch_id = this.clock("FetchingResults");
+        }
+        return this.add("HasMonitored");
+    }
+
+    FetchingResults_exit() {
+        var tick = this.clock("FetchingResults");
+        Object.each(this.results, function(id, msg) {
+            console.log(msg.fetch_id4);
+            if (msg.fetch_id === tick) {
+                return;
+            }
+            this.trigger("removed-msg", msg);
+            return delete this.results[id];
+        });
+        if (this.fetch) {
+            var events = ["message", "error", "end"];
+            events.forEach((event) => this.fetch.removeAllListeners(event));
+            return this.fetch = null;
         }
     }
 
@@ -183,9 +202,9 @@ export class Query extends asyncmachine.AsyncMachine {
     }
 }
 export class Connection extends asyncmachine.AsyncMachine {
-    queries: Query[] = [];
+    queries: Query[] = null;
 
-    queries_executing: Query[] = [];
+    queries_executing: Query[] = null;
 
     queries_executing_limit: number = 3;
 
@@ -194,8 +213,6 @@ export class Connection extends asyncmachine.AsyncMachine {
     query_timer = null;
 
     settings: IGtdBotSettings = null;
-
-    	monitored: MessagesHash = {};
 
     box = null;
 
@@ -248,7 +265,7 @@ export class Connection extends asyncmachine.AsyncMachine {
         requires: ["ExecutingQueries"]
     };
 
-    BoxOpening = {
+    OpeningBox = {
         requires: ["Connected"],
         blocks: ["BoxOpened", "BoxClosing", "BoxClosed"]
     };
@@ -256,27 +273,29 @@ export class Connection extends asyncmachine.AsyncMachine {
     BoxOpened = {
         requires: ["Connected"],
         depends: ["Connected"],
-        blocks: ["BoxOpening", "BoxClosed", "BoxClosing"]
+        blocks: ["OpeningBox", "BoxClosed", "BoxClosing"]
     };
 
     BoxClosing = {
-        blocks: ["BoxOpened", "BoxOpening", "Box"]
+        blocks: ["BoxOpened", "OpeningBox", "Box"]
     };
 
     BoxClosed = {
-        blocks: ["BoxOpened", "BoxOpening", "BoxClosing"]
+        blocks: ["BoxOpened", "OpeningBox", "BoxClosing"]
     };
 
     BoxOpeningError = {
-        drops: ["BoxOpened", "BoxOpening"]
+        drops: ["BoxOpened", "OpeningBox"]
     };
 
     constructor(settings) {
         super();
 
+        this.queries = [];
+        this.queries_executing = [];
         this.settings = settings;
 
-        this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "ExecutingQueries", "BoxOpening", "Fetching", "BoxOpened", "BoxClosing", "BoxClosed", "Ready", "QueryFetched", "BoxOpeningError");
+        this.register("Disconnected", "Disconnecting", "Connected", "Connecting", "Idle", "Active", "ExecutingQueries", "OpeningBox", "Fetching", "BoxOpened", "BoxClosing", "BoxClosed", "Ready", "QueryFetched", "BoxOpeningError");
 
         this.debug("[connection]", 1);
     }
@@ -315,7 +334,7 @@ export class Connection extends asyncmachine.AsyncMachine {
     }
 
     Connected_enter() {
-        return this.add("BoxOpening");
+        return this.add("OpeningBox");
     }
 
     Connected_exit() {
@@ -329,10 +348,10 @@ export class Connection extends asyncmachine.AsyncMachine {
         });
     }
 
-    BoxOpening_enter() {
-        var tick = this.clock("BoxOpening");
+    OpeningBox_enter() {
+        var tick = this.clock("OpeningBox");
         this.imap.openBox("[Gmail]/All Mail", false, (err, box) => {
-            if (!this.is("BoxOpening", tick + 1)) {
+            if (!this.is("OpeningBox", tick + 1)) {
                 return;
             }
             return this.add(["BoxOpened", "Ready"], err, box);
@@ -447,8 +466,4 @@ export class Connection extends asyncmachine.AsyncMachine {
     minInterval_() {
         return Math.min.apply(null, this.queries.map((ch) => ch.update_interval));
     }
-}
-
-interface MessagesHash {
-	[index: string]: Message;
 }

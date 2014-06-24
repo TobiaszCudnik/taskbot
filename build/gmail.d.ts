@@ -1,12 +1,19 @@
-/// <reference path="../node_modules/asyncmachine/build/asyncmachine.d.ts" />
+/// <reference path="asyncmachine-task.d.ts" />
+/// <reference path="../node_modules/asyncmachine/lib/asyncmachine.d.ts" />
+/// <reference path="../d.ts/async.d.ts" />
 /// <reference path="../d.ts/imap.d.ts" />
 /// <reference path="../d.ts/global.d.ts" />
-export declare var ImapConnection: typeof imap.ImapConnection;
 import asyncmachine = require('asyncmachine');
-import am_task = require('./asyncmachine-task');
-import rsvp = require('rsvp');
-export declare class Query extends am_task.Task {
-    public HasMonitored: {};
+export declare class Message {
+    public subject: string;
+    public body: string;
+    public labels: string[];
+    public id: number;
+    public query: any;
+    public fetch_id: number;
+    constructor(id: number, subject: string, labels: string[], body?: string);
+}
+export declare class Query extends asyncmachine.AsyncMachine {
     public Fetching: {
         blocks: string[];
     };
@@ -17,110 +24,135 @@ export declare class Query extends am_task.Task {
         implies: string[];
         blocks: string[];
     };
-    public FetchingResults: {
+    public QueryFetched: {
         implies: string[];
         blocks: string[];
     };
-    public ResultsFetchingError: {
+    public FetchingResults: {
         implies: string[];
+        requires: string[];
+        blocks: string[];
+    };
+    public ResultsFetched: {
+        blocks: string[];
     };
     public FetchingMessage: {
+        implies: string[];
         blocks: string[];
         requires: string[];
     };
     public MessageFetched: {
+        implies: string[];
         blocks: string[];
         requires: string[];
     };
+    public ResultsFetchingError: {
+        implies: string[];
+        blocks: string[];
+    };
     public active: boolean;
     public last_update: number;
-    public headers: string[];
-    public monitored: any[];
+    public next_update: number;
+    public headers: {
+        bodies: string;
+        struct: boolean;
+    };
     public connection: any;
-    public name: string;
+    public query: string;
     public update_interval: number;
-    constructor(connection: any, name: any, update_interval: any);
-    public FetchingQuery_enter(): any;
+    public fetch: any;
+    public msg: any;
+    public results: IHash<Message>;
+    constructor(connection: any, query: any, update_interval: any);
+    public FetchingQuery_enter(): boolean;
     public FetchingQuery_FetchingResults(states: any, err: any, results: any): any;
     public FetchingMessage_enter(states: any, msg: any): any;
-    public FetchingMessage_MessageFetched(states: any, msg: any): number;
+    public FetchingMessage_exit(): any;
+    public FetchingMessage_MessageFetched(states: any, msg: any, attrs: any, body: any): boolean;
+    public FetchingResults_exit(): any;
     public ResultsFetchingError_enter(err: any): void;
-    public repl(): Query;
-    public log(...msgs: any[]): any;
 }
 export declare class Connection extends asyncmachine.AsyncMachine {
-    public max_concurrency: number;
-    public queries: any[];
-    public connection: imap.ImapConnection;
-    public box_opening_promise: rsvp.Defered;
-    public delayed_timer: number;
-    public concurrency: Query[];
-    public threads: any[];
+    public queries: Query[];
+    public queries_executing: Query[];
+    public queries_executing_limit: number;
+    public imap: imap.Imap;
+    public query_timer: any;
     public settings: IGtdBotSettings;
-    public last_promise: rsvp.Defered;
-    public Disconnected: {
+    public box: any;
+    public fetch: any;
+    public Connecting: {
+        requires: string[];
         blocks: string[];
+    };
+    public Connected: {
+        requires: string[];
+        blocks: string[];
+        implies: string[];
+    };
+    public Ready: {
+        requires: string[];
+    };
+    public Idle: {
+        requires: string[];
+        block: string[];
+    };
+    public Active: {};
+    public ExecutingQueries: {
+        blocks: string[];
+    };
+    public QueryFetched: {
+        requires: string[];
     };
     public Disconnecting: {
         blocks: string[];
     };
-    public Connected: {
-        blocks: string[];
-        implies: string[];
-    };
-    public Connecting: {
-        blocks: string[];
-    };
-    public Idle: {
+    public DisconnectingQueries: {
         requires: string[];
     };
-    public Active: {
-        requires: string[];
+    public Disconnected: {
+        blocks: string[];
     };
-    public Fetched: {};
     public Fetching: {
-        requires: string[];
         blocks: string[];
-    };
-    public Delayed: {
         requires: string[];
-        blocks: string[];
     };
-    public BoxOpening: {
+    public OpeningBox: {
         requires: string[];
         blocks: string[];
     };
     public BoxOpened: {
-        depends: string[];
         requires: string[];
+        depends: string[];
         blocks: string[];
     };
     public BoxClosing: {
         blocks: string[];
     };
     public BoxClosed: {
-        requires: string[];
         blocks: string[];
     };
+    public BoxOpeningError: {
+        drops: string[];
+    };
     constructor(settings: any);
-    public addQuery(query: any, update_interval: any): any;
-    public Connected_enter(states: any): boolean;
-    public Connected_Disconnected(): void;
-    public Connecting_enter(states: any): any;
-    public Connecting_exit(target_states: any): boolean;
+    public addQuery(query: any, update_interval: any): number;
+    public Connecting_enter(states: any): void;
+    public Connecting_exit(states: any): any;
+    public Connected_enter(): boolean;
     public Connected_exit(): any;
-    public BoxOpening_enter(): boolean;
-    public BoxOpening_BoxOpening(): asyncmachine.lucidjs.IBinding;
-    public BoxOpening_exit(): any;
+    public OpeningBox_enter(): boolean;
+    public BoxOpened_enter(states: any, err: any, box: any): any;
+    public BoxOpeningError_enter(err: any): void;
     public BoxClosing_enter(): any;
-    public BoxOpened_enter(): any;
-    public Delayed_enter(): any;
-    public Delayed_exit(): any;
-    public Fetching_enter(): any;
-    public Fetching_exit(states: any, args: any): boolean;
-    public Fetching_Fetching: () => any;
+    public Ready_enter(): boolean;
     public Active_enter(): boolean;
+    public Connected_Active(): boolean;
+    public ExecutingQueries_enter(): any;
+    public ExecutingQueries_Disconnecting(states: any, force: any): void;
+    public Fetching_exit(): boolean;
+    public Disconnected_enter(states: any, force: any): boolean;
+    public Disconnecting_exit(): boolean;
+    public hasMonitoredMsgs(): boolean;
     public minInterval_(): any;
-    public repl(): Connection;
-    public log(...msgs: any[]): any;
 }
