@@ -57,7 +57,7 @@ export class Query extends asyncmachine.AsyncMachine {
 
     FetchingResults = {
         implies: ["Fetching"],
-        requires: ["QueryFetched"]
+        requires: ["QueryFetched", "ResultsFetched"]
     };
 
     ResultsFetched = {
@@ -116,7 +116,7 @@ export class Query extends asyncmachine.AsyncMachine {
 
         this.register("QueryFetched", "Fetching", "Idle", "FetchingQuery", "FetchingResults", "ResultsFetchingError", "FetchingMessage", "MessageFetched", "ResultsFetched");
 
-        this.debug("[query:\"" + query + "\"]", 1);
+        this.debug("[query:\"" + query + "\"]", 3);
 
         this.messages = {};
         this.query_results = [];
@@ -144,7 +144,9 @@ export class Query extends asyncmachine.AsyncMachine {
         return true;
     }
 
-    QueryFetched_enter(states, err, esults) {}
+    QueryFetched_enter(states, results) {
+        return this.query_results = results;
+    }
 
     FetchingResults_enter(states, results) {
         this.log("Found " + results.length + " search results");
@@ -152,7 +154,6 @@ export class Query extends asyncmachine.AsyncMachine {
             this.add("ResultsFetched");
             return true;
         }
-        this.query_results = results;
         this.fetch = this.connection.imap.fetch(results, this.headers);
         this.fetch.on("message", this.addLater("FetchingMessage"));
         this.fetch.once("error", this.addLater("ResultsFetchingError"));
@@ -421,31 +422,7 @@ export class Connection extends asyncmachine.AsyncMachine {
     }
 
     ExecutingQueries_enter() {
-        while (this.queries_executing.length < this.queries_executing_limit) {
-            var query = this.queries.sortBy("next_update").filter((item) => !this.queries_executing.some((s) => s.query === item.query)).filter((item) => !item.next_update || item.next_update < Date.now()).first();
-
-            if (!query) {
-                break;
-            }
-
-            this.log("activating " + query.query);
-            this.log("concurrency++");
-            this.queries_executing.push(query);
-            query.add("FetchingQuery");
-            this.add("Fetching");
-            var tick = query.clock("FetchingQuery");
-            query.once("Results.Fetched.enter", () => {
-                if (tick !== query.clock("FetchingQuery")) {
-                    return;
-                }
-                this.queries_executing = this.queries_executing.filter((row) => row !== query);
-                this.drop("Fetching");
-                this.add("QueryFetched", query);
-                return this.log("concurrency--");
-            });
-        }
-        var func = () => this.ExecutingQueries_enter();
-        return this.query_timer = setTimeout(func, this.minInterval_());
+        return this.fetchScheduledQueries();
     }
 
     ExecutingQueries_Disconnecting(states, force) {
@@ -486,8 +463,32 @@ export class Connection extends asyncmachine.AsyncMachine {
         return this.add("Disconnected");
     }
 
-    hasMonitoredMsgs() {
-        return this.queries.some((query) => query.is("HasMonitored"));
+    fetchScheduledQueries() {
+        while (this.queries_executing.length < this.queries_executing_limit) {
+            var query = this.queries.sortBy("next_update").filter((item) => !this.queries_executing.some((s) => s.query === item.query)).filter((item) => !item.next_update || item.next_update < Date.now()).first();
+
+            if (!query) {
+                break;
+            }
+
+            this.log("activating " + query.query);
+            this.log("concurrency++");
+            this.queries_executing.push(query);
+            query.add("FetchingQuery");
+            this.add("Fetching");
+            var tick = query.clock("FetchingQuery");
+            query.once("Results.Fetched.enter", () => {
+                if (tick !== query.clock("FetchingQuery")) {
+                    return;
+                }
+                this.queries_executing = this.queries_executing.filter((row) => row !== query);
+                this.drop("Fetching");
+                this.add("QueryFetched", query);
+                return this.log("concurrency--");
+            });
+        }
+        var func = () => this.fetchScheduledQueries();
+        return this.query_timer = setTimeout(func, this.minInterval_());
     }
 
     minInterval_() {

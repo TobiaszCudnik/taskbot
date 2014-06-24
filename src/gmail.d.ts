@@ -30,7 +30,9 @@ class Query extends asyncmachine.AsyncMachine {
   once(event: 'new-msg', listener: (msg: Message) => void);
 	
   on(event: 'labels-changed', listener: (msg: Message) => void); 
-  once(event: 'labels-changed', listener: (msg: Message) => void); 
+  once(event: 'labels-changed', listener: (msg: Message) => void);
+	
+	// TODO triggers
 }
 
 //interface Hash<T> {

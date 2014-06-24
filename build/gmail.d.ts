@@ -69,7 +69,7 @@ export declare class Query extends asyncmachine.AsyncMachine {
     public messages: IHash<Message>;
     constructor(connection: any, query: any, update_interval: any);
     public FetchingQuery_enter(): boolean;
-    public QueryFetched_enter(states: any, err: any, esults: any): void;
+    public QueryFetched_enter(states: any, results: any): any;
     public FetchingResults_enter(states: any, results: any): any;
     public FetchingMessage_enter(states: any, msg: any): any;
     public FetchingMessage_exit(): any;
@@ -158,6 +158,6 @@ export declare class Connection extends asyncmachine.AsyncMachine {
     public Fetching_exit(): boolean;
     public Disconnected_enter(states: any, force: any): boolean;
     public Disconnecting_exit(): boolean;
-    public hasMonitoredMsgs(): boolean;
+    public fetchScheduledQueries(): any;
     public minInterval_(): any;
 }

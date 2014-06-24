@@ -47,10 +47,10 @@ class Query extends asyncmachine.AsyncMachine
 
 	FetchingResults:
 		implies: ['Fetching']
-		requires: ['QueryFetched']
+		requires: ['QueryFetched', 'ResultsFetched']
 
-	# Old resuts are available even during fetching of the new ones.
-	ResultsFetched: 
+	# Old results are available even during fetching of the new ones.
+	ResultsFetched:
 		blocks: ['FetchingMessage', 'FetchingResults']
 
 	# Message fetching states
@@ -99,7 +99,7 @@ class Query extends asyncmachine.AsyncMachine
 			'FetchingResults', 'ResultsFetchingError', 'FetchingMessage',
 			'MessageFetched', 'ResultsFetched'
 								
-		@debug "[query:\"#{query}\"]", 1
+		@debug "[query:\"#{query}\"]", 3
 		
 		@messages = {}
 		@query_results = []
@@ -123,7 +123,8 @@ class Query extends asyncmachine.AsyncMachine
 				@add ['FetchingResults', 'QueryFetched'], results
 		yes
 		
-	QueryFetched_enter: (states, err, esults) ->
+	QueryFetched_enter: (states, results) ->
+		@query_results = results
 
 	# TODO cross-blocked states bug in asyncmachine
 #	FetchingQuery_FetchingResults: (states, results) ->
@@ -132,7 +133,6 @@ class Query extends asyncmachine.AsyncMachine
 		if not results.length
 			@add 'ResultsFetched'
 			return yes
-		@query_results = results
 		@fetch = @connection.imap.fetch results, @headers
 		# Subscribe state changes to fetching events.
 		@fetch.on "message", @addLater 'FetchingMessage'
@@ -371,8 +371,43 @@ class Connection extends asyncmachine.AsyncMachine
 	
 	Connected_Active: -> @add 'Connecting'
 
-	# TODO refactor this logic to the Active state ???
-	ExecutingQueries_enter: ->
+	ExecutingQueries_enter: -> @fetchScheduledQueries()
+		
+	ExecutingQueries_Disconnecting: (states, force) ->
+		# Disconnected mean not Active
+		@drop 'Active'
+		# Clear the scheduler's timer, if any
+		clearTimeout @query_timer if @query_timer
+		# If no query is Fetching, accept the transition
+		return if @queries_executing.every (query) ->
+			query.is 'Idle'
+		# If not, we're waiting (by a state) while asserting on a current tick
+		@add 'DisconnectingQueries'
+		tick = @clock 'BoxClosing'
+		async.forEach(@queries_executing,
+			(query, done) =>
+				query.drop 'Fetching'
+				query.once 'Idle', done
+			=>
+				return if not @is 'ExecutingQueries', tick
+				# Continue with closing the box
+				@add 'BoxClosing'
+		)
+	
+	Fetching_exit: ->
+		not @queries_executing.some (query) ->
+			query.is 'Fetching'
+		
+	Disconnected_enter: (states, force) ->
+		if @any 'Connected', 'Connecting'
+			@add 'Disconnecting', force
+			no
+		else if @is 'Disconnecting'
+			no
+
+	Disconnecting_exit: -> @add 'Disconnected'
+		
+	fetchScheduledQueries: ->
 		# Add new search only if there's a free limit.
 		while @queries_executing.length < @queries_executing_limit
 			query = @queries
@@ -410,45 +445,8 @@ class Connection extends asyncmachine.AsyncMachine
 				@log 'concurrency--'
 				
 		# Loop the fetching process
-		func = => @ExecutingQueries_enter()
+		func = => @fetchScheduledQueries()
 		@query_timer = setTimeout func, @minInterval_()
-		
-	ExecutingQueries_Disconnecting: (states, force) ->
-		# Disconnected mean not Active
-		@drop 'Active'
-		# Clear the scheduler's timer, if any
-		clearTimeout @query_timer if @query_timer
-		# If no query is Fetching, accept the transition
-		return if @queries_executing.every (query) ->
-			query.is 'Idle'
-		# If not, we're waiting (by a state) while asserting on a current tick
-		@add 'DisconnectingQueries'
-		tick = @clock 'BoxClosing'
-		async.forEach(@queries_executing,
-			(query, done) =>
-				query.drop 'Fetching'
-				query.once 'Idle', done
-			=>
-				return if not @is 'ExecutingQueries', tick
-				# Continue with closing the box
-				@add 'BoxClosing'
-		)
-	
-	Fetching_exit: ->
-		not @queries_executing.some (query) ->
-			query.is 'Fetching'
-		
-	Disconnected_enter: (states, force) ->
-		if @any 'Connected', 'Connecting'
-			@add 'Disconnecting', force
-			no
-		else if @is 'Disconnecting'
-			no
-
-	Disconnecting_exit: -> @add 'Disconnected'
-
-	hasMonitoredMsgs: ->
-		@queries.some (query) -> query.is 'HasMonitored'
 
 	# PRIVATES
 
