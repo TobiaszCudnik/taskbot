@@ -26,12 +26,11 @@ export declare class Query extends asyncmachine.AsyncMachine {
     };
     public QueryFetched: {
         implies: string[];
-        blocks: string[];
+        block: string[];
     };
     public FetchingResults: {
         implies: string[];
         requires: string[];
-        blocks: string[];
     };
     public ResultsFetched: {
         blocks: string[];
@@ -50,6 +49,10 @@ export declare class Query extends asyncmachine.AsyncMachine {
         implies: string[];
         blocks: string[];
     };
+    public QueryFetchingError: {
+        implies: string[];
+        blocks: string[];
+    };
     public active: boolean;
     public last_update: number;
     public next_update: number;
@@ -62,13 +65,15 @@ export declare class Query extends asyncmachine.AsyncMachine {
     public update_interval: number;
     public fetch: any;
     public msg: any;
-    public results: IHash<Message>;
+    public query_results: IHash<Message>;
+    public messages: IHash<Message>;
     constructor(connection: any, query: any, update_interval: any);
     public FetchingQuery_enter(): boolean;
-    public FetchingQuery_FetchingResults(states: any, err: any, results: any): any;
+    public QueryFetched_enter(states: any, err: any, esults: any): void;
+    public FetchingResults_enter(states: any, results: any): any;
     public FetchingMessage_enter(states: any, msg: any): any;
     public FetchingMessage_exit(): any;
-    public FetchingMessage_MessageFetched(states: any, msg: any, attrs: any, body: any): boolean;
+    public FetchingMessage_MessageFetched(states: any, imap_msg: any, attrs: any, body: any): boolean;
     public FetchingResults_exit(): any;
     public ResultsFetchingError_enter(err: any): void;
 }
@@ -136,7 +141,7 @@ export declare class Connection extends asyncmachine.AsyncMachine {
         drops: string[];
     };
     constructor(settings: any);
-    public addQuery(query: any, update_interval: any): number;
+    public addQuery(query: any, update_interval: any): any;
     public Connecting_enter(states: any): void;
     public Connecting_exit(states: any): any;
     public Connected_enter(): boolean;

@@ -49,19 +49,18 @@ var Query = (function (_super) {
         };
         this.FetchingQuery = {
             implies: ["Fetching"],
-            blocks: ["FetchingResults", "QueryFetched"]
+            blocks: ["QueryFetched"]
         };
         this.QueryFetched = {
             implies: ["Fetching"],
-            blocks: ["FetchingQuery", "FetchingResults"]
+            block: ["FetchingQuery"]
         };
         this.FetchingResults = {
             implies: ["Fetching"],
-            requires: ["QueryFetched"],
-            blocks: ["FetchingQuery"]
+            requires: ["QueryFetched"]
         };
         this.ResultsFetched = {
-            blocks: ["FetchingMessage", "FetchingResults", "FetchingQuery"]
+            blocks: ["FetchingMessage", "FetchingResults"]
         };
         this.FetchingMessage = {
             implies: ["Fetching"],
@@ -75,7 +74,11 @@ var Query = (function (_super) {
         };
         this.ResultsFetchingError = {
             implies: ["Idle"],
-            blocks: ["FetchingResults", "ResultsFetched"]
+            blocks: ["FetchingResults"]
+        };
+        this.QueryFetchingError = {
+            implies: ["Idle"],
+            blocks: ["FetchingQuery"]
         };
         this.active = true;
         this.last_update = 0;
@@ -89,13 +92,15 @@ var Query = (function (_super) {
         this.update_interval = 10 * 1000;
         this.fetch = null;
         this.msg = null;
-        this.results = null;
+        this.query_results = null;
+        this.messages = null;
 
         this.register("QueryFetched", "Fetching", "Idle", "FetchingQuery", "FetchingResults", "ResultsFetchingError", "FetchingMessage", "MessageFetched", "ResultsFetched");
 
         this.debug("[query:\"" + query + "\"]", 1);
 
-        this.results = {};
+        this.messages = {};
+        this.query_results = [];
         this.connection = connection;
         this.query = query;
         this.update_interval = update_interval;
@@ -110,17 +115,26 @@ var Query = (function (_super) {
             if (!_this.is("FetchingQuery", tick + 1)) {
                 return;
             }
-            return _this.add("FetchingResults", err, results);
+            _this.drop("FetchingQuery");
+            if (err) {
+                return _this.add("QueryFetchingError", err);
+            } else {
+                return _this.add(["FetchingResults", "QueryFetched"], results);
+            }
         });
         return true;
     };
 
-    Query.prototype.FetchingQuery_FetchingResults = function (states, err, results) {
+    Query.prototype.QueryFetched_enter = function (states, err, esults) {
+    };
+
+    Query.prototype.FetchingResults_enter = function (states, results) {
         this.log("Found " + results.length + " search results");
         if (!results.length) {
             this.add("ResultsFetched");
             return true;
         }
+        this.query_results = results;
         this.fetch = this.connection.imap.fetch(results, this.headers);
         this.fetch.on("message", this.addLater("FetchingMessage"));
         this.fetch.once("error", this.addLater("ResultsFetchingError"));
@@ -157,30 +171,33 @@ var Query = (function (_super) {
         return this.msg = null;
     };
 
-    Query.prototype.FetchingMessage_MessageFetched = function (states, msg, attrs, body) {
+    Query.prototype.FetchingMessage_MessageFetched = function (states, imap_msg, attrs, body) {
         var id = attrs["x-gm-msgid"];
         var labels = attrs["x-gm-labels"] || [];
-        if (!this.results[id]) {
-            this.log("New msg \"" + body.subject + "\" (" + (labels.join(",")) + ")");
-            this.results[id] = new Message(id, body.subject, labels);
-            this.results[id].fetch_id = this.clock("FetchingResults");
-            this.trigger("new-msg", this.results[id]);
+        var msg = this.messages[id];
+        if (!msg) {
+            this.messages[id] = new Message(id, body.subject, labels);
+            msg = this.messages[id];
+            msg.fetch_id = this.clock("FetchingResults");
+            return this.trigger("new-msg", msg);
         } else {
-            this.results[id].fetch_id = this.clock("FetchingResults");
+            msg.fetch_id = this.clock("FetchingResults");
+            if (!Object.equal(msg.labels, labels)) {
+                msg.labels = labels;
+                return this.trigger("labels-changed", msg);
+            }
         }
-        return this.add("HasMonitored");
     };
 
     Query.prototype.FetchingResults_exit = function () {
         var _this = this;
         var tick = this.clock("FetchingResults");
-        Object.each(this.results, function (id, msg) {
-            console.log(msg.fetch_id4);
+        Object.each(this.messages, function (id, msg) {
             if (msg.fetch_id === tick) {
                 return;
             }
             this.trigger("removed-msg", msg);
-            return delete this.results[id];
+            return delete this.messages[id];
         });
         if (this.fetch) {
             var events = ["message", "error", "end"];
@@ -278,7 +295,16 @@ var Connection = (function (_super) {
     }
     Connection.prototype.addQuery = function (query, update_interval) {
         this.log("Adding query '" + query + "'");
-        return this.queries.push(new Query(this, query, update_interval));
+        query = new Query(this, query, update_interval);
+        this.queries.push(query);
+        query.on("new-msg", function (msg) {
+            return this.log("New msg \"" + msg.subject + "\" (" + (msg.labels.join(",")) + ")");
+        });
+        query.on("labels-changed", function (msg) {
+            return this.log("New labels \"" + msg.subject + "\" (" + (msg.labels.join(",")) + ")");
+        });
+
+        return query;
     };
 
     Connection.prototype.Connecting_enter = function (states) {

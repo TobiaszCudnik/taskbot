@@ -23,7 +23,14 @@ class Connection extends asyncmachine.AsyncMachine {
 class Query extends asyncmachine.AsyncMachine {
     private msg: imap.Message;
 	
-	results: IHash<Message>;
+	messages: IHash<Message>;
+	query_results: IHash<Message>;
+	
+  on(event: 'new-msg', listener: (msg: Message) => void); 
+  once(event: 'new-msg', listener: (msg: Message) => void);
+	
+  on(event: 'labels-changed', listener: (msg: Message) => void); 
+  once(event: 'labels-changed', listener: (msg: Message) => void); 
 }
 
 //interface Hash<T> {

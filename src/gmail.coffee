@@ -39,20 +39,19 @@ class Query extends asyncmachine.AsyncMachine
 
 	FetchingQuery:
 		implies: ['Fetching']
-		blocks: ['FetchingResults', 'QueryFetched']
+		blocks: ['QueryFetched']
 
 	QueryFetched:
 		implies: ['Fetching']
-		blocks: ['FetchingQuery', 'FetchingResults']
+		block: ['FetchingQuery']
 
 	FetchingResults:
 		implies: ['Fetching']
 		requires: ['QueryFetched']
-		blocks: ['FetchingQuery']
 
 	# Old resuts are available even during fetching of the new ones.
 	ResultsFetched: 
-		blocks: ['FetchingMessage', 'FetchingResults', 'FetchingQuery']
+		blocks: ['FetchingMessage', 'FetchingResults']
 
 	# Message fetching states
 
@@ -70,7 +69,11 @@ class Query extends asyncmachine.AsyncMachine
 
 	ResultsFetchingError:
 		implies: ['Idle']
-		blocks: ['FetchingResults', 'ResultsFetched']
+		blocks: ['FetchingResults']
+
+	QueryFetchingError:
+		implies: ['Idle']
+		blocks: ['FetchingQuery']
 
 	# Attributes
 
@@ -86,7 +89,8 @@ class Query extends asyncmachine.AsyncMachine
 	
 	fetch: null
 	msg: null
-	results: null
+	query_results: null
+	messages: null
 
 	constructor: (connection, query, update_interval) ->
 		super()
@@ -97,7 +101,8 @@ class Query extends asyncmachine.AsyncMachine
 								
 		@debug "[query:\"#{query}\"]", 1
 		
-		@results = {}
+		@messages = {}
+		@query_results = []
 		@connection = connection
 		@query = query
 		@update_interval = update_interval
@@ -110,14 +115,24 @@ class Query extends asyncmachine.AsyncMachine
 		tick = @clock 'FetchingQuery'
 		@connection.imap.search [['X-GM-RAW', @query]], (err, results) =>
 			return if not @is 'FetchingQuery', tick + 1
-			@add 'FetchingResults', err, results
+			# TODO cross-blocked states bug in asyncmachine
+			@drop 'FetchingQuery'
+			if err
+				@add 'QueryFetchingError', err
+			else
+				@add ['FetchingResults', 'QueryFetched'], results
 		yes
+		
+	QueryFetched_enter: (states, err, esults) ->
 
-	FetchingQuery_FetchingResults: (states, err, results) ->
+	# TODO cross-blocked states bug in asyncmachine
+#	FetchingQuery_FetchingResults: (states, results) ->
+	FetchingResults_enter: (states, results) ->
 		@log "Found #{results.length} search results"
 		if not results.length
 			@add 'ResultsFetched'
 			return yes
+		@query_results = results
 		@fetch = @connection.imap.fetch results, @headers
 		# Subscribe state changes to fetching events.
 		@fetch.on "message", @addLater 'FetchingMessage'
@@ -146,28 +161,30 @@ class Query extends asyncmachine.AsyncMachine
 		@msg.removeAllListeners event for event in events 
 		@msg = null
 
-	FetchingMessage_MessageFetched: (states, msg, attrs, body) ->
+	FetchingMessage_MessageFetched: (states, imap_msg, attrs, body) ->
 		id = attrs['x-gm-msgid']
 		labels = attrs['x-gm-labels'] || []
-		if not @results[id]
-			@log "New msg \"#{body.subject}\" (#{labels.join ','})"
-			@results[id] = new Message id, body.subject, labels
+		msg = @messages[id]
+		if not msg
+			@messages[id] = new Message id, body.subject, labels
+			msg = @messages[id]
 			# Set the fetch ID
-			@results[id].fetch_id = @clock 'FetchingResults'
-			@trigger 'new-msg', @results[id]
+			msg.fetch_id = @clock 'FetchingResults'
+			@trigger 'new-msg', msg
 		else
 			# Update the fetch ID
-			@results[id].fetch_id = @clock 'FetchingResults'
-			# TODO check for labels change
-		@add 'HasMonitored'
+			msg.fetch_id = @clock 'FetchingResults'
+			if not Object.equal msg.labels, labels
+				msg.labels = labels
+				@trigger 'labels-changed', msg
 		
 	FetchingResults_exit: ->
 		tick = @clock 'FetchingResults'
 		# Remove all old msgs, not present in the current results
-		Object.each @results, (id, msg) ->
+		Object.each @messages, (id, msg) ->
 			return if msg.fetch_id is tick
 			@trigger 'removed-msg', msg
-			delete @results[id]
+			delete @messages[id]
 		# GC
 		if @fetch
 			events = ['message', 'error', 'end']
@@ -279,7 +296,15 @@ class Connection extends asyncmachine.AsyncMachine
 
 	addQuery: (query, update_interval) ->
 		@log "Adding query '#{query}'"
-		@queries.push new Query @, query, update_interval
+		query = new Query @, query, update_interval
+		@queries.push query
+		# Bind to query events
+		query.on 'new-msg', (msg) ->
+			@log "New msg \"#{msg.subject}\" (#{msg.labels.join ','})"
+		query.on 'labels-changed', (msg) ->
+			@log "New labels \"#{msg.subject}\" (#{msg.labels.join ','})"
+			
+		query
 
 	# STATE TRANSITIONS
 
