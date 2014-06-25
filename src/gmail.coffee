@@ -35,6 +35,9 @@ class Query extends asyncmachine.AsyncMachine
 	Idle:
 		blocks: ['Fetching']
 		
+	# Old results are available even during fetching of the new ones.
+	ResultsAvailable: {}
+		
 	# Flow states
 
 	FetchingQuery:
@@ -43,15 +46,17 @@ class Query extends asyncmachine.AsyncMachine
 
 	QueryFetched:
 		implies: ['Fetching']
-		block: ['FetchingQuery']
+		blocks: ['FetchingQuery']
 
 	FetchingResults:
 		implies: ['Fetching']
-		requires: ['QueryFetched', 'ResultsFetched']
+		requires: ['QueryFetched']
+		blocks: ['ResultsFetched']
 
-	# Old results are available even during fetching of the new ones.
 	ResultsFetched:
-		blocks: ['FetchingMessage', 'FetchingResults']
+		# TODO doesnt work ?!
+		implies: ['ResultsAvailable']
+		blocks: ['FetchingResults']
 
 	# Message fetching states
 
@@ -60,6 +65,7 @@ class Query extends asyncmachine.AsyncMachine
 		blocks: ['MessageFetched']
 		requires: ['FetchingResults']
 
+	# TODO This is sometimes skipped ???
 	MessageFetched:
 		implies: ['Fetching']
 		blocks: ['FetchingMessage']
@@ -97,9 +103,9 @@ class Query extends asyncmachine.AsyncMachine
 								
 		@register 'QueryFetched', 'Fetching', 'Idle', 'FetchingQuery',
 			'FetchingResults', 'ResultsFetchingError', 'FetchingMessage',
-			'MessageFetched', 'ResultsFetched'
+			'MessageFetched', 'ResultsFetched', 'ResultsAvailable'
 								
-		@debug "[query:\"#{query}\"]", 3
+		@debug "[query:\"#{query}\"]", 1
 		
 		@messages = {}
 		@query_results = []
@@ -115,8 +121,6 @@ class Query extends asyncmachine.AsyncMachine
 		tick = @clock 'FetchingQuery'
 		@connection.imap.search [['X-GM-RAW', @query]], (err, results) =>
 			return if not @is 'FetchingQuery', tick + 1
-			# TODO cross-blocked states bug in asyncmachine
-			@drop 'FetchingQuery'
 			if err
 				@add 'QueryFetchingError', err
 			else
@@ -126,23 +130,23 @@ class Query extends asyncmachine.AsyncMachine
 	QueryFetched_enter: (states, results) ->
 		@query_results = results
 
-	# TODO cross-blocked states bug in asyncmachine
-#	FetchingQuery_FetchingResults: (states, results) ->
-	FetchingResults_enter: (states, results) ->
+	FetchingQuery_FetchingResults: (states, results) ->
 		@log "Found #{results.length} search results"
 		if not results.length
 			@add 'ResultsFetched'
 			return yes
 		@fetch = @connection.imap.fetch results, @headers
 		# Subscribe state changes to fetching events.
-		@fetch.on "message", @addLater 'FetchingMessage'
+		@fetch.on "message", (msg, id) =>
+			@add 'FetchingMessage', msg, id
 		@fetch.once "error", @addLater 'ResultsFetchingError'
 		@fetch.once "end", @addLater 'ResultsFetched'
 
-	FetchingMessage_enter: (states, msg) ->
+	FetchingMessage_enter: (states, msg, id) ->
 		attrs = null
 		body_buffer = ''
 		body = null
+		@msg = msg
 		# TODO how the error is handled?
 		@msg.once 'body', (stream, data) =>
 			# stream's bindings don't have to be unbound, as we're not passing
@@ -304,6 +308,7 @@ class Connection extends asyncmachine.AsyncMachine
 		query.on 'labels-changed', (msg) ->
 			@log "New labels \"#{msg.subject}\" (#{msg.labels.join ','})"
 			
+		# TODO pipe query
 		query
 
 	# STATE TRANSITIONS
@@ -406,7 +411,7 @@ class Connection extends asyncmachine.AsyncMachine
 			no
 
 	Disconnecting_exit: -> @add 'Disconnected'
-		
+
 	fetchScheduledQueries: ->
 		# Add new search only if there's a free limit.
 		while @queries_executing.length < @queries_executing_limit
@@ -434,19 +439,21 @@ class Connection extends asyncmachine.AsyncMachine
 			@add 'Fetching'
 			# Subscribe to a finished query
 			tick = query.clock 'FetchingQuery'
-			query.once 'Results.Fetched.enter', =>
-				return if tick isnt query.clock 'FetchingQuery'
-				# @concurrency = @concurrency.exclude search
-				@queries_executing = @queries_executing.filter (row) =>
-					return (row isnt query)
-				# Try to drop the fetching state
-				@drop 'Fetching'
-				@add 'QueryFetched', query
-				@log 'concurrency--'
+			query.once 'Results.Fetched.enter', (@queryFetched.bind @, query, tick)
 				
 		# Loop the fetching process
 		func = => @fetchScheduledQueries()
 		@query_timer = setTimeout func, @minInterval_()
+		
+	queryFetched: (query, tick) ->
+		return if tick isnt query.clock 'FetchingQuery'
+		# @concurrency = @concurrency.exclude search
+		@queries_executing = @queries_executing.filter (row) =>
+			return (row isnt query)
+		# Try to drop the fetching state
+		@drop 'Fetching'
+		@add 'QueryFetched', query
+		@log 'concurrency--'
 
 	# PRIVATES
 

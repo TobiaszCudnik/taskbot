@@ -26,7 +26,7 @@ export class Message {
 
     query = null;
 
-    fetch_id = 0;
+    fetch_id: number = 0;
 
     	constructor(id: number, subject: string, labels: string[], body?: string) {
         this.id = id;
@@ -37,51 +37,55 @@ export class Message {
 }
 
 export class Query extends asyncmachine.AsyncMachine {
-    Fetching = {
+    	Fetching: asyncmachine.IState = {
         blocks: ["Idle"]
     };
 
-    Idle = {
+    Idle: asyncmachine.IState = {
         blocks: ["Fetching"]
     };
 
-    FetchingQuery = {
+    ResultsAvailable: asyncmachine.IState = {};
+
+    FetchingQuery: asyncmachine.IState = {
         implies: ["Fetching"],
         blocks: ["QueryFetched"]
     };
 
-    QueryFetched = {
+    QueryFetched: asyncmachine.IState = {
         implies: ["Fetching"],
-        block: ["FetchingQuery"]
+        blocks: ["FetchingQuery"]
     };
 
-    FetchingResults = {
+    FetchingResults: asyncmachine.IState = {
         implies: ["Fetching"],
-        requires: ["QueryFetched", "ResultsFetched"]
+        requires: ["QueryFetched"],
+        blocks: ["ResultsFetched"]
     };
 
-    ResultsFetched = {
-        blocks: ["FetchingMessage", "FetchingResults"]
+    ResultsFetched: asyncmachine.IState = {
+        implies: ["ResultsAvailable"],
+        blocks: ["FetchingResults"]
     };
 
-    FetchingMessage = {
+    FetchingMessage: asyncmachine.IState = {
         implies: ["Fetching"],
         blocks: ["MessageFetched"],
         requires: ["FetchingResults"]
     };
 
-    MessageFetched = {
+    MessageFetched: asyncmachine.IState = {
         implies: ["Fetching"],
         blocks: ["FetchingMessage"],
         requires: ["FetchingResults"]
     };
 
-    ResultsFetchingError = {
+    ResultsFetchingError: asyncmachine.IState = {
         implies: ["Idle"],
         blocks: ["FetchingResults"]
     };
 
-    QueryFetchingError = {
+    QueryFetchingError: asyncmachine.IState = {
         implies: ["Idle"],
         blocks: ["FetchingQuery"]
     };
@@ -105,7 +109,7 @@ export class Query extends asyncmachine.AsyncMachine {
 
     fetch = null;
 
-    msg = null;
+    private msg: imap.ImapMessage = null;
 
     query_results: IHash<Message> = null;
 
@@ -114,9 +118,9 @@ export class Query extends asyncmachine.AsyncMachine {
     constructor(connection, query, update_interval) {
         super();
 
-        this.register("QueryFetched", "Fetching", "Idle", "FetchingQuery", "FetchingResults", "ResultsFetchingError", "FetchingMessage", "MessageFetched", "ResultsFetched");
+        this.register("QueryFetched", "Fetching", "Idle", "FetchingQuery", "FetchingResults", "ResultsFetchingError", "FetchingMessage", "MessageFetched", "ResultsFetched", "ResultsAvailable");
 
-        this.debug("[query:\"" + query + "\"]", 3);
+        this.debug("[query:\"" + query + "\"]", 1);
 
         this.messages = {};
         this.query_results = [];
@@ -134,7 +138,6 @@ export class Query extends asyncmachine.AsyncMachine {
             if (!this.is("FetchingQuery", tick + 1)) {
                 return;
             }
-            this.drop("FetchingQuery");
             if (err) {
                 return this.add("QueryFetchingError", err);
             } else {
@@ -144,26 +147,27 @@ export class Query extends asyncmachine.AsyncMachine {
         return true;
     }
 
-    QueryFetched_enter(states, results) {
+    QueryFetched_enter(states: string[], results: number[]) {
         return this.query_results = results;
     }
 
-    FetchingResults_enter(states, results) {
+    FetchingQuery_FetchingResults(states, results) {
         this.log("Found " + results.length + " search results");
         if (!results.length) {
             this.add("ResultsFetched");
             return true;
         }
         this.fetch = this.connection.imap.fetch(results, this.headers);
-        this.fetch.on("message", this.addLater("FetchingMessage"));
+        this.fetch.on("message", (msg, id) => this.add("FetchingMessage", msg, id));
         this.fetch.once("error", this.addLater("ResultsFetchingError"));
         return this.fetch.once("end", this.addLater("ResultsFetched"));
     }
 
-    FetchingMessage_enter(states, msg) {
+    	FetchingMessage_enter(states: string[], msg: imap.ImapMessage, id?: number) {
         var attrs = null;
         var body_buffer = "";
         var body = null;
+        this.msg = msg;
         this.msg.once("body", (stream, data) => {
             stream.on("data", (chunk) => body_buffer += chunk.toString("utf8"));
             return stream.once("end", () => body = Imap.parseHeader(body_buffer));
@@ -329,7 +333,6 @@ export class Connection extends asyncmachine.AsyncMachine {
         query.on("labels-changed", function(msg) {
             return this.log("New labels \"" + msg.subject + "\" (" + (msg.labels.join(",")) + ")");
         });
-
         return query;
     }
 
@@ -477,18 +480,20 @@ export class Connection extends asyncmachine.AsyncMachine {
             query.add("FetchingQuery");
             this.add("Fetching");
             var tick = query.clock("FetchingQuery");
-            query.once("Results.Fetched.enter", () => {
-                if (tick !== query.clock("FetchingQuery")) {
-                    return;
-                }
-                this.queries_executing = this.queries_executing.filter((row) => row !== query);
-                this.drop("Fetching");
-                this.add("QueryFetched", query);
-                return this.log("concurrency--");
-            });
+            query.once("Results.Fetched.enter", this.queryFetched.bind(this, query, tick));
         }
         var func = () => this.fetchScheduledQueries();
         return this.query_timer = setTimeout(func, this.minInterval_());
+    }
+
+    queryFetched(query, tick) {
+        if (tick !== query.clock("FetchingQuery")) {
+            return;
+        }
+        this.queries_executing = this.queries_executing.filter((row) => row !== query);
+        this.drop("Fetching");
+        this.add("QueryFetched", query);
+        return this.log("concurrency--");
     }
 
     minInterval_() {

@@ -14,45 +14,17 @@ export declare class Message {
     constructor(id: number, subject: string, labels: string[], body?: string);
 }
 export declare class Query extends asyncmachine.AsyncMachine {
-    public Fetching: {
-        blocks: string[];
-    };
-    public Idle: {
-        blocks: string[];
-    };
-    public FetchingQuery: {
-        implies: string[];
-        blocks: string[];
-    };
-    public QueryFetched: {
-        implies: string[];
-        block: string[];
-    };
-    public FetchingResults: {
-        implies: string[];
-        requires: string[];
-    };
-    public ResultsFetched: {
-        blocks: string[];
-    };
-    public FetchingMessage: {
-        implies: string[];
-        blocks: string[];
-        requires: string[];
-    };
-    public MessageFetched: {
-        implies: string[];
-        blocks: string[];
-        requires: string[];
-    };
-    public ResultsFetchingError: {
-        implies: string[];
-        blocks: string[];
-    };
-    public QueryFetchingError: {
-        implies: string[];
-        blocks: string[];
-    };
+    public Fetching: asyncmachine.IState;
+    public Idle: asyncmachine.IState;
+    public ResultsAvailable: asyncmachine.IState;
+    public FetchingQuery: asyncmachine.IState;
+    public QueryFetched: asyncmachine.IState;
+    public FetchingResults: asyncmachine.IState;
+    public ResultsFetched: asyncmachine.IState;
+    public FetchingMessage: asyncmachine.IState;
+    public MessageFetched: asyncmachine.IState;
+    public ResultsFetchingError: asyncmachine.IState;
+    public QueryFetchingError: asyncmachine.IState;
     public active: boolean;
     public last_update: number;
     public next_update: number;
@@ -64,14 +36,14 @@ export declare class Query extends asyncmachine.AsyncMachine {
     public query: string;
     public update_interval: number;
     public fetch: any;
-    public msg: any;
+    private msg;
     public query_results: IHash<Message>;
     public messages: IHash<Message>;
     constructor(connection: any, query: any, update_interval: any);
     public FetchingQuery_enter(): boolean;
-    public QueryFetched_enter(states: any, results: any): any;
-    public FetchingResults_enter(states: any, results: any): any;
-    public FetchingMessage_enter(states: any, msg: any): any;
+    public QueryFetched_enter(states: string[], results: number[]): number[];
+    public FetchingQuery_FetchingResults(states: any, results: any): any;
+    public FetchingMessage_enter(states: string[], msg: imap.ImapMessage, id?: number): void;
     public FetchingMessage_exit(): any;
     public FetchingMessage_MessageFetched(states: any, imap_msg: any, attrs: any, body: any): boolean;
     public FetchingResults_exit(): any;
@@ -159,5 +131,6 @@ export declare class Connection extends asyncmachine.AsyncMachine {
     public Disconnected_enter(states: any, force: any): boolean;
     public Disconnecting_exit(): boolean;
     public fetchScheduledQueries(): any;
+    public queryFetched(query: any, tick: any): void;
     public minInterval_(): any;
 }
