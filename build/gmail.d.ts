@@ -49,6 +49,7 @@ export declare class Query extends asyncmachine.AsyncMachine {
     public FetchingMessage_exit(id: any): boolean;
     public MessageFetched_enter(states: any, imap_msg: any, attrs: any, body: any): boolean;
     public FetchingResults_exit(): any;
+    public ResultsFetched_enter(): boolean;
     public ResultsFetchingError_enter(err: any): void;
 }
 export declare class Connection extends asyncmachine.AsyncMachine {

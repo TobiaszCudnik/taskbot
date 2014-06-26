@@ -8,9 +8,9 @@ class App extends gmail.Connection
 	constructor: (settings) ->
 		super settings
 		# TODO move queries to the config
-#		@addQuery '*', 1000
-#		@addQuery 'label:S-Pending', 5000
-#		@addQuery 'label:sent', 5000
+		@addQuery '*', 1000
+		@addQuery 'label:S-Pending', 5000
+		@addQuery 'label:sent', 5000
 		@addQuery 'label:P-test', 5000
 		# TODO this returns untrue value
 		if not @add 'Active'

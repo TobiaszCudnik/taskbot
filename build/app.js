@@ -17,6 +17,9 @@ var App = (function (_super) {
     __extends(App, _super);
     function App(settings) {
         _super.call(this, settings);
+        this.addQuery("*", 1000);
+        this.addQuery("label:S-Pending", 5000);
+        this.addQuery("label:sent", 5000);
         this.addQuery("label:P-test", 5000);
         if (!this.add("Active")) {
             this.log("cant activate Active (states: " + (this.is()) + ")");

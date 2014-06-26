@@ -109,9 +109,7 @@ class Query extends asyncmachine.AsyncMachine
 		@update_interval = update_interval
 
 	FetchingQuery_enter: ->
-		# TODO set once results are ready???
 		@last_update = Date.now()
-		@next_update = @last_update + @update_interval
 		@log "performing a search for #{@query}" 
 		tick = @clock 'FetchingQuery'
 		@connection.imap.search [['X-GM-RAW', @query]], (err, results) =>
@@ -191,7 +189,7 @@ class Query extends asyncmachine.AsyncMachine
 		# Remove all old msgs, not present in the current results
 		Object.each @messages, (id, msg) =>
 			return if msg.fetch_id is tick
-			console.log "tick #{msg.fetch_id} isnt #{tick}"
+			console.log "tick #{msg.fetch_id} isnt #{tick} for '#{msg.subject}'"
 			@trigger 'removed-msg', msg
 			delete @messages[id]
 		# GC
@@ -204,6 +202,11 @@ class Query extends asyncmachine.AsyncMachine
 			events = ['message', 'error', 'end']
 			@fetch.removeAllListeners event for event in events 
 			@fetch = null
+			
+	ResultsFetched_enter: ->
+		@next_update = Date.now() + @update_interval
+		@drop 'ResultsFetched'
+		@add 'ResultsAvailable'
 
 	ResultsFetchingError_enter: (err) ->
 		# TODO handle the erro (log/retry, dont exit)
@@ -315,6 +318,8 @@ class Connection extends asyncmachine.AsyncMachine
 		# Bind to query events
 		query.on 'new-msg', (msg) ->
 			@log "New msg \"#{msg.subject}\" (#{msg.labels.join ','})"
+		query.on 'removed-msg', (msg) ->
+			@log "Removed msg \"#{msg.subject}\" (#{msg.labels.join ','})"
 		query.on 'labels-changed', (msg) ->
 			@log "New labels \"#{msg.subject}\" (#{msg.labels.join ','})"
 			
@@ -426,11 +431,11 @@ class Connection extends asyncmachine.AsyncMachine
 		# Add new search only if there's a free limit.
 		while @queries_executing.length < @queries_executing_limit
 			query = @queries
-				# Select the next query (based on last update + interval)
-				.sortBy("next_update")
 				# Skip active queries
 				.filter( (item) =>
 					not @queries_executing.some (s) => s.query == item.query)
+				# Select the next query (based on last update + interval)
+				.sortBy("next_update")
 				# Skip queries not queued yet
 				.filter( (item) =>
 					 not item.next_update or item.next_update < Date.now())

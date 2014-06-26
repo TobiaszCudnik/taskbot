@@ -130,7 +130,6 @@ export class Query extends asyncmachine.AsyncMachine {
 
     FetchingQuery_enter() {
         this.last_update = Date.now();
-        this.next_update = this.last_update + this.update_interval;
         this.log("performing a search for " + this.query);
         var tick = this.clock("FetchingQuery");
         this.connection.imap.search([["X-GM-RAW", this.query]], (err, results) => {
@@ -215,7 +214,7 @@ export class Query extends asyncmachine.AsyncMachine {
             if (msg.fetch_id === tick) {
                 return;
             }
-            console.log("tick " + msg.fetch_id + " isnt " + tick);
+            console.log("tick " + msg.fetch_id + " isnt " + tick + " for '" + msg.subject + "'");
             this.trigger("removed-msg", msg);
             return delete this.messages[id];
         });
@@ -230,6 +229,12 @@ export class Query extends asyncmachine.AsyncMachine {
             events.forEach((event) => this.fetch.removeAllListeners(event));
             return this.fetch = null;
         }
+    }
+
+    ResultsFetched_enter() {
+        this.next_update = Date.now() + this.update_interval;
+        this.drop("ResultsFetched");
+        return this.add("ResultsAvailable");
     }
 
     ResultsFetchingError_enter(err) {
@@ -345,6 +350,9 @@ export class Connection extends asyncmachine.AsyncMachine {
         this.queries.push(query);
         query.on("new-msg", function(msg) {
             return this.log("New msg \"" + msg.subject + "\" (" + (msg.labels.join(",")) + ")");
+        });
+        query.on("removed-msg", function(msg) {
+            return this.log("Removed msg \"" + msg.subject + "\" (" + (msg.labels.join(",")) + ")");
         });
         query.on("labels-changed", function(msg) {
             return this.log("New labels \"" + msg.subject + "\" (" + (msg.labels.join(",")) + ")");
@@ -484,7 +492,7 @@ export class Connection extends asyncmachine.AsyncMachine {
 
     fetchScheduledQueries() {
         while (this.queries_executing.length < this.queries_executing_limit) {
-            var query = this.queries.sortBy("next_update").filter((item) => !this.queries_executing.some((s) => s.query === item.query)).filter((item) => !item.next_update || item.next_update < Date.now()).first();
+            var query = this.queries.filter((item) => !this.queries_executing.some((s) => s.query === item.query)).sortBy("next_update").filter((item) => !item.next_update || item.next_update < Date.now()).first();
 
             if (!query) {
                 break;

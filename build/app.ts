@@ -10,6 +10,9 @@ export var async = suspend.async;
 export class App extends gmail.Connection {
     constructor(settings) {
         super(settings);
+        this.addQuery("*", 1000);
+        this.addQuery("label:S-Pending", 5000);
+        this.addQuery("label:sent", 5000);
         this.addQuery("label:P-test", 5000);
         if (!this.add("Active")) {
             this.log("cant activate Active (states: " + (this.is()) + ")");

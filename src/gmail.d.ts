@@ -44,7 +44,7 @@ class Query extends asyncmachine.AsyncMachine {
 	FetchingMessage_enter(states: string[], msg: imap.ImapMessage, id?: number);
 	FetchingResults_enter(states: string[], results: number[]);
 	QueryFetched_enter(states: string[], results: number[]);
-    FetchingMessage_exit(id: number)
+    FetchingMessage_exit(id: number);
     
 }
 	
