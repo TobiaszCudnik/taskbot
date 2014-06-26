@@ -35,17 +35,19 @@ export declare class Query extends asyncmachine.AsyncMachine {
     public connection: any;
     public query: string;
     public update_interval: number;
-    public fetch: any;
-    private msg;
     public query_results: IHash<Message>;
     public messages: IHash<Message>;
+    public fetch: any;
+    private tmp_msgs;
+    public msg_events: string[];
     constructor(connection: any, query: any, update_interval: any);
     public FetchingQuery_enter(): boolean;
     public QueryFetched_enter(states: string[], results: number[]): number[];
     public FetchingQuery_FetchingResults(states: any, results: any): any;
     public FetchingMessage_enter(states: string[], msg: imap.ImapMessage, id?: number): void;
-    public FetchingMessage_exit(): any;
-    public FetchingMessage_MessageFetched(states: any, imap_msg: any, attrs: any, body: any): boolean;
+    public FetchingMessage_FetchingMessage(states: any, msg: any, id: any): void;
+    public FetchingMessage_exit(id: any): boolean;
+    public MessageFetched_enter(states: any, imap_msg: any, attrs: any, body: any): boolean;
     public FetchingResults_exit(): any;
     public ResultsFetchingError_enter(err: any): void;
 }

@@ -23,7 +23,7 @@ class Query extends asyncmachine.AsyncMachine {
 	
 	// ATTRIBUTES
 	
-	private msg: imap.ImapMessage;
+	private tmp_msgs: imap.ImapMessage[];
 	
 	messages: IHash<Message>;
 	query_results: IHash<Message>;
@@ -44,6 +44,8 @@ class Query extends asyncmachine.AsyncMachine {
 	FetchingMessage_enter(states: string[], msg: imap.ImapMessage, id?: number);
 	FetchingResults_enter(states: string[], results: number[]);
 	QueryFetched_enter(states: string[], results: number[]);
+    FetchingMessage_exit(id: number)
+    
 }
 	
 class Connection extends asyncmachine.AsyncMachine {

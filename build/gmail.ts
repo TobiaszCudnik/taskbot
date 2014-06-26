@@ -69,14 +69,10 @@ export class Query extends asyncmachine.AsyncMachine {
     };
 
     FetchingMessage: asyncmachine.IState = {
-        implies: ["Fetching"],
-        blocks: ["MessageFetched"],
         requires: ["FetchingResults"]
     };
 
     MessageFetched: asyncmachine.IState = {
-        implies: ["Fetching"],
-        blocks: ["FetchingMessage"],
         requires: ["FetchingResults"]
     };
 
@@ -107,13 +103,15 @@ export class Query extends asyncmachine.AsyncMachine {
 
     update_interval = 10 * 1000;
 
-    fetch = null;
-
-    private msg: imap.ImapMessage = null;
-
     query_results: IHash<Message> = null;
 
     	messages: IHash<Message> = null;
+
+    fetch = null;
+
+    private tmp_msgs: imap.ImapMessage[] = null;
+
+    msg_events = ["body", "attributes", "end"];
 
     constructor(connection, query, update_interval) {
         super();
@@ -124,6 +122,7 @@ export class Query extends asyncmachine.AsyncMachine {
 
         this.messages = {};
         this.query_results = [];
+        this.tmp_msgs = [];
         this.connection = connection;
         this.query = query;
         this.update_interval = update_interval;
@@ -167,48 +166,65 @@ export class Query extends asyncmachine.AsyncMachine {
         var attrs = null;
         var body_buffer = "";
         var body = null;
-        this.msg = msg;
-        this.msg.once("body", (stream, data) => {
+        this.tmp_msgs[id] = msg;
+        msg.once("body", (stream, data) => {
             stream.on("data", (chunk) => body_buffer += chunk.toString("utf8"));
             return stream.once("end", () => body = Imap.parseHeader(body_buffer));
         });
-        this.msg.once("attributes", (data) => attrs = data);
-        return this.msg.once("end", () => this.add("MessageFetched", msg, attrs, body));
+        msg.once("attributes", (data) => attrs = data);
+        return msg.once("end", () => this.add("MessageFetched", msg, attrs, body));
     }
 
-    FetchingMessage_exit() {
-        var events = ["body", "attributes", "end"];
-        events.forEach((event) => this.msg.removeAllListeners(event));
-        return this.msg = null;
+    FetchingMessage_FetchingMessage(states, msg, id) {
+        return this.FetchingMessage_enter(states, msg, id);
     }
 
-    FetchingMessage_MessageFetched(states, imap_msg, attrs, body) {
+    FetchingMessage_exit(id) {
+        var msg = this.tmp_msgs[id];
+        if (!msg) {
+            return;
+        }
+        this.msg_events.forEach((event) => msg.removeAllListeners(event));
+        return delete this.tmp_msgs[id];
+    }
+
+    MessageFetched_enter(states, imap_msg, attrs, body) {
         var id = attrs["x-gm-msgid"];
+        this.drop("FetchingMessage", id);
         var labels = attrs["x-gm-labels"] || [];
         var msg = this.messages[id];
         if (!msg) {
             this.messages[id] = new Message(id, body.subject, labels);
             msg = this.messages[id];
             msg.fetch_id = this.clock("FetchingResults");
-            return this.trigger("new-msg", msg);
+            this.trigger("new-msg", msg);
         } else {
+            this.log("Updating a msg tick");
             msg.fetch_id = this.clock("FetchingResults");
             if (!Object.equal(msg.labels, labels)) {
                 msg.labels = labels;
-                return this.trigger("labels-changed", msg);
+                this.trigger("labels-changed", msg);
             }
         }
+        return this.drop("MessageFetched");
     }
 
     FetchingResults_exit() {
         var tick = this.clock("FetchingResults");
-        Object.each(this.messages, function(id, msg) {
+        Object.each(this.messages, (id, msg) => {
             if (msg.fetch_id === tick) {
                 return;
             }
+            console.log("tick " + msg.fetch_id + " isnt " + tick);
             this.trigger("removed-msg", msg);
             return delete this.messages[id];
         });
+        var id = "";
+        for (id in this.tmp_msgs) {
+            this.msg_events.forEach((event) => this.tmp_msgs[id].removeAllListeners(event));
+        }
+        this.tmp_msgs = [];
+
         if (this.fetch) {
             var events = ["message", "error", "end"];
             events.forEach((event) => this.fetch.removeAllListeners(event));

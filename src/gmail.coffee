@@ -60,16 +60,8 @@ class Query extends asyncmachine.AsyncMachine
 
 	# Message fetching states
 
-	FetchingMessage:
-		implies: ['Fetching']
-		blocks: ['MessageFetched']
-		requires: ['FetchingResults']
-
-	# TODO This is sometimes skipped ???
-	MessageFetched:
-		implies: ['Fetching']
-		blocks: ['FetchingMessage']
-		requires: ['FetchingResults']
+	FetchingMessage: requires: ['FetchingResults']
+	MessageFetched: requires: ['FetchingResults']
 		
 	# Error states
 
@@ -92,11 +84,13 @@ class Query extends asyncmachine.AsyncMachine
 	connection: null
 	query: "*"
 	update_interval: 10*1000
-	
-	fetch: null
-	msg: null
 	query_results: null
 	messages: null
+	
+	# privates
+	fetch: null
+	tmp_msgs: null
+	msg_events: ['body', 'attributes', 'end']
 
 	constructor: (connection, query, update_interval) ->
 		super()
@@ -109,6 +103,7 @@ class Query extends asyncmachine.AsyncMachine
 		
 		@messages = {}
 		@query_results = []
+		@tmp_msgs = []
 		@connection = connection
 		@query = query
 		@update_interval = update_interval
@@ -146,27 +141,33 @@ class Query extends asyncmachine.AsyncMachine
 		attrs = null
 		body_buffer = ''
 		body = null
-		@msg = msg
+		@tmp_msgs[id] = msg
 		# TODO how the error is handled?
-		@msg.once 'body', (stream, data) =>
+		msg.once 'body', (stream, data) =>
 			# stream's bindings don't have to be unbound, as we're not passing
 			# the object further
 			stream.on 'data', (chunk) ->
 				body_buffer += chunk.toString 'utf8'
 			stream.once 'end', ->
 				body = Imap.parseHeader body_buffer
-		@msg.once 'attributes', (data) =>
+		msg.once 'attributes', (data) =>
 			attrs = data 
-		@msg.once 'end', =>
+		msg.once 'end', =>
 			@add 'MessageFetched', msg, attrs, body
+			
+	# Support concurrent messages fetching
+	FetchingMessage_FetchingMessage: (states, msg, id) ->
+		@FetchingMessage_enter states, msg, id
 
-	FetchingMessage_exit: ->
-		events = ['body', 'attributes', 'end']
-		@msg.removeAllListeners event for event in events 
-		@msg = null
+	FetchingMessage_exit: (id) ->
+		msg = @tmp_msgs[id]
+		return if not msg
+		msg.removeAllListeners event for event in @msg_events
+		delete @tmp_msgs[id]
 
-	FetchingMessage_MessageFetched: (states, imap_msg, attrs, body) ->
+	MessageFetched_enter: (states, imap_msg, attrs, body) ->
 		id = attrs['x-gm-msgid']
+		@drop 'FetchingMessage', id
 		labels = attrs['x-gm-labels'] || []
 		msg = @messages[id]
 		if not msg
@@ -177,19 +178,28 @@ class Query extends asyncmachine.AsyncMachine
 			@trigger 'new-msg', msg
 		else
 			# Update the fetch ID
+			@log "Updating a msg tick"
 			msg.fetch_id = @clock 'FetchingResults'
 			if not Object.equal msg.labels, labels
 				msg.labels = labels
 				@trigger 'labels-changed', msg
+		# Drop this state once  a msg is processed
+		@drop 'MessageFetched'
 		
 	FetchingResults_exit: ->
 		tick = @clock 'FetchingResults'
 		# Remove all old msgs, not present in the current results
-		Object.each @messages, (id, msg) ->
+		Object.each @messages, (id, msg) =>
 			return if msg.fetch_id is tick
+			console.log "tick #{msg.fetch_id} isnt #{tick}"
 			@trigger 'removed-msg', msg
 			delete @messages[id]
 		# GC
+		id = ''
+		for id of @tmp_msgs
+			@tmp_msgs[id].removeAllListeners event for event in @msg_events
+		@tmp_msgs = []
+		
 		if @fetch
 			events = ['message', 'error', 'end']
 			@fetch.removeAllListeners event for event in events 

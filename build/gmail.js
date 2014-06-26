@@ -66,13 +66,9 @@ var Query = (function (_super) {
             blocks: ["FetchingResults"]
         };
         this.FetchingMessage = {
-            implies: ["Fetching"],
-            blocks: ["MessageFetched"],
             requires: ["FetchingResults"]
         };
         this.MessageFetched = {
-            implies: ["Fetching"],
-            blocks: ["FetchingMessage"],
             requires: ["FetchingResults"]
         };
         this.ResultsFetchingError = {
@@ -93,10 +89,11 @@ var Query = (function (_super) {
         this.connection = null;
         this.query = "*";
         this.update_interval = 10 * 1000;
-        this.fetch = null;
-        this.msg = null;
         this.query_results = null;
         this.messages = null;
+        this.fetch = null;
+        this.tmp_msgs = null;
+        this.msg_events = ["body", "attributes", "end"];
 
         this.register("QueryFetched", "Fetching", "Idle", "FetchingQuery", "FetchingResults", "ResultsFetchingError", "FetchingMessage", "MessageFetched", "ResultsFetched", "ResultsAvailable");
 
@@ -104,6 +101,7 @@ var Query = (function (_super) {
 
         this.messages = {};
         this.query_results = [];
+        this.tmp_msgs = [];
         this.connection = connection;
         this.query = query;
         this.update_interval = update_interval;
@@ -151,8 +149,8 @@ var Query = (function (_super) {
         var attrs = null;
         var body_buffer = "";
         var body = null;
-        this.msg = msg;
-        this.msg.once("body", function (stream, data) {
+        this.tmp_msgs[id] = msg;
+        msg.once("body", function (stream, data) {
             stream.on("data", function (chunk) {
                 return body_buffer += chunk.toString("utf8");
             });
@@ -160,39 +158,48 @@ var Query = (function (_super) {
                 return body = Imap.parseHeader(body_buffer);
             });
         });
-        this.msg.once("attributes", function (data) {
+        msg.once("attributes", function (data) {
             return attrs = data;
         });
-        return this.msg.once("end", function () {
+        return msg.once("end", function () {
             return _this.add("MessageFetched", msg, attrs, body);
         });
     };
 
-    Query.prototype.FetchingMessage_exit = function () {
-        var _this = this;
-        var events = ["body", "attributes", "end"];
-        events.forEach(function (event) {
-            return _this.msg.removeAllListeners(event);
-        });
-        return this.msg = null;
+    Query.prototype.FetchingMessage_FetchingMessage = function (states, msg, id) {
+        return this.FetchingMessage_enter(states, msg, id);
     };
 
-    Query.prototype.FetchingMessage_MessageFetched = function (states, imap_msg, attrs, body) {
+    Query.prototype.FetchingMessage_exit = function (id) {
+        var msg = this.tmp_msgs[id];
+        if (!msg) {
+            return;
+        }
+        this.msg_events.forEach(function (event) {
+            return msg.removeAllListeners(event);
+        });
+        return delete this.tmp_msgs[id];
+    };
+
+    Query.prototype.MessageFetched_enter = function (states, imap_msg, attrs, body) {
         var id = attrs["x-gm-msgid"];
+        this.drop("FetchingMessage", id);
         var labels = attrs["x-gm-labels"] || [];
         var msg = this.messages[id];
         if (!msg) {
             this.messages[id] = new Message(id, body.subject, labels);
             msg = this.messages[id];
             msg.fetch_id = this.clock("FetchingResults");
-            return this.trigger("new-msg", msg);
+            this.trigger("new-msg", msg);
         } else {
+            this.log("Updating a msg tick");
             msg.fetch_id = this.clock("FetchingResults");
             if (!Object.equal(msg.labels, labels)) {
                 msg.labels = labels;
-                return this.trigger("labels-changed", msg);
+                this.trigger("labels-changed", msg);
             }
         }
+        return this.drop("MessageFetched");
     };
 
     Query.prototype.FetchingResults_exit = function () {
@@ -202,9 +209,18 @@ var Query = (function (_super) {
             if (msg.fetch_id === tick) {
                 return;
             }
-            this.trigger("removed-msg", msg);
-            return delete this.messages[id];
+            console.log("tick " + msg.fetch_id + " isnt " + tick);
+            _this.trigger("removed-msg", msg);
+            return delete _this.messages[id];
         });
+        var id = "";
+        for (id in this.tmp_msgs) {
+            this.msg_events.forEach(function (event) {
+                return _this.tmp_msgs[id].removeAllListeners(event);
+            });
+        }
+        this.tmp_msgs = [];
+
         if (this.fetch) {
             var events = ["message", "error", "end"];
             events.forEach(function (event) {
