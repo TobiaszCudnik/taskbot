@@ -1,17 +1,20 @@
 suspend = require 'suspend'
-gmail = require './gmail'
+gmail = require './gmail/connection'
 settings = require '../settings'
 go = suspend.resume
 async = suspend.async
+require 'sugar'
+
+Object.merge settings, gmail_max_results: 300
 
 class App extends gmail.Connection
 	constructor: (settings) ->
 		super settings
 		# TODO move queries to the config
 		@addQuery '*', 1000
-		@addQuery 'label:S-Pending', 5000
-		@addQuery 'label:sent', 5000
-		@addQuery 'label:P-test', 5000
+#		@addQuery 'label:S-Pending', 5000
+#		@addQuery 'label:sent', 5000
+#		@addQuery 'label:P-test', 5000
 		# TODO this returns untrue value
 		if not @add 'Active'
 			@log "cant activate Active (states: #{@is()})"
