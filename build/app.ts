@@ -1,9 +1,9 @@
-///<reference path="gmail/connection"/>
+///<reference path="gmail-imap/connection"/>
 ///<reference path="../node_modules/asyncmachine/lib/asyncmachine.d.ts"/>
 ///<reference path="../node_modules/compiled-coffee/node_modules/typescript-yield/d.ts/suspend.d.ts" />
 ///<reference path="../d.ts/global.d.ts" />
 import suspend = require('suspend');
-import gmail = require('./gmail/connection');
+import gmail = require('./gmail-imap/connection');
 import settings = require('../settings');
 export var go = suspend.resume;
 export var async = suspend.async;

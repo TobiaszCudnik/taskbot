@@ -1,5 +1,5 @@
 suspend = require 'suspend'
-gmail = require './gmail/connection'
+gmail = require './gmail-imap/connection'
 settings = require '../settings'
 go = suspend.resume
 async = suspend.async

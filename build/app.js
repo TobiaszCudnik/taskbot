@@ -4,12 +4,12 @@ var __extends = this.__extends || function (d, b) {
     __.prototype = b.prototype;
     d.prototype = new __();
 };
-///<reference path="gmail/connection"/>
+///<reference path="gmail-imap/connection"/>
 ///<reference path="../node_modules/asyncmachine/lib/asyncmachine.d.ts"/>
 ///<reference path="../node_modules/compiled-coffee/node_modules/typescript-yield/d.ts/suspend.d.ts" />
 ///<reference path="../d.ts/global.d.ts" />
 var suspend = require('suspend');
-var gmail = require('./gmail/connection');
+var gmail = require('./gmail-imap/connection');
 var settings = require('../settings');
 exports.go = suspend.resume;
 exports.async = suspend.async;

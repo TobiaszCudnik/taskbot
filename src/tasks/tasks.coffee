@@ -1,7 +1,6 @@
 asyncmachine = require 'asyncmachine'
-AsyncMachine = asyncmachine.AsyncMachine
 
-class Auth extends AsyncMachine
+class Auth extends asyncmachine.AsyncMachine
   Authorized:
     blocks: ['Authorizing']
     

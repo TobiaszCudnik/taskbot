@@ -7,6 +7,26 @@ COFFEE = node_modules/contracts.coffee/bin/coffee
 CCOFFEE = node_modules/compiled-coffee/bin/ccoffee
 # CCOFFEE = node_modules/compiled-coffee/bin/ccoffee-osx
 
+build:
+	$(CCOFFEE) \
+		--yield \
+		-o build/ \
+		-i src/
+
+build-watch:
+	$(CCOFFEE) \
+		--watch \
+		--yield \
+		-o build/ \
+		-i src/
+
+### OLD ###
+
+build-contracts-live:
+	$(BUILDER) \
+		--contracts \
+		-o build/vanilla \
+		-cw build/vanilla-sources
 POST_PARAMS = -r should \
 		-R spec
 
@@ -47,7 +67,7 @@ debug:
 
 run:
 	$(NODE) build/app.js
-	
+
 # TODO debug-watch
 
 test:
@@ -65,24 +85,6 @@ test-live:
 build-deps:
 	make -C node_modules/jsprops
 
-build:
-	$(CCOFFEE) \
-		--yield \
-		-o build/ \
-		-i src/
-
-build-watch:
-	$(CCOFFEE) \
-		--watch \
-		--yield \
-		-o build/ \
-		-i src/
-
-build-contracts-live:
-	$(BUILDER) \
-		--contracts \
-		-o build/vanilla \
-		-cw build/vanilla-sources
 
 # TODO build-contracts build-contracts-live
 
