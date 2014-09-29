@@ -2,7 +2,7 @@ google = require "googleapis"
 OAuth2Client = google.auth.OAuth2
 
 class Auth extends asyncmachine.AsyncMachine
-	CredentialsSet:
+	CredentialsSet: {}
 
 	Ready:
 		auto: yes
