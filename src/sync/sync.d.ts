@@ -2,6 +2,7 @@
 ///<reference path="../gmail-imap/connection"/>
 ///<reference path="../auth"/>
 ///<reference path="../../d.ts/tasks-v1-nodejs.d.ts"/>
+///<reference path="../../d.ts/gmail-v1-nodejs.d.ts"/>
 ///<reference path="../../d.ts/bluebird.d.ts"/>
 
 class States extends asyncmachine.AsyncMachine {
@@ -14,6 +15,7 @@ class Sync {
 	imap: Connection;
 	auth: Auth;
 	tasks: googleapis.tasks;
+	gmail: googleapis.gmail;
 
 	getListForQuery(query: string, data: Object): googleapis.tasks.ITaskList;
 }

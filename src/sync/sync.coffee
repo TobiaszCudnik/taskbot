@@ -48,7 +48,7 @@ class Sync
 		@settings = settings
 		@imap = new gmail.Connection settings
 		@auth = new auth.Auth settings
-		@tasks = new tasks.Lists
+		@tasks = new @tasks.Lists
 		# TODO move queries to the config
 		@imap.addQuery '*', 1000
 #		@addQuery 'label:S-Pending', 5000
@@ -80,41 +80,41 @@ class Sync
 			# execute search queries
 			value = yield Promise.all(
 				yield @getThreads data.query,
-				yield @getTasks list.id
+				yield @get@tasks.list.id
 			)
 			[ threads, tasks ] = [ value[0], value[1] ]
 
-			tasks_in_threads = []
+			@tasks.in_threads = []
 			for thread in threads
-				res = yield @getTaskForThread thread, tasks_in_threads
+				res = yield @getTaskForThread thread, @tasks.in_threads
 				[ task, was_created ] = [ res[0], res[1] ]
-				# TODO optimize slicing tasks_matched
+				# TODO optimize slicing @tasks.matched
 				if not was_created
-					tasks_in_threads.push ret
+					@tasks.in_threads.push ret
 					yield @syncTaskName task, thread
 
 			yield Promise.all(
-				@createThreadFromTasks tasks, list_id, threads,
-				@markTasksAsCompleted tasks, list_id, tasks_in_threads
+				@createThreadFrom@tasks.tasks, list_id, threads,
+				@mark@tasks.sCompleted tasks, list_id, @tasks.in_threads
 			)
 
-			yield Tasks.Tasks.clear list_id
+			yield @tasks.Tasks.clear list_id
 
 	syncTaskName: (task, thread) ->
 		# TODO
 
 	createTaskList: (name) ->
-		list = Tasks.newTaskList().setTitle name
-		list_id = Tasks.Tasklists.insert(list).getId()
+		list = @tasks.newTaskList().setTitle name
+		list_id = @tasks.Tasklists.insert(list).getId()
 
 		list
 
 	createTaskFromThread: (thread, list_id) ->
 		title = @getTaskTitleFromThread thread
-		task = Tasks.newTask()
+		task = @tasks.newTask()
 			.setTitle( title )
 			.setEtag( "email:#{thread.gmail_thread.getId()}" )
-		Tasks.Tasks.insert task, list_id
+		@tasks.Tasks.insert task, list_id
 		Logger.log "Task added - '#{title}'"
 
 		task
@@ -122,7 +122,7 @@ class Sync
 	createThreadFromTasks: (tasks, list_id, threads) ->
 		# TODO loop thou not completed only?
 		# Create new threads for new tasks.
-		for r, k in tasks or []
+		for r, k in @tasks.or []
 			continue if r.getStatus() is 'completed'
 			continue if r.getEtag().test /^email:/
 
@@ -133,25 +133,25 @@ class Sync
 			)
 
 			subject = r.getTitle()
-			mail = GmailApp.sendEmail Session.getUser().getEmail(), subject, ''
-			threads = GmailApp.getInboxThreads()
+			mail = @gmail.sendEmail Session.getUser().getEmail(), subject, ''
+			threads = @gmail.getInboxThreads()
 
 			for t in threads
 				if subject is thread.getFirstMessageSubject()
 					thread.addLabel label for label in labels
 				# link the task and the thread
 					r.setEtag "email:#{thread.getId()}"
-					Tasks.Tasks.patch r, list_id, r.getId()
+					@tasks.Tasks.patch r, list_id, r.getId()
 					break
 
-	getTaskLists: -> Tasks.Tasklists.list().getItems()
+	getTaskLists: -> @tasks.Tasklists.list().getItems()
 
 	getTasks: (list_id) ->
-		Tasks.Tasks.list(list_id).getItems()
+		@tasks.Tasks.list(list_id).getItems()
 		Logger.log "Found '#{tasks?.length}' tasks"
 
 	getTaskForThread: (thread, tasks)->
-		# TODO optimize by splicing the tasks array, skipping matched ones
+		# TODO optimize by splicing the @tasks.array, skipping matched ones
 		# TODO loop only on non-completed tasks
 		task = @findTaskForThread tasks, thread
 
@@ -189,24 +189,24 @@ class Sync
 		ret [name, labels]
 
 	getThreads: (query) ->
-		ret = ( new Thread thread for thread in GmailApp.search(query).reverse() )
+		ret = ( new Thread thread for thread in @gmail.search(query).reverse() )
 		Logger.log "Found '#{ret.length}' threads"
 		ret
 
 	taskEqualsThread: (task, thread) ->
 		thread.getId() == "email:#{task.getTitle()}"
 
-	tasksIncludeThread: (tasks, thread) ->
-		return ok for task in tasks if @taskEqualsThread task, thread
+	@tasks.ncludeThread: (tasks, thread) ->
+		return ok for task in @tasks.if @taskEqualsThread task, thread
 
-	markTasksAsCompleted: (tasks, list_id, exclude) ->
-		# mark unmatched tasks as completed
-		for task, k in tasks or []
+	mark@tasks.sCompleted: (tasks, list_id, exclude) ->
+		# mark unmatched @tasks.as completed
+		for task, k in @tasks.or []
 			continue if (exclude.contains k) or task.getStatus() is 'completed'
 
 			if not /^email:/.test task.getEtag()
 				task.setStatus 'completed'
-				Tasks.Tasks.patch task, list_id, task.getId()
+				@tasks.Tasks.patch task, list_id, task.getId()
 				Logger.log "Task completed by email - '#{task.getTitle()}'"
 
 	getListForQuery: (query, data) ->
@@ -215,7 +215,7 @@ class Sync
 		# TODO? move?
 		@def_title = data.labels_in_title || @config.labels_in_title
 
-		Logger.log "Parsing tasks for query '#{query}'"
+		Logger.log "Parsing @tasks.for query '#{query}'"
 
 		# create or retrive task list
 		for r in task_lists
