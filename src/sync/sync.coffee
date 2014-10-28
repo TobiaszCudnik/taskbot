@@ -1,8 +1,12 @@
-gmail = require './gmail-imap/connection'
+thread = require './thread'
+Thread = thread.Thread
+label = require './label'
+Label = label.Label
 auth = require './auth'
 asyncmachine = require 'asyncmachine'
 google = require 'googleapis'
 tasks = google.tasks 'v1'
+gmail = google.gmail 'v1'
 suspend = require 'suspend'
 Promise = require 'bluebird'
 go = suspend.resume
@@ -80,22 +84,24 @@ class Sync
 			# execute search queries
 			value = yield Promise.all(
 				yield @getThreads data.query,
-				yield @get@tasks.list.id
+				yield @getTasks list.id
 			)
-			[ threads, tasks ] = [ value[0], value[1] ]
+			threads = value[0]
+			tasks = value[1]
 
-			@tasks.in_threads = []
+			tasks_in_threads = []
 			for thread in threads
-				res = yield @getTaskForThread thread, @tasks.in_threads
-				[ task, was_created ] = [ res[0], res[1] ]
-				# TODO optimize slicing @tasks.matched
+				res = yield @getTaskForThread thread, tasks_in_threads
+				task = res[0]
+				was_created = res[1]
+				# TODO optimize slicing tasks_matched
 				if not was_created
-					@tasks.in_threads.push ret
+					tasks_in_threads.push ret
 					yield @syncTaskName task, thread
 
 			yield Promise.all(
-				@createThreadFrom@tasks.tasks, list_id, threads,
-				@mark@tasks.sCompleted tasks, list_id, @tasks.in_threads
+				@createThreadFromTasks tasks, list_id, threads,
+				@markTasksAsCompleted tasks, list_id, tasks_in_threads
 			)
 
 			yield @tasks.Tasks.clear list_id
@@ -122,7 +128,7 @@ class Sync
 	createThreadFromTasks: (tasks, list_id, threads) ->
 		# TODO loop thou not completed only?
 		# Create new threads for new tasks.
-		for r, k in @tasks.or []
+		for r, k in tasks or []
 			continue if r.getStatus() is 'completed'
 			continue if r.getEtag().test /^email:/
 
@@ -151,7 +157,7 @@ class Sync
 		Logger.log "Found '#{tasks?.length}' tasks"
 
 	getTaskForThread: (thread, tasks)->
-		# TODO optimize by splicing the @tasks.array, skipping matched ones
+		# TODO optimize by splicing the tasks array, skipping matched ones
 		# TODO loop only on non-completed tasks
 		task = @findTaskForThread tasks, thread
 
@@ -196,12 +202,12 @@ class Sync
 	taskEqualsThread: (task, thread) ->
 		thread.getId() == "email:#{task.getTitle()}"
 
-	@tasks.ncludeThread: (tasks, thread) ->
-		return ok for task in @tasks.if @taskEqualsThread task, thread
+	tasksIncludeThread: (tasks, thread) ->
+		return ok for task in tasks if @taskEqualsThread task, thread
 
-	mark@tasks.sCompleted: (tasks, list_id, exclude) ->
-		# mark unmatched @tasks.as completed
-		for task, k in @tasks.or []
+	markTasksAsCompleted: (tasks, list_id, exclude) ->
+		# mark unmatched tasks as completed
+		for task, k in tasks or []
 			continue if (exclude.contains k) or task.getStatus() is 'completed'
 
 			if not /^email:/.test task.getEtag()
@@ -210,12 +216,13 @@ class Sync
 				Logger.log "Task completed by email - '#{task.getTitle()}'"
 
 	getListForQuery: (query, data) ->
-		list = list_id = null
+		list = null
+		list_id = null
 
 		# TODO? move?
 		@def_title = data.labels_in_title || @config.labels_in_title
 
-		Logger.log "Parsing @tasks.for query '#{query}'"
+		Logger.log "Parsing tasks for query '#{query}'"
 
 		# create or retrive task list
 		for r in task_lists
