@@ -3,9 +3,8 @@ var settings = require('../settings');
 var suspend = require('suspend');
 exports.go = suspend.resume;
 exports.async = suspend.async;
-require("sugar");
 
-Object.merge(settings, {
+settings.extend({
     gmail_max_results: 300
 });
 

@@ -31,6 +31,9 @@
 	  "asyncmachine": "TobiaszCudnik/asyncmachine#coffee",
 	  "sugar": "latest",
 		"suspend": "latest",
+	  "underscore.transparent": "latest",
+	  "underscore": "latest",
+	  "underscore.string": "latest",
 		"compiled-coffee": "TobiaszCudnik/compiled-coffee"
   },
   "bundleDependencies": [ ],

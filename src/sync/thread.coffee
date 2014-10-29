@@ -30,9 +30,9 @@ class Thread
 
 		@labels
 
-	hasLabel: ( label ) ->
+	hasLabel: (label) ->
 		# TODO support label of type Label
-		Label.normalizeName( label ) in @getLabels()
+		@getLabels().contains Label.normalizeName label
 
 	addLabel: ( label ) ->
 		label = Label.get label
@@ -47,7 +47,7 @@ class Thread
 		@labels = null
 
 	addLabels: (labels) ->
-		results = ( @addLabel label for label in labels )
+		@addLabel label for label in labels
 
 	toString: -> @getName()
 

@@ -1,8 +1,6 @@
 ///<reference path="../../d.ts/global.d.ts" />
 ///<reference path="../gmail-imap/connection"/>
 ///<reference path="../auth"/>
-///<reference path="../../d.ts/tasks-v1-nodejs.d.ts"/>
-///<reference path="../../d.ts/gmail-v1-nodejs.d.ts"/>
 ///<reference path="../../d.ts/bluebird.d.ts"/>
 
 class States extends asyncmachine.AsyncMachine {
