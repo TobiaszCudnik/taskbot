@@ -1,5 +1,7 @@
 settings = require '../settings'
 suspend = require 'suspend'
+sync = require 'sync/sync'
+Sync = sync.Sync
 go = suspend.resume
 async = suspend.async
 

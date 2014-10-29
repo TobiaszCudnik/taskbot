@@ -1,6 +1,5 @@
 ///<reference path="../../d.ts/bluebird.d.ts"/>
 ///<reference path="../auth"/>
-///<reference path="../gmail-imap/connection"/>
 ///<reference path="../../d.ts/global.d.ts" />
 import thread = require('./thread');
 export var Thread = thread.Thread;

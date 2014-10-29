@@ -1,5 +1,3 @@
-///<reference path="../d.ts/googleapis-nodejs-common.d.ts"/>
-///<reference path="../node_modules/asyncmachine/lib/asyncmachine.d.ts"/>
 import google = require("googleapis");
 export var OAuth2Client = google.auth.OAuth2;
 

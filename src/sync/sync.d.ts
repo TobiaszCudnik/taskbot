@@ -1,5 +1,4 @@
 ///<reference path="../../d.ts/global.d.ts" />
-///<reference path="../gmail-imap/connection"/>
 ///<reference path="../auth"/>
 ///<reference path="../../d.ts/bluebird.d.ts"/>
 

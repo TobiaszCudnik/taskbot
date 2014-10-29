@@ -1,6 +1,5 @@
 var label = require('./Label');
 exports.Label = label.Label;
-
 var Thread = (function () {
     function Thread(gmail_thread) {
         this.labels = null;
@@ -11,7 +10,6 @@ var Thread = (function () {
     Thread.prototype.getName = function () {
         return this.name;
     };
-
     Thread.prototype.getLabels = function () {
         var _this = this;
         if (this.labels == null) {
@@ -23,51 +21,40 @@ var Thread = (function () {
             if (this.gmail_thread.isInInbox()) {
                 this.labels.push("inbox");
             }
-
             if (this.gmail_thread.isInChats()) {
                 this.labels.push("chat");
             }
-
             Logger.log("Found " + this.labels.length + " labels for thread '" + this + "'.");
         }
-
         return this.labels;
     };
-
     Thread.prototype.hasLabel = function (label) {
         return this.getLabels().contains(exports.Label.normalizeName(label));
     };
-
     Thread.prototype.addLabel = function (label) {
         label = exports.Label.get(label);
         return label.addToThread(this);
     };
-
     Thread.prototype.removeLabel = function (label) {
         label = exports.Label.get(label);
         return label.removeFromThread(this);
     };
-
     Thread.prototype.disposeLabelCache_ = function () {
         Logger.log("Disposing labels cache for thread '" + this + "'");
         return this.labels = null;
     };
-
     Thread.prototype.addLabels = function (labels) {
         var _this = this;
-        return labels.map(function (label) {
-            return _this.addLabel(label);
-        });
+        return labels.map(function (label) { return _this.addLabel(label); });
     };
-
     Thread.prototype.toString = function () {
         return this.getName();
     };
-
     Thread.get = function (thread) {
         if (thread instanceof Thread) {
             return thread;
-        } else {
+        }
+        else {
             return new Thread(thread);
         }
     };
