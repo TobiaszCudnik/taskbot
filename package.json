@@ -27,13 +27,14 @@
   ],
   "dependencies" : {
     "async":  "latest",
-	  "asyncmachine": "TobiaszCudnik/asyncmachine#coffee",
-      "suspend": "latest",
-	  "underscore.transparent": "latest",
-	  "underscore": "latest",
-	  "underscore.string": "latest",
-      "coffee-script": "jashkenas/coffeescript",
-      "source-map-support": "latest"
+    "asyncmachine": "TobiaszCudnik/asyncmachine#coffee",
+    "suspend": "latest",
+    "underscore.transparent": "latest",
+    "underscore": "latest",
+    "underscore.string": "latest",
+    "coffee-script": "jashkenas/coffeescript",
+    "source-map-support": "latest",
+    "bluebird": "latest"
   },
   "bundleDependencies": [ ],
 	"devDependencies": {},

@@ -13,3 +13,4 @@ main = suspend ->
 	yield yes
 
 main()
+#=> main

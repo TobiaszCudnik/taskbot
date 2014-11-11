@@ -55,14 +55,13 @@ class Sync
 #		@addQuery 'label:P-test', 5000
 		@states.add 'Authenticating'
 
-		@states.on 'Syncing.enter', @Syncing_enter
+		@states.on 'Syncing.enter', @Syncing_enter.bind @
 		@auth.pipeForward 'Ready', @states, 'Authenticated'
 
 	Syncing_enter: promise ->
 #		task_lists = @getTaskLists
-
 		# TODO port throttling from the imap client
-		for name, data of @config.queries
+		for name, data of @config.tasks.queries
 			continue if name is 'label_defaults'
 
 			@query = data
@@ -112,7 +111,7 @@ class Sync
 			.setTitle( title )
 			.setEtag( "email:#{thread.gmail_thread.getId()}" )
 		@tasks.Tasks.insert task, list_id
-		Logger.log "Task added - '#{title}'"
+		console.log "Task added - '#{title}'"
 
 		task
 
@@ -145,7 +144,7 @@ class Sync
 
 	getTasks: (list_id) ->
 		@tasks.Tasks.list(list_id).getItems()
-		Logger.log "Found '#{tasks?.length}' tasks"
+		console.log "Found '#{tasks?.length}' tasks"
 
 	getTaskForThread: (thread, tasks)->
 		# TODO optimize by splicing the tasks array, skipping matched ones
@@ -187,7 +186,7 @@ class Sync
 
 	getThreads: (query) ->
 		ret = ( new Thread thread for thread in @gmail.search(query).reverse() )
-		Logger.log "Found '#{ret.length}' threads"
+		console.log "Found '#{ret.length}' threads"
 		ret
 
 	taskEqualsThread: (task, thread) ->
@@ -204,7 +203,7 @@ class Sync
 			if not /^email:/.test task.getEtag()
 				task.setStatus 'completed'
 				@tasks.Tasks.patch task, list_id, task.getId()
-				Logger.log "Task completed by email - '#{task.getTitle()}'"
+				console.log "Task completed by email - '#{task.getTitle()}'"
 
 	getListForQuery: (query, data) ->
 		list = null
@@ -213,7 +212,7 @@ class Sync
 		# TODO? move?
 		@def_title = data.labels_in_title || @config.labels_in_title
 
-		Logger.log "Parsing tasks for query '#{query}'"
+		console.log "Parsing tasks for query '#{query}'"
 
 		# create or retrive task list
 		for r in task_lists
@@ -225,7 +224,7 @@ class Sync
 		if not list_id
 			list = @createTaskList name
 			list_id = list.getId()
-			Logger.log "Creating tasklist '#{name}'"
+			console.log "Creating tasklist '#{name}'"
 
 		list
 
@@ -240,7 +239,7 @@ class Sync
 				@config.queries.label_defaults?['email_unmatched'] || []
 			)
 			thread.addLabels labels
-			Logger.log "Task completed, marked email - '#{task.getTitle()}' with labels '#{labels.join ' '}"
+			console.log "Task completed, marked email - '#{task.getTitle()}' with labels '#{labels.join ' '}"
 
 module.exports = {
 	Sync
