@@ -2,78 +2,67 @@ thread = require './thread'
 Thread = thread.Thread
 label = require './label'
 Label = label.Label
-auth = require './auth'
+auth = require '../auth'
 asyncmachine = require 'asyncmachine'
 google = require 'googleapis'
-tasks = google.tasks 'v1'
-gmail = google.gmail 'v1'
 suspend = require 'suspend'
 Promise = require 'bluebird'
 go = suspend.resume
 async = suspend.async
+promise = suspend.promise
 
 class States extends asyncmachine.AsyncMachine
 
 	constructor: ->
-		@register 'Ready', 'ImapConnected', 'ConnectingImap', 'Authenticating',
-			'Authenticated'
+		super
+		@register 'Ready', 'Authenticating', 'Authenticated',
+			'Syncing', 'Synced'
 
 	Ready:
 		auto: yes
-		requires: ['ImapConnected', 'Authenticated']
-
-	ImapConnected:
-		drops: ['ConnectingImap']
-
-	ConnectingImap:
-		drops: ['ImapConnected']
+		requires: ['Authenticated']
 
 	Authenticating:
-		drops: ['Authenticated']
+		blocks: ['Authenticated']
 
 	Authenticated:
-		drops: ['Authenticating']
+		blocks: ['Authenticating']
 
 	Syncing:
-		drops: ['Synced']
+		auto: yes
+		requires: ['Ready']
+		blocks: ['Synced']
 
 	Synced:
-		drops: ['Syncing']
+		blocks: ['Syncing']
 
 class Sync
-	@states: null
-	@settings: null
-	@imap: null
-	@auth: null
-	@tasks: null
+	states: null
+	config: null
+	auth: null
+	tasks: null
+	gmail: null
 
-	constructor: (settings) ->
+	constructor: (@config) ->
 		@states = new States
-		@settings = settings
-		@imap = new gmail.Connection settings
-		@auth = new auth.Auth settings
-		@tasks = new @tasks.Lists
+		(@states.debug 'Sync ', 2) if config.debug
+		@auth = new auth.Auth config
+		@tasks = new google.tasks 'v1', auth: @auth.client
+		@gmail = new google.gmail 'v1', auth: @auth.client
 		# TODO move queries to the config
-		@imap.addQuery '*', 1000
 #		@addQuery 'label:S-Pending', 5000
 #		@addQuery 'label:sent', 5000
 #		@addQuery 'label:P-test', 5000
-		# TODO this returns untrue value
 		@states.add 'Authenticating'
-		@states.add 'ConnectingImap'
 
-		@states.on 'ConnectingImap.enter', @ConnectingImap_enter
-		@states.on 'Authenticating.enter', @Authenticating_enter
-		@states.on 'Sync.enter', @Sync_enter
+		@states.on 'Syncing.enter', @Syncing_enter
 		@auth.pipeForward 'Ready', @states, 'Authenticated'
-		@imap.pipeForward 'Ready', @states, 'ImapConnected'
 
-	ConnectingImap_enter: async -> @imap.add 'Active'
-
-	Sync_enter: promise ->
+	Syncing_enter: promise ->
 #		task_lists = @getTaskLists
 
-		for name, data of @settings.queries
+		# TODO port throttling from the imap client
+		for name, data of @config.queries
 			continue if name is 'label_defaults'
 
 			@query = data
@@ -83,7 +72,7 @@ class Sync
 
 			# execute search queries
 			value = yield Promise.all(
-				yield @getThreads data.query,
+				yield @getThreads data.query
 				yield @getTasks list.id
 			)
 			threads = value[0]
@@ -105,6 +94,8 @@ class Sync
 			)
 
 			yield @tasks.Tasks.clear list_id
+
+		@states.add 'Synced'
 
 	syncTaskName: (task, thread) ->
 		# TODO
@@ -250,3 +241,8 @@ class Sync
 			)
 			thread.addLabels labels
 			Logger.log "Task completed, marked email - '#{task.getTitle()}' with labels '#{labels.join ' '}"
+
+module.exports = {
+	Sync
+	States
+}

@@ -1,4 +1,4 @@
-label = require './Label'
+label = require './label'
 Label = label.Label
 
 class Thread

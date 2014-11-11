@@ -1,4 +1,4 @@
-thread = require './Thread'
+thread = require './thread'
 Thread = thread.Thread
 
 class Label

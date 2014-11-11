@@ -101,7 +101,7 @@ interface ObjectStatic {
 	* @param object Object to clone.
 	* @return Copy of `object`.
 	**/
-	clone(object: T): Object;
+	clone(): Object;
 
 	/**
 	* Invokes interceptor with the object, and then returns object. The primary purpose of this method
@@ -110,7 +110,7 @@ interface ObjectStatic {
 	* @param intercepter The function to modify `object` before continuing the method chain.
 	* @return Modified `object`.
 	**/
-	tap(object: T, intercepter: Function): Object;
+	tap(intercepter: Function): Object;
 
 	/**
 	* Does the object contain the given key? Identical to object.hasOwnProperty(key), but uses a safe
@@ -126,7 +126,7 @@ interface ObjectStatic {
 	* @param attrs Object with key values pair
 	* @return Predicate function
 	**/
-	matches<TResult>(attrs: T): _.ListIterator<TResult>;
+	matches<TResult>(attrs: Object): _.ListIterator<TResult>;
 
 	/**
 	* Returns a function that will itself return the key property of any passed-in object.
