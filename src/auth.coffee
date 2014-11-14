@@ -14,23 +14,23 @@ class Auth extends asyncmachine.AsyncMachine
 		drops: ['Ready']
 
 	client: null
-	config: null
+	settings: null
 
-	constructor: (@config) ->
+	constructor: (@settings) ->
 		super {}
-		(@debug 'Auth ', 2) if config.debug
+		(@debug 'Auth ', 2) if settings.debug
 		@register 'Ready', 'CredentialsSet'
-		@client = new OAuth2Client config.client_id, config.client_secret,
-			config.redirect_url
-		if config.access_token and config.refresh_token
+		@client = new OAuth2Client settings.client_id, settings.client_secret,
+			settings.redirect_url
+		if settings.access_token and settings.refresh_token
 			@add 'CredentialsSet'
 		else
 			throw new Error 'not-implemented'
 
 	CredentialsSet_enter: ->
 		@client.setCredentials
-			access_token: @config.access_token
-			refresh_token: @config.refresh_token
+			access_token: @settings.access_token
+			refresh_token: @settings.refresh_token
 		@add 'Ready'
 
 module.exports = {

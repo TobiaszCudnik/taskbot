@@ -27,6 +27,12 @@ build-watch:
 		-m \
 		src/ *.coffee
 
+build-watch-raw:
+	$(COFFEE) \
+		--watch \
+		-o build/ \
+		src/ *.coffee
+
 debug-js:
 	forever -c "node --debug-brk --harmony" build/app.js
 

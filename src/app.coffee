@@ -8,9 +8,4 @@ async = suspend.async
 
 Object.extend settings, gmail_max_results: 300
 
-main = suspend ->
-	new Sync settings
-	yield yes
-
-main()
-#=> main
+new Sync settings

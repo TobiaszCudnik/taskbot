@@ -5,11 +5,14 @@ Label = label.Label
 auth = require '../auth'
 asyncmachine = require 'asyncmachine'
 google = require 'googleapis'
-suspend = require 'suspend'
+#suspend = require 'suspend'
 Promise = require 'bluebird'
-go = suspend.resume
-async = suspend.async
-promise = suspend.promise
+Promise.longStackTraces()
+coroutine = Promise.coroutine
+promisify = Promise.promisify
+#go = suspend.resume
+#async = suspend.async
+#promise = suspend.promise
 
 class States extends asyncmachine.AsyncMachine
 
@@ -49,17 +52,17 @@ class Sync
 		@auth = new auth.Auth config
 		@tasks = new google.tasks 'v1', auth: @auth.client
 		@gmail = new google.gmail 'v1', auth: @auth.client
-		# TODO move queries to the config
-#		@addQuery 'label:S-Pending', 5000
-#		@addQuery 'label:sent', 5000
-#		@addQuery 'label:P-test', 5000
 		@states.add 'Authenticating'
 
-		@states.on 'Syncing.enter', @Syncing_enter.bind @
+		@states.on 'Syncing.enter', =>
+			# async without a callback - fwd the exception
+			console.log 'Syncing.enter'
+			promise = @Syncing_enter()
+			promise.catch (e) -> console.log e
 		@auth.pipeForward 'Ready', @states, 'Authenticated'
 
-	Syncing_enter: promise ->
-#		task_lists = @getTaskLists
+	Syncing_enter: coroutine ->
+		task_lists = yield @getTaskLists()
 		# TODO port throttling from the imap client
 		for name, data of @config.tasks.queries
 			continue if name is 'label_defaults'
@@ -99,11 +102,10 @@ class Sync
 	syncTaskName: (task, thread) ->
 		# TODO
 
-	createTaskList: (name) ->
-		list = @tasks.newTaskList().setTitle name
-		list_id = @tasks.Tasklists.insert(list).getId()
-
-		list
+	createTaskList: coroutine (name) ->
+		list = { name }
+		list_id = @tasks.tasklists.insert(list).getId()
+		list_id
 
 	createTaskFromThread: (thread, list_id) ->
 		title = @getTaskTitleFromThread thread
@@ -140,7 +142,16 @@ class Sync
 					@tasks.Tasks.patch r, list_id, r.getId()
 					break
 
-	getTaskLists: -> @tasks.Tasklists.list().getItems()
+	getTaskLists: coroutine ->
+		console.log 'getTaskLists'
+		try
+			list = promisify @tasks.tasklists.list.bind @tasks.tasklists
+			ret = yield list auth: @auth.client
+		catch e
+			console.dir e
+			throw e
+		console.log 'ret', ret
+		ret
 
 	getTasks: (list_id) ->
 		@tasks.Tasks.list(list_id).getItems()
