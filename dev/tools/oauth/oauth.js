@@ -40,7 +40,7 @@ var url = oauth2Client.generateAuthUrl({
     scope: SCOPES
 });
 
-console.log('Visit the url: ', url);
+console.log('Visit the url: ', url + "&approval_prompt=force");
 rl.question('Enter the code here:', function(code) {
     // request access token
     oauth2Client.getToken(code, function(err, tokens) {

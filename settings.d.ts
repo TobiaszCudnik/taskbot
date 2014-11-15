@@ -1,4 +1,4 @@
-///<reference path="d.ts/gtd-bot.d.ts"/>
+///<reference path="typings/gtd-bot.d.ts"/>
 
 declare var settings: IGtdBotSettings;
 

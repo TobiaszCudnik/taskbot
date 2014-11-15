@@ -1,7 +1,7 @@
 ///<reference path="../../d.ts/global.d.ts"/>
 ///<reference path="../../d.ts/imap.d.ts"/>
 ///<reference path="../../node_modules/asyncmachine/lib/asyncmachine.d.ts"/>
-///<reference path="./message"/>
+///<reference path="./message.d"/>
 
 // c lass Query extends Task {
 class Query extends asyncmachine.AsyncMachine {
