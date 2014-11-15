@@ -10,9 +10,25 @@ Promise = require 'bluebird'
 Promise.longStackTraces()
 coroutine = Promise.coroutine
 promisify = Promise.promisify
-#go = suspend.resume
-#async = suspend.async
-#promise = suspend.promise
+
+tracery = require 'tracery'
+diff = require 'tracery/diff'
+
+type = (value, type, name) ->
+	if not type value
+		throw new TypeError name or ''
+
+promise_exception = (e) ->
+	console.log e.errors if e.errors
+	console.log (e.stack.split "\n").join "\n"
+
+ITaskList = tracery
+	id: String
+	kind: String
+	title: String
+	selfLink: String
+	updated: String
+ITaskListArray = tracery [ITaskList]
 
 class States extends asyncmachine.AsyncMachine
 
@@ -58,11 +74,11 @@ class Sync
 			# async without a callback - fwd the exception
 			console.log 'Syncing.enter'
 			promise = @Syncing_enter()
-			promise.catch (e) -> console.log e
+			promise.catch promise_exception
 		@auth.pipeForward 'Ready', @states, 'Authenticated'
 
 	Syncing_enter: coroutine ->
-		task_lists = yield @getTaskLists()
+		@task_lists = yield @getTaskLists()
 		# TODO port throttling from the imap client
 		for name, data of @config.tasks.queries
 			continue if name is 'label_defaults'
@@ -99,123 +115,122 @@ class Sync
 
 		@states.add 'Synced'
 
-	syncTaskName: (task, thread) ->
-		# TODO
-
+#	syncTaskName: (task, thread) ->
+#		# TODO
+#
 	createTaskList: coroutine (name) ->
 		list = { name }
 		list_id = @tasks.tasklists.insert(list).getId()
 		list_id
 
-	createTaskFromThread: (thread, list_id) ->
-		title = @getTaskTitleFromThread thread
-		task = @tasks.newTask()
-			.setTitle( title )
-			.setEtag( "email:#{thread.gmail_thread.getId()}" )
-		@tasks.Tasks.insert task, list_id
-		console.log "Task added - '#{title}'"
-
-		task
-
-	createThreadFromTasks: (tasks, list_id, threads) ->
-		# TODO loop thou not completed only?
-		# Create new threads for new tasks.
-		for r, k in tasks or []
-			continue if r.getStatus() is 'completed'
-			continue if r.getEtag().test /^email:/
-
-			# TODO extract
-			labels = [].concat(
-				@query['labels_new_task'] || []
-				@config.queries.label_defaults?['new_task'] || []
-			)
-
-			subject = r.getTitle()
-			mail = @gmail.sendEmail Session.getUser().getEmail(), subject, ''
-			threads = @gmail.getInboxThreads()
-
-			for t in threads
-				if subject is thread.getFirstMessageSubject()
-					thread.addLabel label for label in labels
-				# link the task and the thread
-					r.setEtag "email:#{thread.getId()}"
-					@tasks.Tasks.patch r, list_id, r.getId()
-					break
-
 	getTaskLists: coroutine ->
-		console.log 'getTaskLists'
-		try
-			list = promisify @tasks.tasklists.list.bind @tasks.tasklists
-			ret = yield list auth: @auth.client
-		catch e
-			console.dir e
-			throw e
-		console.log 'ret', ret
-		ret
+		fn = promisify @tasks.tasklists.list
+		res = yield fn auth: @auth.client
 
-	getTasks: (list_id) ->
-		@tasks.Tasks.list(list_id).getItems()
-		console.log "Found '#{tasks?.length}' tasks"
+		lists = res[1].body.items
+		type lists, ITaskListArray, 'ITaskListArray'
 
-	getTaskForThread: (thread, tasks)->
-		# TODO optimize by splicing the tasks array, skipping matched ones
-		# TODO loop only on non-completed tasks
-		task = @findTaskForThread tasks, thread
-
-		if not task
-			task = @createTaskFromThread thread
-		else
-			@markAsCompleted task
-
-		task
-
-	getTaskTitleFromThread: (thread) ->
-		title = thread.getName()
-		return title is @def_title
-
-		missing_labels = @extractLabelsFromThreadName thread, task
-		if @def_title is 1
-			title = "#{missing_labels} #{title}"
-		else
-			title = "#{title} #{missing_labels}"
-
-	###
-	@name string
-	@return [ string, Array<Label> ]
-	###
-	extractLabelsFromThreadName: (name) ->
-		labels = []
-		for r in config.autolabels
-			symbol = r.symbol
-			label = r.label
-			prefix = r.prefix
-			name = name.replace "(\b|^)#{symbol}(\w+)", '', (label) ->
-				# TODO this is wrong..
-				labels.push label
-
-		ret [name, labels]
-
-	getThreads: (query) ->
-		ret = ( new Thread thread for thread in @gmail.search(query).reverse() )
-		console.log "Found '#{ret.length}' threads"
-		ret
-
-	taskEqualsThread: (task, thread) ->
-		thread.getId() == "email:#{task.getTitle()}"
-
-	tasksIncludeThread: (tasks, thread) ->
-		return ok for task in tasks if @taskEqualsThread task, thread
-
-	markTasksAsCompleted: (tasks, list_id, exclude) ->
-		# mark unmatched tasks as completed
-		for task, k in tasks or []
-			continue if (exclude.contains k) or task.getStatus() is 'completed'
-
-			if not /^email:/.test task.getEtag()
-				task.setStatus 'completed'
-				@tasks.Tasks.patch task, list_id, task.getId()
-				console.log "Task completed by email - '#{task.getTitle()}'"
-
+		lists
+#
+#	createTaskFromThread: (thread, list_id) ->
+#		title = @getTaskTitleFromThread thread
+#		task = @tasks.newTask()
+#			.setTitle( title )
+#			.setEtag( "email:#{thread.gmail_thread.getId()}" )
+#		@tasks.Tasks.insert task, list_id
+#		console.log "Task added - '#{title}'"
+#
+#		task
+#
+#	createThreadFromTasks: (tasks, list_id, threads) ->
+#		# TODO loop thou not completed only?
+#		# Create new threads for new tasks.
+#		for r, k in tasks or []
+#			continue if r.getStatus() is 'completed'
+#			continue if r.getEtag().test /^email:/
+#
+#			# TODO extract
+#			labels = [].concat(
+#				@query['labels_new_task'] || []
+#				@config.queries.label_defaults?['new_task'] || []
+#			)
+#
+#			subject = r.getTitle()
+#			mail = @gmail.sendEmail Session.getUser().getEmail(), subject, ''
+#			threads = @gmail.getInboxThreads()
+#
+#			for t in threads
+#				if subject is thread.getFirstMessageSubject()
+#					thread.addLabel label for label in labels
+#				# link the task and the thread
+#					r.setEtag "email:#{thread.getId()}"
+#					@tasks.Tasks.patch r, list_id, r.getId()
+#					break
+#
+#
+#	getTasks: (list_id) ->
+#		@tasks.Tasks.list(list_id).getItems()
+#		console.log "Found '#{tasks?.length}' tasks"
+#
+#	getTaskForThread: (thread, tasks)->
+#		# TODO optimize by splicing the tasks array, skipping matched ones
+#		# TODO loop only on non-completed tasks
+#		task = @findTaskForThread tasks, thread
+#
+#		if not task
+#			task = @createTaskFromThread thread
+#		else
+#			@markAsCompleted task
+#
+#		task
+#
+#	getTaskTitleFromThread: (thread) ->
+#		title = thread.getName()
+#		return title is @def_title
+#
+#		missing_labels = @extractLabelsFromThreadName thread, task
+#		if @def_title is 1
+#			title = "#{missing_labels} #{title}"
+#		else
+#			title = "#{title} #{missing_labels}"
+#
+#	###
+#	@name string
+#	@return [ string, Array<Label> ]
+#	###
+#	extractLabelsFromThreadName: (name) ->
+#		labels = []
+#		for r in config.autolabels
+#			symbol = r.symbol
+#			label = r.label
+#			prefix = r.prefix
+#			name = name.replace "(\b|^)#{symbol}(\w+)", '', (label) ->
+#				# TODO this is wrong..
+#				labels.push label
+#
+#		ret [name, labels]
+#
+#	getThreads: (query) ->
+#		ret = ( new Thread thread for thread in @gmail.search(query).reverse() )
+#		console.log "Found '#{ret.length}' threads"
+#		ret
+#
+#	taskEqualsThread: (task, thread) ->
+#		thread.getId() == "email:#{task.getTitle()}"
+#
+#	tasksIncludeThread: (tasks, thread) ->
+#		return ok for task in tasks if @taskEqualsThread task, thread
+#
+#	markTasksAsCompleted: (tasks, list_id, exclude) ->
+#		# mark unmatched tasks as completed
+#		for task, k in tasks or []
+#			continue if (exclude.contains k) or task.getStatus() is 'completed'
+#
+#			if not /^email:/.test task.getEtag()
+#				task.setStatus 'completed'
+#				@tasks.Tasks.patch task, list_id, task.getId()
+#				console.log "Task completed by email - '#{task.getTitle()}'"
+#
 	getListForQuery: (query, data) ->
 		list = null
 		list_id = null
@@ -226,8 +241,8 @@ class Sync
 		console.log "Parsing tasks for query '#{query}'"
 
 		# create or retrive task list
-		for r in task_lists
-			if name == r.getTitle()
+		for r in @task_lists
+			if name == r.name
 				list = r
 				list_id = list.getId()
 				break
@@ -238,19 +253,19 @@ class Sync
 			console.log "Creating tasklist '#{name}'"
 
 		list
-
-	# TODO move to Thread class
-
-	markThreadAsCompleted: (thread) ->
-		# Mark the thread as completed.
-		if thread.getStatus() is 'completed'
-			# TODO extract
-			labels = [].concat(
-				@query['labels_email_unmatched'] || []
-				@config.queries.label_defaults?['email_unmatched'] || []
-			)
-			thread.addLabels labels
-			console.log "Task completed, marked email - '#{task.getTitle()}' with labels '#{labels.join ' '}"
+#
+#	# TODO move to Thread class
+#
+#	markThreadAsCompleted: (thread) ->
+#		# Mark the thread as completed.
+#		if thread.getStatus() is 'completed'
+#			# TODO extract
+#			labels = [].concat(
+#				@query['labels_email_unmatched'] || []
+#				@config.queries.label_defaults?['email_unmatched'] || []
+#			)
+#			thread.addLabels labels
+#			console.log "Task completed, marked email - '#{task.getTitle()}' with labels '#{labels.join ' '}"
 
 module.exports = {
 	Sync

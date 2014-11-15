@@ -1,6 +1,6 @@
-///<reference path="../../d.ts/global.d.ts" />
+///<reference path="../../typings/global.d.ts" />
 ///<reference path="../auth"/>
-///<reference path="../../d.ts/bluebird.d.ts"/>
+///<reference path="../../typings/bluebird.d.ts"/>
 
 class States extends asyncmachine.AsyncMachine {
 

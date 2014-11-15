@@ -1,2 +1,2 @@
-///<reference path="../d.ts/global.d.ts" />
+///<reference path="../typings/global.d.ts" />
 
