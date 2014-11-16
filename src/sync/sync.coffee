@@ -107,25 +107,22 @@ class Sync
 		for name, query of @config.tasks.queries
 			continue if name is 'labels_defaults'
 
-			list = yield @getListForQuery name, query
-
+			list = null
 			# execute search queries
 			value = yield Promise.all [
-				@getThreads query.query
-				@getTasks list.id
+				@getThreads(query.query)
+				do coroutine =>
+					list = yield @getListForQuery name, query
+					@getTasks list.id
 			]
 
-			threads = value[0].threads
+			threads = value[0].threads or []
 			tasks = value[1].items or []
 
 			tasks_in_threads = []
 			for thread in threads
-				res = yield @getTaskForThread thread, tasks, list.id
-				task = res[0]
-				was_created = res[1]
-				# TODO optimize slicing tasks_matched
-				if not was_created
-					tasks_in_threads.push task
+				task = yield @getTaskForThread thread, tasks, list.id
+				tasks_in_threads.push task.id
 #					yield @syncTaskName task, thread
 
 			yield Promise.all [
@@ -195,6 +192,7 @@ class Sync
 			)
 
 			subject = task.title
+			console.log "Creating email '#{subject}'"
 			mail = yield @req @gmail.users.messages.insert,
 				user: 'me'
 				resource: @createEmail subject
@@ -238,8 +236,8 @@ class Sync
 
 		if not task
 			task = yield @createTaskFromThread thread, list_id
-		else
-			yield @markTasksAsCompleted [task], list_id
+#		else
+#			yield @markTasksAsCompleted [task], list_id
 
 		type task, ITask, 'ITask'
 
