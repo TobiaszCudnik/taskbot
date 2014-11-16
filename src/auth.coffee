@@ -8,10 +8,19 @@ class Auth extends asyncmachine.AsyncMachine
 	# TODO (by supporting an error state?)
 	Ready:
 		auto: yes
-		requires: ['CredentialsSet']
+		requires: ['TokenRefreshed']
 
 	Error:
-		drops: ['Ready']
+		blocks: ['Ready']
+
+	TokenRefreshed:
+		requires: ['CredentialsSet']
+		blocks: ['RefreshingToken']
+
+	RefreshingToken:
+		auto: yes
+		requires: ['CredentialsSet']
+		blocks: ['TokenRefreshed']
 
 	client: null
 	settings: null
@@ -19,7 +28,7 @@ class Auth extends asyncmachine.AsyncMachine
 	constructor: (@settings) ->
 		super {}
 		(@debug 'Auth ', 2) if settings.debug
-		@register 'Ready', 'CredentialsSet'
+		@register 'Ready', 'CredentialsSet', 'RefreshingToken', 'TokenRefreshed'
 		@client = new OAuth2Client settings.client_id, settings.client_secret,
 			settings.redirect_url
 		if settings.access_token and settings.refresh_token
@@ -31,7 +40,9 @@ class Auth extends asyncmachine.AsyncMachine
 		@client.setCredentials
 			access_token: @settings.access_token
 			refresh_token: @settings.refresh_token
-		@add 'Ready'
+
+	RefreshingToken_enter: ->
+		@client.refreshAccessToken @addLater 'TokenRefreshed'
 
 module.exports = {
 	Auth

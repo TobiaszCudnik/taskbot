@@ -25,7 +25,7 @@ var plus = google.plus('v1');
 var CLIENT_ID = "900809192866-270pemf710e7me8l9aaptsirjmkvit66.apps.googleusercontent.com";
 var CLIENT_SECRET = "TohSI-VXNRKKNq0cYTkS72S6";
 var REDIRECT_URL = 'https://alaihi-macuca.codio.io/oauth2callback'
-var SCOPES = ['https://www.googleapis.com/auth/tasks']
+var SCOPES = ['https://www.googleapis.com/auth/tasks', 'https://www.googleapis.com/auth/gmail.modify']
 
 var oauth2Client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URL);
 
