@@ -18,29 +18,30 @@ IQuery = typedef
     remove: opt [String]
 
 IMessagePart = typedef
-  headers: typedef.Collection
+  headers: [typedef
     name: String
     value: String
+  ]
 
 IMessage = typedef
-  historyId: String
   id: String
   labelIds: [String]
+  historyId: opt String
   payload: opt IMessagePart
-  raw: String
-  sizeEstimate: Number
-  snippet: String
-  threadId: String
+  raw: opt String
+  sizeEstimate: opt Number
+  snippet: opt String
+  threadId: opt String
 
 IThread = typedef
-  historyId: String
   id: String
-	messages: opt [IMessage]
-  snippet: String
+  historyId: opt String
+	messages: (opt [IMessage])
+  snippet: opt String
 
 IThreads = typedef
   nextPageToken: opt String
-  resultSizeEstimate: Number
+  resultSizeEstimate: opt Number
   threads: [IThread]
 
 ITask = typedef
@@ -58,9 +59,9 @@ ITask = typedef
   due: opt String
   hidden: opt Boolean
   links: opt typedef.Collection
-    description: String
-    link: String
     type: String
+    link: String
+    description: opt String
   notes: opt String
   parent: opt String
 
@@ -79,4 +80,5 @@ module.exports = {
   ITask
   ITasks
   IMessage
+  IMessagePart
 }

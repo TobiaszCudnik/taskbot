@@ -25,11 +25,13 @@ opt = typedef.Optional
 	ITask
 	ITasks
 	IMessage
+	IMessagePart
 } = require './api-types'
 
 type = (value, type, name) ->
 	type = typedef type if Object.isArray type
 	if not type value
+		console.log value
 		throw new TypeError name or ''
 	value
 
@@ -102,17 +104,14 @@ class Sync
 	Syncing_enter: coroutine ->
 		@task_lists = yield @getTaskLists()
 		# TODO port throttling from the imap client
-		for name, data of @config.tasks.queries
+		for name, query of @config.tasks.queries
 			continue if name is 'labels_defaults'
 
-			@query = data
-			@query_name = name
-
-			list = yield @getListForQuery name, data
+			list = yield @getListForQuery name, query
 
 			# execute search queries
 			value = yield Promise.all [
-				@getThreads data.query
+				@getThreads query.query
 				@getTasks list.id
 			]
 
@@ -121,16 +120,16 @@ class Sync
 
 			tasks_in_threads = []
 			for thread in threads
-				res = yield @getTaskForThread thread, tasks_in_threads, list.id
+				res = yield @getTaskForThread thread, tasks, list.id
 				task = res[0]
 				was_created = res[1]
 				# TODO optimize slicing tasks_matched
 				if not was_created
-					tasks_in_threads.push ret
-					yield @syncTaskName task, thread
+					tasks_in_threads.push task
+#					yield @syncTaskName task, thread
 
 			yield Promise.all [
-				@createThreadFromTasks tasks, list.id, threads,
+				@createThreadFromTasks tasks, list.id, threads, query
 				@markTasksAsCompleted tasks, list.id, tasks_in_threads
 			]
 
@@ -158,46 +157,71 @@ class Sync
 		type res[0].items,
 			ITaskLists, 'ITaskLists'
 
+	findTaskForThread: (tasks, thread) ->
+		type tasks, [ITask], '[ITask]'
+		type thread, IThread, 'IThread'
+
+		task = tasks.find (item) ->
+			# TODO indirect addressing via a dedicated task's note
+			item.notes?.match "email:#{thread.id}"
+
+		type task, (typedef.Optional ITask), '?ITask'
+
 	createTaskFromThread: coroutine (thread, list_id) ->
 		type list_id, String
 		type thread, IThread, 'IThread'
 
 		title = @getTaskTitleFromThread thread
-		task = yield @req @tasks.tasks.insert,
+		res = yield @req @tasks.tasks.insert,
 			tasklist: list_id
 			resource:
 				title: title
-				etag: "email:#{thread.id}"
-		console.log "Task added - '#{title}'"
+				notes: "email:#{thread.id}"
+		console.log "Task added '#{title}'"
 
-		type task, ITask, 'ITask'
-#
-#	createThreadFromTasks: (tasks, list_id, threads) ->
-#		# TODO loop thou not completed only?
-#		# Create new threads for new tasks.
-#		for r, k in tasks or []
-#			continue if r.getStatus() is 'completed'
-#			continue if r.getEtag().test /^email:/
-#
-#			# TODO extract
-#			labels = [].concat(
-#				@query['labels_new_task'] || []
-#				@config.queries.label_defaults?['new_task'] || []
-#			)
-#
-#			subject = r.getTitle()
-#			mail = @gmail.sendEmail Session.getUser().getEmail(), subject, ''
-#			threads = @gmail.getInboxThreads()
-#
-#			for t in threads
-#				if subject is thread.getFirstMessageSubject()
-#					thread.addLabel label for label in labels
-#				# link the task and the thread
-#					r.setEtag "email:#{thread.getId()}"
-#					@tasks.Tasks.patch r, list_id, r.getId()
-#					break
-#
-#
+		type res[0], ITask, 'ITask'
+
+	createThreadFromTasks: (tasks, list_id, threads) ->
+		# TODO loop thou not completed only?
+		# Create new threads for new tasks.
+		for task, k in tasks or []
+			continue if task.status is 'completed'
+			continue if task.notes.match /\bemail:\w+\b/
+
+			# TODO extract
+			labels = [].concat(
+				@query['labels_new_task'] || []
+				@config.queries.label_defaults?['new_task'] || []
+			)
+
+			subject = task.title
+			mail = yield @req @gmail.users.messages.insert,
+				user: 'me'
+				resource: @createEmail subject
+
+			threads = @gmail.getInboxThreads()
+
+			for t in threads
+				if subject is thread.getFirstMessageSubject()
+					thread.addLabel label for label in labels
+				# link the task and the thread
+					task.notes ?= ""
+					task.notes = "#{task.notes}\nemail:#{thread.id}"
+					@tasks.Tasks.patch task, list_id, task.getId()
+					break
+
+	createEmail: (subject) ->
+		type subject, String
+
+		email = "From: #{@config.gmail_username}
+			To: #{@config.gmail_username}
+			Content-type: text/html;charset=utf-8
+			MIME-Version: 1.0
+			Subject: #{subject}"
+
+		new Buffer(email).toString('base64')
+			.replace(/\+/g, '-').replace(/\//g, '_')
+
 	getTasks: coroutine (list_id) ->
 		type list_id, String
 		res = yield @req @tasks.tasks.list, tasklist: list_id
@@ -215,39 +239,40 @@ class Sync
 		if not task
 			task = yield @createTaskFromThread thread, list_id
 		else
-			yield @markAsCompleted task
+			yield @markTasksAsCompleted [task], list_id
 
 		type task, ITask, 'ITask'
 
-	findTaskForThread: (tasks, thread) ->
-		# TODO
-
 	getTaskTitleFromThread: (thread) ->
-		title = thread.title
-		# TODO what?
-#		return title if not @def_title
+		title = thread.messages[0].payload.headers[0].value
+		# TODO clenup
+#		return title if not @config.def_title
 
-		missing_labels = @extractLabelsFromThreadName thread
-		if @def_title is 1
-			title = "#{missing_labels} #{title}"
+		# TODO extract true missing labels
+		extracted = @extractLabelsFromThreadName thread
+		if @config.def_title is 1
+			"#{extracted[1].join ' '} #{extracted[0]}"
 		else
-			title = "#{title} #{missing_labels}"
+			"#{extracted[0]} #{extracted[1].join ' '}"
 
-#	###
-#	@name string
-#	@return [ string, Array<Label> ]
-#	###
-	extractLabelsFromThreadName: (name) ->
+	###
+	@name string
+	@return [ string, Array<Label> ]
+	###
+	extractLabelsFromThreadName: (thread) ->
+		# TODO Aaaaa....
+		name = thread.messages[0].payload.headers[0].value
 		labels = []
 		for r in @config.auto_labels
 			symbol = r.symbol
 			label = r.label
 			prefix = r.prefix
 			name = name.replace "(\b|^)#{symbol}(\w+)", '', (label) ->
-				# TODO this is wrong..
 				labels.push label
 
-		ret [name, labels]
+		type [name, labels], typedef.Vector [
+			String, [String]
+		]
 
 	getThreads: coroutine (query) ->
 		type query, String
@@ -255,17 +280,23 @@ class Sync
 			q: query
 			userId: "me"
 		list = res[0]
+		list.threads ?= []
+
 		threads = yield Promise.all list.threads.map (item) =>
 			console.log "Fetching thread ID #{item.id}"
 			@req @gmail.users.threads.get,
 				id: item.id
 				userId: 'me'
 				metadataHeaders: 'SUBJECT'
-				fields: 'messages(id,labelIds,payload(headers))'
-		console.log threads
-		list.threads = threads
+				format: 'metadata'
+				fields: 'id,messages(id,labelIds,payload(headers))'
 
-		console.log list
+		list.threads = threads.map (item) -> item[0]
+
+#		msg_part = list.threads[0].messages[0].payload
+#		type msg_part, IMessagePart, 'IMessagePart'
+#		type list.threads[0].messages[0], IMessage, 'IMessage'
+#		type list.threads[0], IThread, 'IThread'
 		type list, IThreads, 'IThreads'
 
 #	taskEqualsThread: (task, thread) ->
@@ -273,16 +304,21 @@ class Sync
 #
 #	tasksIncludeThread: (tasks, thread) ->
 #		return ok for task in tasks if @taskEqualsThread task, thread
-#
-#	markTasksAsCompleted: (tasks, list_id, exclude) ->
-#		# mark unmatched tasks as completed
-#		for task, k in tasks or []
-#			continue if (exclude.contains k) or task.getStatus() is 'completed'
-#
-#			if not /^email:/.test task.getEtag()
-#				task.setStatus 'completed'
-#				@tasks.Tasks.patch task, list_id, task.getId()
-#				console.log "Task completed by email - '#{task.getTitle()}'"
+
+	markTasksAsCompleted: coroutine (tasks, list_id, exclude) ->
+		type tasks, [ITask], '[ITask]'
+		type list_id, String
+		exclude ?= []
+		# mark unmatched tasks as completed
+		for task, k in tasks or []
+			continue if (exclude.contains task.id) or task.status is 'completed'
+
+			if /^email:/.test task.notes
+				yield @req @tasks.tasks.patch,
+					tasklist: list_id
+					task: task.id
+					resource:status: 'completed'
+				console.log "Task completed by email - '#{task.title}'"
 
 	getListForQuery: coroutine (name, data) ->
 		type name, String
