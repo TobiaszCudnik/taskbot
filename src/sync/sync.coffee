@@ -86,6 +86,7 @@ class Sync
 		@states = new States
 		(@states.debug 'Sync ', 2) if config.debug
 		@task_lists = []
+		@labels = []
 		@auth = new auth.Auth config
 
 		@tasks = new google.tasks 'v1', auth: @auth.client
@@ -99,13 +100,22 @@ class Sync
 			console.log 'Syncing.enter'
 			promise = @Syncing_enter()
 			promise.catch promise_exception
+		@states.on 'Syncing.enter', @Synced_enter
 		@auth.pipeForward 'Ready', @states, 'Authenticated'
 
+	Synced_enter: ->
+		setTimeout (@addLater 'Syncing'), 5000
+
 	Syncing_enter: coroutine ->
-		@task_lists = yield @getTaskLists()
+		# If-None-Match
+		@task_lists = yield @getTaskLists @task_lists.etag
 		# TODO port throttling from the imap client
+		prefetch_labels = @prefetchLabels()
+
 		for name, query of @config.tasks.queries
 			continue if name is 'labels_defaults'
+
+			console.log "Parsing query '#{name}'"
 
 			list = null
 			# execute search queries
@@ -114,13 +124,17 @@ class Sync
 				do coroutine =>
 					list = yield @getListForQuery name, query
 					@getTasks list.id
+				prefetch_labels
 			]
 
 			threads = value[0].threads or []
 			tasks = value[1].items or []
 
+			console.log "Found #{threads.length} threads"
+			console.log "Found #{tasks.length} tasks"
+
 			tasks_in_threads = []
-			for thread in threads
+			yield Promise.all threads.map coroutine (thread) =>
 				task = yield @getTaskForThread thread, tasks, list.id
 				tasks_in_threads.push task.id
 #					yield @syncTaskName task, thread
@@ -134,7 +148,14 @@ class Sync
 
 		@states.add 'Synced'
 
+	prefetchLabels: coroutine ->
+		res = yield @req @gmail.users.labels.list,
+			userId: 'me'
+		@labels = res[0].labels
+
 	req: (method, params) ->
+		console.log 'REQUEST'
+		console.dir params
 		params ?= {}
 		params.auth = @auth.client
 		# TODO catch  reason: 'insufficientPermissions's
@@ -149,7 +170,7 @@ class Sync
 		type res[1].body,
 			ITaskList, 'ITaskList'
 
-	getTaskLists: coroutine ->
+	getTaskLists: coroutine (last_etag) ->
 		res = yield @req @tasks.tasklists.list
 		type res[0].items,
 			ITaskLists, 'ITaskLists'
@@ -178,51 +199,65 @@ class Sync
 
 		type res[0], ITask, 'ITask'
 
-	createThreadFromTasks: (tasks, list_id, threads) ->
+	createThreadFromTasks: coroutine (tasks, list_id, threads, query) ->
 		# TODO loop thou not completed only?
 		# Create new threads for new tasks.
 		for task, k in tasks or []
-			continue if task.status is 'completed'
-			continue if task.notes.match /\bemail:\w+\b/
+			continue if not task.title or
+				task.status is 'completed' or
+				task.notes?.match /\bemail:\w+\b/
 
 			# TODO extract
-			labels = [].concat(
-				@query['labels_new_task'] || []
-				@config.queries.label_defaults?['new_task'] || []
+			labels = ['INBOX'].concat(
+				query['labels_new_task'] || []
+				@config.tasks.queries.labels_defaults?['new_task'] || []
 			)
 
 			subject = task.title
-			console.log "Creating email '#{subject}'"
-			mail = yield @req @gmail.users.messages.insert,
-				user: 'me'
-				resource: @createEmail subject
+			console.log "Creating email '#{subject}' (#{labels.join ', '})"
+			thread = yield @req @gmail.users.messages.insert,
+				userId: 'me'
+				resource:raw: @createEmail subject
 
-			threads = @gmail.getInboxThreads()
+#			for t in threads
+#				if subject is thread.messages[0].payload.headers[0].value
+			labels_ids = labels.map (name) =>
+				label = @labels.find (label) -> label.name is name
+				label.id
 
-			for t in threads
-				if subject is thread.getFirstMessageSubject()
-					thread.addLabel label for label in labels
-				# link the task and the thread
-					task.notes ?= ""
-					task.notes = "#{task.notes}\nemail:#{thread.id}"
-					@tasks.Tasks.patch task, list_id, task.getId()
-					break
+			yield @req @gmail.users.messages.modify,
+				id: thread[0].id
+				userId: 'me'
+				resource:addLabelIds: labels_ids
+			# link the task and the thread
+			task.notes ?= ""
+			task.notes = "#{task.notes}\nemail:#{thread[0].id}"
+			yield @req @tasks.tasks.patch,
+				tasklist: list_id
+				task: task.id
+				userId: 'me'
+				resource:notes: task.notes
 
 	createEmail: (subject) ->
 		type subject, String
 
-		email = "From: #{@config.gmail_username}
-			To: #{@config.gmail_username}
-			Content-type: text/html;charset=utf-8
-			MIME-Version: 1.0
-			Subject: #{subject}"
+		email = ["From: #{@config.gmail_username} <#{@config.gmail_username}>s"
+			"To: #{@config.gmail_username}"
+			"Content-type: text/html;charset=utf-8"
+			"MIME-Version: 1.0"
+			"Subject: #{subject}"].join "\r\n"
 
 		new Buffer(email).toString('base64')
 			.replace(/\+/g, '-').replace(/\//g, '_')
 
 	getTasks: coroutine (list_id) ->
 		type list_id, String
-		res = yield @req @tasks.tasks.list, tasklist: list_id
+		res = yield @req @tasks.tasks.list,
+			updatedMin: @
+			tasklist: list_id
+			fields: "etag,items(id,title,notes)"
+			maxResults: 1000
+			showCompleted: no
 		type res[0], ITasks, 'ITasks'
 
 	getTaskForThread: coroutine (thread, tasks, list_id)->
@@ -281,7 +316,6 @@ class Sync
 		list.threads ?= []
 
 		threads = yield Promise.all list.threads.map (item) =>
-			console.log "Fetching thread ID #{item.id}"
 			@req @gmail.users.threads.get,
 				id: item.id
 				userId: 'me'
@@ -325,8 +359,6 @@ class Sync
 
 		# TODO? move?
 		@def_title = data.labels_in_title || @config.labels_in_title
-
-		console.log "Parsing tasks for query '#{name}'"
 
 		# create or retrive task list
 		for r in @task_lists

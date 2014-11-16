@@ -1,0 +1,109 @@
+0 info it worked if it ends with ok
+1 verbose cli [ '/usr/bin/node', '/usr/bin/npm', 'install', 'contracts-js' ]
+2 info using npm@2.0.0
+3 info using node@v0.11.14
+4 warn package.json gtd-bot@0.1.0 No README data
+5 warn package.json node-es6@0.1.0 No repository field.
+6 verbose readDependencies using package.json deps
+7 verbose cache add [ 'contracts-js', null ]
+8 verbose cache add spec="contracts-js" args=["contracts-js",null]
+9 verbose parsed spec { raw: 'contracts-js',
+9 verbose parsed spec   scope: null,
+9 verbose parsed spec   name: 'contracts-js',
+9 verbose parsed spec   rawSpec: '',
+9 verbose parsed spec   spec: '*',
+9 verbose parsed spec   type: 'range' }
+10 verbose parsed spec { raw: 'contracts-js',
+10 verbose parsed spec   scope: null,
+10 verbose parsed spec   name: 'contracts-js',
+10 verbose parsed spec   rawSpec: '',
+10 verbose parsed spec   spec: '*',
+10 verbose parsed spec   type: 'range' }
+11 verbose addNamed [ 'contracts-js', '*' ]
+12 verbose addNamed [ null, '*' ]
+13 silly lockFile d7aad675-contracts-js contracts-js@*
+14 verbose lock contracts-js@* /home/bob/.npm/d7aad675-contracts-js.lock
+15 silly addNameRange { name: 'contracts-js', range: '*', hasData: false }
+16 verbose mapToRegistry name contracts-js
+17 verbose mapToRegistry uri https://registry.npmjs.org/contracts-js
+18 verbose request on initialization, where is /contracts-js
+19 verbose request after pass 1, where is /contracts-js
+20 verbose request url raw /contracts-js
+21 verbose request resolving registry [ 'https://registry.npmjs.org/', './contracts-js' ]
+22 verbose request after pass 2, where is https://registry.npmjs.org/contracts-js
+23 verbose request no auth needed
+24 info attempt registry request try #1 at 16:48:01
+25 verbose request id 6dcde3592e389976
+26 verbose etag "F2DMZWI2TYUTA5440EJOPOOJ0"
+27 http request GET https://registry.npmjs.org/contracts-js
+28 http 304 https://registry.npmjs.org/contracts-js
+29 silly registry.get cb [ 304,
+29 silly registry.get   { date: 'Sat, 15 Nov 2014 15:44:42 GMT',
+29 silly registry.get     server: 'Apache',
+29 silly registry.get     via: '1.1 varnish',
+29 silly registry.get     'last-modified': 'Sat, 15 Nov 2014 15:44:42 GMT',
+29 silly registry.get     'cache-control': 'max-age=60',
+29 silly registry.get     etag: '"F2DMZWI2TYUTA5440EJOPOOJ0"',
+29 silly registry.get     age: '0',
+29 silly registry.get     'x-served-by': 'cache-ams4121-AMS',
+29 silly registry.get     'x-cache': 'MISS',
+29 silly registry.get     'x-cache-hits': '0',
+29 silly registry.get     'x-timer': 'S1416066282.264117,VS0,VE176',
+29 silly registry.get     vary: 'Accept',
+29 silly registry.get     'content-length': '0',
+29 silly registry.get     connection: 'close' } ]
+30 verbose etag https://registry.npmjs.org/contracts-js from cache
+31 silly addNameRange number 2 { name: 'contracts-js', range: '*', hasData: true }
+32 silly addNameRange versions [ 'contracts-js',
+32 silly addNameRange   [ '0.3.2',
+32 silly addNameRange     '0.3.3',
+32 silly addNameRange     '0.3.4',
+32 silly addNameRange     '0.4.0',
+32 silly addNameRange     '0.4.1',
+32 silly addNameRange     '0.4.2',
+32 silly addNameRange     '0.4.3',
+32 silly addNameRange     '0.5.0',
+32 silly addNameRange     '0.6.0',
+32 silly addNameRange     '0.6.1',
+32 silly addNameRange     '0.6.2' ] ]
+33 verbose addNamed [ 'contracts-js', '0.6.2' ]
+34 verbose addNamed [ '0.6.2', '0.6.2' ]
+35 silly lockFile c2f36731-contracts-js-0-6-2 contracts-js@0.6.2
+36 verbose lock contracts-js@0.6.2 /home/bob/.npm/c2f36731-contracts-js-0-6-2.lock
+37 silly lockFile f7553540-tracts-js-contracts-js-0-6-2-tgz https://registry.npmjs.org/contracts-js/-/contracts-js-0.6.2.tgz
+38 verbose lock https://registry.npmjs.org/contracts-js/-/contracts-js-0.6.2.tgz /home/bob/.npm/f7553540-tracts-js-contracts-js-0-6-2-tgz.lock
+39 verbose addRemoteTarball [ 'https://registry.npmjs.org/contracts-js/-/contracts-js-0.6.2.tgz',
+39 verbose addRemoteTarball   '5b655920102f0bfa6d65930a832b97b07fe5fd79' ]
+40 info retry fetch attempt 1 at 16:48:02
+41 info attempt registry request try #1 at 16:48:02
+42 http fetch GET https://registry.npmjs.org/contracts-js/-/contracts-js-0.6.2.tgz
+43 http fetch 200 https://registry.npmjs.org/contracts-js/-/contracts-js-0.6.2.tgz
+44 info retry will retry, error on last attempt: Error: ENOSPC, write
+45 info retry fetch attempt 2 at 16:48:12
+46 info attempt registry request try #1 at 16:48:12
+47 http fetch GET https://registry.npmjs.org/contracts-js/-/contracts-js-0.6.2.tgz
+48 http fetch 200 https://registry.npmjs.org/contracts-js/-/contracts-js-0.6.2.tgz
+49 info retry will retry, error on last attempt: Error: ENOSPC, write
+50 info retry fetch attempt 3 at 16:49:12
+51 info attempt registry request try #1 at 16:49:12
+52 http fetch GET https://registry.npmjs.org/contracts-js/-/contracts-js-0.6.2.tgz
+53 http fetch 200 https://registry.npmjs.org/contracts-js/-/contracts-js-0.6.2.tgz
+54 silly lockFile f7553540-tracts-js-contracts-js-0-6-2-tgz https://registry.npmjs.org/contracts-js/-/contracts-js-0.6.2.tgz
+55 silly lockFile f7553540-tracts-js-contracts-js-0-6-2-tgz https://registry.npmjs.org/contracts-js/-/contracts-js-0.6.2.tgz
+56 silly lockFile c2f36731-contracts-js-0-6-2 contracts-js@0.6.2
+57 silly lockFile c2f36731-contracts-js-0-6-2 contracts-js@0.6.2
+58 silly lockFile d7aad675-contracts-js contracts-js@*
+59 silly lockFile d7aad675-contracts-js contracts-js@*
+60 verbose stack Error: ENOSPC, write
+60 verbose stack     at Error (native)
+61 verbose cwd /home/bob/Dropbox/workspace/arch-dev/gtd-bot
+62 error Linux 3.17.2-1-ARCH
+63 error argv "/usr/bin/node" "/usr/bin/npm" "install" "contracts-js"
+64 error node v0.11.14
+65 error npm  v2.0.0
+66 error code ENOSPC
+67 error errno -28
+68 error nospc ENOSPC, write
+68 error nospc This is most likely not a problem with npm itself
+68 error nospc and is related to insufficient space on your system.
+69 verbose exit [ -28, true ]
