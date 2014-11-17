@@ -103,14 +103,133 @@ class Sync
 		@states.on 'Syncing.enter', @Synced_enter
 		@auth.pipeForward 'Ready', @states, 'Authenticated'
 
-	Synced_enter: ->
-		setTimeout (@addLater 'Syncing'), 5000
+class Query extends asyncmachine.AsyncMachine
+
+	query: null
+	list: null
+	tasks: null
+
+	constructor: (@query) ->
+		super
+		# TODO type query
+		@register 'Ready', 'Authenticating', 'Authenticated',
+			'Syncing', 'Synced'
+
+	Syncing:
+		blocks: ['Synced']
+
+	Synced:
+		blocks: ['Syncing']
+
+	# task lists
+	FetchingTaskLists:
+		requires: ['Syncing']
+		block: ['TaskListsFetched']
+
+	TaskListsFetched:
+		block: ['FetchingTaskLists']
+
+	# labels
+	FetchingLabels:
+		requires: ['Syncing']
+		block: ['LabelsFetched']
+
+	LabelsFetched:
+		block: ['FetchingLabels']
+
+	# email threads
+	FetchingThreads:
+		auto: yes
+		requires: ['Syncing']
+		block: ['ThreadsFetched']
+
+	ThreadsFetched:
+		block: ['FetchingThreads']
+
+	# list
+	PreparingList:
+		auto: yes
+		requires: ['Syncing']
+		block: ['ListReady']
+
+	ListReady:
+		block: ['PreparingList']
+
+	 # tasks
+	FetchingTasks:
+		auto: yes
+		requires: ['Syncing', 'ListReady']
+		block: ['TasksFetched']
+
+	TasksFetched:
+		requires: ['ListReady']
+		block: ['FetchingTasks']
+
+	 # tasks
+	SyncingThreadsToTasks:
+		auto: yes
+		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched', 'LabelsFetched']
+		block: ['ThreadsToTasksSynced']
+
+	ThreadsToTasksSynced:
+		block: ['SyncingThreadsToTasks']
+
+	 # thread-to-tasks
+	SyncingThreadsToTasks:
+		auto: yes
+		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched', 'LabelsFetched']
+		block: ['ThreadsToTasksSynced']
+
+	ThreadsToTasksSynced:
+		block: ['SyncingThreadsToTasks']
+
+	 # complete tasks
+	SyncingCompletedTasks:
+		auto: yes
+		requires: ['Syncing', 'ThreadsToTasksSynced']
+		block: ['CompletedTasksSynced']
+
+	CompletedTasksSynced:
+		block: ['SyncingCompletedTasks']
+
+	 # tasks-to-threads
+	SyncingTasksToThreads:
+		auto: yes
+		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched', 'LabelsFetched']
+		block: ['SyncingTasksToThreads']
+
+	TasksToThreadsSynced:
+		block: ['SyncingTasksToThreads']
+
+	# ----- transitions
+
+	FetchingLabels_enter: coroutine ->
+		yield @prefetchLabels()
+		# TODO assert the tick
+		@add 'LabelsFetched'
+
+	FetchingTaskLists_enter: coroutine ->
+		@task_lists = yield @getTaskLists @task_lists.etag
+		# TODO assert the tick
+		@add 'TaskListsFetched'
+
+	FetchingTasks_enter: coroutine ->
+		@tasks = yield @getTasks @list.id
+		# TODO assert the tick
+		@add 'TasksFetched'
+
+	SyncingCompletedTasks_enter: coroutine ->
+		yield @req @tasks.tasks.clear, tasklist: list.id
+		# TODO assert the tick
+		@add 'TasksToThreadsSynced'
+
+	SyncingTasksToThreads_enter: coroutine ->
+		yield @createThreadFromTasks @tasks, @list.id, @threads, @query
+		# TODO assert the tick
+		@add 'CompletedTasksSynced'
 
 	Syncing_enter: coroutine ->
 		# If-None-Match
-		@task_lists = yield @getTaskLists @task_lists.etag
-		# TODO port throttling from the imap client
-		prefetch_labels = @prefetchLabels()
 
 		for name, query of @config.tasks.queries
 			continue if name is 'labels_defaults'
@@ -144,7 +263,6 @@ class Sync
 				@markTasksAsCompleted tasks, list.id, tasks_in_threads
 			]
 
-			yield @req @tasks.tasks.clear, tasklist: list.id
 
 		@states.add 'Synced'
 
