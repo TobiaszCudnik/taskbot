@@ -115,161 +115,235 @@ class Query extends asyncmachine.AsyncMachine
 		@register 'Ready', 'Authenticating', 'Authenticated',
 			'Syncing', 'Synced'
 
-	Syncing:
-		blocks: ['Synced']
-
-	Synced:
-		blocks: ['Syncing']
+	Syncing:blocks: ['Synced']
+	Synced:blocks: ['Syncing']
 
 	# task lists
-	FetchingTaskLists:
-		requires: ['Syncing']
-		block: ['TaskListsFetched']
-
-	TaskListsFetched:
-		block: ['FetchingTaskLists']
+	FetchingTaskLists: requires: ['Syncing'], block: ['TaskListsFetched']
+	TaskListsFetched:block: ['FetchingTaskLists']
 
 	# labels
-	FetchingLabels:
-		requires: ['Syncing']
-		block: ['LabelsFetched']
-
-	LabelsFetched:
-		block: ['FetchingLabels']
+	FetchingLabels: requires: ['Syncing'], block: ['LabelsFetched']
+	LabelsFetched:block: ['FetchingLabels']
 
 	# email threads
-	FetchingThreads:
-		auto: yes
-		requires: ['Syncing']
-		block: ['ThreadsFetched']
-
-	ThreadsFetched:
-		block: ['FetchingThreads']
+	FetchingThreads: auto: yes, requires: ['Syncing'], block: ['ThreadsFetched']
+	ThreadsFetched:block: ['FetchingThreads']
 
 	# list
-	PreparingList:
-		auto: yes
-		requires: ['Syncing']
-		block: ['ListReady']
-
-	ListReady:
-		block: ['PreparingList']
+	PreparingList: auto: yes, requires: ['Syncing'], block: ['ListReady']
+	ListReady: block: ['PreparingList']
 
 	 # tasks
 	FetchingTasks:
 		auto: yes
 		requires: ['Syncing', 'ListReady']
 		block: ['TasksFetched']
-
-	TasksFetched:
-		requires: ['ListReady']
-		block: ['FetchingTasks']
+	TasksFetched: requires: ['ListReady'], block: ['FetchingTasks']
 
 	 # tasks
 	SyncingThreadsToTasks:
 		auto: yes
 		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched', 'LabelsFetched']
 		block: ['ThreadsToTasksSynced']
-
-	ThreadsToTasksSynced:
-		block: ['SyncingThreadsToTasks']
+	ThreadsToTasksSynced: block: ['SyncingThreadsToTasks']
 
 	 # thread-to-tasks
 	SyncingThreadsToTasks:
 		auto: yes
 		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched', 'LabelsFetched']
 		block: ['ThreadsToTasksSynced']
-
-	ThreadsToTasksSynced:
-		block: ['SyncingThreadsToTasks']
+	ThreadsToTasksSynced: block: ['SyncingThreadsToTasks']
 
 	 # complete tasks
 	SyncingCompletedTasks:
 		auto: yes
 		requires: ['Syncing', 'ThreadsToTasksSynced']
 		block: ['CompletedTasksSynced']
-
-	CompletedTasksSynced:
-		block: ['SyncingCompletedTasks']
+	CompletedTasksSynced:block: ['SyncingCompletedTasks']
 
 	 # tasks-to-threads
 	SyncingTasksToThreads:
 		auto: yes
 		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched', 'LabelsFetched']
 		block: ['SyncingTasksToThreads']
-
-	TasksToThreadsSynced:
-		block: ['SyncingTasksToThreads']
+	TasksToThreadsSynced:block: ['SyncingTasksToThreads']
 
 	# ----- transitions
 
 	FetchingLabels_enter: coroutine ->
-		yield @prefetchLabels()
+		res = yield @req @gmail.users.labels.list,
+			userId: 'me'
 		# TODO assert the tick
+		@labels = res[0].labels
 		@add 'LabelsFetched'
 
 	FetchingTaskLists_enter: coroutine ->
-		@task_lists = yield @getTaskLists @task_lists.etag
+		res = yield @req @tasks.tasklists.list
+		@task_lists = type res[0].items,
+			ITaskLists, 'ITaskLists'
 		# TODO assert the tick
 		@add 'TaskListsFetched'
 
-	FetchingTasks_enter: coroutine ->
-		@tasks = yield @getTasks @list.id
-		# TODO assert the tick
-		@add 'TasksFetched'
+	# TODO a new flag state
+	FetchingTasks_FetchingTasks: @FetchingTasks_enter
 
 	SyncingCompletedTasks_enter: coroutine ->
-		yield @req @tasks.tasks.clear, tasklist: list.id
-		# TODO assert the tick
-		@add 'TasksToThreadsSynced'
+		# mark unmatched tasks as completed
+		for task, k in @tasks or []
+			continue if (@tasks_in_threads.contains task.id) or
+				task.status is 'completed'
 
-	SyncingTasksToThreads_enter: coroutine ->
-		yield @createThreadFromTasks @tasks, @list.id, @threads, @query
+			if /^email:/.test task.notes
+				yield @req @tasks.tasks.patch,
+					tasklist: @list.id
+					task: task.id
+					resource:status: 'completed'
+				console.log "Task completed by email - '#{task.title}'"
+		# TODO assert the tick
+		yield @req @tasks.tasks.clear, tasklist: list.id
 		# TODO assert the tick
 		@add 'CompletedTasksSynced'
 
-	Syncing_enter: coroutine ->
-		# If-None-Match
+	SyncingThreadsToTasks_enter: coroutine ->
+		yield Promise.all @threads.map @getTaskForThread
+		# TODO assert the tick
+		@add 'ThreadsToTasksSynced'
 
-		for name, query of @config.tasks.queries
-			continue if name is 'labels_defaults'
+	SyncingTasksToThreads_enter: coroutine ->
+		# TODO loop thou not completed only?
+		# Create new threads for new tasks.
+		@tasks_in_threads = []
+		for task, k in @tasks or []
+			continue if not task.title or
+				task.status is 'completed' or
+				task.notes?.match /\bemail:\w+\b/
 
-			console.log "Parsing query '#{name}'"
+			# TODO extract
+			labels = ['INBOX'].concat(
+				@query['labels_new_task'] || []
+				@config.tasks.queries.labels_defaults?['new_task'] || []
+			)
 
-			list = null
-			# execute search queries
-			value = yield Promise.all [
-				@getThreads(query.query)
-				do coroutine =>
-					list = yield @getListForQuery name, query
-					@getTasks list.id
-				prefetch_labels
-			]
+			subject = task.title
+			console.log "Creating email '#{subject}' (#{labels.join ', '})"
+			thread = yield @req @gmail.users.messages.insert,
+				userId: 'me'
+				resource:raw: @createEmail subject
 
-			threads = value[0].threads or []
-			tasks = value[1].items or []
+			#			for t in threads
+			#				if subject is thread.messages[0].payload.headers[0].value
+			labels_ids = labels.map (name) =>
+				label = @labels.find (label) -> label.name is name
+				label.id
 
-			console.log "Found #{threads.length} threads"
-			console.log "Found #{tasks.length} tasks"
+			yield @req @gmail.users.messages.modify,
+				id: thread[0].id
+				userId: 'me'
+				resource:addLabelIds: labels_ids
+			# link the task and the thread
+			task.notes ?= ""
+			task.notes = "#{task.notes}\nemail:#{thread[0].id}"
+			yield @req @tasks.tasks.patch,
+				tasklist: list_id
+				task: task.id
+				userId: 'me'
+				resource:notes: task.notes
+		@tasks_in_threads.push task.id
+		# TODO assert the tick
+		@add 'ThreadsToTasksSynced'
 
-			tasks_in_threads = []
-			yield Promise.all threads.map coroutine (thread) =>
-				task = yield @getTaskForThread thread, tasks, list.id
-				tasks_in_threads.push task.id
-#					yield @syncTaskName task, thread
+	PreparingList_enter: ->
+		@name
+		list = null
 
-			yield Promise.all [
-				@createThreadFromTasks tasks, list.id, threads, query
-				@markTasksAsCompleted tasks, list.id, tasks_in_threads
-			]
+		# TODO? move?
+		@def_title = @query.labels_in_title or @config.labels_in_title
 
+		# create or retrive task list
+		for r in @task_lists
+			if @name == r.title
+				list = r
+				break
 
-		@states.add 'Synced'
+		if not list
+			list = yield @createTaskList @name
+			console.log "Creating tasklist '#{@name}'"
 
-	prefetchLabels: coroutine ->
-		res = yield @req @gmail.users.labels.list,
-			userId: 'me'
-		@labels = res[0].labels
+		@list = type list, ITasks, 'ITasks'
+		@add 'ListReady'
+
+	FetchingThreads_enter: ->
+		res = yield @req @gmail.users.threads.list,
+			q: @query.query
+			userId: "me"
+		query = res[0]
+		query.threads ?= []
+
+		threads = yield Promise.all query.threads.map (item) =>
+			@req @gmail.users.threads.get,
+				id: item.id
+				userId: 'me'
+				metadataHeaders: 'SUBJECT'
+				format: 'metadata'
+				fields: 'id,messages(id,labelIds,payload(headers))'
+
+		query.threads = threads.map (item) -> item[0]
+
+		#		msg_part = list.threads[0].messages[0].payload
+		#		type msg_part, IMessagePart, 'IMessagePart'
+		#		type list.threads[0].messages[0], IMessage, 'IMessage'
+		#		type list.threads[0], IThread, 'IThread'
+		@threads = type query, IThreads, 'IThreads'
+
+	FetchingTasks_enter: coroutine ->
+		res = yield @req @tasks.tasks.list,
+			updatedMin: @
+			tasklist: @list.id
+			fields: "etag,items(id,title,notes)"
+			maxResults: 1000
+			showCompleted: no
+		# TODO assert the tick
+		@tasks = type res[0], ITasks, 'ITasks'
+		@add 'TasksFetched'
+
+#	Syncing_enter: coroutine ->
+#		# If-None-Match
+#
+#		for name, query of @config.tasks.queries
+#			continue if name is 'labels_defaults'
+#
+#			console.log "Parsing query '#{name}'"
+#
+#			list = null
+#			# execute search queries
+#			value = yield Promise.all [
+#				@getThreads(query.query)
+#				do coroutine =>
+#					list = yield @getListForQuery name, query
+#					@getTasks list.id
+#				prefetch_labels
+#			]
+#
+#			threads = value[0].threads or []
+#			tasks = value[1].items or []
+#
+#			console.log "Found #{threads.length} threads"
+#			console.log "Found #{tasks.length} tasks"
+#
+#			tasks_in_threads = []
+#			yield Promise.all threads.map coroutine (thread) =>
+#				task = yield @getTaskForThread thread, tasks, list.id
+#				tasks_in_threads.push task.id
+##					yield @syncTaskName task, thread
+#
+#			yield Promise.all [
+#				@createThreadFromTasks tasks, list.id, threads, query
+#				@markTasksAsCompleted tasks, list.id, tasks_in_threads
+#			]
+#
+#
+#		@states.add 'Synced'
 
 	req: (method, params) ->
 		console.log 'REQUEST'
@@ -288,28 +362,12 @@ class Query extends asyncmachine.AsyncMachine
 		type res[1].body,
 			ITaskList, 'ITaskList'
 
-	getTaskLists: coroutine (last_etag) ->
-		res = yield @req @tasks.tasklists.list
-		type res[0].items,
-			ITaskLists, 'ITaskLists'
-
-	findTaskForThread: (tasks, thread) ->
-		type tasks, [ITask], '[ITask]'
-		type thread, IThread, 'IThread'
-
-		task = tasks.find (item) ->
-			# TODO indirect addressing via a dedicated task's note
-			item.notes?.match "email:#{thread.id}"
-
-		type task, (typedef.Optional ITask), '?ITask'
-
-	createTaskFromThread: coroutine (thread, list_id) ->
-		type list_id, String
+	createTaskFromThread: coroutine (thread) ->
 		type thread, IThread, 'IThread'
 
 		title = @getTaskTitleFromThread thread
 		res = yield @req @tasks.tasks.insert,
-			tasklist: list_id
+			tasklist: @list.id
 			resource:
 				title: title
 				notes: "email:#{thread.id}"
@@ -318,43 +376,6 @@ class Query extends asyncmachine.AsyncMachine
 		type res[0], ITask, 'ITask'
 
 	createThreadFromTasks: coroutine (tasks, list_id, threads, query) ->
-		# TODO loop thou not completed only?
-		# Create new threads for new tasks.
-		for task, k in tasks or []
-			continue if not task.title or
-				task.status is 'completed' or
-				task.notes?.match /\bemail:\w+\b/
-
-			# TODO extract
-			labels = ['INBOX'].concat(
-				query['labels_new_task'] || []
-				@config.tasks.queries.labels_defaults?['new_task'] || []
-			)
-
-			subject = task.title
-			console.log "Creating email '#{subject}' (#{labels.join ', '})"
-			thread = yield @req @gmail.users.messages.insert,
-				userId: 'me'
-				resource:raw: @createEmail subject
-
-#			for t in threads
-#				if subject is thread.messages[0].payload.headers[0].value
-			labels_ids = labels.map (name) =>
-				label = @labels.find (label) -> label.name is name
-				label.id
-
-			yield @req @gmail.users.messages.modify,
-				id: thread[0].id
-				userId: 'me'
-				resource:addLabelIds: labels_ids
-			# link the task and the thread
-			task.notes ?= ""
-			task.notes = "#{task.notes}\nemail:#{thread[0].id}"
-			yield @req @tasks.tasks.patch,
-				tasklist: list_id
-				task: task.id
-				userId: 'me'
-				resource:notes: task.notes
 
 	createEmail: (subject) ->
 		type subject, String
@@ -368,27 +389,16 @@ class Query extends asyncmachine.AsyncMachine
 		new Buffer(email).toString('base64')
 			.replace(/\+/g, '-').replace(/\//g, '_')
 
-	getTasks: coroutine (list_id) ->
-		type list_id, String
-		res = yield @req @tasks.tasks.list,
-			updatedMin: @
-			tasklist: list_id
-			fields: "etag,items(id,title,notes)"
-			maxResults: 1000
-			showCompleted: no
-		type res[0], ITasks, 'ITasks'
-
-	getTaskForThread: coroutine (thread, tasks, list_id)->
-		type thread, IThread, 'IThread'
-		type tasks, [ITask], '[ITask]'
-		type list_id, String
-
+	getTaskForThread: coroutine (thread)->
 		# TODO optimize by splicing the tasks array, skipping matched ones
 		# TODO loop only on non-completed tasks
-		task = @findTaskForThread tasks, thread
+
+		task = @tasks.find (item) ->
+			# TODO indirect addressing via a dedicated task's note
+			item.notes?.match "email:#{thread.id}"
 
 		if not task
-			task = yield @createTaskFromThread thread, list_id
+			task = yield @createTaskFromThread thread
 #		else
 #			yield @markTasksAsCompleted [task], list_id
 
@@ -425,70 +435,11 @@ class Query extends asyncmachine.AsyncMachine
 			String, [String]
 		]
 
-	getThreads: coroutine (query) ->
-		type query, String
-		res = yield @req @gmail.users.threads.list,
-			q: query
-			userId: "me"
-		list = res[0]
-		list.threads ?= []
-
-		threads = yield Promise.all list.threads.map (item) =>
-			@req @gmail.users.threads.get,
-				id: item.id
-				userId: 'me'
-				metadataHeaders: 'SUBJECT'
-				format: 'metadata'
-				fields: 'id,messages(id,labelIds,payload(headers))'
-
-		list.threads = threads.map (item) -> item[0]
-
-#		msg_part = list.threads[0].messages[0].payload
-#		type msg_part, IMessagePart, 'IMessagePart'
-#		type list.threads[0].messages[0], IMessage, 'IMessage'
-#		type list.threads[0], IThread, 'IThread'
-		type list, IThreads, 'IThreads'
-
 #	taskEqualsThread: (task, thread) ->
 #		thread.getId() == "email:#{task.getTitle()}"
 #
 #	tasksIncludeThread: (tasks, thread) ->
 #		return ok for task in tasks if @taskEqualsThread task, thread
-
-	markTasksAsCompleted: coroutine (tasks, list_id, exclude) ->
-		type tasks, [ITask], '[ITask]'
-		type list_id, String
-		exclude ?= []
-		# mark unmatched tasks as completed
-		for task, k in tasks or []
-			continue if (exclude.contains task.id) or task.status is 'completed'
-
-			if /^email:/.test task.notes
-				yield @req @tasks.tasks.patch,
-					tasklist: list_id
-					task: task.id
-					resource:status: 'completed'
-				console.log "Task completed by email - '#{task.title}'"
-
-	getListForQuery: coroutine (name, data) ->
-		type name, String
-		type data, IQuery, 'IQuery'
-		list = null
-
-		# TODO? move?
-		@def_title = data.labels_in_title || @config.labels_in_title
-
-		# create or retrive task list
-		for r in @task_lists
-			if name == r.title
-				list = r
-				break
-
-		if not list
-			list = yield @createTaskList name
-			console.log "Creating tasklist '#{name}'"
-
-		list
 #
 #	# TODO move to Thread class
 #
