@@ -71,6 +71,17 @@ ITasks = typedef
   kind: String
   nextPageToken: opt String
 
+ILabel = typedef
+  id: String
+  labelListVisibility: String
+  messageListVisibility: String
+  messagesTotal: Number
+  messagesUnread: Number
+  name: String
+  threadsTotal: Number
+  threadsUnread: Number
+  type: String
+
 module.exports = {
   ITaskList
   ITaskLists
@@ -81,4 +92,5 @@ module.exports = {
   ITasks
   IMessage
   IMessagePart
+  ILabel
 }
