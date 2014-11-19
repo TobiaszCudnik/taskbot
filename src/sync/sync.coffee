@@ -84,6 +84,7 @@ class Sync
 
 	constructor: (@config) ->
 		@states = new States
+		@states.setTarget @
 		(@states.debug 'Sync ', 2) if config.debug
 		@task_lists = []
 		@labels = []
