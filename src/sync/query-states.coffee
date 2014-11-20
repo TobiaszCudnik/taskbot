@@ -1,68 +1,74 @@
+asyncmachine = require 'asyncmachine'
+
 module.exports =
-class QueryStates extends asyncmachine.AsyncMachinex
+class QueryStates extends asyncmachine.AsyncMachine
 
-  constructor: (@query) ->
-    super
-    # TODO type query
-    @register 'Ready', 'Authenticating', 'Authenticated',
-      'Syncing', 'Synced'
+	constructor: ->
+		super
+		@registerAll()
 
-  Syncing:blocks: ['Synced']
-  Synced:blocks: ['Syncing']
+	Syncing:blockss: ['Synced']
+	Synced:blockss: ['Syncing']
 
-  # task lists
-  FetchingTaskLists:
-    auto: yes
-    requires: ['Syncing']
-    block: ['TaskListsFetched']
-  TaskListsFetched:block: ['FetchingTaskLists']
+	# email threads
+	FetchingThreads: auto: yes, requires: ['Syncing'], blocks: ['ThreadsFetched']
+	ThreadsFetched:blocks: ['FetchingThreads']
 
-  # labels
-  FetchingLabels:block: ['LabelsFetched']
-  LabelsFetched:block: ['FetchingLabels']
+	# list
+	PreparingList:
+		auto: yes
+		requires: ['Syncing', 'TaskListsFetched']
+		blocks: ['ListReady']
+	ListReady: blocks: ['PreparingList']
 
-  # email threads
-  FetchingThreads: auto: yes, requires: ['Syncing'], block: ['ThreadsFetched']
-  ThreadsFetched:block: ['FetchingThreads']
+	# tasks
+	FetchingTasks:
+		auto: yes
+		requires: ['Syncing', 'ListReady']
+		blocks: ['TasksFetched']
+	TasksFetched: requires: ['ListReady'], blocks: ['FetchingTasks']
 
-  # list
-  PreparingList: auto: yes, requires: ['Syncing'], block: ['ListReady']
-  ListReady: block: ['PreparingList']
+	# tasks
+	SyncingThreadsToTasks:
+		auto: yes
+		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched', 'LabelsFetched']
+		blocks: ['ThreadsToTasksSynced']
+	ThreadsToTasksSynced: blocks: ['SyncingThreadsToTasks']
 
-  # tasks
-  FetchingTasks:
-    auto: yes
-    requires: ['Syncing', 'ListReady']
-    block: ['TasksFetched']
-  TasksFetched: requires: ['ListReady'], block: ['FetchingTasks']
+	# thread-to-tasks
+	SyncingThreadsToTasks:
+		auto: yes
+		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched', 'LabelsFetched']
+		blocks: ['ThreadsToTasksSynced']
+	ThreadsToTasksSynced: blocks: ['SyncingThreadsToTasks']
 
-  # tasks
-  SyncingThreadsToTasks:
-    auto: yes
-    requires: ['Syncing', 'TasksFetched', 'ThreadsFetched', 'LabelsFetched']
-    block: ['ThreadsToTasksSynced']
-  ThreadsToTasksSynced: block: ['SyncingThreadsToTasks']
+	# complete tasks
+	SyncingCompletedTasks:
+		auto: yes
+		requires: ['Syncing', 'ThreadsToTasksSynced']
+		blocks: ['CompletedTasksSynced']
+	CompletedTasksSynced:blocks: ['SyncingCompletedTasks']
 
-  # thread-to-tasks
-  SyncingThreadsToTasks:
-    auto: yes
-    requires: ['Syncing', 'TasksFetched', 'ThreadsFetched', 'LabelsFetched']
-    block: ['ThreadsToTasksSynced']
-  ThreadsToTasksSynced: block: ['SyncingThreadsToTasks']
+	# tasks-to-threads
+	SyncingTasksToThreads:
+		auto: yes
+		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched', 'LabelsFetched']
+		blocks: ['SyncingTasksToThreads']
+	TasksToThreadsSynced:blocks: ['SyncingTasksToThreads']
 
-  # complete tasks
-  SyncingCompletedTasks:
-    auto: yes
-    requires: ['Syncing', 'ThreadsToTasksSynced']
-    block: ['CompletedTasksSynced']
-  CompletedTasksSynced:block: ['SyncingCompletedTasks']
+	# labels
+	FetchingLabels:
+		auto: yes
+		requires: ['Syncing']
+		blockss: ['LabelsFetched']
+	LabelsFetched:blocks: ['FetchingLabels']
 
-  # tasks-to-threads
-  SyncingTasksToThreads:
-    auto: yes
-    requires: ['Syncing', 'TasksFetched', 'ThreadsFetched', 'LabelsFetched']
-    block: ['SyncingTasksToThreads']
-  TasksToThreadsSynced:block: ['SyncingTasksToThreads']
+	# task lists
+	FetchingTaskLists:
+		auto: yes
+		requires: ['Syncing']
+		blocks: ['TaskListsFetched']
+	TaskListsFetched:blocks: ['FetchingTaskLists']
 
 #	Syncing_enter: coroutine ->
 #		# If-None-Match

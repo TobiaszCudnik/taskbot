@@ -24,13 +24,13 @@ build-watch:
 	$(COFFEE) \
 		--watch \
 		-o build/ \
-		-m \
 		src/ *.coffee
 
-build-watch-raw:
+build-watch-maps:
 	$(COFFEE) \
 		--watch \
 		-o build/ \
+		-m \
 		src/ *.coffee
 
 debug-js:

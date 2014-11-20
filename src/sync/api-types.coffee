@@ -27,7 +27,8 @@ IMessage = typedef
   id: String
   labelIds: [String]
   historyId: opt String
-  payload: opt IMessagePart
+  # TODO fix
+#  payload: opt IMessagePart
   raw: opt String
   sizeEstimate: opt Number
   snippet: opt String
@@ -46,13 +47,13 @@ IThreads = typedef
 
 ITask = typedef
   id: String
-  kind: String
   etag: String
-  position: String
-  selfLink: String
-  status: String
   title: String
-  updated: String
+  status: String
+  kind: opt String
+  position: opt String
+  selfLink: opt String
+  updated: opt String
   # optional
   completed: opt String
   deleted: opt Boolean
@@ -68,7 +69,7 @@ ITask = typedef
 ITasks = typedef
   etag: String
   items: opt [ITask]
-  kind: String
+  kind: opt String
   nextPageToken: opt String
 
 ILabel = typedef

@@ -34,7 +34,8 @@
     "underscore.string": "latest",
     "coffee-script": "jashkenas/coffeescript",
     "source-map-support": "latest",
-    "bluebird": "latest"
+    "bluebird": "latest",
+    "tracery": "latest"
   },
   "bundleDependencies": [ ],
 	"devDependencies": {},

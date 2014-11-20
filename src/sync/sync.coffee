@@ -3,17 +3,16 @@
 #label = require './label'
 #Label = label.Label
 auth = require '../auth'
-async = require 'async'
+Query = require './query'
+type = require '../type'
+
 asyncmachine = require 'asyncmachine'
 google = require 'googleapis'
-
+async = require 'async'
 Promise = require 'bluebird'
 Promise.longStackTraces()
 coroutine = Promise.coroutine
 promisify = Promise.promisify
-
-typedef = require 'tracery'
-opt = typedef.Optional
 #diff = require 'tracery/diff'
 
 {
@@ -28,13 +27,6 @@ opt = typedef.Optional
 	IMessagePart
 } = require './api-types'
 
-type = (value, type, name) ->
-	type = typedef type if Object.isArray type
-	if not type value
-		console.log value
-		throw new TypeError name or ''
-	value
-
 promise_exception = (e) ->
 	console.log e.errors if e.errors
 	console.log (e.stack.split "\n").join "\n"
@@ -43,44 +35,49 @@ class States extends asyncmachine.AsyncMachine
 
 	constructor: ->
 		super
-		@register 'Ready', 'Authenticating', 'Authenticated',
-			'Syncing', 'Synced'
+		@registerAll()
 
-	Ready:
+	Enabled: auto: yes, blocks: ['Disabled']
+	Disabled:
 		auto: yes
-		requires: ['Authenticated']
+		blocks: ['Enabled']
 
 	Authenticating:
+		auto: yes
+		requires: ['Enabled']
 		blocks: ['Authenticated']
-
-	Authenticated:
-		blocks: ['Authenticating']
+	Authenticated:blocks: ['Authenticating']
 
 	Syncing:
 		auto: yes
-		requires: ['Ready']
+		requires: ['Enabled']
 		blocks: ['Synced']
+	Synced:blocks: ['Syncing']
 
-	Synced:
-		blocks: ['Syncing']
+	# labels
+	FetchingLabels:
+		auto: yes
+		requires: ['Enabled', 'Authenticated']
+		blocks: ['LabelsFetched']
+	LabelsFetched:blocks: ['FetchingLabels']
 
-Function.prototype.defineType = (name, type, type_name) ->
-	Object.defineProperty @::, name,
-		set: (v) ->
-			type v, ITaskLists, 'ITaskLists'
-			@__task_lists = v
-		get: -> @__task_lists
-
+	# task lists
+	FetchingTaskLists:
+		auto: yes
+		requires: ['Enabled', 'Authenticated']
+		blocks: ['TaskListsFetched']
+	TaskListsFetched:blocks: ['FetchingTaskLists']
 
 class Sync
 	states: null
 	config: null
 	auth: null
-	tasks: null
-	gmail: null
+	tasks_api: null
+	gmail_api: null
 	task_lists: null
+	queries: null
 
-	Sync.defineType 'auth', auth.Auth, 'auth.Auth'
+#	Sync.defineType 'auth', auth.Auth, 'auth.Auth'
 
 	constructor: (@config) ->
 		@states = new States
@@ -89,26 +86,56 @@ class Sync
 		@task_lists = []
 		@labels = []
 		@auth = new auth.Auth config
+		@queries = []
 
-		@tasks = new google.tasks 'v1', auth: @auth.client
-#		Promise.promisifyAll @tasks.tasklists
+		@tasks_api = new google.tasks 'v1', auth: @auth.client
+		@gmail_api = new google.gmail 'v1', auth: @auth.client
 
-		@gmail = new google.gmail 'v1', auth: @auth.client
-		@states.add 'Authenticating'
+		@initQueries()
 
-		@states.on 'Syncing.enter', =>
-			# async without a callback - fwd the exception
-			console.log 'Syncing.enter'
-			promise = @Syncing_enter()
-			promise.catch promise_exception
-		@states.on 'Syncing.enter', @Synced_enter
 		@auth.pipeForward 'Ready', @states, 'Authenticated'
 
-	Syncing_enter: ->
-		for name, data in @config.queries
-			query = new Query name, data
+	initQueries: ->
+		for name, data of @config.tasks.queries
+			continue if name is 'labels_defaults'
+			query = new Query name, data, @
 			@states.pipeForward 'LabelsFetched', query.states
-			query.states.add 'Syncing'
+			@states.pipeForward 'TaskListsFetched', query.states
+			@states.pipeForward 'Enabled', query.states, 'Syncing'
+			@queries.push query
+
+	# ----- -----
+	# Transitions
+	# ----- -----
+
+	Syncing_enter: ->
+		(query.states.add 'Syncing') for query in @queries
+
+	FetchingLabels_enter: coroutine ->
+		res = yield @req @gmail_api.users.labels.list,
+			userId: 'me'
+		# TODO assert the tick
+		@labels = res[0].labels
+		@states.add 'LabelsFetched'
+
+	FetchingTaskLists_enter: coroutine ->
+		res = yield @req @tasks_api.tasklists.list
+		@task_lists = type res[0].items,
+			ITaskLists, 'ITaskLists'
+		# TODO assert the tick
+		@states.add 'TaskListsFetched'
+
+	# ----- -----
+	# Methods
+	# ----- -----
+
+	req: (method, params) ->
+#		console.log 'REQUEST'
+#		console.dir params
+		params ?= {}
+		params.auth = @auth.client
+		# TODO catch  reason: 'insufficientPermissions's
+		(promisify method) params
 
 module.exports = {
 	Sync
