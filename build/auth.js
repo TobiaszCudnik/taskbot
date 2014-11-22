@@ -43,7 +43,7 @@
       this.settings = settings;
       Auth.__super__.constructor.call(this, {});
       if (settings.debug) {
-        this.debug('Auth ', 2);
+        this.debug('Auth / ', settings.debug);
       }
       this.register('Ready', 'CredentialsSet', 'RefreshingToken', 'TokenRefreshed');
       this.client = new OAuth2Client(settings.client_id, settings.client_secret, settings.redirect_url);

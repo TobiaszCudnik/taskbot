@@ -40,7 +40,8 @@ class Query
 
 	constructor: (@name, @data, @sync) ->
 		@states = new QueryStates
-		(@states.debug 'Query ', 2) if @sync.config.debug
+		if @sync.config.debug
+			@states.debug 'Query / ', @sync.config.debug
 		@states.setTarget @
 		@gmail_api = @sync.gmail_api
 		@tasks_api = @sync.tasks_api
@@ -57,6 +58,7 @@ class Query
 	FetchingTasks_FetchingTasks: @FetchingTasks_enter
 
 	SyncingCompletedTasks_enter: coroutine ->
+		interrupt = @states.getInterruptEnter 'SyncingCompletedTasks'
 		# mark unmatched tasks as completed
 		yield Promise.all @tasks.items.map coroutine (task, k) =>
 			return if (@tasks_in_threads.contains task.id) or
@@ -68,23 +70,26 @@ class Query
 					task: task.id
 					resource:status: 'completed'
 				console.log "Task completed by email - '#{task.title}'"
-		# TODO assert the tick
+		return if interrupt?()
 		yield @req @tasks_api.tasks.clear, tasklist: @list.id
+		return if interrupt?()
 		# TODO assert the tick
-		@states.add 'CompletedTasksSynced'
+		@states.add ['CompletedTasksSynced', 'Synced']
 
 	SyncingThreadsToTasks_enter: coroutine ->
+		interrupt = @states.getInterruptEnter 'SyncingThreadsToTasks'
 		yield Promise.all @threads.threads.map @getTaskForThread, @
-		# TODO assert the tick
+		return if interrupt?()
 		# TODO refresh tasks better to not loose ThreadsToTasksSynced
 #    @drop 'TasksFetched'
-		@states.add 'ThreadsToTasksSynced'
+		@states.add ['ThreadsToTasksSynced', 'Synced']
 
 	SyncingTasksToThreads_enter: coroutine ->
+		interrupt = @states.getInterruptEnter 'SyncingTasksToThreads'
 		# TODO loop thou not completed only?
 		# Create new threads for new tasks.
 		@tasks_in_threads = []
-		yield @tasks.items.map coroutine (task, k) =>
+		yield Promise.all @tasks.items.map coroutine (task, k) =>
 			return if not task.title or
 				task.status is 'completed' or
 				task.notes?.match /\bemail:\w+\b/
@@ -100,6 +105,7 @@ class Query
 			thread = yield @req @gmail_api.users.messages.insert,
 				userId: 'me'
 				resource:raw: @createEmail subject
+			return if interrupt?()
 
 			#			for t in threads
 			#				if subject is thread.messages[0].payload.headers[0].value
@@ -111,6 +117,7 @@ class Query
 				id: thread[0].id
 				userId: 'me'
 				resource:addLabelIds: labels_ids
+			return if interrupt?()
 			# TODO assert the tick
 			# link the task and the thread
 			task.notes ?= ""
@@ -120,12 +127,13 @@ class Query
 				task: task.id
 				userId: 'me'
 				resource:notes: task.notes
-			# TODO assert the tick
-		# TODO assert the tick
+			return if interrupt?()
 			@tasks_in_threads.push task.id
-		@states.add 'TasksToThreadsSynced'
+		return if interrupt?()
+		@states.add ['TasksToThreadsSynced', 'Synced']
 
 	PreparingList_enter: coroutine ->
+		interrupt = @states.getInterruptEnter 'PreparingList'
 		list = null
 
 		# TODO? move?
@@ -138,7 +146,7 @@ class Query
 				break
 
 		if not list
-			list = yield @createTaskList @name
+			list = yield @createTaskList @name, interrupt
 			# TODO assert the tick
 			console.log "Creating tasklist '#{@name}'"
 
@@ -146,11 +154,13 @@ class Query
 		@states.add 'ListReady'
 
 	FetchingThreads_enter: coroutine ->
+		interrupt = @states.getInterruptEnter 'FetchingThreads'
 		res = yield @req @gmail_api.users.threads.list,
 			q: @data.query
 			userId: "me"
 		query = res[0]
 		query.threads ?= []
+		return if interrupt?()
 
 		threads = yield Promise.all query.threads.map (item) =>
 			@req @gmail_api.users.threads.get,
@@ -159,6 +169,7 @@ class Query
 				metadataHeaders: 'SUBJECT'
 				format: 'metadata'
 				fields: 'id,messages(id,labelIds,payload(headers))'
+		return if interrupt?()
 
 		query.threads = threads.map (item) -> item[0]
 
@@ -170,6 +181,7 @@ class Query
 		@states.add 'ThreadsFetched'
 
 	FetchingTasks_enter: coroutine ->
+		interrupt = @states.getInterruptEnter 'FetchingTasks'
 		res = yield @req @tasks_api.tasks.list,
 			# TODO support cacheing
 #			updatedMin: @list.updated
@@ -177,7 +189,8 @@ class Query
 			fields: "etag,items(id,title,notes,updated,etag,status)"
 			maxResults: 1000
 			showCompleted: no
-		# TODO assert the tick
+		return if interrupt?()
+
 		res[0].items ?= []
 		@tasks = type res[0], ITasks, 'ITasks'
 		@states.add 'TasksFetched'
@@ -192,13 +205,14 @@ class Query
 	syncTaskName: coroutine (task, thread) ->
 		# TODO
 
-	createTaskList: coroutine (name) ->
+	createTaskList: coroutine (name, interrupt) ->
+		interrupt = @states.getInterruptEnter 'SyncingCompletedTasks'
 		res = yield @req @tasks_api.tasklists.insert,
 			resource:title:name
 		type res[1].body,
 			ITaskList, 'ITaskList'
 
-	createTaskFromThread: coroutine (thread) ->
+	createTaskFromThread: coroutine (thread, interrupt) ->
 		type thread, IThread, 'IThread'
 
 		title = @getTaskTitleFromThread thread
@@ -227,7 +241,7 @@ class Query
 			.replace /\+/g, '-'
 			.replace /\//g, '_'
 
-	getTaskForThread: coroutine (thread)->
+	getTaskForThread: coroutine (thread, interrupt) ->
 		# TODO cache the task
 		# TODO optimize by splicing the tasks array, skipping matched ones
 		# TODO loop only on non-completed tasks
@@ -239,11 +253,13 @@ class Query
 
 		if not task
 			task = yield @createTaskFromThread thread
+			return if interrupt?()
 			# TODO store the task
 			# TODO assert the tick
 		#		else
 		#			yield @markTasksAsCompleted [task], list_id
 
+		@tasks_in_threads.push task.id
 		type task, ITask, 'ITask'
 
 	getTaskTitleFromThread: (thread) ->
@@ -255,11 +271,12 @@ class Query
 
 		# TODO extract true missing labels
 		extracted = @extractLabelsFromThreadName thread
+#		missing =
 
-		if @sync.config.def_title is 1
-			"#{extracted[1].join ' '} #{extracted[0]}"
+		if @sync.config.tasks.labels_in_title in 1
+			extracted[1].concat(extracted[0]).join ' '
 		else
-			"#{extracted[0]} #{extracted[1].join ' '}"
+			[extracted[0].concat(extracted[1])].join ' '
 
 	###
 	@name string
@@ -281,20 +298,23 @@ class Query
 		type labels, [String]
 		[name, labels]
 
-	markThreadAsCompleted: coroutine (thread) ->
+	###
+	TODO not used ?!
+	###
+	markThreadAsCompleted: coroutine (thread, interrupt) ->
 		# Mark the thread as completed.
 		# TODO what???
-		if @threadHasLabels thread 'S/Completed'
-			# TODO extract
-			labels = [].concat(
-				@data['labels_email_unmatched'] || []
-				@sync.config.queries.label_defaults?['email_unmatched'] || []
-			)
+		return if not @threadHasLabels thread, 'S/Completed'
+		# TODO extract
+		labels = [].concat(
+			@data['labels_email_unmatched'] || []
+			@sync.config.queries.label_defaults?['email_unmatched'] || []
+		)
 
-			yield thread.addLabels labels
-			console.log "Task completed, marked email - '#{thread.title}' with labels '#{labels.join ' '}"
+		yield thread.addLabels labels, interrupt
+		console.log "Task completed, marked email - '#{thread.title}' with labels '#{labels.join ' '}"
 
-	addLabels: coroutine (thread, labels) ->
+	addLabels: coroutine (thread, labels, interrupt) ->
 		type thread, IThread, 'IThread'
 		type labels, [String]
 

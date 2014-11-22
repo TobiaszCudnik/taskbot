@@ -114,8 +114,8 @@
       this.config = config;
       this.states = new States;
       this.states.setTarget(this);
-      if (config.debug) {
-        this.states.debug('Sync ', 2);
+      if (this.config.debug) {
+        this.states.debug('Sync / ', this.config.debug);
       }
       this.task_lists = [];
       this.labels = [];
@@ -179,6 +179,9 @@
     Sync.prototype.req = function(method, params) {
       if (params == null) {
         params = {};
+      }
+      if (this.config.debug) {
+        console.log('REQUEST', params);
       }
       params.auth = this.auth.client;
       return (promisify(method))(params);

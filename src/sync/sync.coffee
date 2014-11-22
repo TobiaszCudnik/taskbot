@@ -82,7 +82,8 @@ class Sync
 	constructor: (@config) ->
 		@states = new States
 		@states.setTarget @
-		(@states.debug 'Sync ', 2) if config.debug
+		if @config.debug
+			@states.debug 'Sync / ', @config.debug
 		@task_lists = []
 		@labels = []
 		@auth = new auth.Auth config
@@ -130,9 +131,9 @@ class Sync
 	# ----- -----
 
 	req: (method, params) ->
-#		console.log 'REQUEST'
-#		console.dir params
 		params ?= {}
+		if @config.debug
+			console.log 'REQUEST', params
 		params.auth = @auth.client
 		# TODO catch  reason: 'insufficientPermissions's
 		(promisify method) params
