@@ -37,6 +37,7 @@ class Query
 	@defineType 'labels', [ILabel], '[ILabel]'
 
 	sync: null
+	etags: null
 
 	constructor: (@name, @data, @sync) ->
 		@states = new QueryStates
@@ -45,14 +46,19 @@ class Query
 		@states.setTarget @
 		@gmail_api = @sync.gmail_api
 		@tasks_api = @sync.tasks_api
-		@labels = @sync.labels
 		@tasks_in_threads = []
 		@tasks = []
 		@threads = []
+		@etags = {}
 
 	# ----- -----
 	# Transitions
 	# ----- -----
+
+	Restart_enter: -> @states.add 'Syncing'
+
+	Synced_enter: ->
+		setTimeout (@states.addLater 'Restart'), 5000
 
 	# TODO a new flag state
 	FetchingTasks_FetchingTasks: @FetchingTasks_enter
@@ -60,6 +66,7 @@ class Query
 	SyncingCompletedTasks_enter: coroutine ->
 		interrupt = @states.getInterruptEnter 'SyncingCompletedTasks'
 		# mark unmatched tasks as completed
+		changed = no
 		yield Promise.all @tasks.items.map coroutine (task, k) =>
 			return if (@tasks_in_threads.contains task.id) or
 				task.status is 'completed'
@@ -70,15 +77,21 @@ class Query
 					task: task.id
 					resource:status: 'completed'
 				console.log "Task completed by email - '#{task.title}'"
+				changed = yes
 		return if interrupt?()
-		yield @req @tasks_api.tasks.clear, tasklist: @list.id
-		return if interrupt?()
-		# TODO assert the tick
+		if changed
+			yield @req @tasks_api.tasks.clear, tasklist: @list.id
+			return if interrupt?()
 		@states.add ['CompletedTasksSynced', 'Synced']
 
 	SyncingThreadsToTasks_enter: coroutine ->
 		interrupt = @states.getInterruptEnter 'SyncingThreadsToTasks'
-		yield Promise.all @threads.threads.map @getTaskForThread, @
+		yield Promise.all @threads.threads.map coroutine (thread) =>
+			task = yield @getTaskForThread thread
+			if task.status is 'completed' and @data.task_completed
+				yield @modifyLabels thread, @data.task_completed.add,
+					@data.task_completed.remove, interrupt
+				console.log "Marking thread as completed"
 		return if interrupt?()
 		# TODO refresh tasks better to not loose ThreadsToTasksSynced
 #    @drop 'TasksFetched'
@@ -109,24 +122,24 @@ class Query
 
 			#			for t in threads
 			#				if subject is thread.messages[0].payload.headers[0].value
-			labels_ids = labels.map (name) =>
-				label = @labels.find (label) -> label.name is name
+			label_ids = labels.map (name) =>
+				label = @sync.labels.find (label) -> label.name is name
 				label.id
 
 			yield @req @gmail_api.users.messages.modify,
 				id: thread[0].id
 				userId: 'me'
-				resource:addLabelIds: labels_ids
+				resource:addLabelIds: label_ids
 			return if interrupt?()
-			# TODO assert the tick
 			# link the task and the thread
 			task.notes ?= ""
 			task.notes = "#{task.notes}\nemail:#{thread[0].id}"
 			yield @req @tasks_api.tasks.patch,
-				tasklist: list_id
+				tasklist: @list.id
 				task: task.id
 				userId: 'me'
 				resource:notes: task.notes
+			# TODO store the msg in the msgs list
 			return if interrupt?()
 			@tasks_in_threads.push task.id
 		return if interrupt?()
@@ -158,11 +171,18 @@ class Query
 		res = yield @req @gmail_api.users.threads.list,
 			q: @data.query
 			userId: "me"
+			etag: @etags.threads
+		return if interrupt?()
+		if res[1].statusCode is 304
+			console.log '[CACHED] threads'
+			@states.add 'ThreadsFetched'
+			return
+		@etags.threads = res[1].headers.etag
 		query = res[0]
 		query.threads ?= []
-		return if interrupt?()
 
 		threads = yield Promise.all query.threads.map (item) =>
+			# TODO cache msgs
 			@req @gmail_api.users.threads.get,
 				id: item.id
 				userId: 'me'
@@ -188,9 +208,15 @@ class Query
 			tasklist: @list.id
 			fields: "etag,items(id,title,notes,updated,etag,status)"
 			maxResults: 1000
-			showCompleted: no
+			showCompleted: yes
+			etag: @etags.tasks
 		return if interrupt?()
+		if res[1].statusCode is 304
+			console.log '[CACHED] tasks'
+			@states.add 'TasksFetched'
+			return
 
+		@etags.tasks = res[1].headers.etag
 		res[0].items ?= []
 		@tasks = type res[0], ITasks, 'ITasks'
 		@states.add 'TasksFetched'
@@ -244,7 +270,6 @@ class Query
 	getTaskForThread: coroutine (thread, interrupt) ->
 		# TODO cache the task
 		# TODO optimize by splicing the tasks array, skipping matched ones
-		# TODO loop only on non-completed tasks
 		type thread, IThread, 'IThread'
 
 		task = @tasks.items.find (item) ->
@@ -311,26 +336,30 @@ class Query
 			@sync.config.queries.label_defaults?['email_unmatched'] || []
 		)
 
-		yield thread.addLabels labels, interrupt
+		yield thread.modifyLabels labels, interrupt
 		console.log "Task completed, marked email - '#{thread.title}' with labels '#{labels.join ' '}"
 
-	addLabels: coroutine (thread, labels, interrupt) ->
+	modifyLabels: coroutine (thread, add_labels, remove_labels, interrupt) ->
 		type thread, IThread, 'IThread'
-		type labels, [String]
+		add_labels ?= []
+		remove_labels ?= []
 
-		label_ids = labels.map (name) =>
-			label = @labelByName name
-			label.id
-		type label_ids, [String]
+		add_label_ids = add_labels.map (name) =>
+			(@labelByName name)?.id
+		remove_label_ids = remove_labels.map (name) =>
+			(@labelByName name)?.id
+		type remove_label_ids, [String]
 
 		yield @req @gmail_api.users.messages.modify,
-			id: thread[0].id
+			id: thread.id
 			userId: 'me'
-			resource:addLabelIds: label_ids
+			resource:
+				addLabelIds: add_label_ids
+				removeLabelIds: remove_label_ids
 
 	labelByName: (name) ->
-		type @labels, [ILabels], '[ILabels]'
-		@labels.find (label) -> label.name is name
+		type @sync.labels, [ILabel], '[ILabel]'
+		@sync.labels.find (label) -> label.name is name
 
 	# Requires loaded threads
 	threadHasLabels: (thread, label) ->
@@ -339,5 +368,5 @@ class Query
 		id = label.id
 		for msg in thread.messages
 			for label_id in msg.labelIds
-				return yes if @labels.find (label) -> label.id is id
+				return yes if @sync.labels.find (label) -> label.id is id
 		no

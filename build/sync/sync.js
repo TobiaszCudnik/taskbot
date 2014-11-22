@@ -110,6 +110,8 @@
 
     Sync.prototype.queries = null;
 
+    Sync.prototype.etags = null;
+
     function Sync(config) {
       this.config = config;
       this.states = new States;
@@ -121,6 +123,7 @@
       this.labels = [];
       this.auth = new auth.Auth(config);
       this.queries = [];
+      this.etags = {};
       this.tasks_api = new google.tasks('v1', {
         auth: this.auth.client
       });
@@ -144,6 +147,11 @@
         this.states.pipeForward('LabelsFetched', query.states);
         this.states.pipeForward('TaskListsFetched', query.states);
         this.states.pipeForward('Enabled', query.states, 'Syncing');
+        query.states.on('Restart.enter', (function(_this) {
+          return function() {
+            return _this.states.drop('TaskListsFetched');
+          };
+        })(this));
         _results.push(this.queries.push(query));
       }
       return _results;
@@ -161,22 +169,38 @@
     };
 
     Sync.prototype.FetchingLabels_enter = coroutine(function*() {
-      var res;
+      var interrupt, res;
+      interrupt = this.states.getInterruptEnter('FetchingLabels');
       res = (yield this.req(this.gmail_api.users.labels.list, {
         userId: 'me'
       }));
+      if (typeof interrupt === "function" ? interrupt() : void 0) {
+        return;
+      }
       this.labels = res[0].labels;
       return this.states.add('LabelsFetched');
     });
 
     Sync.prototype.FetchingTaskLists_enter = coroutine(function*() {
-      var res;
-      res = (yield this.req(this.tasks_api.tasklists.list));
-      this.task_lists = type(res[0].items, ITaskLists, 'ITaskLists');
+      var interrupt, res;
+      interrupt = this.states.getInterruptEnter('FetchingTaskLists');
+      res = (yield this.req(this.tasks_api.tasklists.list, {
+        etag: this.etags.task_lists
+      }));
+      if (typeof interrupt === "function" ? interrupt() : void 0) {
+        console.log('interrupt', interrupt);
+        return;
+      }
+      if (res[1].statusCode !== 304) {
+        this.etags.task_lists = res[1].headers.etag;
+        this.task_lists = type(res[0].items, ITaskLists, 'ITaskLists');
+      } else {
+        console.log('[CACHED] tasks lists');
+      }
       return this.states.add('TaskListsFetched');
     });
 
-    Sync.prototype.req = function(method, params) {
+    Sync.prototype.req = function(method, params, previous) {
       if (params == null) {
         params = {};
       }

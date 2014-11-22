@@ -76,6 +76,7 @@ class Sync
 	gmail_api: null
 	task_lists: null
 	queries: null
+	etags: null
 
 #	Sync.defineType 'auth', auth.Auth, 'auth.Auth'
 
@@ -88,6 +89,7 @@ class Sync
 		@labels = []
 		@auth = new auth.Auth config
 		@queries = []
+		@etags = {}
 
 		@tasks_api = new google.tasks 'v1', auth: @auth.client
 		@gmail_api = new google.gmail 'v1', auth: @auth.client
@@ -103,6 +105,7 @@ class Sync
 			@states.pipeForward 'LabelsFetched', query.states
 			@states.pipeForward 'TaskListsFetched', query.states
 			@states.pipeForward 'Enabled', query.states, 'Syncing'
+			query.states.on 'Restart.enter', => @states.drop 'TaskListsFetched'
 			@queries.push query
 
 	# ----- -----
@@ -113,24 +116,32 @@ class Sync
 		(query.states.add 'Syncing') for query in @queries
 
 	FetchingLabels_enter: coroutine ->
-		res = yield @req @gmail_api.users.labels.list,
-			userId: 'me'
-		# TODO assert the tick
+		interrupt = @states.getInterruptEnter 'FetchingLabels'
+		res = yield @req @gmail_api.users.labels.list, userId: 'me'
+		return if interrupt?()
 		@labels = res[0].labels
 		@states.add 'LabelsFetched'
 
 	FetchingTaskLists_enter: coroutine ->
-		res = yield @req @tasks_api.tasklists.list
-		@task_lists = type res[0].items,
-			ITaskLists, 'ITaskLists'
-		# TODO assert the tick
+		interrupt = @states.getInterruptEnter 'FetchingTaskLists'
+		# TODO throttle updates
+		res = yield @req @tasks_api.tasklists.list, etag: @etags.task_lists
+		if interrupt?()
+			console.log 'interrupt', interrupt
+			return
+		if res[1].statusCode isnt 304
+			@etags.task_lists = res[1].headers.etag
+			@task_lists = type res[0].items,
+				ITaskLists, 'ITaskLists'
+		else
+			console.log '[CACHED] tasks lists'
 		@states.add 'TaskListsFetched'
 
 	# ----- -----
 	# Methods
 	# ----- -----
 
-	req: (method, params) ->
+	req: (method, params, previous) ->
 		params ?= {}
 		if @config.debug
 			console.log 'REQUEST', params

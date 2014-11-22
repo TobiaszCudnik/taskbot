@@ -74,14 +74,14 @@ ITasks = typedef
 
 ILabel = typedef
   id: String
-  labelListVisibility: String
-  messageListVisibility: String
-  messagesTotal: Number
-  messagesUnread: Number
   name: String
-  threadsTotal: Number
-  threadsUnread: Number
   type: String
+  labelListVisibility: opt String
+  messageListVisibility: opt String
+  messagesTotal: opt Number
+  messagesUnread: opt Number
+  threadsTotal: opt Number
+  threadsUnread: opt Number
 
 module.exports = {
   ITaskList

@@ -7,12 +7,15 @@ class QueryStates extends asyncmachine.AsyncMachine
 		super
 		@registerAll()
 
-	Syncing:blocks: ['Synced']
+	Syncing:blocks: ['Synced', 'Restart']
 	Synced:
 		auto: yes
 		blocks: ['Syncing']
 		requires: ['TasksToThreadsSynced', 'CompletedTasksSynced',
 			'ThreadsToTasksSynced']
+
+	Restart:blocks: ['ThreadsFetched', 'TasksFetched', 'CompletedTasksSynced',
+		'ThreadsToTasksSynced', 'TasksToThreadsSynced']
 
 	# email threads
 	FetchingThreads:
