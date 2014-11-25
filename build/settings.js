@@ -86,7 +86,7 @@
       queries: {
         labels_defaults: {
           email_unmatched: ['S/Finished'],
-          new_task: ['R/Task'],
+          labels_new_task: ['R/Task'],
           task_completed: {
             add: ['S/Finished']
           }

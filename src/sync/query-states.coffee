@@ -11,8 +11,7 @@ class QueryStates extends asyncmachine.AsyncMachine
 	Synced:
 		auto: yes
 		blocks: ['Syncing']
-		requires: ['TasksToThreadsSynced', 'CompletedTasksSynced',
-			'ThreadsToTasksSynced']
+		requires: ['CompletedTasksSynced']
 
 	Restart:blocks: ['ThreadsFetched', 'TasksFetched', 'CompletedTasksSynced',
 		'ThreadsToTasksSynced', 'TasksToThreadsSynced']
@@ -45,19 +44,36 @@ class QueryStates extends asyncmachine.AsyncMachine
 		blocks: ['ThreadsToTasksSynced']
 	ThreadsToTasksSynced: blocks: ['SyncingThreadsToTasks']
 
-	# complete tasks
-	SyncingCompletedTasks:
-		auto: yes
-		requires: ['Syncing', 'ThreadsToTasksSynced']
-		blocks: ['CompletedTasksSynced']
-	CompletedTasksSynced:blocks: ['SyncingCompletedTasks']
-
 	# tasks-to-threads
 	SyncingTasksToThreads:
 		auto: yes
-		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched', 'LabelsFetched']
+		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched', 'LabelsFetched',
+			'ThreadsToTasksSynced']
 		blocks: ['TasksToThreadsSynced']
 	TasksToThreadsSynced:blocks: ['SyncingTasksToThreads']
+
+	# complete threads
+	SyncingCompletedThreads:
+		auto: yes
+		requires: ['Syncing', 'ThreadsToTasksSynced', 'TasksToThreadsSynced']
+		blocks: ['CompletedThreadsSynced']
+	CompletedThreadsSynced:blocks: ['SyncingCompletedThreads']
+
+	# complete tasks
+	SyncingCompletedTasks:
+		auto: yes
+		requires: ['Syncing', 'ThreadsToTasksSynced', 'TasksToThreadsSynced',
+			'CompletedThreadsSynced']
+		blocks: ['CompletedTasksSynced']
+	CompletedTasksSynced:blocks: ['SyncingCompletedTasks']
+
+	# TODO
+#	ClearingCompletedTasks
+
+	# TODO
+#	SyncingTaskNames: {}
+
+	# ----- External States
 
 	# labels
 	FetchingLabels:

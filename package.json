@@ -15,31 +15,35 @@
   },
   "keywords": [
     "gtd",
-	  "tasks",
-	  "mail",
-	  "gdata",
-	  "api",
-	  "spreadsheets",
-	  "gmail",
-	  "google",
-	  "calendar",
+    "tasks",
+    "mail",
+    "gdata",
+    "api",
+    "spreadsheets",
+    "gmail",
+    "google",
+    "calendar",
     "service"
   ],
-  "dependencies" : {
-    "async":  "latest",
+  "dependencies": {
+    "ago": "^1.0.0",
+    "async": "latest",
     "asyncmachine": "TobiaszCudnik/asyncmachine#coffee",
+    "bluebird": "latest",
+    "coffee-script": "jashkenas/coffeescript",
+    "dateformat": "^1.0.8",
+    "internet-timestamp": "0.0.1",
+    "moment": "^2.8.4",
+    "source-map-support": "latest",
     "suspend": "latest",
-    "underscore.transparent": "latest",
+    "tracery": "latest",
     "underscore": "latest",
     "underscore.string": "latest",
-    "coffee-script": "jashkenas/coffeescript",
-    "source-map-support": "latest",
-    "bluebird": "latest",
-    "tracery": "latest"
+    "underscore.transparent": "latest"
   },
-  "bundleDependencies": [ ],
-	"devDependencies": {},
-	"license": "MIT",
+  "bundleDependencies": [],
+  "devDependencies": {},
+  "license": "MIT",
   "engine": {
     "node": ">=0.8"
   }
