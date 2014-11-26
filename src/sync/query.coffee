@@ -82,12 +82,17 @@ class Query
 	# TODO a new flag state
 	FetchingTasks_FetchingTasks: @FetchingTasks_enter
 
-	SyncingThreadsToTasks: coroutine ->
+	SyncingThreadsToTasks_enter: coroutine ->
 		interrupt = @states.getInterruptEnter 'SyncingThreadsToTasks'
 		yield Promise.all @threads.threads.map coroutine (thread) =>
+
 			task = @getTaskForThread thread.id
-			if task and task.status is 'completed'
-				yield @uncompleteTask task.id, interrupt
+			if task
+				task_completed = @taskWasCompleted task.id
+				thread_not_completed = @threadWasNotCompleted thread.id
+				if task_completed and
+						task_completed.unix() < thread_not_completed.unix()
+					yield @uncompleteTask task.id, interrupt
 			else
 				yield @createTaskFromThread thread, interrupt
 			return if interrupt?()
@@ -104,9 +109,8 @@ class Query
 			if thread_id
 				thread_completed = @threadWasCompleted thread_id
 				task_not_completed = @taskWasNotCompleted task.id
-				if not thread_completed or thread_completed and
-						thread_completed.unix() < task_not_completed.unix()
-					yield @uncompleteThread thread_id
+				if thread_completed and thread_completed.unix() < task_not_completed.unix()
+					yield @uncompleteThread thread_id, interrupt
 			else
 				thread = yield @createThreadForTask task, interrupt
 
@@ -116,15 +120,16 @@ class Query
 	SyncingCompletedThreads_enter: coroutine ->
 		interrupt = @states.getInterruptEnter 'SyncingCompletedThreads'
 
-		yield Promise.all @completions_threads
-			.filter (item) -> item.completed
-			.map coroutine (thread_completed, thread_id) =>
+		yield Promise.all(@completions_threads
+			.map coroutine (row, thread_id) =>
+				return if not row.completed
 				task = @getTaskForThread thread_id
 				return if not task
 				task_not_completed = @taskWasNotCompleted task.id
 				if task_not_completed and
-						thread_completed.time.unix() > task_not_completed.unix()
+						row.time.unix() > task_not_completed.unix()
 					yield @completeTask task.id, interrupt
+		)
 
 		return if interrupt()
 		@states.add ['CompletedThreadsSynced', 'Synced']
@@ -132,15 +137,14 @@ class Query
 	SyncingCompletedTasks_enter: coroutine ->
 		interrupt = @states.getInterruptEnter 'SyncingCompletedTasks'
 
-		yield Promise.all @completions_tasks
-			.filter (item) -> item.completed
-			.map coroutine (task_completed, task_id) =>
-				task = @getTask task_id
-				return if not task
-				thread_id = @taskLinkedToThread task
-				thread_not_completed = @threadWasNotCompleted thread_id
-				if task_completed.time.unix() > thread_not_completed.unix()
-					yield @completeThread thread_id, interrupt
+		yield Promise.all @completions_tasks.map coroutine (row, task_id) =>
+			return if not row.completed
+			task = @getTask task_id
+			return if not task
+			thread_id = @taskLinkedToThread task
+			thread_not_completed = @threadWasNotCompleted thread_id
+			if thread_not_completed and row.time.unix() > thread_not_completed.unix()
+				yield @completeThread thread_id, interrupt
 
 		return if interrupt()
 		@states.add ['CompletedTasksSynced', 'Synced']
@@ -177,16 +181,20 @@ class Query
 		if res[1].statusCode is 304
 			console.log '[CACHED] threads'
 			@states.add 'ThreadsFetched'
+			# TODO updated completions times
 			return
 		@etags.threads = res[1].headers.etag
 		query = res[0]
 		query.threads ?= []
 
 		# TODO clear entires older than 1 week
-		@completions_threads = @completions_threads.map (item) ->
-			completed: yes, time: moment()
+		# TODO figure out completion dates from the history analysis
+		non_completed = []
 		threads = yield Promise.all query.threads.map (thread) =>
-			@completions_threads[thread.id] = completed: no, time: moment()
+			non_completed.push thread.id
+			completion = @completions_threads[thread.id]
+			if completion?.completed or not completion
+				@completions_threads[thread.id] = completed: no, time: moment()
 			# TODO cache msgs
 			@req @gmail_api.users.threads.get,
 				id: thread.id
@@ -194,6 +202,11 @@ class Query
 				metadataHeaders: 'SUBJECT'
 				format: 'metadata'
 				fields: 'id,messages(id,labelIds,payload(headers))'
+		@completions_threads.each (row, id) ->
+			return if id in non_completed
+			return if not row.completed
+			row.completed = yes
+			row.time = moment()
 		return if interrupt?()
 
 		query.threads = threads.map (item) -> item[0]
@@ -220,7 +233,7 @@ class Query
 		requests.push @req @tasks_api.tasks.list,
 			updatedMin: timestamp new Date @tasks_completed_from
 			tasklist: @list.id
-			fields: "etag,items(id,title,notes,updated,etag,status)"
+			fields: "etag,items(id,title,notes,updated,etag,status,completed)"
 			maxResults: 1000
 			showCompleted: yes
 			etag: @etags.tasks_completed
@@ -230,21 +243,27 @@ class Query
 		if action_res[1].statusCode is 304
 			console.log '[CACHED] tasks'
 		else
+			console.log '[FETCHED] tasks'
 			@etags.tasks = action_res[1].headers.etag
 			action_res[0].items ?= []
 			action_res[0].items.forEach (task) =>
-				@completions_tasks[task.id] ?= completed: no, time: moment task.updated
+				@completions_tasks[task.id] =
+					completed: no
+					time: moment task.completed
 			@tasks = type action_res[0], ITasks, 'ITasks'
 		# Last completed tasks
 		if completed_res[1].statusCode is 304
 			console.log '[CACHED] completed tasks'
 		else
+			console.log '[FETCHED] completed tasks'
 			@etags.tasks_completed = completed_res[1].headers.etag
 			completed_res[0].items ?= []
 			completed_res[0].items = completed_res[0].items.filter (item) ->
 				item.status is 'completed'
 			completed_res[0].items.forEach (task) =>
-				@completions_tasks[task.id] ?= completed: yes, time: moment task.updated
+				@completions_tasks[task.id] =
+					completed: yes
+					time: moment task.completed
 			@tasks_completed = type completed_res[0], ITasks, 'ITasks'
 		@states.add 'TasksFetched'
 
@@ -254,13 +273,13 @@ class Query
 
 	completeThread: coroutine (id, interrupt) ->
 		console.log "Completing thread '#{id}'"
-		@modifyLabels id, [], @uncompletedThreadLabels(), interrupt
+		yield @modifyLabels id, [], @uncompletedThreadLabels(), interrupt
 		return if interrupt?()
 		@completions_threads[id] = completed: yes, time: moment()
 
 	uncompleteThread: coroutine (id, interrupt) ->
 		console.log "Un-completing thread '#{id}'"
-		@modifyLabels id, @uncompletedThreadLabels(), [], interrupt
+		yield @modifyLabels id, @uncompletedThreadLabels(), [], interrupt
 		return if interrupt?()
 		@completions_threads[id] = completed: no, time: moment()
 
@@ -304,21 +323,24 @@ class Query
 		)
 
 	uncompleteTask: coroutine (task_id, interrupt) ->
-		yield @req @tasks_api.tasks.patch,
+		console.log "Un-completing task #{task_id}"
+		res = yield @req @tasks_api.tasks.patch,
 			tasklist: @list.id
 			task: task_id
-			userId: 'me'
-			status: 'needsAction'
+			resource:
+				status: 'needsAction'
+				completed: null
 		return if interrupt?()
 		# TODO update the task in the db
 		@completions_tasks[task_id] = completed: no, time: moment()
 
 	completeTask: coroutine (task_id, interrupt) ->
+		console.log "Completing task #{task_id}"
 		yield @req @tasks_api.tasks.patch,
 			tasklist: @list.id
 			task: task_id
-			userId: 'me'
-			status: 'completed'
+			resource:
+				status: 'completed'
 		return if interrupt?()
 		# TODO update the task in the db
 		@completions_tasks[task_id] = completed: no, time: moment()
@@ -335,13 +357,14 @@ class Query
 		# TODO check if thread should be uncompleted
 		return res[0]
 
-	req: (method, params) ->
-		@sync.req.apply @sync, arguments
+	req: coroutine (method, params) ->
+		yield @sync.req.apply @sync, arguments
 
 	syncTaskName: coroutine (task, thread) ->
 		title = thread.messages[0].payload.headers[0].value
 		title = @getTaskTitleFromThread thread
 		if task.title isnt title
+			console.log "Updating task title to \"#{title}\""
 			# TODO use etag
 			res = yield @req @tasks_api.tasks.patch,
 				tasklist: @list.id
@@ -349,7 +372,6 @@ class Query
 				resource:
 					title: title
 			task.title = title
-			console.log "Updated task title to \"#{title}\""
 
 	createTaskList: coroutine (name, interrupt) ->
 		res = yield @req @tasks_api.tasklists.insert,
@@ -361,6 +383,7 @@ class Query
 		type thread, IThread, 'IThread'
 
 		title = @getTaskTitleFromThread thread
+		console.log "Adding task '#{title}'"
 		res = yield @req @tasks_api.tasks.insert,
 			tasklist: @list.id
 			resource:
@@ -368,11 +391,8 @@ class Query
 				notes: "email:#{thread.id}"
 		return if interrupt?()
 		# TODO update the db
-		console.log "Task added '#{title}'"
 
 		type res[0], ITask, 'ITask'
-
-	createThreadFromTasks: coroutine (tasks, list_id, threads, query) ->
 
 	createEmail: (subject) ->
 		type subject, String
@@ -423,7 +443,7 @@ class Query
 	getLabelsIds: (labels) ->
 		if not Object.isArray labels
 			labels = [labels]
-		labels.map (name) ->
+		labels.map (name) =>
 			label = @sync.labels.find (label) ->
 				label.name.toLowerCase() is name.toLowerCase()
 			label.id
@@ -453,18 +473,15 @@ class Query
 		add_labels ?= []
 		remove_labels ?= []
 
-		add_label_ids = add_labels.map (name) =>
-			(@labelByName name)?.id
-		remove_label_ids = remove_labels.map (name) =>
-			(@labelByName name)?.id
-		type remove_label_ids, [String]
-
+		console.log "Modifing labels for thread #{thread_id}"
 		yield @req @gmail_api.users.messages.modify,
 			id: thread_id
 			userId: 'me'
 			resource:
-				addLabelIds: add_label_ids
-				removeLabelIds: remove_label_ids
+				addLabelIds: @getLabelsIds add_labels
+				removeLabelIds: @getLabelsIds remove_labels
+		# TODO sync the DB
+		return if interrupt?()
 
 	labelByName: (name) ->
 		type @sync.labels, [ILabel], '[ILabel]'
@@ -483,15 +500,19 @@ class Query
 	taskWasCompleted: (id) ->
 		if @completions_tasks[id]?.completed is yes
 			@completions_tasks[id].time
+		else no
 
 	taskWasNotCompleted: (id) ->
 		if @completions_tasks[id]?.completed is no
 			@completions_tasks[id].time
+		else no
 
 	threadWasCompleted: (id) ->
 		if @completions_threads[id]?.completed is yes
 			@completions_threads[id].time
+		else no
 
 	threadWasNotCompleted: (id) ->
 		if @completions_threads[id]?.completed is no
 			@completions_threads[id].time
+		else no

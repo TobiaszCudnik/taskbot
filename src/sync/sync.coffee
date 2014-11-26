@@ -10,6 +10,7 @@ asyncmachine = require 'asyncmachine'
 google = require 'googleapis'
 async = require 'async'
 Promise = require 'bluebird'
+{ ApiError } = require '../exceptions'
 Promise.longStackTraces()
 coroutine = Promise.coroutine
 promisify = Promise.promisify
@@ -141,13 +142,15 @@ class Sync
 	# Methods
 	# ----- -----
 
-	req: (method, params, previous) ->
+	req: coroutine (method, params) ->
 		params ?= {}
 		if @config.debug
 			console.log 'REQUEST', params
 		params.auth = @auth.client
 		# TODO catch  reason: 'insufficientPermissions's
-		(promisify method) params
+		method = promisify method
+		yield method params
+
 
 module.exports = {
 	Sync

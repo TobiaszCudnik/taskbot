@@ -11,10 +11,11 @@ class QueryStates extends asyncmachine.AsyncMachine
 	Synced:
 		auto: yes
 		blocks: ['Syncing']
-		requires: ['CompletedTasksSynced']
+		requires: ['CompletedTasksSynced', 'ThreadsToTasksSynced',
+			'TasksToThreadsSynced', 'CompletedTasksSynced']
 
 	Restart:blocks: ['ThreadsFetched', 'TasksFetched', 'CompletedTasksSynced',
-		'ThreadsToTasksSynced', 'TasksToThreadsSynced']
+		'ThreadsToTasksSynced', 'TasksToThreadsSynced', 'CompletedTasksSynced']
 
 	# email threads
 	FetchingThreads:
@@ -47,23 +48,21 @@ class QueryStates extends asyncmachine.AsyncMachine
 	# tasks-to-threads
 	SyncingTasksToThreads:
 		auto: yes
-		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched', 'LabelsFetched',
-			'ThreadsToTasksSynced']
+		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched', 'LabelsFetched']
 		blocks: ['TasksToThreadsSynced']
 	TasksToThreadsSynced:blocks: ['SyncingTasksToThreads']
 
 	# complete threads
 	SyncingCompletedThreads:
 		auto: yes
-		requires: ['Syncing', 'ThreadsToTasksSynced', 'TasksToThreadsSynced']
+		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched', 'LabelsFetched']
 		blocks: ['CompletedThreadsSynced']
 	CompletedThreadsSynced:blocks: ['SyncingCompletedThreads']
 
 	# complete tasks
 	SyncingCompletedTasks:
 		auto: yes
-		requires: ['Syncing', 'ThreadsToTasksSynced', 'TasksToThreadsSynced',
-			'CompletedThreadsSynced']
+		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched', 'LabelsFetched']
 		blocks: ['CompletedTasksSynced']
 	CompletedTasksSynced:blocks: ['SyncingCompletedTasks']
 
