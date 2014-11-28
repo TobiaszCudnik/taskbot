@@ -149,11 +149,6 @@
         this.states.pipeForward('LabelsFetched', query.states);
         this.states.pipeForward('TaskListsFetched', query.states);
         this.states.pipeForward('Enabled', query.states, 'Syncing');
-        query.states.on('Restart.enter', (function(_this) {
-          return function() {
-            return _this.states.drop('TaskListsFetched');
-          };
-        })(this));
         _results.push(this.queries.push(query));
       }
       return _results;
@@ -194,6 +189,7 @@
         return;
       }
       if (res[1].statusCode !== 304) {
+        console.log('[FETCHED] tasks lists');
         this.etags.task_lists = res[1].headers.etag;
         this.task_lists = type(res[0].items, ITaskLists, 'ITaskLists');
       } else {

@@ -21,11 +21,11 @@
     QueryStates.prototype.Synced = {
       auto: true,
       blocks: ['Syncing'],
-      requires: ['CompletedTasksSynced', 'ThreadsToTasksSynced', 'TasksToThreadsSynced', 'CompletedTasksSynced']
+      requires: ['CompletedTasksSynced', 'ThreadsToTasksSynced', 'TasksToThreadsSynced', 'CompletedThreadsSynced']
     };
 
     QueryStates.prototype.Restart = {
-      blocks: ['ThreadsFetched', 'TasksFetched', 'CompletedTasksSynced', 'ThreadsToTasksSynced', 'TasksToThreadsSynced', 'CompletedTasksSynced']
+      blocks: ['ThreadsFetched', 'TasksFetched', 'CompletedTasksSynced', 'ThreadsToTasksSynced', 'TasksToThreadsSynced', 'CompletedThreadsSynced']
     };
 
     QueryStates.prototype.FetchingThreads = {

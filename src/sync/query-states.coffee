@@ -12,10 +12,10 @@ class QueryStates extends asyncmachine.AsyncMachine
 		auto: yes
 		blocks: ['Syncing']
 		requires: ['CompletedTasksSynced', 'ThreadsToTasksSynced',
-			'TasksToThreadsSynced', 'CompletedTasksSynced']
+			'TasksToThreadsSynced', 'CompletedThreadsSynced']
 
 	Restart:blocks: ['ThreadsFetched', 'TasksFetched', 'CompletedTasksSynced',
-		'ThreadsToTasksSynced', 'TasksToThreadsSynced', 'CompletedTasksSynced']
+		'ThreadsToTasksSynced', 'TasksToThreadsSynced', 'CompletedThreadsSynced']
 
 	# email threads
 	FetchingThreads:

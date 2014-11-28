@@ -106,7 +106,8 @@ class Sync
 			@states.pipeForward 'LabelsFetched', query.states
 			@states.pipeForward 'TaskListsFetched', query.states
 			@states.pipeForward 'Enabled', query.states, 'Syncing'
-			query.states.on 'Restart.enter', => @states.drop 'TaskListsFetched'
+			# TODO handle error of non existing task list in the inner classes
+#			query.states.on 'Restart.enter', => @states.drop 'TaskListsFetched'
 			@queries.push query
 
 	# ----- -----
@@ -131,6 +132,7 @@ class Sync
 			console.log 'interrupt', interrupt
 			return
 		if res[1].statusCode isnt 304
+			console.log '[FETCHED] tasks lists'
 			@etags.task_lists = res[1].headers.etag
 			@task_lists = type res[0].items,
 				ITaskLists, 'ITaskLists'

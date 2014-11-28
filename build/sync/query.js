@@ -56,6 +56,8 @@
 
     Query.prototype.completions_tasks = null;
 
+    Query.prototype.gmail_history_id = null;
+
     function Query(name, data, sync) {
       this.name = name;
       this.data = data;
@@ -79,8 +81,13 @@
       return this.states.add('Syncing');
     };
 
+    Query.prototype.Syncing_enter = function() {
+      return this.timer = new Date();
+    };
+
     Query.prototype.Synced_enter = function() {
-      return setTimeout(this.states.addLater('Restart'), 5000);
+      console.log("Synced in: " + (new Date() - this.timer) + "ms");
+      return setTimeout(this.states.addLater('Restart'), 1000);
     };
 
     Query.prototype.FetchingTasks_FetchingTasks = Query.FetchingTasks_enter;
@@ -122,7 +129,7 @@
           if (thread_id) {
             thread_completed = _this.threadWasCompleted(thread_id);
             task_not_completed = _this.taskWasNotCompleted(task.id);
-            if (thread_completed && thread_completed.unix() < task_not_completed.unix()) {
+            if (!(_this.threadSeen(thread_id)) || (thread_completed && thread_completed.unix() < task_not_completed.unix())) {
               return (yield _this.uncompleteThread(thread_id, interrupt));
             }
           } else {
@@ -209,31 +216,82 @@
     });
 
     Query.prototype.FetchingThreads_enter = coroutine(function*() {
-      var interrupt, non_completed, query, res, threads;
+      var interrupt, non_completed_ids, query;
       interrupt = this.states.getInterruptEnter('FetchingThreads');
+      if ((yield this.isQueryCached(interrupt))) {
+        this.states.add('ThreadsFetched');
+        return;
+      }
+      query = (yield this.fetchQuery(interrupt));
+      if (typeof interrupt === "function" ? interrupt() : void 0) {
+        return;
+      }
+      this.threads = type(query, IThreads, 'IThreads');
+      (yield this.obtainLatestHistoryId(interrupt));
+      if (typeof interrupt === "function" ? interrupt() : void 0) {
+        return;
+      }
+      non_completed_ids = query.threads.map(function(thread) {
+        return thread.id;
+      });
+      this.processThreadsCompletions(non_completed_ids);
+      return this.states.add('ThreadsFetched');
+    });
+
+    Query.prototype.FetchingTasks_enter = coroutine(function*() {
+      var check_completion_ids, interrupt, promises;
+      interrupt = this.states.getInterruptEnter('FetchingTasks');
+      if (!this.tasks_completed_from || this.tasks_completed_from < ago(3, "weeks")) {
+        this.tasks_completed_from = ago(2, "weeks");
+      }
+      promises = [this.fetchNonCompletedTasks(this.tasks_completed_from, interrupt)];
+      if (!this.etags.tasks_completed) {
+        check_completion_ids = this.tasks.map(function(task) {
+          return task.id;
+        });
+        promises.push(this.fetchCompletedTasks(interrupt));
+      }
+      (yield Promise.all(promises));
+      if (typeof interrupt === "function" ? interrupt() : void 0) {
+        return;
+      }
+      if (check_completion_ids) {
+        this.processTasksCompletions(check_completion_ids);
+      }
+      return this.states.add('TasksFetched');
+    });
+
+    Query.prototype.processTasksCompletions = function(ids) {
+      var non_completed_ids;
+      non_completed_ids = this.tasks.map(function(task) {
+        return task.id;
+      });
+      return (ids.difference(non_completed_ids)).forEach(function(id) {
+        return this.completions_tasks[id] = {
+          completed: true,
+          time: moment()
+        };
+      });
+    };
+
+    Query.prototype.fetchQuery = coroutine(function*(interrupt) {
+      var query, res;
+      console.log("[FETCH] threads' list");
       res = (yield this.req(this.gmail_api.users.threads.list, {
         q: this.data.query,
         userId: "me",
-        etag: this.etags.threads
+        fields: "threads(historyId,id)"
       }));
       if (typeof interrupt === "function" ? interrupt() : void 0) {
         return;
       }
-      if (res[1].statusCode === 304) {
-        console.log('[CACHED] threads');
-        this.states.add('ThreadsFetched');
-        return;
-      }
-      this.etags.threads = res[1].headers.etag;
       query = res[0];
       if (query.threads == null) {
         query.threads = [];
       }
-      non_completed = [];
-      threads = (yield Promise.all(query.threads.map((function(_this) {
-        return function(thread) {
+      query.threads = (yield Promise.all(query.threads.map(coroutine((function(_this) {
+        return function*(thread) {
           var completion;
-          non_completed.push(thread.id);
           completion = _this.completions_threads[thread.id];
           if ((completion != null ? completion.completed : void 0) || !completion) {
             _this.completions_threads[thread.id] = {
@@ -241,70 +299,87 @@
               time: moment()
             };
           }
-          return _this.req(_this.gmail_api.users.threads.get, {
-            id: thread.id,
-            userId: 'me',
-            metadataHeaders: 'SUBJECT',
-            format: 'metadata',
-            fields: 'id,messages(id,labelIds,payload(headers))'
-          });
+          return (yield _this.fetchThread(thread.id, thread.historyId, interrupt));
         };
-      })(this))));
-      this.completions_threads.each(function(row, id) {
-        if (__indexOf.call(non_completed, id) >= 0) {
-          return;
-        }
-        if (!row.completed) {
-          return;
-        }
-        row.completed = true;
-        return row.time = moment();
-      });
+      })(this)))));
+      return query;
+    });
+
+    Query.prototype.isQueryCached = coroutine(function*(interrupt) {
+      var history_id;
+      if (!this.gmail_history_id) {
+        return;
+      }
+      history_id = (yield this.fetchLatestHistoryId());
       if (typeof interrupt === "function" ? interrupt() : void 0) {
         return;
       }
-      query.threads = threads.map(function(item) {
-        return item[0];
-      });
-      this.threads = type(query, IThreads, 'IThreads');
-      return this.states.add('ThreadsFetched');
+      if (history_id === this.gmail_history_id) {
+        console.log("[CACHED] threads' list");
+        return true;
+      }
     });
 
-    Query.prototype.FetchingTasks_enter = coroutine(function*() {
-      var action_res, completed_res, interrupt, requests, _base, _base1, _ref1;
-      interrupt = this.states.getInterruptEnter('FetchingTasks');
-      if (!this.tasks_completed_from || this.tasks_completed_from < ago(3, "weeks")) {
-        this.tasks_completed_from = ago(2, "weeks");
+    Query.prototype.obtainLatestHistoryId = coroutine(function*(interrupt) {
+      if (this.gmail_history_id == null) {
+        this.gmail_history_id = this.threads.threads.reduce(function(history_id, thread) {
+          return Math.max(history_id || 0, thread.historyId);
+        });
       }
-      requests = [];
-      requests.push(this.req(this.tasks_api.tasks.list, {
+      return this.gmail_history_id = (yield this.fetchLatestHistoryId(interrupt));
+    });
+
+    Query.prototype.processThreadsCompletions = function(non_completed_ids) {
+      return this.completions_threads.each(function(row, id) {
+        if (__indexOf.call(non_completed_ids, id) >= 0) {
+          return;
+        }
+        if (row.completed) {
+          return;
+        }
+        row.completed = true;
+        row.time = moment();
+        return console.log("Marking thread as completed by query " + id);
+      });
+    };
+
+    Query.prototype.fetchLatestHistoryId = coroutine(function*(interrupt) {
+      var e, response;
+      try {
+        response = (yield this.req(this.gmail_api.users.history.list, {
+          userId: 'me',
+          fields: 'historyId',
+          startHistoryId: this.gmail_history_id
+        }));
+        if (typeof interrupt === "function" ? interrupt() : void 0) {
+          return;
+        }
+      } catch (_error) {
+        e = _error;
+        console.log(e);
+        return;
+      }
+      return response[0].historyId;
+    });
+
+    Query.prototype.fetchNonCompletedTasks = coroutine(function*(interrupt) {
+      var response, _base;
+      response = (yield this.req(this.tasks_api.tasks.list, {
         tasklist: this.list.id,
         fields: "etag,items(id,title,notes,updated,etag,status)",
         maxResults: 1000,
         showCompleted: false,
         etag: this.etags.tasks
       }));
-      requests.push(this.req(this.tasks_api.tasks.list, {
-        updatedMin: timestamp(new Date(this.tasks_completed_from)),
-        tasklist: this.list.id,
-        fields: "etag,items(id,title,notes,updated,etag,status,completed)",
-        maxResults: 1000,
-        showCompleted: true,
-        etag: this.etags.tasks_completed
-      }));
-      _ref1 = (yield Promise.all(requests)), action_res = _ref1[0], completed_res = _ref1[1];
-      if (typeof interrupt === "function" ? interrupt() : void 0) {
-        return;
-      }
-      if (action_res[1].statusCode === 304) {
-        console.log('[CACHED] tasks');
+      if (response[1].statusCode === 304) {
+        return console.log('[CACHED] tasks');
       } else {
         console.log('[FETCHED] tasks');
-        this.etags.tasks = action_res[1].headers.etag;
-        if ((_base = action_res[0]).items == null) {
+        this.etags.tasks = response[1].headers.etag;
+        if ((_base = response[0]).items == null) {
           _base.items = [];
         }
-        action_res[0].items.forEach((function(_this) {
+        response[0].items.forEach((function(_this) {
           return function(task) {
             return _this.completions_tasks[task.id] = {
               completed: false,
@@ -312,20 +387,32 @@
             };
           };
         })(this));
-        this.tasks = type(action_res[0], ITasks, 'ITasks');
+        return this.tasks = type(response[0], ITasks, 'ITasks');
       }
-      if (completed_res[1].statusCode === 304) {
-        console.log('[CACHED] completed tasks');
+    });
+
+    Query.prototype.fetchCompletedTasks = coroutine(function*(update_min, interrupt) {
+      var response, _base;
+      response = (yield this.req(this.tasks_api.tasks.list, {
+        updatedMin: timestamp(new Date(this.tasks_completed_from)),
+        tasklist: this.list.id,
+        fields: "etag,items(id,title,notes,updated,etag,status,completed)",
+        maxResults: 1000,
+        showCompleted: true,
+        etag: this.etags.tasks_completed
+      }));
+      if (response[1].statusCode === 304) {
+        return console.log('[CACHED] completed tasks');
       } else {
         console.log('[FETCHED] completed tasks');
-        this.etags.tasks_completed = completed_res[1].headers.etag;
-        if ((_base1 = completed_res[0]).items == null) {
-          _base1.items = [];
+        this.etags.tasks_completed = response[1].headers.etag;
+        if ((_base = response[0]).items == null) {
+          _base.items = [];
         }
-        completed_res[0].items = completed_res[0].items.filter(function(item) {
+        response[0].items = response[0].items.filter(function(item) {
           return item.status === 'completed';
         });
-        completed_res[0].items.forEach((function(_this) {
+        response[0].items.forEach((function(_this) {
           return function(task) {
             return _this.completions_tasks[task.id] = {
               completed: true,
@@ -333,9 +420,8 @@
             };
           };
         })(this));
-        this.tasks_completed = type(completed_res[0], ITasks, 'ITasks');
+        return this.tasks_completed = type(response[0], ITasks, 'ITasks');
       }
-      return this.states.add('TasksFetched');
     });
 
     Query.prototype.completeThread = coroutine(function*(id, interrupt) {
@@ -450,7 +536,7 @@
         return;
       }
       return this.completions_tasks[task_id] = {
-        completed: false,
+        completed: true,
         time: moment()
       };
     });
@@ -459,14 +545,10 @@
       return this.tasks.items.concat(this.tasks_completed.items || []);
     };
 
-    Query.prototype.fetchThreadForTask = coroutine(function*(task) {
-      var res, thread_id, _ref1;
+    Query.prototype.fetchThreadForTask = coroutine(function*(task, interrupt) {
+      var thread_id, _ref1;
       thread_id = ((_ref1 = task.notes) != null ? _ref1.match(/\bemail:(\w+)\b/) : void 0)[1];
-      res = (yield this.req(this.gmail_api.users.threads.get, {
-        id: thread_id,
-        userId: 'me'
-      }));
-      return res[0];
+      return (yield this.fetchThread(thread_id));
     });
 
     Query.prototype.req = coroutine(function*(method, params) {
@@ -534,12 +616,35 @@
     Query.prototype.getTaskForThread = function(thread_id) {
       var task;
       type(thread_id, String);
-      task = this.getAllTasks().find(function(task) {
+      return task = this.getAllTasks().find(function(task) {
         var _ref1;
         return (_ref1 = task.notes) != null ? _ref1.match("email:" + thread_id) : void 0;
       });
-      return type(task, ITask, 'ITask');
     };
+
+    Query.prototype.fetchThread = coroutine(function*(thread_id, history_id, interrupt) {
+      var thread, _base, _ref1, _ref2;
+      type(thread_id, String);
+      type(history_id, String);
+      thread = (_ref1 = this.threads) != null ? (_ref2 = _ref1.threads) != null ? _ref2.find(function(thread) {
+        return thread.id === thread_id && thread.historyId === history_id;
+      }) : void 0 : void 0;
+      if (!thread || thread.historyId !== history_id) {
+        console.log("[FETCH] thread " + thread_id);
+        thread = (yield this.req(this.gmail_api.users.threads.get, {
+          id: thread_id,
+          userId: 'me',
+          metadataHeaders: 'SUBJECT',
+          format: 'metadata',
+          fields: 'id,historyId,messages(id,historyId,labelIds,payload(headers))'
+        }));
+        if ((_base = thread[0]).messages == null) {
+          _base.messages = [];
+        }
+        thread = thread[0];
+      }
+      return type(thread, IThread, 'IThread');
+    });
 
     Query.prototype.getTaskTitleFromThread = function(thread) {
       var label, labels, title, _i, _len, _ref1, _ref2;
@@ -684,6 +789,10 @@
       } else {
         return false;
       }
+    };
+
+    Query.prototype.threadSeen = function(id) {
+      return Boolean(this.completions_threads[id]);
     };
 
     return Query;

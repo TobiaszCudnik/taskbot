@@ -55,6 +55,7 @@ class Query
 	seen_threads: null
 	completions_threads: null
 	completions_tasks: null
+	gmail_history_id: null
 
 	constructor: (@name, @data, @sync) ->
 		@states = new QueryStates
@@ -76,11 +77,19 @@ class Query
 
 	Restart_enter: -> @states.add 'Syncing'
 
+
+	Syncing_enter: ->
+		@timer = new Date()
+
+
 	Synced_enter: ->
-		setTimeout (@states.addLater 'Restart'), 5000
+		console.log "Synced in: #{new Date() - @timer}ms"
+		setTimeout (@states.addLater 'Restart'), 1000
+
 
 	# TODO a new flag state
 	FetchingTasks_FetchingTasks: @FetchingTasks_enter
+
 
 	SyncingThreadsToTasks_enter: coroutine ->
 		interrupt = @states.getInterruptEnter 'SyncingThreadsToTasks'
@@ -98,9 +107,11 @@ class Query
 			return if interrupt?()
 		@states.add ['ThreadsToTasksSynced', 'Synced']
 
+
 	SyncingTasksToThreads_enter: coroutine ->
 		interrupt = @states.getInterruptEnter 'SyncingTasksToThreads'
 
+		# loop over non completed tasks
 		yield Promise.all @tasks.items.map coroutine (task) =>
 			# TODO support children tasks
 			return if not task.title or task.parent
@@ -109,13 +120,15 @@ class Query
 			if thread_id
 				thread_completed = @threadWasCompleted thread_id
 				task_not_completed = @taskWasNotCompleted task.id
-				if thread_completed and thread_completed.unix() < task_not_completed.unix()
+				if not (@threadSeen thread_id) or (thread_completed and
+						thread_completed.unix() < task_not_completed.unix())
 					yield @uncompleteThread thread_id, interrupt
 			else
 				thread = yield @createThreadForTask task, interrupt
 
 		return if interrupt()
 		@states.add ['TasksToThreadsSynced', 'Synced']
+
 
 	SyncingCompletedThreads_enter: coroutine ->
 		interrupt = @states.getInterruptEnter 'SyncingCompletedThreads'
@@ -134,6 +147,7 @@ class Query
 		return if interrupt()
 		@states.add ['CompletedThreadsSynced', 'Synced']
 
+
 	SyncingCompletedTasks_enter: coroutine ->
 		interrupt = @states.getInterruptEnter 'SyncingCompletedTasks'
 
@@ -148,6 +162,7 @@ class Query
 
 		return if interrupt()
 		@states.add ['CompletedTasksSynced', 'Synced']
+
 
 	PreparingList_enter: coroutine ->
 		interrupt = @states.getInterruptEnter 'PreparingList'
@@ -170,106 +185,165 @@ class Query
 		@list = type list, ITaskList, 'ITaskList'
 		@states.add 'ListReady'
 
+
 	FetchingThreads_enter: coroutine ->
 		interrupt = @states.getInterruptEnter 'FetchingThreads'
-		# TODO ensure all the threads are downloaded (stream per page if required)
-		res = yield @req @gmail_api.users.threads.list,
-			q: @data.query
-			userId: "me"
-			etag: @etags.threads
-		return if interrupt?()
-		if res[1].statusCode is 304
-			console.log '[CACHED] threads'
+
+		# TODO share history id across all queries
+		if yield @isQueryCached interrupt
 			@states.add 'ThreadsFetched'
-			# TODO updated completions times
 			return
-		@etags.threads = res[1].headers.etag
-		query = res[0]
-		query.threads ?= []
 
-		# TODO clear entires older than 1 week
-		# TODO figure out completion dates from the history analysis
-		non_completed = []
-		threads = yield Promise.all query.threads.map (thread) =>
-			non_completed.push thread.id
-			completion = @completions_threads[thread.id]
-			if completion?.completed or not completion
-				@completions_threads[thread.id] = completed: no, time: moment()
-			# TODO cache msgs
-			@req @gmail_api.users.threads.get,
-				id: thread.id
-				userId: 'me'
-				metadataHeaders: 'SUBJECT'
-				format: 'metadata'
-				fields: 'id,messages(id,labelIds,payload(headers))'
-		@completions_threads.each (row, id) ->
-			return if id in non_completed
-			return if not row.completed
-			row.completed = yes
-			row.time = moment()
+		query = yield @fetchQuery interrupt
+		return if interrupt?()
+		@threads = type query, IThreads, 'IThreads'
+
+		yield @obtainLatestHistoryId interrupt
 		return if interrupt?()
 
-		query.threads = threads.map (item) -> item[0]
-
-		#		msg_part = list.threads[0].messages[0].payload
-		#		type msg_part, IMessagePart, 'IMessagePart'
-		#		type list.threads[0].messages[0], IMessage, 'IMessage'
-		#		type list.threads[0], IThread, 'IThread'
-		@threads = type query, IThreads, 'IThreads'
+		non_completed_ids = query.threads.map (thread) -> thread.id
+		@processThreadsCompletions non_completed_ids
 		@states.add 'ThreadsFetched'
 
+
+	# TODO extract tasks fetching logic, reuse
 	FetchingTasks_enter: coroutine ->
 		interrupt = @states.getInterruptEnter 'FetchingTasks'
 		# fetch all non-completed and max 2-weeks old completed ones
 		if not @tasks_completed_from or @tasks_completed_from < ago 3, "weeks"
 			@tasks_completed_from = ago 2, "weeks"
-		requests = []
-		requests.push @req @tasks_api.tasks.list,
+		promises = [@fetchNonCompletedTasks @tasks_completed_from, interrupt]
+		if not @etags.tasks_completed
+			check_completion_ids = @tasks.map (task) -> task.id
+			promises.push @fetchCompletedTasks interrupt
+		yield Promise.all promises
+		return if interrupt?()
+
+		if check_completion_ids
+			@processTasksCompletions check_completion_ids
+
+		@states.add 'TasksFetched'
+
+	# ----- -----
+	# Methods
+	# ----- -----
+
+	processTasksCompletions: (ids) ->
+		non_completed_ids = @tasks.map (task) -> task.id
+		(ids.difference non_completed_ids).forEach (id) ->
+			# time of completion is actually fake, but doesnt require a request
+			@completions_tasks[id] = completed: yes, time: moment()
+
+	# TODO ensure all the threads are downloaded (stream per page if required)
+	fetchQuery: coroutine (interrupt) ->
+		console.log "[FETCH] threads' list"
+		res = yield @req @gmail_api.users.threads.list,
+			q: @data.query
+			userId: "me"
+			fields: "threads(historyId,id)"
+		return if interrupt?()
+		query = res[0]
+		query.threads ?= []
+
+		# TODO clear entires older than 1 week
+		# TODO figure out completion dates from the history analysis
+		query.threads = yield Promise.all query.threads.map coroutine (thread) =>
+			completion = @completions_threads[thread.id]
+			# update the completion if thread is new or completion status has changed
+			if completion?.completed or not completion
+				@completions_threads[thread.id] = completed: no, time: moment()
+
+			yield @fetchThread thread.id, thread.historyId, interrupt
+
+		query
+
+
+	isQueryCached: coroutine (interrupt) ->
+		return if not @gmail_history_id
+		history_id = yield @fetchLatestHistoryId()
+		return if interrupt?()
+		if history_id is @gmail_history_id
+			console.log "[CACHED] threads' list"
+			return yes
+
+	obtainLatestHistoryId: coroutine (interrupt) ->
+		# for the first time, figure out the latest history ID from msgs
+		@gmail_history_id ?= @threads.threads.reduce (history_id, thread) ->
+			Math.max history_id or 0, thread.historyId
+		# then update it to the newest one
+		@gmail_history_id = yield @fetchLatestHistoryId interrupt
+
+
+	# complete threads not found in the query results
+	processThreadsCompletions: (non_completed_ids) ->
+		@completions_threads.each (row, id) ->
+			# TODO build non_completed
+			return if id in non_completed_ids
+			return if row.completed
+			row.completed = yes
+			row.time = moment()
+			console.log "Marking thread as completed by query #{id}"
+
+	fetchLatestHistoryId: coroutine (interrupt) ->
+		try
+			response = yield @req @gmail_api.users.history.list,
+				userId: 'me'
+				fields: 'historyId'
+				startHistoryId: @gmail_history_id
+			return if interrupt?()
+		catch e # TODO catch only API exceptions
+			console.log e
+			return
+
+		response[0].historyId
+
+
+	fetchNonCompletedTasks: coroutine (interrupt) ->
+		response = yield @req @tasks_api.tasks.list,
 			tasklist: @list.id
 			fields: "etag,items(id,title,notes,updated,etag,status)"
 			maxResults: 1000
 			showCompleted: no
 			etag: @etags.tasks
-		requests.push @req @tasks_api.tasks.list,
+			
+		if response[1].statusCode is 304
+			console.log '[CACHED] tasks'
+		else
+			console.log '[FETCHED] tasks'
+			@etags.tasks = response[1].headers.etag
+			response[0].items ?= []
+			response[0].items.forEach (task) =>
+				@completions_tasks[task.id] =
+					completed: no
+					time: moment task.completed
+
+			@tasks = type response[0], ITasks, 'ITasks'
+
+
+	fetchCompletedTasks: coroutine (update_min, interrupt) ->
+		response = yield @req @tasks_api.tasks.list,
 			updatedMin: timestamp new Date @tasks_completed_from
 			tasklist: @list.id
 			fields: "etag,items(id,title,notes,updated,etag,status,completed)"
 			maxResults: 1000
 			showCompleted: yes
 			etag: @etags.tasks_completed
-		[action_res, completed_res] = yield Promise.all requests
-		return if interrupt?()
-		# Action tasks
-		if action_res[1].statusCode is 304
-			console.log '[CACHED] tasks'
-		else
-			console.log '[FETCHED] tasks'
-			@etags.tasks = action_res[1].headers.etag
-			action_res[0].items ?= []
-			action_res[0].items.forEach (task) =>
-				@completions_tasks[task.id] =
-					completed: no
-					time: moment task.completed
-			@tasks = type action_res[0], ITasks, 'ITasks'
-		# Last completed tasks
-		if completed_res[1].statusCode is 304
+			
+		if response[1].statusCode is 304
 			console.log '[CACHED] completed tasks'
 		else
 			console.log '[FETCHED] completed tasks'
-			@etags.tasks_completed = completed_res[1].headers.etag
-			completed_res[0].items ?= []
-			completed_res[0].items = completed_res[0].items.filter (item) ->
+			@etags.tasks_completed = response[1].headers.etag
+			response[0].items ?= []
+			response[0].items = response[0].items.filter (item) ->
 				item.status is 'completed'
-			completed_res[0].items.forEach (task) =>
+			response[0].items.forEach (task) =>
 				@completions_tasks[task.id] =
 					completed: yes
 					time: moment task.completed
-			@tasks_completed = type completed_res[0], ITasks, 'ITasks'
-		@states.add 'TasksFetched'
 
-	# ----- -----
-	# Methods
-	# ----- -----
+			@tasks_completed = type response[0], ITasks, 'ITasks'
+
 
 	completeThread: coroutine (id, interrupt) ->
 		console.log "Completing thread '#{id}'"
@@ -277,11 +351,13 @@ class Query
 		return if interrupt?()
 		@completions_threads[id] = completed: yes, time: moment()
 
+
 	uncompleteThread: coroutine (id, interrupt) ->
 		console.log "Un-completing thread '#{id}'"
 		yield @modifyLabels id, @uncompletedThreadLabels(), [], interrupt
 		return if interrupt?()
 		@completions_threads[id] = completed: no, time: moment()
+
 
 	createThreadForTask: coroutine (task, interrupt) ->
 		console.log "Creating email '#{task.title}'
@@ -300,10 +376,12 @@ class Query
 
 		thread
 
+
 	# returns thread ID
 	taskLinkedToThread: (task) ->
 		if task.notes?.match /\bemail:\w+\b/
 			(task.notes?.match /\bemail:(\w+)\b/)[1]
+
 
 	linkTaskToThread: coroutine (task, thread_id, interrupt) ->
 		task.notes ?= ""
@@ -316,11 +394,13 @@ class Query
 		# TODO update the DB
 		return if interrupt?()
 
+
 	uncompletedThreadLabels: ->
 		[].concat(
 			@data['labels_new_task'] or []
 			@sync.config.tasks.queries.labels_defaults?['labels_new_task'] or []
 		)
+
 
 	uncompleteTask: coroutine (task_id, interrupt) ->
 		console.log "Un-completing task #{task_id}"
@@ -334,6 +414,7 @@ class Query
 		# TODO update the task in the db
 		@completions_tasks[task_id] = completed: no, time: moment()
 
+
 	completeTask: coroutine (task_id, interrupt) ->
 		console.log "Completing task #{task_id}"
 		yield @req @tasks_api.tasks.patch,
@@ -343,22 +424,20 @@ class Query
 				status: 'completed'
 		return if interrupt?()
 		# TODO update the task in the db
-		@completions_tasks[task_id] = completed: no, time: moment()
+		@completions_tasks[task_id] = completed: yes, time: moment()
+
 
 	getAllTasks: -> @tasks.items.concat @tasks_completed.items or []
 
-	fetchThreadForTask: coroutine (task) ->
+
+	fetchThreadForTask: coroutine (task, interrupt) ->
 		thread_id = (task.notes?.match /\bemail:(\w+)\b/)[1]
-		res = yield @req @gmail_api.users.threads.get,
-			id: thread_id
-			userId: 'me'
-		# TODO read the msgs
-		# TODO cache it
-		# TODO check if thread should be uncompleted
-		return res[0]
+		yield @fetchThread thread_id
+
 
 	req: coroutine (method, params) ->
 		yield @sync.req.apply @sync, arguments
+
 
 	syncTaskName: coroutine (task, thread) ->
 		title = thread.messages[0].payload.headers[0].value
@@ -373,11 +452,13 @@ class Query
 					title: title
 			task.title = title
 
+
 	createTaskList: coroutine (name, interrupt) ->
 		res = yield @req @tasks_api.tasklists.insert,
 			resource:title:name
 		type res[1].body,
 			ITaskList, 'ITaskList'
+
 
 	createTaskFromThread: coroutine (thread, interrupt) ->
 		type thread, IThread, 'IThread'
@@ -394,6 +475,7 @@ class Query
 
 		type res[0], ITask, 'ITask'
 
+
 	createEmail: (subject) ->
 		type subject, String
 
@@ -408,9 +490,13 @@ class Query
 			.replace /\+/g, '-'
 			.replace /\//g, '_'
 
+
+
 	getTask: (task_id) ->
 		@getAllTasks().find (task) ->
 			task.id is task_id
+
+
 
 	getTaskForThread: (thread_id) ->
 		type thread_id, String
@@ -418,7 +504,29 @@ class Query
 		task = @getAllTasks().find (task) ->
 			task.notes?.match "email:#{thread_id}"
 
-		type task, ITask, 'ITask'
+#		type task, ITask, 'ITask'
+
+
+	fetchThread: coroutine (thread_id, history_id, interrupt) ->
+		type thread_id, String
+		type history_id, String
+
+		thread = @threads?.threads?.find (thread) ->
+			thread.id is thread_id and thread.historyId is history_id
+
+		if not thread or thread.historyId isnt history_id
+			console.log "[FETCH] thread #{thread_id}"
+			thread = yield @req @gmail_api.users.threads.get,
+				id: thread_id
+				userId: 'me'
+				metadataHeaders: 'SUBJECT'
+				format: 'metadata'
+				fields: 'id,historyId,messages(id,historyId,labelIds,payload(headers))'
+			thread[0].messages ?= []
+			thread = thread[0]
+
+		type thread, IThread, 'IThread'
+
 
 	getTaskTitleFromThread: (thread) ->
 		type thread, IThread, 'IThread'
@@ -440,6 +548,7 @@ class Query
 		else
 			[title].concat(labels).join ' '
 
+
 	getLabelsIds: (labels) ->
 		if not Object.isArray labels
 			labels = [labels]
@@ -447,6 +556,7 @@ class Query
 			label = @sync.labels.find (label) ->
 				label.name.toLowerCase() is name.toLowerCase()
 			label.id
+
 
 	###
 	@name string
@@ -468,12 +578,14 @@ class Query
 		type labels, [String]
 		[title, labels]
 
+
 	modifyLabels: coroutine (thread_id, add_labels, remove_labels, interrupt) ->
 		type thread_id, String
 		add_labels ?= []
 		remove_labels ?= []
 
 		console.log "Modifing labels for thread #{thread_id}"
+		# TODO handle non existing threads
 		yield @req @gmail_api.users.messages.modify,
 			id: thread_id
 			userId: 'me'
@@ -483,9 +595,11 @@ class Query
 		# TODO sync the DB
 		return if interrupt?()
 
+
 	labelByName: (name) ->
 		type @sync.labels, [ILabel], '[ILabel]'
 		@sync.labels.find (label) -> label.name is name
+
 
 	# Requires loaded threads
 	threadHasLabels: (thread, label) ->
@@ -497,22 +611,30 @@ class Query
 				return yes if @sync.labels.find (label) -> label.id is id
 		no
 
+
 	taskWasCompleted: (id) ->
 		if @completions_tasks[id]?.completed is yes
 			@completions_tasks[id].time
 		else no
+
 
 	taskWasNotCompleted: (id) ->
 		if @completions_tasks[id]?.completed is no
 			@completions_tasks[id].time
 		else no
 
+
 	threadWasCompleted: (id) ->
 		if @completions_threads[id]?.completed is yes
 			@completions_threads[id].time
 		else no
 
+
 	threadWasNotCompleted: (id) ->
 		if @completions_threads[id]?.completed is no
 			@completions_threads[id].time
 		else no
+
+
+	threadSeen: (id) ->
+		Boolean @completions_threads[id]
