@@ -27,8 +27,8 @@ class Auth extends asyncmachine.AsyncMachine
 
 	constructor: (@settings) ->
 		super {}
-		if settings.debug
-			@debug 'Auth / ', settings.debug
+		if process.env['DEBUG']
+			@debug 'Auth / ', process.env['DEBUG']
 		@register 'Ready', 'CredentialsSet', 'RefreshingToken', 'TokenRefreshed'
 		@client = new OAuth2Client settings.client_id, settings.client_secret,
 			settings.redirect_url

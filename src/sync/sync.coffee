@@ -3,13 +3,14 @@
 #label = require './label'
 #Label = label.Label
 auth = require '../auth'
-Query = require './query'
+TaskListSync = require './task-list-sync'
 type = require '../type'
 
 asyncmachine = require 'asyncmachine'
 google = require 'googleapis'
 async = require 'async'
 Promise = require 'bluebird'
+{ Gmail } = require './gmail'
 { ApiError } = require '../exceptions'
 Promise.longStackTraces()
 coroutine = Promise.coroutine
@@ -19,7 +20,7 @@ promisify = Promise.promisify
 {
 	ITaskList
 	ITaskLists
-	IQuery
+	IQueryToTasklist
 	IThread
 	IThreads
 	ITask
@@ -28,20 +29,21 @@ promisify = Promise.promisify
 	IMessagePart
 } = require './api-types'
 
-promise_exception = (e) ->
-	console.log e.errors if e.errors
-	console.log (e.stack.split "\n").join "\n"
-
 class States extends asyncmachine.AsyncMachine
 
-	constructor: ->
-		super
-		@registerAll()
 
-	Enabled: auto: yes, blocks: ['Disabled']
-	Disabled:
+	Enabled: auto: yes
+
+
+	TaskListSyncEnabled:
 		auto: yes
-		blocks: ['Enabled']
+		requires:	['Enabled', 'Authenticated']
+
+
+	GmailSyncEnabled:
+		auto: yes
+		requires:	['Enabled', 'Authenticated']
+
 
 	Authenticating:
 		auto: yes
@@ -49,27 +51,37 @@ class States extends asyncmachine.AsyncMachine
 		blocks: ['Authenticated']
 	Authenticated:blocks: ['Authenticating']
 
+
 	Syncing:
 		auto: yes
-		requires: ['Enabled']
+		requires: ['Enabled', 'Authenticated']
 		blocks: ['Synced']
 	Synced:blocks: ['Syncing']
 
-	# labels
-	FetchingLabels:
-		auto: yes
-		requires: ['Enabled', 'Authenticated']
-		blocks: ['LabelsFetched']
-	LabelsFetched:blocks: ['FetchingLabels']
+
+	# ----- Outbound states
+
 
 	# task lists
 	FetchingTaskLists:
 		auto: yes
-		requires: ['Enabled', 'Authenticated']
+		requires: ['Syncing']
 		blocks: ['TaskListsFetched']
 	TaskListsFetched:blocks: ['FetchingTaskLists']
 
+
+	HistoryIdFetched = {}
+
+
+	constructor: ->
+		super
+		@registerAll()
+
+
+
 class Sync
+
+
 	states: null
 	config: null
 	auth: null
@@ -79,50 +91,50 @@ class Sync
 	queries: null
 	etags: null
 
+	history_id: null
+	Object.defineProperty @::, 'history_id', set: (history_id) ->
+		@historyId = Math.max @history_id, history_id
+
 #	Sync.defineType 'auth', auth.Auth, 'auth.Auth'
+
 
 	constructor: (@config) ->
 		@states = new States
 		@states.setTarget @
-		if @config.debug
-			@states.debug 'Sync / ', @config.debug
+		if process.env['DEBUG']
+			@states.debug 'Sync / ', process.env['DEBUG']
 		@task_lists = []
 		@labels = []
 		@auth = new auth.Auth config
-		@queries = []
+		@task_lists = []
 		@etags = {}
 
 		@tasks_api = new google.tasks 'v1', auth: @auth.client
 		@gmail_api = new google.gmail 'v1', auth: @auth.client
 
+		@gmail = new Gmail this
+		@states.pipeForward 'GmailSyncEnabled', @gmail.states, 'Enabled'
 		@initQueries()
 
 		@auth.pipeForward 'Ready', @states, 'Authenticated'
 
+
 	initQueries: ->
 		for name, data of @config.tasks.queries
 			continue if name is 'labels_defaults'
-			query = new Query name, data, @
-			@states.pipeForward 'LabelsFetched', query.states
-			@states.pipeForward 'TaskListsFetched', query.states
-			@states.pipeForward 'Enabled', query.states, 'Syncing'
+			task_list = new TaskListSync name, data, this
+			@gmail.states.pipeForward 'LabelsFetched', task_list.states
+			@states.pipeForward 'TaskListsFetched', task_list.states
+			@states.pipeForward 'TaskListSyncEnabled', task_list.states, 'Enabled'
 			# TODO handle error of non existing task list in the inner classes
-#			query.states.on 'Restart.enter', => @states.drop 'TaskListsFetched'
-			@queries.push query
+#			task_list.states.on 'Restart.enter', => @states.drop 'TaskListsFetched'
+			@task_lists.push task_list
 
+			
 	# ----- -----
 	# Transitions
 	# ----- -----
 
-	Syncing_enter: ->
-		(query.states.add 'Syncing') for query in @queries
-
-	FetchingLabels_enter: coroutine ->
-		interrupt = @states.getInterruptEnter 'FetchingLabels'
-		res = yield @req @gmail_api.users.labels.list, userId: 'me'
-		return if interrupt?()
-		@labels = res[0].labels
-		@states.add 'LabelsFetched'
 
 	FetchingTaskLists_enter: coroutine ->
 		interrupt = @states.getInterruptEnter 'FetchingTaskLists'
@@ -134,15 +146,25 @@ class Sync
 		if res[1].statusCode isnt 304
 			console.log '[FETCHED] tasks lists'
 			@etags.task_lists = res[1].headers.etag
-			@task_lists = type res[0].items,
-				ITaskLists, 'ITaskLists'
+			@task_lists = type res[0].items, ITaskLists, 'ITaskLists'
 		else
 			console.log '[CACHED] tasks lists'
 		@states.add 'TaskListsFetched'
 
+
 	# ----- -----
 	# Methods
 	# ----- -----
+
+
+#	findLatestHistoryId: ->
+#		Math.max.apply Math, [@gmail.history_id].concat @tasks.queries.map (item) ->
+#			item.history_id
+
+
+	setDirty: (history_id) ->
+		@gmail.history_id = null
+
 
 	req: coroutine (method, params) ->
 		params ?= {}
@@ -152,6 +174,7 @@ class Sync
 		# TODO catch  reason: 'insufficientPermissions's
 		method = promisify method
 		yield method params
+
 
 
 module.exports = {

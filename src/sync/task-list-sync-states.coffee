@@ -1,28 +1,26 @@
 asyncmachine = require 'asyncmachine'
 
-module.exports =
-class QueryStates extends asyncmachine.AsyncMachine
 
-	constructor: ->
-		super
-		@registerAll()
 
-	Syncing:blocks: ['Synced', 'Restart']
-	Synced:
+class States extends asyncmachine.AsyncMachine
+
+
+	Enabled: {}
+
+
+	Syncing:
 		auto: yes
+		requires: ['Enabled']
+		blocks: ['Synced', 'Restart']
+	Synced:
 		blocks: ['Syncing']
 		requires: ['CompletedTasksSynced', 'ThreadsToTasksSynced',
 			'TasksToThreadsSynced', 'CompletedThreadsSynced']
 
-	Restart:blocks: ['ThreadsFetched', 'TasksFetched', 'CompletedTasksSynced',
-		'ThreadsToTasksSynced', 'TasksToThreadsSynced', 'CompletedThreadsSynced']
 
-	# email threads
-	FetchingThreads:
-		auto: yes
-		requires: ['Syncing']
-		blocks: ['ThreadsFetched']
-	ThreadsFetched:blocks: ['FetchingThreads']
+	Restart:blocks: ['TasksFetched', 'CompletedTasksSynced', 'ThreadsToTasksSynced',
+		'TasksToThreadsSynced', 'CompletedThreadsSynced']
+
 
 	# list
 	PreparingList:
@@ -31,6 +29,7 @@ class QueryStates extends asyncmachine.AsyncMachine
 		blocks: ['ListReady']
 	ListReady: blocks: ['PreparingList']
 
+
 	# tasks
 	FetchingTasks:
 		auto: yes
@@ -38,12 +37,14 @@ class QueryStates extends asyncmachine.AsyncMachine
 		blocks: ['TasksFetched']
 	TasksFetched: requires: ['ListReady'], blocks: ['FetchingTasks']
 
+
 	# thread-to-tasks
 	SyncingThreadsToTasks:
 		auto: yes
-		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched', 'LabelsFetched']
+		requires: ['Syncing', 'TasksFetched', 'LabelsFetched', 'MsgsFetched']
 		blocks: ['ThreadsToTasksSynced']
 	ThreadsToTasksSynced: blocks: ['SyncingThreadsToTasks']
+
 
 	# tasks-to-threads
 	SyncingTasksToThreads:
@@ -52,12 +53,14 @@ class QueryStates extends asyncmachine.AsyncMachine
 		blocks: ['TasksToThreadsSynced']
 	TasksToThreadsSynced:blocks: ['SyncingTasksToThreads']
 
+
 	# complete threads
 	SyncingCompletedThreads:
 		auto: yes
 		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched', 'LabelsFetched']
 		blocks: ['CompletedThreadsSynced']
 	CompletedThreadsSynced:blocks: ['SyncingCompletedThreads']
+
 
 	# complete tasks
 	SyncingCompletedTasks:
@@ -66,24 +69,38 @@ class QueryStates extends asyncmachine.AsyncMachine
 		blocks: ['CompletedTasksSynced']
 	CompletedTasksSynced:blocks: ['SyncingCompletedTasks']
 
-	# TODO
-#	ClearingCompletedTasks
 
-	# TODO
 #	SyncingTaskNames: {}
+
 
 	# ----- External States
 
 	# labels
-	FetchingLabels:
-		auto: yes
-		requires: ['Syncing']
-		blocks: ['LabelsFetched']
-	LabelsFetched:blocks: ['FetchingLabels']
+	FetchingLabels: {}
+	LabelsFetched: {}
+
 
 	# task lists
-	FetchingTaskLists:
-		auto: yes
-		requires: ['Syncing']
-		blocks: ['TaskListsFetched']
-	TaskListsFetched:blocks: ['FetchingTaskLists']
+	FetchingTaskLists: {}
+	TaskListsFetched: {}
+
+
+	SyncingQueryLabels: {}
+	QueryLabelsSynced: {}
+
+
+	FetchingThreads: {}
+	ThreadsFetched: {}
+
+
+	FetchingMsgs: {}
+	MsgsFetched: {}
+
+
+	constructor: ->
+		super
+		@registerAll()
+
+
+
+module.exports = States
