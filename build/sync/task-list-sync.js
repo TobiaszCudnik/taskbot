@@ -71,9 +71,7 @@
       this.completions_tasks = {};
       this.last_sync_time = null;
       this.query = new GmailQuery(this.sync.gmail, this.data.query, true);
-      this.query.states.pipeForward('FetchingThreads', this);
       this.query.states.pipeForward('ThreadsFetched', this);
-      this.query.states.pipeForward('FetchingMsgs', this);
       this.query.states.pipeForward('MsgsFetched', this);
     }
 
@@ -283,7 +281,7 @@
       if (!this.gmail_history_id) {
         return;
       }
-      history_id = (yield this.gmail.fetchLatestHistoryId());
+      history_id = (yield this.gmail.refreshHistoryId());
       if (typeof interrupt === "function" ? interrupt() : void 0) {
         return;
       }

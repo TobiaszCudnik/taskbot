@@ -74,9 +74,9 @@ class TaskListSync
 		@last_sync_time = null
 		@query = new GmailQuery @sync.gmail, @data.query, yes
 		# bind to query states
-		@query.states.pipeForward 'FetchingThreads', this
+#		@query.states.pipeForward 'FetchingThreads', this
 		@query.states.pipeForward 'ThreadsFetched', this
-		@query.states.pipeForward 'FetchingMsgs', this
+#		@query.states.pipeForward 'FetchingMsgs', this
 		@query.states.pipeForward 'MsgsFetched', this
 
 
@@ -252,7 +252,7 @@ class TaskListSync
 
 	isQueryCached: coroutine (interrupt) ->
 		return if not @gmail_history_id
-		history_id = yield @gmail.fetchLatestHistoryId()
+		history_id = yield @gmail.refreshHistoryId()
 		return if interrupt?()
 		if history_id is @gmail_history_id
 			console.log "[CACHED] threads' list"

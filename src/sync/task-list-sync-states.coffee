@@ -10,10 +10,10 @@ class States extends asyncmachine.AsyncMachine
 
 	Syncing:
 		auto: yes
-		requires: ['Enabled']
+		requires: ['Enabled', 'QueryLabelsSynced']
 		blocks: ['Synced', 'Restart']
 	Synced:
-		blocks: ['Syncing']
+		blocks: ['Syncing', 'QueryLabelsSynced']
 		requires: ['CompletedTasksSynced', 'ThreadsToTasksSynced',
 			'TasksToThreadsSynced', 'CompletedThreadsSynced']
 
@@ -76,24 +76,24 @@ class States extends asyncmachine.AsyncMachine
 	# ----- External States
 
 	# labels
-	FetchingLabels: {}
+#	FetchingLabels: {}
 	LabelsFetched: {}
 
 
 	# task lists
-	FetchingTaskLists: {}
+#	FetchingTaskLists: {}
 	TaskListsFetched: {}
 
 
-	SyncingQueryLabels: {}
+#	SyncingQueryLabels: {}
 	QueryLabelsSynced: {}
 
 
-	FetchingThreads: {}
+#	FetchingThreads: {}
 	ThreadsFetched: {}
 
 
-	FetchingMsgs: {}
+#	FetchingMsgs: {}
 	MsgsFetched: {}
 
 

@@ -9,6 +9,9 @@ class States extends asyncmachine.AsyncMachine
 	Enabled: {}
 
 
+	Dirty:blocks: 'QueryLabelsSynced'
+
+
 	SyncingQueryLabels:
 		auto: yes
 		requires: ['Enabled', 'LabelsFetched']
@@ -39,6 +42,7 @@ class Gmail
 	completions: null
 	sync_timeout: 200
 	last_sync_time: null
+	queries: null
 
 
 	constructor: (@sync) ->
@@ -46,27 +50,27 @@ class Gmail
 		@states.setTarget this
 		if process.env['DEBUG']
 			@states.debug 'Gmail / ', process.env['DEBUG']
-		@last_sync_time = null
+
 		@completions = {}
 		@api = @sync.gmail_api
 		@config = @sync.config
+		@initAutoLabelQueries()
 
 
 	SyncingQueryLabels_enter: coroutine ->
 		interrupt = @states.getInterruptEnter 'SyncingCompletedTasks'
 
-		history_id = @latestHistoryId()
-		yield Promise.all @config.query_labels.map coroutine (query, labels) ->
+		yield Promise.all @config.query_labels.map coroutine (query, labels) =>
 
-			if @queries[query].synced_history_id is @sync.history_id
+			if yield @queries[query].isCached()
 				return
+			return if interrupt()
 
-			@queries[query].threads = yield query.fetch no, interrupt
-			@queries[query].synced_history_id = null
+			yield @queries[query].once 'ThreadsFetched.enter'
+			return if interrupt()
 
-			for id in (threads.map (thread) -> thread.id)
-				@modifyLabels labels[0], labels[1]
-			@add
+			for id in (@queries[query].threads.map (thread) -> thread.id)
+				@modifyLabels id, labels[0], labels[1]
 		return if interrupt?()
 
 		@add 'QueryLabelsSynced'
@@ -80,24 +84,30 @@ class Gmail
 		@states.add 'LabelsFetched'
 
 
-	FetchingHistoryId_enter: coroutine: ->
-		@gmail_history_id = yield @fetchLatestHistoryId interrupt
+	Dirty_enter: ->
+		@history_id = null
 
 
-	shouldSyncHistoryId: ->
-		@last_sync_time - (Date.now()) > 0
+	initAutoLabelQueries: ->
+		@queries = {}
+		for query, labels of @config.query_labels
+			@queries[query] = new GmailQuery
+
+
+	isHistoryIdValid: ->
+		@history_id and Date.now() < @last_sync_time + @sync_time_timeout
 
 
 	isCached: (history_id) ->
-		if not @history_id or @shouldSyncHistoryId()
-			@history_id = @fetchLatestHistoryId()
+		if not @isHistoryIdValid()
+			yield @refreshHistoryId()
 
-		@history_id > history_id
+		@history_id <= history_id
 
 
 	initAutoLabels: ->
-		for query, labels of @config.query_labels
-			query = new GmailQuery this, query, no
+#		for query, labels of @config.query_labels
+#			query = new GmailQuery this, query, no
 
 
 	getLabelsIds: (labels) ->
@@ -111,8 +121,10 @@ class Gmail
 
 	modifyLabels: coroutine (thread_id, add_labels, remove_labels, interrupt) ->
 		type thread_id, String
-		add_label_ids = @getLabelsIds add_labels or []
-		remove_label_ids = @getLabelsIds remove_labels or []
+		add_labels ?= []
+		remove_labels ?= []
+		add_label_ids = @getLabelsIds add_labels
+		remove_label_ids = @getLabelsIds remove_labels
 
 		console.log "Modifing labels for thread #{thread_id}"
 		yield @req @api.users.messages.modify,
@@ -121,6 +133,7 @@ class Gmail
 			resource:
 				addLabelIds: add_label_ids
 				removeLabelIds: remove_label_ids
+		@add 'Dirty', add_labels.concat remove_labels
 
 		# TODO
 #    # sync the DB
@@ -133,18 +146,27 @@ class Gmail
 #      msg.labelIds.push add_label_ids
 
 
-	fetchLatestHistoryId: coroutine (interrupt) ->
+	refreshHistoryId: coroutine (interrupt) ->
 		try
 			response = yield @req @api.users.history.list,
 				userId: 'me'
 				fields: 'historyId'
 				startHistoryId: @gmail_history_id
 			return if interrupt?()
+			@gmail_history_id = response[0]
+			@last_sync_time = Date.now()
+			@drop 'Dirty'
 		catch e # TODO catch only API exceptions
-			console.log e
+			console.error e
 			return
 
 		response[0].historyId
+
+
+	getHistoryId: coroutine (abort) ->
+		if not @history_id
+			yield @refreshHistoryId()
+		@history_id
 
 
 	createThread: coroutine (raw_email, labels, interrupt) ->
@@ -156,6 +178,7 @@ class Gmail
 				raw: raw_email
 				labelIds: @sync.getLabelsIds labels
 		return if interrupt?()
+		@add 'Dirty', labels
 		res[0]
 
 

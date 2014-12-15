@@ -52,7 +52,7 @@ class GmailQuery
     @gmail.states.pipeForward 'FetchingLabels', @states
 
 
-  isCached: coroutine (history_id) ->
+  isCached: coroutine ->
     return no if not @synced_history_id or
       @synced_history_id isnt @gmail.history_id
 
@@ -70,6 +70,8 @@ class GmailQuery
     return if abort?()
     @result = res[0]
     @result.threads ?= []
+    @synced_history_id = yield @gmail.getHistoryId abort
+    return if abort?()
 
     if @fetch_msgs
       @states.add 'FetchingMsgs', abort
@@ -96,6 +98,10 @@ class GmailQuery
 
   req: (fn, params) ->
     @gmail.call @gmail, fn, params
+
+
+  isCached: ->
+    @history_id and @gmail.isCached @history_id
 
 
   labelByName: (name) ->

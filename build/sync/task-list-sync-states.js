@@ -13,12 +13,12 @@
 
     States.prototype.Syncing = {
       auto: true,
-      requires: ['Enabled'],
+      requires: ['Enabled', 'QueryLabelsSynced'],
       blocks: ['Synced', 'Restart']
     };
 
     States.prototype.Synced = {
-      blocks: ['Syncing'],
+      blocks: ['Syncing', 'QueryLabelsSynced'],
       requires: ['CompletedTasksSynced', 'ThreadsToTasksSynced', 'TasksToThreadsSynced', 'CompletedThreadsSynced']
     };
 
@@ -87,23 +87,13 @@
       blocks: ['SyncingCompletedTasks']
     };
 
-    States.prototype.FetchingLabels = {};
-
     States.prototype.LabelsFetched = {};
-
-    States.prototype.FetchingTaskLists = {};
 
     States.prototype.TaskListsFetched = {};
 
-    States.prototype.SyncingQueryLabels = {};
-
     States.prototype.QueryLabelsSynced = {};
 
-    States.prototype.FetchingThreads = {};
-
     States.prototype.ThreadsFetched = {};
-
-    States.prototype.FetchingMsgs = {};
 
     States.prototype.MsgsFetched = {};
 
