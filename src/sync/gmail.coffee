@@ -1,6 +1,7 @@
 asyncmachine = require 'asyncmachine'
 Promise = require 'bluebird'
 coroutine = Promise.coroutine
+{ GmailQuery } = require './gmail-query'
 
 
 class States extends asyncmachine.AsyncMachine
@@ -60,16 +61,15 @@ class Gmail
 	SyncingQueryLabels_enter: coroutine ->
 		interrupt = @states.getInterruptEnter 'SyncingCompletedTasks'
 
-		yield Promise.all @config.query_labels.map coroutine (query, labels) =>
+		yield Promise.all @queries.map coroutine (query, name) =>
+			return if yield query.isCached() or interrupt()
 
-			if yield @queries[query].isCached()
-				return
+			labels = @config.query_labels[name]
+
+			yield query.states.whenOnce 'ThreadsFetched'
 			return if interrupt()
 
-			yield @queries[query].once 'ThreadsFetched.enter'
-			return if interrupt()
-
-			for id in (@queries[query].threads.map (thread) -> thread.id)
+			for id in (query.threads.map (thread) -> thread.id)
 				@modifyLabels id, labels[0], labels[1]
 		return if interrupt?()
 
@@ -91,7 +91,7 @@ class Gmail
 	initAutoLabelQueries: ->
 		@queries = {}
 		for query, labels of @config.query_labels
-			@queries[query] = new GmailQuery
+			@queries[query] = new GmailQuery this, query
 
 
 	isHistoryIdValid: ->
