@@ -2,6 +2,7 @@ asyncmachine = require 'asyncmachine'
 Promise = require 'bluebird'
 coroutine = Promise.coroutine
 { GmailQuery } = require './gmail-query'
+type = require '../type'
 
 
 class States extends asyncmachine.AsyncMachine
@@ -63,6 +64,7 @@ class Gmail
 		@api = @sync.gmail_api
 		@config = @sync.config
 		@initAutoLabelQueries()
+		@states.pipeForward 'QueryLabelsSynced', @sync.states
 
 
 	SyncingQueryLabels_enter: coroutine ->
@@ -81,7 +83,7 @@ class Gmail
 
 		return if interrupt?()
 
-		@add 'QueryLabelsSynced'
+		@states.add 'QueryLabelsSynced'
 
 
 	FetchingLabels_enter: coroutine ->
@@ -111,6 +113,7 @@ class Gmail
 		@queries = {}
 		for query, labels of @config.query_labels
 			@queries[query] = new GmailQuery this, query
+			@states.pipeForward 'Enabled', @queries[query].states
 
 
 	isHistoryIdValid: ->
@@ -154,7 +157,7 @@ class Gmail
 			resource:
 				addLabelIds: add_label_ids
 				removeLabelIds: remove_label_ids
-		@add 'Dirty', add_labels.concat remove_labels
+		@states.add 'Dirty', add_labels.concat remove_labels
 
 		# TODO
 #    # sync the DB
@@ -183,7 +186,7 @@ class Gmail
 				raw: raw_email
 				labelIds: @sync.getLabelsIds labels
 		return if interrupt?()
-		@add 'Dirty', labels
+		@states.add 'Dirty', labels
 		res[0]
 
 

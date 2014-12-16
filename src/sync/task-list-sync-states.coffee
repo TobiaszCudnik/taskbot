@@ -10,10 +10,10 @@ class States extends asyncmachine.AsyncMachine
 
 	Syncing:
 		auto: yes
-		requires: ['Enabled', 'QueryLabelsSynced']
+		requires: ['Enabled']
 		blocks: ['Synced', 'Restart']
 	Synced:
-		blocks: ['Syncing', 'QueryLabelsSynced']
+		blocks: ['Syncing']
 		requires: ['CompletedTasksSynced', 'ThreadsToTasksSynced',
 			'TasksToThreadsSynced', 'CompletedThreadsSynced']
 

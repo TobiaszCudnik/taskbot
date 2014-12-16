@@ -31,8 +31,6 @@
   _ref = require('./api-types'), ITaskList = _ref.ITaskList, ITaskLists = _ref.ITaskLists, IQueryToTasklist = _ref.IQueryToTasklist, IThread = _ref.IThread, IThreads = _ref.IThreads, ITask = _ref.ITask, ITasks = _ref.ITasks, IMessage = _ref.IMessage, IMessagePart = _ref.IMessagePart;
 
   States = (function(_super) {
-    var HistoryIdFetched;
-
     __extends(States, _super);
 
     States.prototype.Enabled = {
@@ -61,7 +59,7 @@
 
     States.prototype.TaskListSyncEnabled = {
       auto: true,
-      requires: ['Syncing']
+      requires: ['Syncing', 'QueryLabelsSynced']
     };
 
     States.prototype.GmailSyncEnabled = {
@@ -79,7 +77,7 @@
       blocks: ['FetchingTaskLists']
     };
 
-    HistoryIdFetched = {};
+    States.prototype.QueryLabelsSynced = {};
 
     function States() {
       States.__super__.constructor.apply(this, arguments);
@@ -177,8 +175,8 @@
       return this.states.add('TaskListsFetched');
     });
 
-    Sync.prototype.setDirty = function(history_id) {
-      return this.gmail.history_id = null;
+    Sync.prototype.setDirty = function() {
+      return this.gmail.add('Dirty');
     };
 
     Sync.prototype.req = coroutine(function*(method, params) {

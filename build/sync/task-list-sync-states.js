@@ -13,12 +13,12 @@
 
     States.prototype.Syncing = {
       auto: true,
-      requires: ['Enabled', 'QueryLabelsSynced'],
+      requires: ['Enabled'],
       blocks: ['Synced', 'Restart']
     };
 
     States.prototype.Synced = {
-      blocks: ['Syncing', 'QueryLabelsSynced'],
+      blocks: ['Syncing'],
       requires: ['CompletedTasksSynced', 'ThreadsToTasksSynced', 'TasksToThreadsSynced', 'CompletedThreadsSynced']
     };
 

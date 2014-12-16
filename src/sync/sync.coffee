@@ -51,7 +51,7 @@ class States extends asyncmachine.AsyncMachine
 
 	TaskListSyncEnabled:
 		auto: yes
-		requires:	['Syncing']
+		requires:	['Syncing', 'QueryLabelsSynced']
 
 
 	GmailSyncEnabled:
@@ -70,7 +70,7 @@ class States extends asyncmachine.AsyncMachine
 	TaskListsFetched:blocks: ['FetchingTaskLists']
 
 
-	HistoryIdFetched = {}
+	QueryLabelsSynced: {}
 
 
 	constructor: ->
@@ -162,8 +162,8 @@ class Sync
 #			item.history_id
 
 
-	setDirty: (history_id) ->
-		@gmail.history_id = null
+	setDirty: ->
+		@gmail.add 'Dirty'
 
 
 	req: coroutine (method, params) ->

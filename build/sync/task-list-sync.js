@@ -263,6 +263,16 @@
       return this.states.add('TasksFetched');
     });
 
+    TaskListSync.prototype.Synced_enter = function() {
+      if (this.push_dirty) {
+        return this.sync.setDirty();
+      }
+    };
+
+    TaskListSync.prototype.Syncing_enter = function() {
+      return this.push_dirty = false;
+    };
+
     TaskListSync.prototype.processTasksCompletions = function(ids) {
       var non_completed_ids;
       non_completed_ids = this.tasks.map(function(task) {

@@ -8,7 +8,12 @@ coroutine = Promise.coroutine
 class States extends asyncmachine.AsyncMachine
 
 
+  Enabled: {}
+
+
   FetchingThreads:
+    auto: yes
+    requires: ['Enabled']
     blocks: ['ThreadsFetched']
   ThreadsFetched:blocks: ['FetchingThreads']
 
@@ -17,12 +22,6 @@ class States extends asyncmachine.AsyncMachine
     requires: ['ThreadsFetched']
     blocks: ['MsgsFetched']
   MsgsFetched:blocks: ['FetchingMsgs']
-
-
-  # ----- external states ----- #
-
-
-  LabelsFetched: {}
 
 
   constructor: ->
@@ -53,10 +52,6 @@ class GmailQuery
     if process.env['DEBUG']
       @states.debug 'GmailQuery / ', process.env['DEBUG']
 
-    # Bind to gmail states
-    @gmail.states.pipeForward 'LabelsFetched', @states
-#    @gmail.states.pipeForward 'FetchingLabels', @states
-
 
   isCached: coroutine ->
     yield @gmail.isCached @synced_history_id
@@ -64,11 +59,11 @@ class GmailQuery
 
   # TODO ensure all the threads are downloaded (stream per page if required)
   FetchingThreads_enter: coroutine (states, history_id, abort) ->
-    abort = @getInterruptEnter 'FetchingThreads', abort
+    abort = @states.getInterruptEnter 'FetchingThreads', abort
 
     @synced_history_id = history_id
     console.log "[FETCH] threads' list"
-    res = yield @req @gmail_api.users.threads.list,
+    res = yield @req @api.users.threads.list,
       q: @query
       userId: "me"
       fields: "threads(historyId,id)"
@@ -87,7 +82,7 @@ class GmailQuery
 
 
   FetchingMessages_enter: coroutine (states, interrupt) ->
-    interrupt = @getInterruptEnter 'FetchingMessages', interrupt
+    interrupt = @states.getInterruptEnter 'FetchingMessages', interrupt
 
     threads = yield Promise.all query.threads.map coroutine (thread) =>
       completion = @completions[thread.id]
@@ -102,7 +97,7 @@ class GmailQuery
 
 
   req: (method, params) ->
-    @gmail method, params
+    @gmail.req method, params
 
 
   labelByName: (name) ->

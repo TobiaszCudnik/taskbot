@@ -239,6 +239,15 @@ class TaskListSync
 
 		@states.add 'TasksFetched'
 
+
+	Synced_enter: ->
+		@sync.setDirty() = if @push_dirty
+
+
+	Syncing_enter: ->
+		@push_dirty = no
+
+
 	# ----- -----
 	# Methods
 	# ----- -----
