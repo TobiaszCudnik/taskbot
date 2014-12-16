@@ -35,16 +35,6 @@ class States extends asyncmachine.AsyncMachine
 	Enabled: auto: yes
 
 
-	TaskListSyncEnabled:
-		auto: yes
-		requires:	['Enabled', 'Authenticated']
-
-
-	GmailSyncEnabled:
-		auto: yes
-		requires:	['Enabled', 'Authenticated']
-
-
 	Authenticating:
 		auto: yes
 		requires: ['Enabled']
@@ -57,6 +47,16 @@ class States extends asyncmachine.AsyncMachine
 		requires: ['Enabled', 'Authenticated']
 		blocks: ['Synced']
 	Synced:blocks: ['Syncing']
+
+
+	TaskListSyncEnabled:
+		auto: yes
+		requires:	['Syncing']
+
+
+	GmailSyncEnabled:
+		auto: yes
+		requires:	['Syncing']
 
 
 	# ----- Outbound states

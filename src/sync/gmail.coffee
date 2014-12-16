@@ -27,6 +27,13 @@ class States extends asyncmachine.AsyncMachine
 	LabelsFetched:blocks: ['FetchingLabels']
 
 
+	FetchingHistoryId:
+		auto: yes
+		requires: ['Enabled']
+		blocks: ['HistoryIdFetched']
+	HistoryIdFetched:blocks: ['FetchingHistoryId']
+
+
 	constructor: ->
 		super
 		@registerAll()
@@ -41,7 +48,7 @@ class Gmail
 	config: null
 	sync: null
 	completions: null
-	sync_timeout: 200
+	history_id_timeout: 200
 	last_sync_time: null
 	queries: null
 
@@ -59,18 +66,19 @@ class Gmail
 
 
 	SyncingQueryLabels_enter: coroutine ->
-		interrupt = @states.getInterruptEnter 'SyncingCompletedTasks'
+		interrupt = @states.getInterruptEnter 'SyncingQueryLabels'
 
 		yield Promise.all @queries.map coroutine (query, name) =>
-			return if yield query.isCached() or interrupt()
+			return if (yield query.isCached()) or interrupt()
 
 			labels = @config.query_labels[name]
 
 			yield query.states.whenOnce 'ThreadsFetched'
 			return if interrupt()
 
-			for id in (query.threads.map (thread) -> thread.id)
-				@modifyLabels id, labels[0], labels[1]
+			yield Promise.all query.threads.map coroutine (thread) =>
+				yield @modifyLabels thread.id, labels[0], labels[1]
+
 		return if interrupt?()
 
 		@add 'QueryLabelsSynced'
@@ -95,12 +103,13 @@ class Gmail
 
 
 	isHistoryIdValid: ->
-		@history_id and Date.now() < @last_sync_time + @sync_time_timeout
+		@history_id and Date.now() < @last_sync_time + @history_id_timeout
 
 
-	isCached: (history_id) ->
+	isCached: coroutine (history_id) ->
 		if not @isHistoryIdValid()
-			yield @refreshHistoryId()
+			@states.add 'FetchingHistoryId'
+			yield @states.whenOnce 'HistoryIdFetched'
 
 		@history_id <= history_id
 
@@ -146,26 +155,22 @@ class Gmail
 #      msg.labelIds.push add_label_ids
 
 
-	refreshHistoryId: coroutine (interrupt) ->
-		try
-			response = yield @req @api.users.history.list,
-				userId: 'me'
-				fields: 'historyId'
-				startHistoryId: @gmail_history_id
-			return if interrupt?()
-			@gmail_history_id = response[0]
-			@last_sync_time = Date.now()
-			@drop 'Dirty'
-		catch e # TODO catch only API exceptions
-			console.error e
-			return
-
-		response[0].historyId
+	# TODO make it a state to sync all requests
+	fetchingHistoryId_enter: coroutine (interrupt) ->
+		response = yield @req @api.users.getProfile,
+			userId: 'me'
+			fields: 'historyId'
+		return if interrupt?()
+		@history_id = response[0].historyId
+		@last_sync_time = Date.now()
+		@drop 'Dirty'
+		@add 'HistoryIdFetched'
 
 
 	getHistoryId: coroutine (abort) ->
 		if not @history_id
-			yield @refreshHistoryId()
+			@states.add 'FetchingHistoryId'
+			yield @states.whenOnce 'HistoryIdFetched'
 		@history_id
 
 

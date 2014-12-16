@@ -39,16 +39,6 @@
       auto: true
     };
 
-    States.prototype.TaskListSyncEnabled = {
-      auto: true,
-      requires: ['Enabled', 'Authenticated']
-    };
-
-    States.prototype.GmailSyncEnabled = {
-      auto: true,
-      requires: ['Enabled', 'Authenticated']
-    };
-
     States.prototype.Authenticating = {
       auto: true,
       requires: ['Enabled'],
@@ -67,6 +57,16 @@
 
     States.prototype.Synced = {
       blocks: ['Syncing']
+    };
+
+    States.prototype.TaskListSyncEnabled = {
+      auto: true,
+      requires: ['Syncing']
+    };
+
+    States.prototype.GmailSyncEnabled = {
+      auto: true,
+      requires: ['Syncing']
     };
 
     States.prototype.FetchingTaskLists = {

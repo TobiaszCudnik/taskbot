@@ -19,6 +19,12 @@ class States extends asyncmachine.AsyncMachine
   MsgsFetched:blocks: ['FetchingMsgs']
 
 
+  # ----- external states ----- #
+
+
+  LabelsFetched: {}
+
+
   constructor: ->
     super
     @registerAll()
@@ -53,8 +59,7 @@ class GmailQuery
 
 
   isCached: coroutine ->
-    return no if not @synced_history_id or
-      @synced_history_id isnt @gmail.history_id
+    yield @gmail.isCached @synced_history_id
 
 
   # TODO ensure all the threads are downloaded (stream per page if required)
@@ -98,10 +103,6 @@ class GmailQuery
 
   req: (fn, params) ->
     @gmail.call @gmail, fn, params
-
-
-  isCached: ->
-    @history_id and @gmail.isCached @history_id
 
 
   labelByName: (name) ->
