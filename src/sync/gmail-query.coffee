@@ -55,7 +55,7 @@ class GmailQuery
 
     # Bind to gmail states
     @gmail.states.pipeForward 'LabelsFetched', @states
-    @gmail.states.pipeForward 'FetchingLabels', @states
+#    @gmail.states.pipeForward 'FetchingLabels', @states
 
 
   isCached: coroutine ->
@@ -101,8 +101,8 @@ class GmailQuery
     @result.threads = threads
 
 
-  req: (fn, params) ->
-    @gmail.call @gmail, fn, params
+  req: (method, params) ->
+    @gmail method, params
 
 
   labelByName: (name) ->

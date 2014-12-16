@@ -96,6 +96,17 @@ class Gmail
 		@history_id = null
 
 
+	FetchingHistoryId_enter: coroutine (interrupt) ->
+		response = yield @req @api.users.getProfile,
+			userId: 'me'
+			fields: 'historyId'
+		return if interrupt?()
+		@history_id = response[0].historyId
+		@last_sync_time = Date.now()
+		@states.drop 'Dirty'
+		@states.add 'HistoryIdFetched'
+
+
 	initAutoLabelQueries: ->
 		@queries = {}
 		for query, labels of @config.query_labels
@@ -108,7 +119,8 @@ class Gmail
 
 	isCached: coroutine (history_id) ->
 		if not @isHistoryIdValid()
-			@states.add 'FetchingHistoryId'
+			if not @states.is 'FetchingHistoryId'
+				@states.add 'FetchingHistoryId'
 			yield @states.whenOnce 'HistoryIdFetched'
 
 		@history_id <= history_id
@@ -155,18 +167,6 @@ class Gmail
 #      msg.labelIds.push add_label_ids
 
 
-	# TODO make it a state to sync all requests
-	fetchingHistoryId_enter: coroutine (interrupt) ->
-		response = yield @req @api.users.getProfile,
-			userId: 'me'
-			fields: 'historyId'
-		return if interrupt?()
-		@history_id = response[0].historyId
-		@last_sync_time = Date.now()
-		@drop 'Dirty'
-		@add 'HistoryIdFetched'
-
-
 	getHistoryId: coroutine (abort) ->
 		if not @history_id
 			@states.add 'FetchingHistoryId'
@@ -206,8 +206,8 @@ class Gmail
 		thread.messages[0].payload.headers[0].value
 
 
-	req: coroutine (method, params) ->
-		yield @sync.req.apply @sync, arguments
+	req: (method, params) ->
+		@sync.req method, params
 
 
 
