@@ -117,11 +117,11 @@ class Gmail
 		@history_id and Date.now() < @last_sync_time + @history_id_timeout
 
 
-	isCached: coroutine (history_id) ->
+	isCached: coroutine (history_id, abort) ->
 		if not @isHistoryIdValid()
 			if not @states.is 'FetchingHistoryId'
-				@states.add 'FetchingHistoryId'
-			yield @states.whenOnce 'HistoryIdFetched'
+				@states.add 'FetchingHistoryId', abort
+			yield @states.whenOnce 'HistoryIdFetched', abort
 
 		@history_id <= history_id
 
