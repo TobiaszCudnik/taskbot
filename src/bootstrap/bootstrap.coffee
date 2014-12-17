@@ -1,6 +1,7 @@
 (require 'source-map-support').install()
 require './underscore'
 type = require '../type'
+Error.stackTraceLimit = 100
 
 Function.prototype.defineType = (name, type_value, type_name) ->
 	Object.defineProperty @::, name,

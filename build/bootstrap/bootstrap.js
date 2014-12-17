@@ -8,6 +8,8 @@
 
   type = require('../type');
 
+  Error.stackTraceLimit = 100;
+
   Function.prototype.defineType = function(name, type_value, type_name) {
     return Object.defineProperty(this.prototype, name, {
       set: function(v) {

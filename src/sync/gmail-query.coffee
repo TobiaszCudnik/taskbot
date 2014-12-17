@@ -49,7 +49,7 @@ class GmailQuery
     @completions = {}
     @states = new States
     @states.setTarget this
-    if process.env['DEBUG']
+    if process.env['DEBUG'] > 1
       @states.debug 'GmailQuery / ', process.env['DEBUG']
 
 
@@ -68,17 +68,18 @@ class GmailQuery
       userId: "me"
       fields: "threads(historyId,id)"
     return if abort?()
+
+    history_id = yield @gmail.getHistoryId abort
+    return if abort?()
+
     @result = res[0]
     @result.threads ?= []
-    @synced_history_id = yield @gmail.getHistoryId abort
-    return if abort?()
+    @synced_history_id = history_id
+    @states.add 'ThreadsFetched'
 
     if @fetch_msgs
       @states.add 'FetchingMsgs', abort
       yield @states.when 'MsgsFetched'
-      return if abort()
-
-    @states.add 'ThreadsFetched'
 
 
   FetchingMessages_enter: coroutine (states, interrupt) ->

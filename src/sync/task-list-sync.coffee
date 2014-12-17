@@ -64,6 +64,7 @@ class TaskListSync
 		if process.env['DEBUG']
 			@states.debug 'TaskList / ', process.env['DEBUG']
 		@gmail_api = @sync.gmail_api
+		@gmail = @sync.gmail
 		@tasks_api = @sync.tasks_api
 		@tasks_in_threads = []
 		@tasks = []
@@ -74,10 +75,9 @@ class TaskListSync
 		@last_sync_time = null
 		@query = new GmailQuery @sync.gmail, @data.query, yes
 		# bind to query states
-#		@query.states.pipeForward 'FetchingThreads', this
-		@query.states.pipeForward 'ThreadsFetched', this
-#		@query.states.pipeForward 'FetchingMsgs', this
-		@query.states.pipeForward 'MsgsFetched', this
+		@query.states.pipeForward 'ThreadsFetched', this.states
+		@query.states.pipeForward 'MsgsFetched', this.states
+		@states.pipeForward 'Enabled', @query.states
 
 
 	# ----- -----
@@ -97,6 +97,8 @@ class TaskListSync
 		console.log "Synced in: #{@last_sync_time}ms"
 		# TODO manage the delay
 		@synced_timeout = setTimeout (@states.addLater 'Restart'), 1000
+
+		yes
 
 
 	Synced_exit: ->
@@ -135,9 +137,9 @@ class TaskListSync
 
 			thread_id = @taskLinkedToThread task
 			if thread_id
-				thread_completed = @gmail.threadWasCompleted thread_id
+				thread_completed = @query.threadWasCompleted thread_id
 				task_not_completed = @taskWasNotCompleted task.id
-				if not (@gmail.threadSeen thread_id) or (thread_completed and
+				if not (@query.threadSeen thread_id) or (thread_completed and
 						thread_completed.unix() < task_not_completed.unix())
 					yield @uncompleteThread thread_id, interrupt
 			else
@@ -241,11 +243,35 @@ class TaskListSync
 
 
 	Synced_enter: ->
-		@sync.setDirty() = if @push_dirty
+		@sync.setDirty() if @push_dirty
 
 
 	Syncing_enter: ->
 		@push_dirty = no
+
+		yes
+
+
+	PreparingList_enter: coroutine ->
+		interrupt = @states.getInterruptEnter 'PreparingList'
+		list = null
+
+		# TODO? move?
+		@def_title = @data.labels_in_title or @sync.config.labels_in_title
+
+		# create or retrive task list
+		for r in @sync.task_lists
+			if @name == r.title
+				list = r
+				break
+
+		if not list
+			list = yield @createTaskList @name, interrupt
+			# TODO assert the tick
+			console.log "Creating tasklist '#{@name}'"
+
+		@list = type list, ITaskList, 'ITaskList'
+		@states.add 'ListReady'
 
 
 	# ----- -----

@@ -50,6 +50,7 @@ class Gmail
 	sync: null
 	completions: null
 	history_id_timeout: 200
+	history_id: null
 	last_sync_time: null
 	queries: null
 
@@ -96,6 +97,7 @@ class Gmail
 
 	Dirty_enter: ->
 		@history_id = null
+		@states.drop 'Dirty'
 
 
 	FetchingHistoryId_enter: coroutine (interrupt) ->
@@ -184,7 +186,7 @@ class Gmail
 			userId: 'me'
 			resource:
 				raw: raw_email
-				labelIds: @sync.getLabelsIds labels
+				labelIds: @getLabelsIds labels
 		return if interrupt?()
 		@states.add 'Dirty', labels
 		res[0]

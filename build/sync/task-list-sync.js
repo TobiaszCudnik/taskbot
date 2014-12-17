@@ -62,6 +62,7 @@
         this.states.debug('TaskList / ', process.env['DEBUG']);
       }
       this.gmail_api = this.sync.gmail_api;
+      this.gmail = this.sync.gmail;
       this.tasks_api = this.sync.tasks_api;
       this.tasks_in_threads = [];
       this.tasks = [];
@@ -71,8 +72,9 @@
       this.completions_tasks = {};
       this.last_sync_time = null;
       this.query = new GmailQuery(this.sync.gmail, this.data.query, true);
-      this.query.states.pipeForward('ThreadsFetched', this);
-      this.query.states.pipeForward('MsgsFetched', this);
+      this.query.states.pipeForward('ThreadsFetched', this.states);
+      this.query.states.pipeForward('MsgsFetched', this.states);
+      this.states.pipeForward('Enabled', this.query.states);
     }
 
     TaskListSync.prototype.Restart_enter = function() {
@@ -87,7 +89,8 @@
       this.last_sync_time = new Date() - this.timer;
       this.timer = null;
       console.log("Synced in: " + this.last_sync_time + "ms");
-      return this.synced_timeout = setTimeout(this.states.addLater('Restart'), 1000);
+      this.synced_timeout = setTimeout(this.states.addLater('Restart'), 1000);
+      return true;
     };
 
     TaskListSync.prototype.Synced_exit = function() {
@@ -133,9 +136,9 @@
           }
           thread_id = _this.taskLinkedToThread(task);
           if (thread_id) {
-            thread_completed = _this.gmail.threadWasCompleted(thread_id);
+            thread_completed = _this.query.threadWasCompleted(thread_id);
             task_not_completed = _this.taskWasNotCompleted(task.id);
-            if (!(_this.gmail.threadSeen(thread_id)) || (thread_completed && thread_completed.unix() < task_not_completed.unix())) {
+            if (!(_this.query.threadSeen(thread_id)) || (thread_completed && thread_completed.unix() < task_not_completed.unix())) {
               return (yield _this.uncompleteThread(thread_id, interrupt));
             }
           } else {
@@ -270,8 +273,30 @@
     };
 
     TaskListSync.prototype.Syncing_enter = function() {
-      return this.push_dirty = false;
+      this.push_dirty = false;
+      return true;
     };
+
+    TaskListSync.prototype.PreparingList_enter = coroutine(function*() {
+      var interrupt, list, r, _i, _len, _ref1;
+      interrupt = this.states.getInterruptEnter('PreparingList');
+      list = null;
+      this.def_title = this.data.labels_in_title || this.sync.config.labels_in_title;
+      _ref1 = this.sync.task_lists;
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        r = _ref1[_i];
+        if (this.name === r.title) {
+          list = r;
+          break;
+        }
+      }
+      if (!list) {
+        list = (yield this.createTaskList(this.name, interrupt));
+        console.log("Creating tasklist '" + this.name + "'");
+      }
+      this.list = type(list, ITaskList, 'ITaskList');
+      return this.states.add('ListReady');
+    });
 
     TaskListSync.prototype.processTasksCompletions = function(ids) {
       var non_completed_ids;
