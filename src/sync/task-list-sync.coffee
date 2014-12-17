@@ -344,6 +344,7 @@ class TaskListSync
 	completeThread: coroutine (id, interrupt) ->
 		console.log "Completing thread '#{id}'"
 		yield @gmail.modifyLabels id, [], @uncompletedThreadLabels(), interrupt
+		@push_dirty = yes
 		return if interrupt?()
 		@completions_threads[id] = completed: yes, time: moment()
 
@@ -351,6 +352,7 @@ class TaskListSync
 	uncompleteThread: coroutine (id, interrupt) ->
 		console.log "Un-completing thread '#{id}'"
 		yield @gmail.modifyLabels id, @uncompletedThreadLabels(), [], interrupt
+		@push_dirty = yes
 		return if interrupt?()
 		@completions_threads[id] = completed: no, time: moment()
 
@@ -359,6 +361,7 @@ class TaskListSync
 		yield @gmail.createThread(
 			@createEmail(task.title), @uncompletedThreadLabels(), interrupt
 		)
+		@push_dirty = yes
 
 
 	# returns thread ID
@@ -375,6 +378,7 @@ class TaskListSync
 			task: task.id
 			userId: 'me'
 			resource:notes: task.notes
+		@push_dirty = yes
 		# TODO update the DB
 		return if interrupt?()
 
@@ -394,6 +398,7 @@ class TaskListSync
 			resource:
 				status: 'needsAction'
 				completed: null
+		@push_dirty = yes
 		return if interrupt?()
 		# TODO update the task in the db
 		@completions_tasks[task_id] = completed: no, time: moment()
@@ -406,6 +411,7 @@ class TaskListSync
 			task: task_id
 			resource:
 				status: 'completed'
+		@push_dirty = yes
 		return if interrupt?()
 		# TODO update the task in the db
 		@completions_tasks[task_id] = completed: yes, time: moment()
@@ -423,6 +429,7 @@ class TaskListSync
 		yield @sync.req.apply @sync, arguments
 
 
+	# TODO interrupt
 	syncTaskName: coroutine (task, thread) ->
 		title = @getTaskTitleFromThread thread
 		if task.title isnt title
@@ -434,6 +441,7 @@ class TaskListSync
 				resource:
 					title: title
 			task.title = title
+			@push_dirty = yes
 
 
 	createTaskList: coroutine (name, interrupt) ->
@@ -453,6 +461,7 @@ class TaskListSync
 			resource:
 				title: title
 				notes: "email:#{thread.id}"
+		@push_dirty = yes
 		return if interrupt?()
 		# TODO update the db
 

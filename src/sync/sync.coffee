@@ -51,7 +51,7 @@ class States extends asyncmachine.AsyncMachine
 
 	TaskListSyncEnabled:
 		auto: yes
-		requires:	['Syncing', 'QueryLabelsSynced']
+		requires:	['Syncing', 'QueryLabelsSynced', 'TaskListsFetched']
 
 
 	GmailSyncEnabled:
@@ -123,8 +123,6 @@ class Sync
 		for name, data of @config.tasks.queries
 			continue if name is 'labels_defaults'
 			task_list = new TaskListSync name, data, this
-			@gmail.states.pipeForward 'LabelsFetched', task_list.states
-			@states.pipeForward 'TaskListsFetched', task_list.states
 			@states.pipeForward 'TaskListSyncEnabled', task_list.states, 'Enabled'
 			# TODO handle error of non existing task list in the inner classes
 #			task_list.states.on 'Restart.enter', => @states.drop 'TaskListsFetched'

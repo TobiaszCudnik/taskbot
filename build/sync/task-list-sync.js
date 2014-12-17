@@ -391,6 +391,7 @@
     TaskListSync.prototype.completeThread = coroutine(function*(id, interrupt) {
       console.log("Completing thread '" + id + "'");
       (yield this.gmail.modifyLabels(id, [], this.uncompletedThreadLabels(), interrupt));
+      this.push_dirty = true;
       if (typeof interrupt === "function" ? interrupt() : void 0) {
         return;
       }
@@ -403,6 +404,7 @@
     TaskListSync.prototype.uncompleteThread = coroutine(function*(id, interrupt) {
       console.log("Un-completing thread '" + id + "'");
       (yield this.gmail.modifyLabels(id, this.uncompletedThreadLabels(), [], interrupt));
+      this.push_dirty = true;
       if (typeof interrupt === "function" ? interrupt() : void 0) {
         return;
       }
@@ -413,7 +415,8 @@
     });
 
     TaskListSync.prototype.createThreadForTask = coroutine(function*(task, interrupt) {
-      return (yield this.gmail.createThread(this.createEmail(task.title), this.uncompletedThreadLabels(), interrupt));
+      (yield this.gmail.createThread(this.createEmail(task.title), this.uncompletedThreadLabels(), interrupt));
+      return this.push_dirty = true;
     });
 
     TaskListSync.prototype.taskLinkedToThread = function(task) {
@@ -436,6 +439,7 @@
           notes: task.notes
         }
       }));
+      this.push_dirty = true;
       if (typeof interrupt === "function" ? interrupt() : void 0) {
 
       }
@@ -457,6 +461,7 @@
           completed: null
         }
       }));
+      this.push_dirty = true;
       if (typeof interrupt === "function" ? interrupt() : void 0) {
         return;
       }
@@ -475,6 +480,7 @@
           status: 'completed'
         }
       }));
+      this.push_dirty = true;
       if (typeof interrupt === "function" ? interrupt() : void 0) {
         return;
       }
@@ -510,7 +516,8 @@
             title: title
           }
         }));
-        return task.title = title;
+        task.title = title;
+        return this.push_dirty = true;
       }
     });
 
@@ -536,6 +543,7 @@
           notes: "email:" + thread.id
         }
       }));
+      this.push_dirty = true;
       if (typeof interrupt === "function" ? interrupt() : void 0) {
         return;
       }

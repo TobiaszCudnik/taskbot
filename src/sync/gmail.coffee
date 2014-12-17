@@ -68,9 +68,13 @@ class Gmail
 		@states.pipeForward 'QueryLabelsSynced', @sync.states
 
 
+	SyncingQueryLabels_SyncingQueryLabels: -> @SyncingQueryLabels_enter.apply this, arguments
+
+
 	SyncingQueryLabels_enter: coroutine ->
 		interrupt = @states.getInterruptEnter 'SyncingQueryLabels'
 
+		dirty = no
 		yield Promise.all @queries.map coroutine (query, name) =>
 			return if (yield query.isCached()) or interrupt()
 
@@ -81,10 +85,15 @@ class Gmail
 
 			yield Promise.all query.threads.map coroutine (thread) =>
 				yield @modifyLabels thread.id, labels[0], labels[1]
+				dirty = yes
 
+		@states.add 'Dirty' if dirty
 		return if interrupt?()
 
-		@states.add 'QueryLabelsSynced'
+		if @states.is 'Dirty'
+			@states.add 'SyncingQueryLabels'
+		else
+			@states.add 'QueryLabelsSynced'
 
 
 	FetchingLabels_enter: coroutine ->
@@ -159,7 +168,6 @@ class Gmail
 			resource:
 				addLabelIds: add_label_ids
 				removeLabelIds: remove_label_ids
-		@states.add 'Dirty', add_labels.concat remove_labels
 
 		# TODO
 #    # sync the DB

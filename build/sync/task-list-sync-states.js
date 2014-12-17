@@ -28,7 +28,7 @@
 
     States.prototype.PreparingList = {
       auto: true,
-      requires: ['Syncing', 'TaskListsFetched'],
+      requires: ['Syncing'],
       blocks: ['ListReady']
     };
 
@@ -49,7 +49,7 @@
 
     States.prototype.SyncingThreadsToTasks = {
       auto: true,
-      requires: ['Syncing', 'TasksFetched', 'LabelsFetched', 'MsgsFetched'],
+      requires: ['Syncing', 'TasksFetched', 'MsgsFetched'],
       blocks: ['ThreadsToTasksSynced']
     };
 
@@ -59,7 +59,7 @@
 
     States.prototype.SyncingTasksToThreads = {
       auto: true,
-      requires: ['Syncing', 'TasksFetched', 'ThreadsFetched', 'LabelsFetched'],
+      requires: ['Syncing', 'TasksFetched', 'ThreadsFetched'],
       blocks: ['TasksToThreadsSynced']
     };
 
@@ -69,7 +69,7 @@
 
     States.prototype.SyncingCompletedThreads = {
       auto: true,
-      requires: ['Syncing', 'TasksFetched', 'ThreadsFetched', 'LabelsFetched'],
+      requires: ['Syncing', 'TasksFetched', 'ThreadsFetched'],
       blocks: ['CompletedThreadsSynced']
     };
 
@@ -79,19 +79,13 @@
 
     States.prototype.SyncingCompletedTasks = {
       auto: true,
-      requires: ['Syncing', 'TasksFetched', 'ThreadsFetched', 'LabelsFetched'],
+      requires: ['Syncing', 'TasksFetched', 'ThreadsFetched'],
       blocks: ['CompletedTasksSynced']
     };
 
     States.prototype.CompletedTasksSynced = {
       blocks: ['SyncingCompletedTasks']
     };
-
-    States.prototype.LabelsFetched = {};
-
-    States.prototype.TaskListsFetched = {};
-
-    States.prototype.QueryLabelsSynced = {};
 
     States.prototype.ThreadsFetched = {};
 

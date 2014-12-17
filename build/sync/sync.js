@@ -59,7 +59,7 @@
 
     States.prototype.TaskListSyncEnabled = {
       auto: true,
-      requires: ['Syncing', 'QueryLabelsSynced']
+      requires: ['Syncing', 'QueryLabelsSynced', 'TaskListsFetched']
     };
 
     States.prototype.GmailSyncEnabled = {
@@ -147,8 +147,6 @@
           continue;
         }
         task_list = new TaskListSync(name, data, this);
-        this.gmail.states.pipeForward('LabelsFetched', task_list.states);
-        this.states.pipeForward('TaskListsFetched', task_list.states);
         this.states.pipeForward('TaskListSyncEnabled', task_list.states, 'Enabled');
         _results.push(this.task_lists.push(task_list));
       }

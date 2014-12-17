@@ -25,7 +25,7 @@ class States extends asyncmachine.AsyncMachine
 	# list
 	PreparingList:
 		auto: yes
-		requires: ['Syncing', 'TaskListsFetched']
+		requires: ['Syncing']
 		blocks: ['ListReady']
 	ListReady: blocks: ['PreparingList']
 
@@ -41,7 +41,7 @@ class States extends asyncmachine.AsyncMachine
 	# thread-to-tasks
 	SyncingThreadsToTasks:
 		auto: yes
-		requires: ['Syncing', 'TasksFetched', 'LabelsFetched', 'MsgsFetched']
+		requires: ['Syncing', 'TasksFetched', 'MsgsFetched']
 		blocks: ['ThreadsToTasksSynced']
 	ThreadsToTasksSynced: blocks: ['SyncingThreadsToTasks']
 
@@ -49,7 +49,7 @@ class States extends asyncmachine.AsyncMachine
 	# tasks-to-threads
 	SyncingTasksToThreads:
 		auto: yes
-		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched', 'LabelsFetched']
+		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched']
 		blocks: ['TasksToThreadsSynced']
 	TasksToThreadsSynced:blocks: ['SyncingTasksToThreads']
 
@@ -57,7 +57,7 @@ class States extends asyncmachine.AsyncMachine
 	# complete threads
 	SyncingCompletedThreads:
 		auto: yes
-		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched', 'LabelsFetched']
+		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched']
 		blocks: ['CompletedThreadsSynced']
 	CompletedThreadsSynced:blocks: ['SyncingCompletedThreads']
 
@@ -65,7 +65,7 @@ class States extends asyncmachine.AsyncMachine
 	# complete tasks
 	SyncingCompletedTasks:
 		auto: yes
-		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched', 'LabelsFetched']
+		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched']
 		blocks: ['CompletedTasksSynced']
 	CompletedTasksSynced:blocks: ['SyncingCompletedTasks']
 
@@ -75,25 +75,10 @@ class States extends asyncmachine.AsyncMachine
 
 	# ----- External States
 
-	# labels
-#	FetchingLabels: {}
-	LabelsFetched: {}
 
-
-	# task lists
-#	FetchingTaskLists: {}
-	TaskListsFetched: {}
-
-
-#	SyncingQueryLabels: {}
-	QueryLabelsSynced: {}
-
-
-#	FetchingThreads: {}
 	ThreadsFetched: {}
 
 
-#	FetchingMsgs: {}
 	MsgsFetched: {}
 
 
