@@ -2,6 +2,7 @@ type = require '../type'
 asyncmachine = require 'asyncmachine'
 Promise = require 'bluebird'
 coroutine = Promise.coroutine
+moment = require 'moment'
 
 
 
@@ -49,7 +50,7 @@ class GmailQuery
     @completions = {}
     @states = new States
     @states.setTarget this
-    if process.env['DEBUG'] > 1
+    if process.env['DEBUG']
       @states.debug 'GmailQuery / ', process.env['DEBUG']
 
 
@@ -82,19 +83,20 @@ class GmailQuery
       yield @states.when 'MsgsFetched'
 
 
-  FetchingMessages_enter: coroutine (states, interrupt) ->
-    interrupt = @states.getInterruptEnter 'FetchingMessages', interrupt
+  FetchingMsgs_enter: coroutine (states, interrupt) ->
+    interrupt = @states.getInterruptEnter 'FetchingMsgs', interrupt
 
-    threads = yield Promise.all query.threads.map coroutine (thread) =>
+    threads = yield Promise.all @threads.map coroutine (thread) =>
       completion = @completions[thread.id]
       # update the completion if thread is new or completion status has changed
       if completion?.completed or not completion
         @completions[thread.id] = completed: no, time: moment()
 
-      yield @fetchThread thread.id, thread.historyId, interrupt
+      yield @api.fetchThread thread.id, thread.historyId, interrupt
     return if interrupt()
 
     @result.threads = threads
+    @states.add 'MsgsFetched'
 
 
   req: (method, params) ->
