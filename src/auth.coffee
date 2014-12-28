@@ -3,27 +3,35 @@ asyncmachine = require "asyncmachine"
 OAuth2Client = google.auth.OAuth2
 
 class Auth extends asyncmachine.AsyncMachine
+
+
 	CredentialsSet: {}
+
 
 	# TODO (by supporting an error state?)
 	Ready:
 		auto: yes
 		requires: ['TokenRefreshed']
 
+
 	Error:
 		blocks: ['Ready']
+
 
 	TokenRefreshed:
 		requires: ['CredentialsSet']
 		blocks: ['RefreshingToken']
+
 
 	RefreshingToken:
 		auto: yes
 		requires: ['CredentialsSet']
 		blocks: ['TokenRefreshed']
 
+
 	client: null
 	settings: null
+
 
 	constructor: (@settings) ->
 		super {}
@@ -37,13 +45,17 @@ class Auth extends asyncmachine.AsyncMachine
 		else
 			throw new Error 'not-implemented'
 
-	CredentialsSet_enter: ->
+
+	CredentialsSet_state: ->
 		@client.setCredentials
 			access_token: @settings.access_token
 			refresh_token: @settings.refresh_token
 
-	RefreshingToken_enter: ->
+
+	RefreshingToken_state: ->
 		@client.refreshAccessToken @addLater 'TokenRefreshed'
+
+
 
 module.exports = {
 	Auth

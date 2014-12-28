@@ -51,6 +51,7 @@ class States extends asyncmachine.AsyncMachine
 
 	TaskListSyncEnabled:
 		auto: yes
+#		requires:	['Syncing', 'TaskListsFetched']
 		requires:	['Syncing', 'QueryLabelsSynced', 'TaskListsFetched']
 
 
@@ -118,24 +119,14 @@ class Sync
 
 		@auth.pipeForward 'Ready', @states, 'Authenticated'
 
-
-	initQueries: ->
-		for name, data of @config.tasks.queries
-			continue if name is 'labels_defaults'
-			task_list = new TaskListSync name, data, this
-			@states.pipeForward 'TaskListSyncEnabled', task_list.states, 'Enabled'
-			# TODO handle error of non existing task list in the inner classes
-#			task_list.states.on 'Restart.enter', => @states.drop 'TaskListsFetched'
-			@task_lists.push task_list
-
 			
 	# ----- -----
 	# Transitions
 	# ----- -----
 
 
-	FetchingTaskLists_enter: coroutine ->
-		interrupt = @states.getInterruptEnter 'FetchingTaskLists'
+	FetchingTaskLists_state: coroutine ->
+		interrupt = @states.getInterrupt 'FetchingTaskLists'
 		# TODO throttle updates
 		res = yield @req @tasks_api.tasklists.list, etag: @etags.task_lists
 		if interrupt?()
@@ -155,18 +146,65 @@ class Sync
 	# ----- -----
 
 
+	initQueries: ->
+		for name, data of @config.tasks.queries
+			continue if name is 'labels_defaults'
+			task_list = new TaskListSync name, data, this
+			@states.pipeForward 'TaskListSyncEnabled', task_list.states, 'Enabled'
+			# TODO handle error of non existing task list in the inner classes
+			#			task_list.states.on 'Restart.enter', => @states.drop 'TaskListsFetched'
+			@task_lists.push task_list
+
+
+	scheduleNextSync: ->
+		# Add new search only if there's a free limit.
+		return no if @concurrency.length >= @max_concurrency
+		# TODO skip searches which interval hasn't passed yet
+		queries = @queries.sortBy "last_update"
+		query = queries.first()
+		i = 0
+		# Optimise for more justice selection.
+		# TODO encapsulate to needsUpdate()
+		while query.last_update + query.update_interval > Date.now()
+			query = queries[ i++ ]
+			if not query
+				return no
+		@log "activating " + query.name
+		return no if @concurrency.some (s) => s.name == query.name
+		# Performe the search
+		@log 'concurrency++'
+		@concurrency.push query
+		query.add 'FetchingQuery'
+		# Subscribe to a finished query
+		query.once 'Fetching.Results.exit', =>
+#			@concurrency = @concurrency.exclude( search )
+			@concurrency = @concurrency.filter (row) =>
+				return (row isnt query)
+			@log 'concurrency--'
+			#			@addsLater 'HasMonitored', 'Delayed'
+			# TODO Delayed?
+			# TODO transaction?
+			@add ['Delayed', 'HasMonitored']
+			# Loop the fetching process
+			@add 'Fetching'
+
+
+	minInterval_: ->
+		Math.min.apply null, @queries.map (ch) => ch.update_interval
+
+
 #	findLatestHistoryId: ->
 #		Math.max.apply Math, [@gmail.history_id].concat @tasks.queries.map (item) ->
 #			item.history_id
 
 
 	setDirty: ->
-		@gmail.add 'Dirty'
+		@gmail.states.add 'Dirty'
 
 
 	req: coroutine (method, params) ->
 		params ?= {}
-		if @config.debug
+		if process.env['DEBUG'] > 1
 			console.log 'REQUEST', params
 		params.auth = @auth.client
 		# TODO catch  reason: 'insufficientPermissions's

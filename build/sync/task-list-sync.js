@@ -66,26 +66,25 @@
       this.tasks_api = this.sync.tasks_api;
       this.tasks_in_threads = [];
       this.tasks = [];
-      this.threads = [];
       this.etags = {};
       this.completions_threads = {};
       this.completions_tasks = {};
       this.last_sync_time = null;
-      this.query = new GmailQuery(this.sync.gmail, this.data.query, true);
+      this.query = new GmailQuery(this.sync.gmail, this.data.query, 'TaskList', true);
       this.query.states.pipeForward('ThreadsFetched', this.states);
       this.query.states.pipeForward('MsgsFetched', this.states);
       this.states.pipeForward('Enabled', this.query.states);
     }
 
-    TaskListSync.prototype.Restart_enter = function() {
+    TaskListSync.prototype.Restart_state = function() {
       return this.states.add('Syncing');
     };
 
-    TaskListSync.prototype.Syncing_enter = function() {
+    TaskListSync.prototype.Syncing_state = function() {
       return this.timer = new Date();
     };
 
-    TaskListSync.prototype.Synced_enter = function() {
+    TaskListSync.prototype.Synced_state = function() {
       this.last_sync_time = new Date() - this.timer;
       this.timer = null;
       console.log("Synced in: " + this.last_sync_time + "ms");
@@ -93,24 +92,26 @@
       return true;
     };
 
-    TaskListSync.prototype.Synced_exit = function() {
+    TaskListSync.prototype.Synced_end = function() {
       if (this.synced_timeout) {
         return clearTimeout(this.synced_timeout);
       }
     };
 
-    TaskListSync.prototype.FetchingTasks_FetchingTasks = TaskListSync.FetchingTasks_enter;
+    TaskListSync.prototype.FetchingTasks_FetchingTasks = function() {
+      return this.FetchingTasks_state.apply(this, arguments);
+    };
 
-    TaskListSync.prototype.SyncingThreadsToTasks_enter = coroutine(function*() {
+    TaskListSync.prototype.SyncingThreadsToTasks_state = coroutine(function*() {
       var interrupt;
-      interrupt = this.states.getInterruptEnter('SyncingThreadsToTasks');
-      (yield Promise.all(this.threads.threads.map(coroutine((function(_this) {
+      interrupt = this.states.getInterrupt('SyncingThreadsToTasks');
+      (yield Promise.all(this.query.threads.map(coroutine((function(_this) {
         return function*(thread) {
           var task, task_completed, thread_not_completed;
           task = _this.getTaskForThread(thread.id);
           if (task) {
             task_completed = _this.taskWasCompleted(task.id);
-            thread_not_completed = _this.gmail.threadWasNotCompleted(thread.id);
+            thread_not_completed = _this.query.threadWasNotCompleted(thread.id);
             if (task_completed && task_completed.unix() < thread_not_completed.unix()) {
               return (yield _this.uncompleteTask(task.id, interrupt));
             }
@@ -125,9 +126,9 @@
       return this.states.add(['ThreadsToTasksSynced', 'Synced']);
     });
 
-    TaskListSync.prototype.SyncingTasksToThreads_enter = coroutine(function*() {
+    TaskListSync.prototype.SyncingTasksToThreads_state = coroutine(function*() {
       var interrupt;
-      interrupt = this.states.getInterruptEnter('SyncingTasksToThreads');
+      interrupt = this.states.getInterrupt('SyncingTasksToThreads');
       (yield Promise.all(this.tasks.items.map(coroutine((function(_this) {
         return function*(task) {
           var task_not_completed, thread, thread_completed, thread_id;
@@ -152,9 +153,9 @@
       return this.states.add(['TasksToThreadsSynced', 'Synced']);
     });
 
-    TaskListSync.prototype.SyncingCompletedThreads_enter = coroutine(function*() {
+    TaskListSync.prototype.SyncingCompletedThreads_state = coroutine(function*() {
       var interrupt;
-      interrupt = this.states.getInterruptEnter('SyncingCompletedThreads');
+      interrupt = this.states.getInterrupt('SyncingCompletedThreads');
       (yield Promise.all(this.completions_threads.map(coroutine((function(_this) {
         return function*(row, thread_id) {
           var task, task_not_completed;
@@ -177,9 +178,9 @@
       return this.states.add(['CompletedThreadsSynced', 'Synced']);
     });
 
-    TaskListSync.prototype.SyncingCompletedTasks_enter = coroutine(function*() {
+    TaskListSync.prototype.SyncingCompletedTasks_state = coroutine(function*() {
       var interrupt;
-      interrupt = this.states.getInterruptEnter('SyncingCompletedTasks');
+      interrupt = this.states.getInterrupt('SyncingCompletedTasks');
       (yield Promise.all(this.completions_tasks.map(coroutine((function(_this) {
         return function*(row, task_id) {
           var task, thread_id, thread_not_completed;
@@ -203,9 +204,9 @@
       return this.states.add(['CompletedTasksSynced', 'Synced']);
     });
 
-    TaskListSync.prototype.PreparingList_enter = coroutine(function*() {
+    TaskListSync.prototype.PreparingList_state = coroutine(function*() {
       var interrupt, list, r, _i, _len, _ref1;
-      interrupt = this.states.getInterruptEnter('PreparingList');
+      interrupt = this.states.getInterrupt('PreparingList');
       list = null;
       this.def_title = this.data.labels_in_title || this.sync.config.labels_in_title;
       _ref1 = this.sync.task_lists;
@@ -224,28 +225,9 @@
       return this.states.add('ListReady');
     });
 
-    TaskListSync.prototype.FetchingThreads_enter = coroutine(function*() {
-      var interrupt, non_completed_ids, query;
-      interrupt = this.states.getInterruptEnter('FetchingThreads');
-      if ((yield this.sync.isQueryCached(interrupt))) {
-        this.states.add('ThreadsFetched');
-        return;
-      }
-      query = (yield this.fetchQuery(interrupt));
-      if (typeof interrupt === "function" ? interrupt() : void 0) {
-        return;
-      }
-      this.threads = type(query, IThreads, 'IThreads');
-      non_completed_ids = query.threads.map(function(thread) {
-        return thread.id;
-      });
-      this.query.processThreadsCompletions(non_completed_ids);
-      return this.states.add('ThreadsFetched');
-    });
-
-    TaskListSync.prototype.FetchingTasks_enter = coroutine(function*() {
+    TaskListSync.prototype.FetchingTasks_state = coroutine(function*() {
       var check_completion_ids, interrupt, promises;
-      interrupt = this.states.getInterruptEnter('FetchingTasks');
+      interrupt = this.states.getInterrupt('FetchingTasks');
       if (!this.tasks_completed_from || this.tasks_completed_from < ago(3, "weeks")) {
         this.tasks_completed_from = ago(2, "weeks");
       }
@@ -266,20 +248,20 @@
       return this.states.add('TasksFetched');
     });
 
-    TaskListSync.prototype.Synced_enter = function() {
+    TaskListSync.prototype.Synced_state = function() {
       if (this.push_dirty) {
         return this.sync.setDirty();
       }
     };
 
-    TaskListSync.prototype.Syncing_enter = function() {
+    TaskListSync.prototype.Syncing_state = function() {
       this.push_dirty = false;
       return true;
     };
 
-    TaskListSync.prototype.PreparingList_enter = coroutine(function*() {
+    TaskListSync.prototype.PreparingList_state = coroutine(function*() {
       var interrupt, list, r, _i, _len, _ref1;
-      interrupt = this.states.getInterruptEnter('PreparingList');
+      interrupt = this.states.getInterrupt('PreparingList');
       list = null;
       this.def_title = this.data.labels_in_title || this.sync.config.labels_in_title;
       _ref1 = this.sync.task_lists;

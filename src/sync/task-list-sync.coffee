@@ -68,12 +68,11 @@ class TaskListSync
 		@tasks_api = @sync.tasks_api
 		@tasks_in_threads = []
 		@tasks = []
-		@threads = []
 		@etags = {}
 		@completions_threads = {}
 		@completions_tasks = {}
 		@last_sync_time = null
-		@query = new GmailQuery @sync.gmail, @data.query, yes
+		@query = new GmailQuery @sync.gmail, @data.query, 'TaskList', yes
 		# bind to query states
 		@query.states.pipeForward 'ThreadsFetched', this.states
 		@query.states.pipeForward 'MsgsFetched', this.states
@@ -84,14 +83,14 @@ class TaskListSync
 	# Transitions
 	# ----- -----
 
-	Restart_enter: -> @states.add 'Syncing'
+	Restart_state: -> @states.add 'Syncing'
 
 
-	Syncing_enter: ->
+	Syncing_state: ->
 		@timer = new Date()
 
 
-	Synced_enter: ->
+	Synced_state: ->
 		@last_sync_time = new Date() - @timer
 		@timer = null
 		console.log "Synced in: #{@last_sync_time}ms"
@@ -101,22 +100,22 @@ class TaskListSync
 		yes
 
 
-	Synced_exit: ->
+	Synced_end: ->
 		clearTimeout @synced_timeout if @synced_timeout
 
 
 	# TODO a new flag state
-	FetchingTasks_FetchingTasks: @FetchingTasks_enter
+	FetchingTasks_FetchingTasks: -> @FetchingTasks_state.apply this, arguments
 
 
-	SyncingThreadsToTasks_enter: coroutine ->
-		interrupt = @states.getInterruptEnter 'SyncingThreadsToTasks'
-		yield Promise.all @threads.threads.map coroutine (thread) =>
+	SyncingThreadsToTasks_state: coroutine ->
+		interrupt = @states.getInterrupt 'SyncingThreadsToTasks'
+		yield Promise.all @query.threads.map coroutine (thread) =>
 
 			task = @getTaskForThread thread.id
 			if task
 				task_completed = @taskWasCompleted task.id
-				thread_not_completed = @gmail.threadWasNotCompleted thread.id
+				thread_not_completed = @query.threadWasNotCompleted thread.id
 				if task_completed and
 						task_completed.unix() < thread_not_completed.unix()
 					yield @uncompleteTask task.id, interrupt
@@ -127,8 +126,8 @@ class TaskListSync
 		@states.add ['ThreadsToTasksSynced', 'Synced']
 
 
-	SyncingTasksToThreads_enter: coroutine ->
-		interrupt = @states.getInterruptEnter 'SyncingTasksToThreads'
+	SyncingTasksToThreads_state: coroutine ->
+		interrupt = @states.getInterrupt 'SyncingTasksToThreads'
 
 		# loop over non completed tasks
 		yield Promise.all @tasks.items.map coroutine (task) =>
@@ -149,8 +148,8 @@ class TaskListSync
 		@states.add ['TasksToThreadsSynced', 'Synced']
 
 
-	SyncingCompletedThreads_enter: coroutine ->
-		interrupt = @states.getInterruptEnter 'SyncingCompletedThreads'
+	SyncingCompletedThreads_state: coroutine ->
+		interrupt = @states.getInterrupt 'SyncingCompletedThreads'
 
 		yield Promise.all(@completions_threads
 			.map coroutine (row, thread_id) =>
@@ -167,8 +166,8 @@ class TaskListSync
 		@states.add ['CompletedThreadsSynced', 'Synced']
 
 
-	SyncingCompletedTasks_enter: coroutine ->
-		interrupt = @states.getInterruptEnter 'SyncingCompletedTasks'
+	SyncingCompletedTasks_state: coroutine ->
+		interrupt = @states.getInterrupt 'SyncingCompletedTasks'
 
 		yield Promise.all @completions_tasks.map coroutine (row, task_id) =>
 			return if not row.completed
@@ -183,8 +182,8 @@ class TaskListSync
 		@states.add ['CompletedTasksSynced', 'Synced']
 
 
-	PreparingList_enter: coroutine ->
-		interrupt = @states.getInterruptEnter 'PreparingList'
+	PreparingList_state: coroutine ->
+		interrupt = @states.getInterrupt 'PreparingList'
 		list = null
 
 		# TODO? move?
@@ -205,27 +204,9 @@ class TaskListSync
 		@states.add 'ListReady'
 
 
-	FetchingThreads_enter: coroutine ->
-		interrupt = @states.getInterruptEnter 'FetchingThreads'
-
-		# TODO share history id across all queries
-		if yield @sync.isQueryCached interrupt
-			@states.add 'ThreadsFetched'
-			return
-
-		# TODO store references
-		query = yield @fetchQuery interrupt
-		return if interrupt?()
-		@threads = type query, IThreads, 'IThreads'
-
-		non_completed_ids = query.threads.map (thread) -> thread.id
-		@query.processThreadsCompletions non_completed_ids
-		@states.add 'ThreadsFetched'
-
-
 	# TODO extract tasks fetching logic, reuse
-	FetchingTasks_enter: coroutine ->
-		interrupt = @states.getInterruptEnter 'FetchingTasks'
+	FetchingTasks_state: coroutine ->
+		interrupt = @states.getInterrupt 'FetchingTasks'
 		# fetch all non-completed and max 2-weeks old completed ones
 		if not @tasks_completed_from or @tasks_completed_from < ago 3, "weeks"
 			@tasks_completed_from = ago 2, "weeks"
@@ -242,18 +223,18 @@ class TaskListSync
 		@states.add 'TasksFetched'
 
 
-	Synced_enter: ->
+	Synced_state: ->
 		@sync.setDirty() if @push_dirty
 
 
-	Syncing_enter: ->
+	Syncing_state: ->
 		@push_dirty = no
 
 		yes
 
 
-	PreparingList_enter: coroutine ->
-		interrupt = @states.getInterruptEnter 'PreparingList'
+	PreparingList_state: coroutine ->
+		interrupt = @states.getInterrupt 'PreparingList'
 		list = null
 
 		# TODO? move?

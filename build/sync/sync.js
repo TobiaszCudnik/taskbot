@@ -137,25 +137,9 @@
       this.auth.pipeForward('Ready', this.states, 'Authenticated');
     }
 
-    Sync.prototype.initQueries = function() {
-      var data, name, task_list, _ref1, _results;
-      _ref1 = this.config.tasks.queries;
-      _results = [];
-      for (name in _ref1) {
-        data = _ref1[name];
-        if (name === 'labels_defaults') {
-          continue;
-        }
-        task_list = new TaskListSync(name, data, this);
-        this.states.pipeForward('TaskListSyncEnabled', task_list.states, 'Enabled');
-        _results.push(this.task_lists.push(task_list));
-      }
-      return _results;
-    };
-
-    Sync.prototype.FetchingTaskLists_enter = coroutine(function*() {
+    Sync.prototype.FetchingTaskLists_state = coroutine(function*() {
       var interrupt, res;
-      interrupt = this.states.getInterruptEnter('FetchingTaskLists');
+      interrupt = this.states.getInterrupt('FetchingTaskLists');
       res = (yield this.req(this.tasks_api.tasklists.list, {
         etag: this.etags.task_lists
       }));
@@ -173,15 +157,76 @@
       return this.states.add('TaskListsFetched');
     });
 
+    Sync.prototype.initQueries = function() {
+      var data, name, task_list, _ref1, _results;
+      _ref1 = this.config.tasks.queries;
+      _results = [];
+      for (name in _ref1) {
+        data = _ref1[name];
+        if (name === 'labels_defaults') {
+          continue;
+        }
+        task_list = new TaskListSync(name, data, this);
+        this.states.pipeForward('TaskListSyncEnabled', task_list.states, 'Enabled');
+        _results.push(this.task_lists.push(task_list));
+      }
+      return _results;
+    };
+
+    Sync.prototype.scheduleNextSync = function() {
+      var i, queries, query;
+      if (this.concurrency.length >= this.max_concurrency) {
+        return false;
+      }
+      queries = this.queries.sortBy("last_update");
+      query = queries.first();
+      i = 0;
+      while (query.last_update + query.update_interval > Date.now()) {
+        query = queries[i++];
+        if (!query) {
+          return false;
+        }
+      }
+      this.log("activating " + query.name);
+      if (this.concurrency.some((function(_this) {
+        return function(s) {
+          return s.name === query.name;
+        };
+      })(this))) {
+        return false;
+      }
+      this.log('concurrency++');
+      this.concurrency.push(query);
+      query.add('FetchingQuery');
+      return query.once('Fetching.Results.exit', (function(_this) {
+        return function() {
+          _this.concurrency = _this.concurrency.filter(function(row) {
+            return row !== query;
+          });
+          _this.log('concurrency--');
+          _this.add(['Delayed', 'HasMonitored']);
+          return _this.add('Fetching');
+        };
+      })(this));
+    };
+
+    Sync.prototype.minInterval_ = function() {
+      return Math.min.apply(null, this.queries.map((function(_this) {
+        return function(ch) {
+          return ch.update_interval;
+        };
+      })(this)));
+    };
+
     Sync.prototype.setDirty = function() {
-      return this.gmail.add('Dirty');
+      return this.gmail.states.add('Dirty');
     };
 
     Sync.prototype.req = coroutine(function*(method, params) {
       if (params == null) {
         params = {};
       }
-      if (this.config.debug) {
+      if (process.env['DEBUG'] > 1) {
         console.log('REQUEST', params);
       }
       params.auth = this.auth.client;

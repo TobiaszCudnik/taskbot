@@ -54,14 +54,14 @@
       }
     }
 
-    Auth.prototype.CredentialsSet_enter = function() {
+    Auth.prototype.CredentialsSet_state = function() {
       return this.client.setCredentials({
         access_token: this.settings.access_token,
         refresh_token: this.settings.refresh_token
       });
     };
 
-    Auth.prototype.RefreshingToken_enter = function() {
+    Auth.prototype.RefreshingToken_state = function() {
       return this.client.refreshAccessToken(this.addLater('TokenRefreshed'));
     };
 

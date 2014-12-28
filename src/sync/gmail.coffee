@@ -68,11 +68,17 @@ class Gmail
 		@states.pipeForward 'QueryLabelsSynced', @sync.states
 
 
-	SyncingQueryLabels_SyncingQueryLabels: -> @SyncingQueryLabels_enter.apply this, arguments
+	# ----- -----
+	# Transitions
+	# ----- -----
 
 
-	SyncingQueryLabels_enter: coroutine ->
-		interrupt = @states.getInterruptEnter 'SyncingQueryLabels'
+	SyncingQueryLabels_SyncingQueryLabels: ->
+		@SyncingQueryLabels_state.apply this, arguments
+
+
+	SyncingQueryLabels_state: coroutine ->
+		interrupt = @states.getInterrupt 'SyncingQueryLabels'
 
 		dirty = no
 		yield Promise.all @queries.map coroutine (query, name) =>
@@ -96,8 +102,8 @@ class Gmail
 			@states.add 'QueryLabelsSynced'
 
 
-	FetchingLabels_enter: coroutine ->
-		interrupt = @states.getInterruptEnter 'FetchingLabels'
+	FetchingLabels_state: coroutine ->
+		interrupt = @states.getInterrupt 'FetchingLabels'
 		res = yield @req @api.users.labels.list, userId: 'me'
 		return if interrupt?()
 		@labels = res[0].labels
@@ -109,7 +115,7 @@ class Gmail
 		@states.drop 'Dirty'
 
 
-	FetchingHistoryId_enter: coroutine (interrupt) ->
+	FetchingHistoryId_state: coroutine (interrupt) ->
 		response = yield @req @api.users.getProfile,
 			userId: 'me'
 			fields: 'historyId'
@@ -120,10 +126,27 @@ class Gmail
 		@states.add 'HistoryIdFetched'
 
 
+	# ----- -----
+	# Methods
+	# ----- -----
+
+
+	fetchThread: coroutine (id, historyId, abort) ->
+		response = yield @req @api.users.threads.get,
+			id: id
+			userId: 'me'
+			metadataHeaders: 'SUBJECT'
+			format: 'metadata'
+			fields: 'id,historyId,messages(id,labelIds,payload(headers))'
+		return if abort?()
+
+		response[0]
+
+
 	initAutoLabelQueries: ->
 		@queries = {}
 		for query, labels of @config.query_labels
-			@queries[query] = new GmailQuery this, query
+			@queries[query] = new GmailQuery this, query, 'AutoLabels'
 			@states.pipeForward 'Enabled', @queries[query].states
 
 
@@ -161,7 +184,7 @@ class Gmail
 		add_label_ids = @getLabelsIds add_labels
 		remove_label_ids = @getLabelsIds remove_labels
 
-		console.log "Modifing labels for thread #{thread_id}"
+		console.log "Modifing labels for thread #{thread_id}", add_labels, remove_labels
 		yield @req @api.users.messages.modify,
 			id: thread_id
 			userId: 'me'

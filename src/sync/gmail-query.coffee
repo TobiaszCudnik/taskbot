@@ -42,25 +42,22 @@ class GmailQuery
   completions: null
   result: null
   query: null
+  fetch_msgs: null
   Object.defineProperty @::, 'threads', get: -> @result.threads
 
 
-  constructor: (@gmail, @query, @fetch_msgs) ->
+  constructor: (@gmail, @query, @name = '', @fetch_msgs = no) ->
     @api = @gmail.api
     @completions = {}
     @states = new States
     @states.setTarget this
     if process.env['DEBUG']
-      @states.debug 'GmailQuery / ', process.env['DEBUG']
-
-
-  isCached: coroutine ->
-    yield @gmail.isCached @synced_history_id
+      @states.debug "GmailQuery(#{name}) / "
 
 
   # TODO ensure all the threads are downloaded (stream per page if required)
-  FetchingThreads_enter: coroutine (states, history_id, abort) ->
-    abort = @states.getInterruptEnter 'FetchingThreads', abort
+  FetchingThreads_state: coroutine (states, history_id, abort) ->
+    abort = @states.getInterrupt 'FetchingThreads', abort
 
     @synced_history_id = history_id
     console.log "[FETCH] threads' list"
@@ -80,11 +77,13 @@ class GmailQuery
 
     if @fetch_msgs
       @states.add 'FetchingMsgs', abort
-      yield @states.when 'MsgsFetched'
+      # TODO addUnless
+#      @states.addUnless abort, 'FetchingMsgs'
+      yield @states.when 'MsgsFetched', abort
 
 
-  FetchingMsgs_enter: coroutine (states, interrupt) ->
-    interrupt = @states.getInterruptEnter 'FetchingMsgs', interrupt
+  FetchingMsgs_state: coroutine (states, abort) ->
+    abort = @states.getInterrupt 'FetchingMsgs', abort
 
     threads = yield Promise.all @threads.map coroutine (thread) =>
       completion = @completions[thread.id]
@@ -92,11 +91,15 @@ class GmailQuery
       if completion?.completed or not completion
         @completions[thread.id] = completed: no, time: moment()
 
-      yield @api.fetchThread thread.id, thread.historyId, interrupt
-    return if interrupt()
+      yield @gmail.fetchThread thread.id, thread.historyId, abort
+    return if abort()
 
     @result.threads = threads
     @states.add 'MsgsFetched'
+
+
+  isCached: coroutine ->
+    yield @gmail.isCached @synced_history_id
 
 
   req: (method, params) ->
