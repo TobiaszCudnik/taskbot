@@ -57,10 +57,10 @@ class GmailQuery
 
   # TODO ensure all the threads are downloaded (stream per page if required)
   FetchingThreads_state: coroutine (states, history_id, abort) ->
-    abort = @states.getInterrupt 'FetchingThreads', abort
+    abort = @states.getAbort 'FetchingThreads', abort
 
     @synced_history_id = history_id
-    console.log "[FETCH] threads' list"
+    console.log "[FETCH] threads' list for #{@query}"
     res = yield @req @api.users.threads.list,
       q: @query
       userId: "me"
@@ -72,25 +72,20 @@ class GmailQuery
 
     @result = res[0]
     @result.threads ?= []
+    @updateThreadsCompletions()
+
+#    console.log "Found #{@result.threads.length} threads"
     @synced_history_id = history_id
     @states.add 'ThreadsFetched'
 
     if @fetch_msgs
       @states.add 'FetchingMsgs', abort
-      # TODO addUnless
-#      @states.addUnless abort, 'FetchingMsgs'
-      yield @states.when 'MsgsFetched', abort
 
 
   FetchingMsgs_state: coroutine (states, abort) ->
-    abort = @states.getInterrupt 'FetchingMsgs', abort
+    abort = @states.getAbort 'FetchingMsgs', abort
 
     threads = yield Promise.all @threads.map coroutine (thread) =>
-      completion = @completions[thread.id]
-      # update the completion if thread is new or completion status has changed
-      if completion?.completed or not completion
-        @completions[thread.id] = completed: no, time: moment()
-
       yield @gmail.fetchThread thread.id, thread.historyId, abort
     return if abort()
 
@@ -106,13 +101,19 @@ class GmailQuery
     @gmail.req method, params
 
 
-  labelByName: (name) ->
-    type @sync.labels, [ILabel], '[ILabel]'
-    @sync.labels.find (label) -> label.name is name
+  # update completion statuses
+  updateThreadsCompletions: ->
+    non_completed_ids = []
+    # create / update existing threads completion data
+    @threads.forEach (thread) =>
+      completion = @completions[thread.id]
+      # update the completion if thread is new or completion status has changed
+      if completion?.completed or not completion
+        @completions[thread.id] = completed: no, time: moment()
 
+      non_completed_ids.push thread.id
 
-  # complete threads not found in the query results
-  processThreadsCompletions: (non_completed_ids) ->
+    # complete threads not found in the query results
     @completions.each (row, id) ->
       # TODO build non_completed
       return if id in non_completed_ids
@@ -136,14 +137,6 @@ class GmailQuery
 
   threadSeen: (id) ->
     Boolean @completions[id]
-
-
-  # TODO
-  threadHasLabels: (thread, labels) ->
-#    if not @gmail.is 'LabelsFetched'
-#      throw new Error
-#    for msg in thread.messages
-#      for label_id in msg.labelIds
 
 
 module.exports = {

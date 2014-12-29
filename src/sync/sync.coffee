@@ -51,7 +51,6 @@ class States extends asyncmachine.AsyncMachine
 
 	TaskListSyncEnabled:
 		auto: yes
-#		requires:	['Syncing', 'TaskListsFetched']
 		requires:	['Syncing', 'QueryLabelsSynced', 'TaskListsFetched']
 
 
@@ -60,10 +59,6 @@ class States extends asyncmachine.AsyncMachine
 		requires:	['Syncing']
 
 
-	# ----- Outbound states
-
-
-	# task lists
 	FetchingTaskLists:
 		auto: yes
 		requires: ['Syncing']
@@ -72,6 +67,7 @@ class States extends asyncmachine.AsyncMachine
 
 
 	QueryLabelsSynced: {}
+	TaskListsSynced: {}
 
 
 	constructor: ->
@@ -89,7 +85,7 @@ class Sync
 	tasks_api: null
 	gmail_api: null
 	task_lists: null
-	queries: null
+	autoLabelQueries: null
 	etags: null
 
 	history_id: null
@@ -126,11 +122,11 @@ class Sync
 
 
 	FetchingTaskLists_state: coroutine ->
-		interrupt = @states.getInterrupt 'FetchingTaskLists'
+		abort = @states.getAbort 'FetchingTaskLists'
 		# TODO throttle updates
 		res = yield @req @tasks_api.tasklists.list, etag: @etags.task_lists
-		if interrupt?()
-			console.log 'interrupt', interrupt
+		if abort?()
+			console.log 'abort', abort
 			return
 		if res[1].statusCode isnt 304
 			console.log '[FETCHED] tasks lists'
@@ -160,7 +156,7 @@ class Sync
 		# Add new search only if there's a free limit.
 		return no if @concurrency.length >= @max_concurrency
 		# TODO skip searches which interval hasn't passed yet
-		queries = @queries.sortBy "last_update"
+		queries = @autoLabelQueries.sortBy "last_update"
 		query = queries.first()
 		i = 0
 		# Optimise for more justice selection.
@@ -190,7 +186,7 @@ class Sync
 
 
 	minInterval_: ->
-		Math.min.apply null, @queries.map (ch) => ch.update_interval
+		Math.min.apply null, @autoLabelQueries.map (ch) => ch.update_interval
 
 
 #	findLatestHistoryId: ->

@@ -79,6 +79,8 @@
 
     States.prototype.QueryLabelsSynced = {};
 
+    States.prototype.TaskListsSynced = {};
+
     function States() {
       States.__super__.constructor.apply(this, arguments);
       this.registerAll();
@@ -101,7 +103,7 @@
 
     Sync.prototype.task_lists = null;
 
-    Sync.prototype.queries = null;
+    Sync.prototype.autoLabelQueries = null;
 
     Sync.prototype.etags = null;
 
@@ -138,13 +140,13 @@
     }
 
     Sync.prototype.FetchingTaskLists_state = coroutine(function*() {
-      var interrupt, res;
-      interrupt = this.states.getInterrupt('FetchingTaskLists');
+      var abort, res;
+      abort = this.states.getAbort('FetchingTaskLists');
       res = (yield this.req(this.tasks_api.tasklists.list, {
         etag: this.etags.task_lists
       }));
-      if (typeof interrupt === "function" ? interrupt() : void 0) {
-        console.log('interrupt', interrupt);
+      if (typeof abort === "function" ? abort() : void 0) {
+        console.log('abort', abort);
         return;
       }
       if (res[1].statusCode !== 304) {
@@ -178,7 +180,7 @@
       if (this.concurrency.length >= this.max_concurrency) {
         return false;
       }
-      queries = this.queries.sortBy("last_update");
+      queries = this.autoLabelQueries.sortBy("last_update");
       query = queries.first();
       i = 0;
       while (query.last_update + query.update_interval > Date.now()) {
@@ -211,7 +213,7 @@
     };
 
     Sync.prototype.minInterval_ = function() {
-      return Math.min.apply(null, this.queries.map((function(_this) {
+      return Math.min.apply(null, this.autoLabelQueries.map((function(_this) {
         return function(ch) {
           return ch.update_interval;
         };

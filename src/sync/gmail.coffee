@@ -52,7 +52,9 @@ class Gmail
 	history_id_timeout: 200
 	history_id: null
 	last_sync_time: null
+	query_labels: null
 	queries: null
+	query_labels_timer: null
 
 
 	constructor: (@sync) ->
@@ -62,9 +64,10 @@ class Gmail
 			@states.debug 'Gmail / ', process.env['DEBUG']
 
 		@completions = {}
+		@queries = []
 		@api = @sync.gmail_api
 		@config = @sync.config
-		@initAutoLabelQueries()
+		@initQueryLabels()
 		@states.pipeForward 'QueryLabelsSynced', @sync.states
 
 
@@ -77,24 +80,26 @@ class Gmail
 		@SyncingQueryLabels_state.apply this, arguments
 
 
+	# TODO extract to a separate class
 	SyncingQueryLabels_state: coroutine ->
-		interrupt = @states.getInterrupt 'SyncingQueryLabels'
+		@query_labels_timer = new Date()
+		abort = @states.getAbort 'SyncingQueryLabels'
 
 		dirty = no
-		yield Promise.all @queries.map coroutine (query, name) =>
-			return if (yield query.isCached()) or interrupt()
+		yield Promise.all @query_labels.map coroutine (query, name) =>
+			return if (yield query.isCached()) or abort()
 
 			labels = @config.query_labels[name]
 
 			yield query.states.whenOnce 'ThreadsFetched'
-			return if interrupt()
+			return if abort()
 
 			yield Promise.all query.threads.map coroutine (thread) =>
-				yield @modifyLabels thread.id, labels[0], labels[1]
+				yield @modifyLabels thread.id, labels[0], labels[1], abort
 				dirty = yes
 
 		@states.add 'Dirty' if dirty
-		return if interrupt?()
+		return if abort?()
 
 		if @states.is 'Dirty'
 			@states.add 'SyncingQueryLabels'
@@ -102,10 +107,16 @@ class Gmail
 			@states.add 'QueryLabelsSynced'
 
 
+	QueryLabelsSynced_state: ->
+		@last_sync_time = new Date() - @query_labels_timer
+		@timer = null
+		console.log "QueryLabels synced in: #{@last_sync_time}ms"
+
+
 	FetchingLabels_state: coroutine ->
-		interrupt = @states.getInterrupt 'FetchingLabels'
+		abort = @states.getAbort 'FetchingLabels'
 		res = yield @req @api.users.labels.list, userId: 'me'
-		return if interrupt?()
+		return if abort?()
 		@labels = res[0].labels
 		@states.add 'LabelsFetched'
 
@@ -115,11 +126,11 @@ class Gmail
 		@states.drop 'Dirty'
 
 
-	FetchingHistoryId_state: coroutine (interrupt) ->
+	FetchingHistoryId_state: coroutine (abort) ->
 		response = yield @req @api.users.getProfile,
 			userId: 'me'
 			fields: 'historyId'
-		return if interrupt?()
+		return if abort?()
 		@history_id = response[0].historyId
 		@last_sync_time = Date.now()
 		@states.drop 'Dirty'
@@ -143,11 +154,44 @@ class Gmail
 		response[0]
 
 
-	initAutoLabelQueries: ->
-		@queries = {}
+	createQuery: (query, name = '', fetch_msgs = no) ->
+		query = new GmailQuery this, query, name, fetch_msgs
+		@queries.push query
+
+		query
+
+
+	# Searches all present gmail queries for the thread with the given ID.
+	getThread: (id, with_content = no) ->
+		for query in @queries
+			for thread in query.threads
+				continue if thread.id isnt id
+				continue if with_content and not thread.messages?.length
+				return thread
+
+
+	initQueryLabels: ->
+		@query_labels = {}
 		for query, labels of @config.query_labels
-			@queries[query] = new GmailQuery this, query, 'AutoLabels'
-			@states.pipeForward 'Enabled', @queries[query].states
+			# narrow the query to results requiring the labels modification
+			exclusive_query = query
+			# labels to add
+			if labels[0].length
+				exclusive_query += ' (-label:' +
+					labels[0].map(@normalizeLabelName).join(' OR -label:') + ')'
+			# labels to remove
+			if labels[1]?.length # labels to add
+				exclusive_query += ' (label:' +
+					labels[1].map(@normalizeLabelName).join(' OR label:') + ')'
+			@query_labels[query] = new GmailQuery this, exclusive_query, 'AutoLabels'
+			@states.pipeForward 'Enabled', @query_labels[query].states
+
+
+	normalizeLabelName: (label) ->
+		label
+			.replace '/', '-'
+			.replace ' ', '-'
+			.toLowerCase()
 
 
 	isHistoryIdValid: ->
@@ -177,14 +221,26 @@ class Gmail
 			label.id
 
 
-	modifyLabels: coroutine (thread_id, add_labels, remove_labels, interrupt) ->
+	modifyLabels: coroutine (thread_id, add_labels, remove_labels, abort) ->
 		type thread_id, String
 		add_labels ?= []
 		remove_labels ?= []
 		add_label_ids = @getLabelsIds add_labels
 		remove_label_ids = @getLabelsIds remove_labels
 
-		console.log "Modifing labels for thread #{thread_id}", add_labels, remove_labels
+		label = try
+			thread = @getThread thread_id, yes
+			@getTitleFromThread thread
+		catch e
+			"ID: #{thread_id}"
+
+		log_msg = "Modifing labels for thread #{label} "
+		if add_labels.length
+			log_msg += "+(#{add_labels.join ' '}) "
+		if remove_labels.length
+			log_msg += "-(#{remove_labels.join ' '})"
+		console.log log_msg
+
 		yield @req @api.users.messages.modify,
 			id: thread_id
 			userId: 'me'
@@ -210,15 +266,14 @@ class Gmail
 		@history_id
 
 
-	createThread: coroutine (raw_email, labels, interrupt) ->
-		console.log "Creating email '#{task.title}'
-						(#{@uncompletedThreadLabels().join ', '})"
+	createThread: coroutine (raw_email, labels, abort) ->
+		console.log "Creating thread (#{labels.join ' '})"
 		res = yield @req @api.users.messages.insert,
 			userId: 'me'
 			resource:
 				raw: raw_email
 				labelIds: @getLabelsIds labels
-		return if interrupt?()
+		return if abort?()
 		@states.add 'Dirty', labels
 		res[0]
 
@@ -238,8 +293,19 @@ class Gmail
 				.replace /\//g, '_'
 
 
-	getThreadTitle: (thread) ->
-		thread.messages[0].payload.headers[0].value
+	# TODO static or move to the thread class
+	getTitleFromThread: (thread) ->
+		try thread.messages[0].payload.headers[0].value
+		catch e
+			throw new Error 'Thread content not fetched'
+
+
+	# TODO static or move to the thread class
+	threadHasLabels: (thread, labels) ->
+#    if not @gmail.is 'LabelsFetched'
+#      throw new Error
+#    for msg in thread.messages
+#      for label_id in msg.labelIds
 
 
 	req: (method, params) ->
