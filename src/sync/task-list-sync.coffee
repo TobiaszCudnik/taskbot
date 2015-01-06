@@ -1,5 +1,3 @@
-`/* @flow weak */`
-
 States = require './task-list-sync-states'
 {
 	ITaskList
@@ -88,20 +86,16 @@ class TaskListSync
 
 	Syncing_state: ->
 		@push_dirty = no
-		@timer = new Date()
+		@last_sync_start = new Date()
+		@last_sync_end = null
+		@last_sync_time = null
 
 
 	Synced_state: ->
-		@sync.setDirty() if @push_dirty
-		@last_sync_time = new Date() - @timer
-		@timer = null
+		@sync.states.add 'Dirty' if @push_dirty
+		@last_sync_end = new Date()
+		@last_sync_time = @last_sync_end - @last_sync_start
 		console.log "TaskList synced in: #{@last_sync_time}ms"
-		# TODO manage the delay
-		@synced_timeout = setTimeout (@states.addLater 'Restart'), 1000
-
-
-	Synced_end: ->
-		clearTimeout @synced_timeout if @synced_timeout
 
 
 	# TODO a new flag state

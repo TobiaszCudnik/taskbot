@@ -62,7 +62,7 @@
     };
 
     Auth.prototype.RefreshingToken_state = function() {
-      return this.client.refreshAccessToken(this.addLater('TokenRefreshed'));
+      return this.client.refreshAccessToken(this.addByCallback('TokenRefreshed'));
     };
 
     return Auth;

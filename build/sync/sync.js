@@ -54,22 +54,26 @@
     };
 
     States.prototype.Synced = {
+      requires: ['Enabled', 'Authenticated', 'TaskListsSynced', 'QueryLabelsSynced'],
       blocks: ['Syncing']
     };
 
     States.prototype.TaskListSyncEnabled = {
       auto: true,
-      requires: ['Syncing', 'QueryLabelsSynced', 'TaskListsFetched']
+      requires: ['TaskListsFetched', 'QueryLabelsSynced']
+    };
+
+    States.prototype.GmailEnabled = {
+      auto: true
     };
 
     States.prototype.GmailSyncEnabled = {
-      auto: true,
-      requires: ['Syncing']
+      auto: true
     };
 
     States.prototype.FetchingTaskLists = {
       auto: true,
-      requires: ['Syncing'],
+      requires: ['Enabled'],
       blocks: ['TaskListsFetched']
     };
 
@@ -79,7 +83,11 @@
 
     States.prototype.QueryLabelsSynced = {};
 
+    States.prototype.SyncingTaskLists = {};
+
     States.prototype.TaskListsSynced = {};
+
+    States.prototype.Dirty = {};
 
     function States() {
       States.__super__.constructor.apply(this, arguments);
@@ -103,8 +111,6 @@
 
     Sync.prototype.task_lists = null;
 
-    Sync.prototype.autoLabelQueries = null;
-
     Sync.prototype.etags = null;
 
     Sync.prototype.history_id = null;
@@ -125,7 +131,7 @@
       this.task_lists = [];
       this.labels = [];
       this.auth = new auth.Auth(config);
-      this.task_lists = [];
+      this.task_lists_sync = [];
       this.etags = {};
       this.tasks_api = new google.tasks('v1', {
         auth: this.auth.client
@@ -134,10 +140,19 @@
         auth: this.auth.client
       });
       this.gmail = new Gmail(this);
-      this.states.pipeForward('GmailSyncEnabled', this.gmail.states, 'Enabled');
+      this.states.pipeForward('GmailEnabled', this.gmail.states, 'Enabled');
+      this.states.pipeForward('GmailSyncEnabled', this.gmail.states, 'SyncingEnabled');
       this.initQueries();
       this.auth.pipeForward('Ready', this.states, 'Authenticated');
     }
+
+    Sync.prototype.QueryLabelsSynced_state = function() {
+      return this.states.add('Synced');
+    };
+
+    Sync.prototype.TaskListsSynced_state = function() {
+      return this.states.add('Synced');
+    };
 
     Sync.prototype.FetchingTaskLists_state = coroutine(function*() {
       var abort, res;
@@ -159,6 +174,44 @@
       return this.states.add('TaskListsFetched');
     });
 
+    Sync.prototype.TaskListsSynced_enter = function() {
+      return this.task_lists_sync.every(function(list) {
+        return list.states.is('Synced');
+      });
+    };
+
+    Sync.prototype.SyncingTaskLists_exit = function() {
+      return !this.task_lists_sync.some(function(list) {
+        return list.states.is('Syncing');
+      });
+    };
+
+    Sync.prototype.Synced_enter = function() {
+      if (this.states.is('Dirty')) {
+        this.gmail.states.add('Dirty');
+        return false;
+      }
+    };
+
+    Sync.prototype.Synced_state = function() {
+      if (this.next_sync_timeout) {
+        clearTimeout(this.next_sync_timeout);
+      }
+      return this.next_sync_timeout = setTimeout(this.states.addByListener('Syncing'), this.config.sync_frequency);
+    };
+
+    Sync.prototype.Syncing_state = function() {
+      var list, _i, _len, _ref1, _results;
+      this.gmail.states.drop('QueryLabelsSynced');
+      _ref1 = this.task_lists_sync;
+      _results = [];
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        list = _ref1[_i];
+        _results.push(list.states.add('Restart'));
+      }
+      return _results;
+    };
+
     Sync.prototype.initQueries = function() {
       var data, name, task_list, _ref1, _results;
       _ref1 = this.config.tasks.queries;
@@ -170,71 +223,35 @@
         }
         task_list = new TaskListSync(name, data, this);
         this.states.pipeForward('TaskListSyncEnabled', task_list.states, 'Enabled');
-        _results.push(this.task_lists.push(task_list));
+        task_list.states.pipeForward('Synced', this.states, 'TaskListsSynced');
+        task_list.states.pipeForward('Syncing', this.states, 'SyncingTaskLists');
+        _results.push(this.task_lists_sync.push(task_list));
       }
       return _results;
-    };
-
-    Sync.prototype.scheduleNextSync = function() {
-      var i, queries, query;
-      if (this.concurrency.length >= this.max_concurrency) {
-        return false;
-      }
-      queries = this.autoLabelQueries.sortBy("last_update");
-      query = queries.first();
-      i = 0;
-      while (query.last_update + query.update_interval > Date.now()) {
-        query = queries[i++];
-        if (!query) {
-          return false;
-        }
-      }
-      this.log("activating " + query.name);
-      if (this.concurrency.some((function(_this) {
-        return function(s) {
-          return s.name === query.name;
-        };
-      })(this))) {
-        return false;
-      }
-      this.log('concurrency++');
-      this.concurrency.push(query);
-      query.add('FetchingQuery');
-      return query.once('Fetching.Results.exit', (function(_this) {
-        return function() {
-          _this.concurrency = _this.concurrency.filter(function(row) {
-            return row !== query;
-          });
-          _this.log('concurrency--');
-          _this.add(['Delayed', 'HasMonitored']);
-          return _this.add('Fetching');
-        };
-      })(this));
-    };
-
-    Sync.prototype.minInterval_ = function() {
-      return Math.min.apply(null, this.autoLabelQueries.map((function(_this) {
-        return function(ch) {
-          return ch.update_interval;
-        };
-      })(this)));
-    };
-
-    Sync.prototype.setDirty = function() {
-      return this.gmail.states.add('Dirty');
     };
 
     Sync.prototype.req = coroutine(function*(method, params) {
       if (params == null) {
         params = {};
       }
-      if (process.env['DEBUG'] > 1) {
-        console.log('REQUEST', params);
-      }
+      this.log(['REQUEST', params], 3);
       params.auth = this.auth.client;
       method = promisify(method);
       return (yield method(params));
     });
+
+    Sync.prototype.log = function(msgs, level) {
+      if (!process.env['DEBUG']) {
+        return;
+      }
+      if (level && level > process.env['DEBUG']) {
+        return;
+      }
+      if (!(msgs instanceof Array)) {
+        msgs = [msgs];
+      }
+      return console.log.apply(console, msgs);
+    };
 
     return Sync;
 

@@ -53,7 +53,7 @@ class Auth extends asyncmachine.AsyncMachine
 
 
 	RefreshingToken_state: ->
-		@client.refreshAccessToken @addLater 'TokenRefreshed'
+		@client.refreshAccessToken @addByCallback 'TokenRefreshed'
 
 
 

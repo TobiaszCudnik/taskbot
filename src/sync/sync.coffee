@@ -29,6 +29,8 @@ promisify = Promise.promisify
 	IMessagePart
 } = require './api-types'
 
+
+
 class States extends asyncmachine.AsyncMachine
 
 
@@ -46,28 +48,36 @@ class States extends asyncmachine.AsyncMachine
 		auto: yes
 		requires: ['Enabled', 'Authenticated']
 		blocks: ['Synced']
-	Synced:blocks: ['Syncing']
+	Synced:
+		requires: ['Enabled', 'Authenticated', 'TaskListsSynced'
+			'QueryLabelsSynced']
+		blocks: ['Syncing']
 
 
 	TaskListSyncEnabled:
 		auto: yes
-		requires:	['Syncing', 'QueryLabelsSynced', 'TaskListsFetched']
+		requires:	['TaskListsFetched', 'QueryLabelsSynced']
 
 
-	GmailSyncEnabled:
-		auto: yes
-		requires:	['Syncing']
+	GmailEnabled:auto: yes
+	GmailSyncEnabled:auto: yes
 
 
 	FetchingTaskLists:
 		auto: yes
-		requires: ['Syncing']
+		requires: ['Enabled']
 		blocks: ['TaskListsFetched']
 	TaskListsFetched:blocks: ['FetchingTaskLists']
 
 
 	QueryLabelsSynced: {}
+
+
+	SyncingTaskLists: {}
 	TaskListsSynced: {}
+
+
+	Dirty: {}
 
 
 	constructor: ->
@@ -85,7 +95,6 @@ class Sync
 	tasks_api: null
 	gmail_api: null
 	task_lists: null
-	autoLabelQueries: null
 	etags: null
 
 	history_id: null
@@ -103,14 +112,15 @@ class Sync
 		@task_lists = []
 		@labels = []
 		@auth = new auth.Auth config
-		@task_lists = []
+		@task_lists_sync = []
 		@etags = {}
 
 		@tasks_api = new google.tasks 'v1', auth: @auth.client
 		@gmail_api = new google.gmail 'v1', auth: @auth.client
 
 		@gmail = new Gmail this
-		@states.pipeForward 'GmailSyncEnabled', @gmail.states, 'Enabled'
+		@states.pipeForward 'GmailEnabled', @gmail.states, 'Enabled'
+		@states.pipeForward 'GmailSyncEnabled', @gmail.states, 'SyncingEnabled'
 		@initQueries()
 
 		@auth.pipeForward 'Ready', @states, 'Authenticated'
@@ -120,6 +130,10 @@ class Sync
 	# Transitions
 	# ----- -----
 
+
+	# Try to set Synced state in all deps
+	QueryLabelsSynced_state: -> @states.add 'Synced'
+	TaskListsSynced_state: -> @states.add 'Synced'
 
 	FetchingTaskLists_state: coroutine ->
 		abort = @states.getAbort 'FetchingTaskLists'
@@ -137,6 +151,39 @@ class Sync
 		@states.add 'TaskListsFetched'
 
 
+	TaskListsSynced_enter: ->
+		@task_lists_sync.every (list) ->
+			list.states.is 'Synced'
+
+
+	SyncingTaskLists_exit: ->
+		not @task_lists_sync.some (list) ->
+			list.states.is 'Syncing'
+
+
+	# Re-sync query labels if task list sync made some changes
+	Synced_enter: ->
+		if @states.is 'Dirty'
+			@gmail.states.add 'Dirty'
+
+			no
+
+
+	# Schedule the next sync
+	# TODO measure the time taken
+	Synced_state: ->
+		clearTimeout @next_sync_timeout if @next_sync_timeout
+		@next_sync_timeout = setT`imeout (@states.addByListener 'Syncing'),
+			@config.sync_frequency
+
+
+	Syncing_state: ->
+		# Reset synced states in children
+		@gmail.states.drop 'QueryLabelsSynced'
+		for list in @task_lists_sync
+			list.states.add 'Restart'
+
+
 	# ----- -----
 	# Methods
 	# ----- -----
@@ -147,67 +194,28 @@ class Sync
 			continue if name is 'labels_defaults'
 			task_list = new TaskListSync name, data, this
 			@states.pipeForward 'TaskListSyncEnabled', task_list.states, 'Enabled'
+			task_list.states.pipeForward 'Synced', this.states, 'TaskListsSynced'
+			task_list.states.pipeForward 'Syncing', this.states, 'SyncingTaskLists'
 			# TODO handle error of non existing task list in the inner classes
 			#			task_list.states.on 'Restart.enter', => @states.drop 'TaskListsFetched'
-			@task_lists.push task_list
-
-
-	scheduleNextSync: ->
-		# Add new search only if there's a free limit.
-		return no if @concurrency.length >= @max_concurrency
-		# TODO skip searches which interval hasn't passed yet
-		queries = @autoLabelQueries.sortBy "last_update"
-		query = queries.first()
-		i = 0
-		# Optimise for more justice selection.
-		# TODO encapsulate to needsUpdate()
-		while query.last_update + query.update_interval > Date.now()
-			query = queries[ i++ ]
-			if not query
-				return no
-		@log "activating " + query.name
-		return no if @concurrency.some (s) => s.name == query.name
-		# Performe the search
-		@log 'concurrency++'
-		@concurrency.push query
-		query.add 'FetchingQuery'
-		# Subscribe to a finished query
-		query.once 'Fetching.Results.exit', =>
-#			@concurrency = @concurrency.exclude( search )
-			@concurrency = @concurrency.filter (row) =>
-				return (row isnt query)
-			@log 'concurrency--'
-			#			@addsLater 'HasMonitored', 'Delayed'
-			# TODO Delayed?
-			# TODO transaction?
-			@add ['Delayed', 'HasMonitored']
-			# Loop the fetching process
-			@add 'Fetching'
-
-
-	minInterval_: ->
-		Math.min.apply null, @autoLabelQueries.map (ch) => ch.update_interval
-
-
-#	findLatestHistoryId: ->
-#		Math.max.apply Math, [@gmail.history_id].concat @tasks.queries.map (item) ->
-#			item.history_id
-
-
-	setDirty: ->
-		@gmail.states.add 'Dirty'
+			@task_lists_sync.push task_list
 
 
 	req: coroutine (method, params) ->
 		params ?= {}
-		if process.env['DEBUG'] > 1
-			console.log 'REQUEST', params
+		@log ['REQUEST', params], 3
 		params.auth = @auth.client
 		# TODO catch  reason: 'insufficientPermissions's
 		method = promisify method
 		yield method params
 
 
+	log: (msgs, level) ->
+		return if not process.env['DEBUG']
+		return if level and level > process.env['DEBUG']
+		if msgs not instanceof Array
+			msgs = [msgs]
+		console.log.apply console, msgs
 
 module.exports = {
 	Sync

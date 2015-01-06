@@ -37,7 +37,6 @@ class GmailQuery
   synced_history_id: null
   states: null
   result: null
-  sync: null
   threads: null
   completions: null
   result: null
@@ -52,15 +51,20 @@ class GmailQuery
     @states = new States
     @states.setTarget this
     if process.env['DEBUG']
-      @states.debug "GmailQuery(#{name}) / "
+      @states.debug "GmailQuery(#{name}) / ", process.env['DEBUG'] - 1
 
 
-  # TODO ensure all the threads are downloaded (stream per page if required)
-  FetchingThreads_state: coroutine (states, history_id, abort) ->
-    abort = @states.getAbort 'FetchingThreads', abort
+  # TODO ensure all the threads are downloaded (stream per pasge if required)
+  FetchingThreads_state: coroutine (states) ->
+    abort = @states.getAbort 'FetchingThreads'
+    # TODO this break half of the gmail queries
+    if yield @isCached abort
+      return if abort()
+      @states.add 'ThreadsFetched'
+      @states.add 'MsgsFetched' if @fetch_msgs
+      return
 
-    @synced_history_id = history_id
-    console.log "[FETCH] threads' list for #{@query}"
+    @gmail.sync.log "[FETCH] threads' list for #{@query}", 2
     res = yield @req @api.users.threads.list,
       q: @query
       userId: "me"
@@ -93,8 +97,8 @@ class GmailQuery
     @states.add 'MsgsFetched'
 
 
-  isCached: coroutine ->
-    yield @gmail.isCached @synced_history_id
+  isCached: coroutine (abort) ->
+    yield @gmail.isCached @synced_history_id, abort
 
 
   req: (method, params) ->

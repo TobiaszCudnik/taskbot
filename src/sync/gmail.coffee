@@ -9,6 +9,7 @@ class States extends asyncmachine.AsyncMachine
 
 
 	Enabled: {}
+	SyncingEnabled: {}
 
 
 	Dirty:blocks: 'QueryLabelsSynced'
@@ -16,7 +17,7 @@ class States extends asyncmachine.AsyncMachine
 
 	SyncingQueryLabels:
 		auto: yes
-		requires: ['Enabled', 'LabelsFetched']
+		requires: ['SyncingEnabled', 'LabelsFetched']
 		blocks: ['QueryLabelsSynced']
 	QueryLabelsSynced:blocks: ['SyncingQueryLabels']
 
@@ -87,13 +88,12 @@ class Gmail
 
 		dirty = no
 		yield Promise.all @query_labels.map coroutine (query, name) =>
-			return if (yield query.isCached()) or abort()
 
-			labels = @config.query_labels[name]
-
+			query.states.add 'Enabled'
 			yield query.states.whenOnce 'ThreadsFetched'
 			return if abort()
 
+			labels = @config.query_labels[name]
 			yield Promise.all query.threads.map coroutine (thread) =>
 				yield @modifyLabels thread.id, labels[0], labels[1], abort
 				dirty = yes
@@ -102,11 +102,13 @@ class Gmail
 		return if abort?()
 
 		if @states.is 'Dirty'
+			# TODO potential loop?
 			@states.add 'SyncingQueryLabels'
 		else
 			@states.add 'QueryLabelsSynced'
 
 
+	# TODO extract to a separate class
 	QueryLabelsSynced_state: ->
 		@last_sync_time = new Date() - @query_labels_timer
 		@timer = null
@@ -172,6 +174,7 @@ class Gmail
 
 	initQueryLabels: ->
 		@query_labels = {}
+		count = 0
 		for query, labels of @config.query_labels
 			# narrow the query to results requiring the labels modification
 			exclusive_query = query
@@ -183,8 +186,10 @@ class Gmail
 			if labels[1]?.length # labels to add
 				exclusive_query += ' (label:' +
 					labels[1].map(@normalizeLabelName).join(' OR label:') + ')'
-			@query_labels[query] = new GmailQuery this, exclusive_query, 'AutoLabels'
-			@states.pipeForward 'Enabled', @query_labels[query].states
+			@query_labels[query] = new GmailQuery this, exclusive_query,
+				"QueryLabels #{++count}"
+
+		@sync.log "Initialized #{@query_labels.keys().length} queries", 2
 
 
 	normalizeLabelName: (label) ->
@@ -263,6 +268,7 @@ class Gmail
 		if not @history_id
 			@states.add 'FetchingHistoryId'
 			yield @states.whenOnce 'HistoryIdFetched'
+
 		@history_id
 
 
