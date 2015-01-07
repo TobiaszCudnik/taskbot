@@ -161,27 +161,33 @@ class Sync
 			list.states.is 'Syncing'
 
 
-	# Re-sync query labels if task list sync made some changes
-	Synced_enter: ->
-		if @states.is 'Dirty'
-			@gmail.states.add 'Dirty'
-
-			no
-
-
 	# Schedule the next sync
 	# TODO measure the time taken
 	Synced_state: ->
+		console.log '!!! SYNCED !!!'
+		@last_sync_end = new Date()
+		@last_sync_time = @last_sync_end - @last_sync_start
+		console.log "Time: #{@last_sync_time}ms"
 		clearTimeout @next_sync_timeout if @next_sync_timeout
-		@next_sync_timeout = setT`imeout (@states.addByListener 'Syncing'),
+		@next_sync_timeout = setTimeout (@states.addByListener 'Syncing'),
 			@config.sync_frequency
 
 
 	Syncing_state: ->
-		# Reset synced states in children
-		@gmail.states.drop 'QueryLabelsSynced'
+		console.log '--- SYNCING ---'
+		# TODO define in the prototype
+		@last_sync_start = new Date()
+		@last_sync_end = null
+		@last_sync_time = null
+		if @states.is 'Dirty'
+			# Add after the transition
+			@states.add @gmail.states, 'Dirty'
+			@states.drop 'Dirty'
+		else
+			# Reset synced states in children
+			@states.drop @gmail.states, 'QueryLabelsSynced'
 		for list in @task_lists_sync
-			list.states.add 'Restart'
+			@states.add list.states, 'Restart'
 
 
 	# ----- -----

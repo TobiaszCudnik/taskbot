@@ -186,14 +186,11 @@
       });
     };
 
-    Sync.prototype.Synced_enter = function() {
-      if (this.states.is('Dirty')) {
-        this.gmail.states.add('Dirty');
-        return false;
-      }
-    };
-
     Sync.prototype.Synced_state = function() {
+      console.log('!!! SYNCED !!!');
+      this.last_sync_end = new Date();
+      this.last_sync_time = this.last_sync_end - this.last_sync_start;
+      console.log("Time: " + this.last_sync_time + "ms");
       if (this.next_sync_timeout) {
         clearTimeout(this.next_sync_timeout);
       }
@@ -202,12 +199,21 @@
 
     Sync.prototype.Syncing_state = function() {
       var list, _i, _len, _ref1, _results;
-      this.gmail.states.drop('QueryLabelsSynced');
+      console.log('--- SYNCING ---');
+      this.last_sync_start = new Date();
+      this.last_sync_end = null;
+      this.last_sync_time = null;
+      if (this.states.is('Dirty')) {
+        this.states.add(this.gmail.states, 'Dirty');
+        this.states.drop('Dirty');
+      } else {
+        this.states.drop(this.gmail.states, 'QueryLabelsSynced');
+      }
       _ref1 = this.task_lists_sync;
       _results = [];
       for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
         list = _ref1[_i];
-        _results.push(list.states.add('Restart'));
+        _results.push(this.states.add(list.states, 'Restart'));
       }
       return _results;
     };

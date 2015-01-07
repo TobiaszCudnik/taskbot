@@ -10,19 +10,23 @@ class States extends asyncmachine.AsyncMachine
 
 
   Enabled: {}
+  Dirty:blocks: ['MsgsFetched', 'ThreadsFetched']
 
 
   FetchingThreads:
     auto: yes
     requires: ['Enabled']
     blocks: ['ThreadsFetched']
-  ThreadsFetched:blocks: ['FetchingThreads']
+  ThreadsFetched:
+    requires: ['Enabled']
+    blocks: ['FetchingThreads']
 
 
   FetchingMsgs:
-    requires: ['ThreadsFetched']
+    requires: ['Enabled', 'ThreadsFetched']
     blocks: ['MsgsFetched']
-  MsgsFetched:blocks: ['FetchingMsgs']
+  MsgsFetched:
+    blocks: ['FetchingMsgs']
 
 
   constructor: ->
@@ -51,7 +55,7 @@ class GmailQuery
     @states = new States
     @states.setTarget this
     if process.env['DEBUG']
-      @states.debug "GmailQuery(#{name}) / ", process.env['DEBUG'] - 1
+      @states.debug "GmailQuery(#{name}) / ", process.env['DEBUG']# - 1
 
 
   # TODO ensure all the threads are downloaded (stream per pasge if required)
@@ -60,11 +64,13 @@ class GmailQuery
     # TODO this break half of the gmail queries
     if yield @isCached abort
       return if abort()
+      console.log "[CACHED] threads for '#{@query}'"
       @states.add 'ThreadsFetched'
       @states.add 'MsgsFetched' if @fetch_msgs
       return
+    return if abort?()
 
-    @gmail.sync.log "[FETCH] threads' list for #{@query}", 2
+    console.log "[FETCH] threads' list for '#{@query}'"
     res = yield @req @api.users.threads.list,
       q: @query
       userId: "me"
@@ -79,22 +85,29 @@ class GmailQuery
     @updateThreadsCompletions()
 
 #    console.log "Found #{@result.threads.length} threads"
-    @synced_history_id = history_id
+    if not @fetch_msgs
+      @synced_history_id = history_id
+
     @states.add 'ThreadsFetched'
 
     if @fetch_msgs
-      @states.add 'FetchingMsgs', abort
+      @states.add 'FetchingMsgs', history_id, abort
 
 
-  FetchingMsgs_state: coroutine (states, abort) ->
+  FetchingMsgs_state: coroutine (states, history_id, abort) ->
     abort = @states.getAbort 'FetchingMsgs', abort
 
     threads = yield Promise.all @threads.map coroutine (thread) =>
       yield @gmail.fetchThread thread.id, thread.historyId, abort
     return if abort()
 
+    @synced_history_id = history_id
     @result.threads = threads
     @states.add 'MsgsFetched'
+
+
+  Dirty_enter: ->
+    @states.drop 'Dirty'
 
 
   isCached: coroutine (abort) ->

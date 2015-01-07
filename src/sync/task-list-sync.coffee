@@ -86,16 +86,17 @@ class TaskListSync
 
 	Syncing_state: ->
 		@push_dirty = no
+		# TODO define in the prototype
 		@last_sync_start = new Date()
 		@last_sync_end = null
 		@last_sync_time = null
 
 
 	Synced_state: ->
-		@sync.states.add 'Dirty' if @push_dirty
+		@states.add @sync.states, 'Dirty' if @push_dirty
 		@last_sync_end = new Date()
 		@last_sync_time = @last_sync_end - @last_sync_start
-		console.log "TaskList synced in: #{@last_sync_time}ms"
+		console.log "TaskList #{@name} synced in: #{@last_sync_time}ms"
 
 
 	# TODO a new flag state
@@ -117,7 +118,8 @@ class TaskListSync
 				yield @createTaskFromThread thread, abort
 
 		return if abort?()
-		@states.add ['ThreadsToTasksSynced', 'Synced']
+		@states.add 'ThreadsToTasksSynced'
+		@states.add 'Synced'
 
 
 	SyncingTasksToThreads_state: coroutine ->
@@ -139,7 +141,8 @@ class TaskListSync
 				thread = yield @createThreadForTask task, abort
 
 		return if abort()
-		@states.add ['TasksToThreadsSynced', 'Synced']
+		@states.add 'TasksToThreadsSynced'
+		@states.add 'Synced'
 
 
 	SyncingCompletedThreads_state: coroutine ->
@@ -157,7 +160,8 @@ class TaskListSync
 		)
 
 		return if abort()
-		@states.add ['CompletedThreadsSynced', 'Synced']
+		@states.add 'CompletedThreadsSynced'
+		@states.add 'Synced'
 
 
 	SyncingCompletedTasks_state: coroutine ->
@@ -168,12 +172,13 @@ class TaskListSync
 			task = @getTask task_id
 			return if not task
 			thread_id = @taskLinkedToThread task
-			thread_not_completed = @gmail.threadWasNotCompleted thread_id
+			thread_not_completed = @query.threadWasNotCompleted thread_id
 			if thread_not_completed and row.time.unix() > thread_not_completed.unix()
 				yield @completeThread thread_id, abort
 
 		return if abort()
-		@states.add ['CompletedTasksSynced', 'Synced']
+		@states.add 'CompletedTasksSynced'
+		@states.add 'Synced'
 
 
 	PreparingList_state: coroutine ->
@@ -250,15 +255,6 @@ class TaskListSync
 			@completions_tasks[id] = completed: yes, time: moment()
 
 
-	isQueryCached: coroutine (abort) ->
-		return if not @gmail_history_id
-		history_id = yield @gmail.refreshHistoryId()
-		return if abort?()
-		if history_id is @gmail_history_id
-			console.log "[CACHED] threads' list"
-			return yes
-
-
 	fetchNonCompletedTasks: coroutine (abort) ->
 		response = yield @req @tasks_api.tasks.list,
 			tasklist: @list.id
@@ -268,9 +264,9 @@ class TaskListSync
 			etag: @etags.tasks
 			
 		if response[1].statusCode is 304
-			console.log '[CACHED] tasks'
+			console.log "[CACHED] tasks for '#{@name}'"
 		else
-			console.log '[FETCH] tasks'
+			console.log "[FETCH] tasks for '#{@name}'"
 			@etags.tasks = response[1].headers.etag
 			response[0].items ?= []
 			response[0].items.forEach (task) =>
@@ -291,9 +287,9 @@ class TaskListSync
 			etag: @etags.tasks_completed
 			
 		if response[1].statusCode is 304
-			console.log '[CACHED] completed tasks'
+			console.log "[CACHED] completed tasks for '#{@name}'"
 		else
-			console.log '[FETCHED] completed tasks'
+			console.log "[FETCHED] completed tasks for '#{@name}'"
 			@etags.tasks_completed = response[1].headers.etag
 			response[0].items ?= []
 			response[0].items = response[0].items.filter (item) ->
@@ -351,7 +347,7 @@ class TaskListSync
 	uncompletedThreadLabels: ->
 		[].concat(
 			@data['labels_new_task'] or []
-			@sync.config.tasks.autoLabelQueries.labels_defaults?['labels_new_task'] or []
+			@sync.config.tasks.queries?.labels_defaults?['labels_new_task'] or []
 		)
 
 

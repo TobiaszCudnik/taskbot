@@ -86,11 +86,11 @@
 
     TaskListSync.prototype.Synced_state = function() {
       if (this.push_dirty) {
-        this.sync.states.add('Dirty');
+        this.states.add(this.sync.states, 'Dirty');
       }
       this.last_sync_end = new Date();
       this.last_sync_time = this.last_sync_end - this.last_sync_start;
-      return console.log("TaskList synced in: " + this.last_sync_time + "ms");
+      return console.log("TaskList " + this.name + " synced in: " + this.last_sync_time + "ms");
     };
 
     TaskListSync.prototype.FetchingTasks_FetchingTasks = function() {
@@ -118,7 +118,8 @@
       if (typeof abort === "function" ? abort() : void 0) {
         return;
       }
-      return this.states.add(['ThreadsToTasksSynced', 'Synced']);
+      this.states.add('ThreadsToTasksSynced');
+      return this.states.add('Synced');
     });
 
     TaskListSync.prototype.SyncingTasksToThreads_state = coroutine(function*() {
@@ -145,7 +146,8 @@
       if (abort()) {
         return;
       }
-      return this.states.add(['TasksToThreadsSynced', 'Synced']);
+      this.states.add('TasksToThreadsSynced');
+      return this.states.add('Synced');
     });
 
     TaskListSync.prototype.SyncingCompletedThreads_state = coroutine(function*() {
@@ -170,7 +172,8 @@
       if (abort()) {
         return;
       }
-      return this.states.add(['CompletedThreadsSynced', 'Synced']);
+      this.states.add('CompletedThreadsSynced');
+      return this.states.add('Synced');
     });
 
     TaskListSync.prototype.SyncingCompletedTasks_state = coroutine(function*() {
@@ -187,7 +190,7 @@
             return;
           }
           thread_id = _this.taskLinkedToThread(task);
-          thread_not_completed = _this.gmail.threadWasNotCompleted(thread_id);
+          thread_not_completed = _this.query.threadWasNotCompleted(thread_id);
           if (thread_not_completed && row.time.unix() > thread_not_completed.unix()) {
             return (yield _this.completeThread(thread_id, abort));
           }
@@ -196,7 +199,8 @@
       if (abort()) {
         return;
       }
-      return this.states.add(['CompletedTasksSynced', 'Synced']);
+      this.states.add('CompletedTasksSynced');
+      return this.states.add('Synced');
     });
 
     TaskListSync.prototype.PreparingList_state = coroutine(function*() {
@@ -277,21 +281,6 @@
       });
     };
 
-    TaskListSync.prototype.isQueryCached = coroutine(function*(abort) {
-      var history_id;
-      if (!this.gmail_history_id) {
-        return;
-      }
-      history_id = (yield this.gmail.refreshHistoryId());
-      if (typeof abort === "function" ? abort() : void 0) {
-        return;
-      }
-      if (history_id === this.gmail_history_id) {
-        console.log("[CACHED] threads' list");
-        return true;
-      }
-    });
-
     TaskListSync.prototype.fetchNonCompletedTasks = coroutine(function*(abort) {
       var response, _base;
       response = (yield this.req(this.tasks_api.tasks.list, {
@@ -302,9 +291,9 @@
         etag: this.etags.tasks
       }));
       if (response[1].statusCode === 304) {
-        return console.log('[CACHED] tasks');
+        return console.log("[CACHED] tasks for '" + this.name + "'");
       } else {
-        console.log('[FETCH] tasks');
+        console.log("[FETCH] tasks for '" + this.name + "'");
         this.etags.tasks = response[1].headers.etag;
         if ((_base = response[0]).items == null) {
           _base.items = [];
@@ -332,9 +321,9 @@
         etag: this.etags.tasks_completed
       }));
       if (response[1].statusCode === 304) {
-        return console.log('[CACHED] completed tasks');
+        return console.log("[CACHED] completed tasks for '" + this.name + "'");
       } else {
-        console.log('[FETCHED] completed tasks');
+        console.log("[FETCHED] completed tasks for '" + this.name + "'");
         this.etags.tasks_completed = response[1].headers.etag;
         if ((_base = response[0]).items == null) {
           _base.items = [];
@@ -412,8 +401,8 @@
     });
 
     TaskListSync.prototype.uncompletedThreadLabels = function() {
-      var _ref1;
-      return [].concat(this.data['labels_new_task'] || [], ((_ref1 = this.sync.config.tasks.autoLabelQueries.labels_defaults) != null ? _ref1['labels_new_task'] : void 0) || []);
+      var _ref1, _ref2;
+      return [].concat(this.data['labels_new_task'] || [], ((_ref1 = this.sync.config.tasks.queries) != null ? (_ref2 = _ref1.labels_defaults) != null ? _ref2['labels_new_task'] : void 0 : void 0) || []);
     };
 
     TaskListSync.prototype.uncompleteTask = coroutine(function*(task_id, abort) {

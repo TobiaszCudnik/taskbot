@@ -12,7 +12,7 @@ class States extends asyncmachine.AsyncMachine
 	SyncingEnabled: {}
 
 
-	Dirty:blocks: 'QueryLabelsSynced'
+	Dirty:blocks: ['QueryLabelsSynced', 'SyncingQueryLabels']
 
 
 	SyncingQueryLabels:
@@ -50,7 +50,7 @@ class Gmail
 	config: null
 	sync: null
 	completions: null
-	history_id_timeout: 200
+	history_id_timeout: 3000
 	history_id: null
 	last_sync_time: null
 	query_labels: null
@@ -77,10 +77,6 @@ class Gmail
 	# ----- -----
 
 
-	SyncingQueryLabels_SyncingQueryLabels: ->
-		@SyncingQueryLabels_state.apply this, arguments
-
-
 	# TODO extract to a separate class
 	SyncingQueryLabels_state: coroutine ->
 		@query_labels_timer = new Date()
@@ -92,27 +88,24 @@ class Gmail
 			query.states.add 'Enabled'
 			yield query.states.whenOnce 'ThreadsFetched'
 			return if abort()
+			query.states.drop 'Enabled'
 
 			labels = @config.query_labels[name]
 			yield Promise.all query.threads.map coroutine (thread) =>
 				yield @modifyLabels thread.id, labels[0], labels[1], abort
 				dirty = yes
-
 		@states.add 'Dirty' if dirty
 		return if abort?()
 
-		if @states.is 'Dirty'
-			# TODO potential loop?
-			@states.add 'SyncingQueryLabels'
-		else
+		if not dirty
 			@states.add 'QueryLabelsSynced'
 
 
 	# TODO extract to a separate class
 	QueryLabelsSynced_state: ->
-		@last_sync_time = new Date() - @query_labels_timer
-		@timer = null
-		console.log "QueryLabels synced in: #{@last_sync_time}ms"
+		@ql_last_sync_time = new Date() - @query_labels_timer
+		@query_labels_timer = null
+		console.log "QueryLabels synced in: #{@ql_last_sync_time}ms"
 
 
 	FetchingLabels_state: coroutine ->
@@ -125,17 +118,20 @@ class Gmail
 
 	Dirty_enter: ->
 		@history_id = null
+		for query in @queries
+			@states.add query.states, 'Dirty'
+
 		@states.drop 'Dirty'
 
 
 	FetchingHistoryId_state: coroutine (abort) ->
+		console.log '[FETCH] history ID'
 		response = yield @req @api.users.getProfile,
 			userId: 'me'
 			fields: 'historyId'
 		return if abort?()
 		@history_id = response[0].historyId
 		@last_sync_time = Date.now()
-		@states.drop 'Dirty'
 		@states.add 'HistoryIdFetched'
 
 
@@ -186,8 +182,7 @@ class Gmail
 			if labels[1]?.length # labels to add
 				exclusive_query += ' (label:' +
 					labels[1].map(@normalizeLabelName).join(' OR label:') + ')'
-			@query_labels[query] = new GmailQuery this, exclusive_query,
-				"QueryLabels #{++count}"
+			@query_labels[query] = @createQuery exclusive_query, "QueryLabels #{++count}"
 
 		@sync.log "Initialized #{@query_labels.keys().length} queries", 2
 
@@ -207,7 +202,10 @@ class Gmail
 		if not @isHistoryIdValid()
 			if not @states.is 'FetchingHistoryId'
 				@states.add 'FetchingHistoryId', abort
+				yield @states.whenOnce 'FetchingHistoryId', abort
+				return if abort?()
 			yield @states.whenOnce 'HistoryIdFetched', abort
+			return if abort?()
 
 		@history_id <= history_id
 
@@ -235,7 +233,7 @@ class Gmail
 
 		label = try
 			thread = @getThread thread_id, yes
-			@getTitleFromThread thread
+			'"' + (@getTitleFromThread thread) + '"'
 		catch e
 			"ID: #{thread_id}"
 
