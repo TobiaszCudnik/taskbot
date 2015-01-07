@@ -86,3 +86,5 @@
   })();
 
 }).call(this);
+
+//# sourceMappingURL=thread.js.map

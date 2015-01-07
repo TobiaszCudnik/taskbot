@@ -116,7 +116,7 @@ class Gmail
 		@states.add 'LabelsFetched'
 
 
-	Dirty_enter: ->
+	Dirty_state: ->
 		@history_id = null
 		for query in @queries
 			@states.add query.states, 'Dirty'
@@ -202,6 +202,7 @@ class Gmail
 		if not @isHistoryIdValid()
 			if not @states.is 'FetchingHistoryId'
 				@states.add 'FetchingHistoryId', abort
+				# We need to wait for FetchingHistoryId being really added, not only queued
 				yield @states.whenOnce 'FetchingHistoryId', abort
 				return if abort?()
 			yield @states.whenOnce 'HistoryIdFetched', abort

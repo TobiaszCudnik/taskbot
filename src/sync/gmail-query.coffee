@@ -106,7 +106,7 @@ class GmailQuery
     @states.add 'MsgsFetched'
 
 
-  Dirty_enter: ->
+  Dirty_state: ->
     @states.drop 'Dirty'
 
 
