@@ -28,7 +28,7 @@
   "dependencies": {
     "ago": "^1.0.0",
     "async": "latest",
-    "asyncmachine": "TobiaszCudnik/asyncmachine#coffee",
+    "asyncmachine": "asyncmachine",
     "bluebird": "latest",
     "coffee-script": "jashkenas/coffeescript",
     "dateformat": "^1.0.8",
