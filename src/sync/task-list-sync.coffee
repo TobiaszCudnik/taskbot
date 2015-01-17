@@ -110,9 +110,19 @@ class TaskListSync
 				if task_completed and
 						task_completed.unix() < thread_not_completed.unix()
 					yield @uncompleteTask task.id, abort
+					
+				return
+				
+			# checks if there was a task for this thread in this list
+			# somewhere in the past
+			task_id = @getTaskForThreadFromCompletions thread.id
+			if task_id
+				@completeThread thread.id
+				delete @completions_tasks[task_id]
 			else
 				[task, list_sync] = @sync.findTaskForThread thread.id
 				# try to "move" the task from another list
+				# TODO extract to a method
 				if task
 					console.log "Moving task \"#{task.title}\""
 					# mark current instance as deleted
@@ -149,7 +159,7 @@ class TaskListSync
 						thread_completed.unix() < task_not_completed.unix())
 					yield @uncompleteThread thread_id, abort
 			else
-				thread = yield @createThreadForTask task, abort
+				yield @createThreadForTask task, abort
 
 		return if abort()
 		@states.add 'TasksToThreadsSynced'
@@ -219,6 +229,7 @@ class TaskListSync
 	# TODO extract tasks fetching logic, reuse
 	FetchingTasks_state: coroutine ->
 		abort = @states.getAbort 'FetchingTasks'
+		previous_ids = @getAllTasks().map (task) -> task.id
 		# fetch all non-completed and max 2-weeks old completed ones
 		# TODO use moment module to date operations
 		if not @tasks_completed_from or @tasks_completed_from < ago 3, "weeks"
@@ -227,12 +238,10 @@ class TaskListSync
 		return if abort?()
 
 		if not @etags.tasks_completed or not @states.is 'TasksCached'
-			check_completion_ids = @tasks.map (task) -> task.id
 			yield @fetchCompletedTasks abort
 			return if abort?()
 
-		if check_completion_ids
-			@processTasksCompletions check_completion_ids
+		@processTasksDeletion previous_ids
 
 		@states.add 'TasksFetched'
 
@@ -271,11 +280,15 @@ class TaskListSync
 			task: task_id
 
 
-	processTasksCompletions: (ids) ->
-		non_completed_ids = @tasks.map (task) -> task.id
-		(ids.difference non_completed_ids).forEach (id) ->
+	processTasksDeletion: (previous_ids) ->
+		current_ids = @getAllTasks().map (task) -> task.id
+		(previous_ids.difference current_ids).forEach (id) =>
 			# time of completion is actually fake, but doesn't require a request
-			@completions_tasks[id] = completed: yes, time: moment()
+			@completions_tasks[id] =
+				completed: yes
+				# TODO deleted flag
+				time: moment()
+				thread_id: @completions_tasks[id]?.thread_id
 
 
 	fetchNonCompletedTasks: coroutine (abort) ->
@@ -285,7 +298,7 @@ class TaskListSync
 			maxResults: 1000
 			showCompleted: no
 			etag: @etags.tasks
-			
+
 		if response[1].statusCode is 304
 			@states.add 'TasksCached'
 			console.log "[CACHED] tasks for '#{@name}'"
@@ -297,6 +310,7 @@ class TaskListSync
 				@completions_tasks[task.id] =
 					completed: no
 					time: moment task.completed
+					thread_id: @taskLinkedToThread task
 
 			@tasks = type response[0], ITasks, 'ITasks'
 
@@ -309,7 +323,7 @@ class TaskListSync
 			maxResults: 1000
 			showCompleted: yes
 			etag: @etags.tasks_completed
-			
+
 		if response[1].statusCode is 304
 			console.log "[CACHED] completed tasks for '#{@name}'"
 		else
@@ -322,6 +336,7 @@ class TaskListSync
 				@completions_tasks[task.id] =
 					completed: yes
 					time: moment task.completed
+					thread_id: @taskLinkedToThread task
 
 			@tasks_completed = type response[0], ITasks, 'ITasks'
 
@@ -362,6 +377,7 @@ class TaskListSync
 			tasklist: @list.id
 			task: task.id
 			resource:notes: task.notes
+		@completions_tasks[task.id].thread_id = thread_id
 		@push_dirty = yes
 		# TODO update the DB
 		return if abort?()
@@ -385,7 +401,10 @@ class TaskListSync
 		@push_dirty = yes
 		return if abort?()
 		# TODO update the task in the db
-		@completions_tasks[task_id] = completed: no, time: moment()
+		@completions_tasks[task_id] =
+			completed: no
+			time: moment()
+			thread_id: @completions_tasks[task_id]?thread_id
 
 
 	completeTask: coroutine (task_id, abort) ->
@@ -398,10 +417,15 @@ class TaskListSync
 		@push_dirty = yes
 		return if abort?()
 		# TODO update the task in the db
-		@completions_tasks[task_id] = completed: yes, time: moment()
+		@completions_tasks[task_id] =
+			completed: yes
+			time: moment()
+			thread_id: @completions_tasks[task_id]?thread_id
 
 
-	getAllTasks: -> @tasks.items.concat @tasks_completed?.items or []
+	getAllTasks: ->
+		return [] if not @tasks?.items
+		@tasks.items.concat @tasks_completed?.items or []
 
 
 	fetchThreadForTask: coroutine (task, abort) ->
@@ -472,7 +496,7 @@ class TaskListSync
 	getTaskForThread: (thread_id) ->
 		type thread_id, String
 
-		task = @getAllTasks().find (task) ->
+		@getAllTasks().find (task) ->
 			task.notes?.match "email:#{thread_id}"
 
 #		type task, ITask, 'ITask'
@@ -519,6 +543,12 @@ class TaskListSync
 		type labels, [String]
 		[title, labels]
 
+
+	# this is a marvelous method's name...
+	getTaskForThreadFromCompletions: (thread_id) ->
+		for task_id, completion of @completions_tasks
+			return task_id if completion.thread_id is thread_id
+			
 
 	taskWasCompleted: (id) ->
 		if @completions_tasks[id]?.completed is yes
