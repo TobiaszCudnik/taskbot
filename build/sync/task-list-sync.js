@@ -35,6 +35,8 @@
 
     TaskListSync.prototype.tasks = null;
 
+    TaskListSync.prototype.tasks_completed = null;
+
     TaskListSync.prototype.tasks_completed_from = null;
 
     TaskListSync.prototype.threads = null;
@@ -64,13 +66,12 @@
       this.tasks_in_threads = [];
       this.tasks = [];
       this.etags = {};
-      this.completions_threads = {};
       this.completions_tasks = {};
       this.last_sync_time = null;
       this.query = this.sync.gmail.createQuery(this.data.query, 'TaskList', true);
-      this.query.states.pipeForward('ThreadsFetched', this.states);
-      this.query.states.pipeForward('MsgsFetched', this.states);
-      this.states.pipeForward('Enabled', this.query.states);
+      this.query.states.pipe('ThreadsFetched', this.states);
+      this.query.states.pipe('MsgsFetched', this.states);
+      this.states.pipe('Enabled', this.query.states);
     }
 
     TaskListSync.prototype.Restart_state = function() {
@@ -93,16 +94,12 @@
       return console.log("TaskList " + this.name + " synced in: " + this.last_sync_time + "ms");
     };
 
-    TaskListSync.prototype.FetchingTasks_FetchingTasks = function() {
-      return this.FetchingTasks_state.apply(this, arguments);
-    };
-
     TaskListSync.prototype.SyncingThreadsToTasks_state = coroutine(function*() {
       var abort;
       abort = this.states.getAbort('SyncingThreadsToTasks');
       (yield Promise.all(this.query.threads.map(coroutine((function(_this) {
         return function*(thread) {
-          var task, task_completed, thread_not_completed;
+          var list_sync, promises, task, task_completed, thread_not_completed, _ref1;
           task = _this.getTaskForThread(thread.id);
           if (task) {
             task_completed = _this.taskWasCompleted(task.id);
@@ -111,7 +108,20 @@
               return (yield _this.uncompleteTask(task.id, abort));
             }
           } else {
-            return (yield _this.createTaskFromThread(thread, abort));
+            _ref1 = _this.sync.findTaskForThread(thread.id), task = _ref1[0], list_sync = _ref1[1];
+            if (task) {
+              console.log("Moving task \"" + task.title + "\"");
+              task.deleted = true;
+              promises = [
+                list_sync.deleteTask(task.id), _this.createTask({
+                  title: task.title,
+                  notes: task.notes
+                })
+              ];
+              return (yield Promise.all(promises));
+            } else {
+              return (yield _this.createTaskFromThread(thread, abort));
+            }
           }
         };
       })(this)))));
@@ -153,7 +163,7 @@
     TaskListSync.prototype.SyncingCompletedThreads_state = coroutine(function*() {
       var abort;
       abort = this.states.getAbort('SyncingCompletedThreads');
-      (yield Promise.all(this.completions_threads.map(coroutine((function(_this) {
+      (yield Promise.all(this.query.completions.map(coroutine((function(_this) {
         return function*(row, thread_id) {
           var task, task_not_completed;
           if (!row.completed) {
@@ -164,7 +174,7 @@
             return;
           }
           task_not_completed = _this.taskWasNotCompleted(task.id);
-          if (task_not_completed && row.time.unix() > task_not_completed.unix()) {
+          if (task_not_completed && row.time.unix() > task_not_completed.unix() && !task.deleted) {
             return (yield _this.completeTask(task.id, abort));
           }
         };
@@ -225,21 +235,23 @@
     });
 
     TaskListSync.prototype.FetchingTasks_state = coroutine(function*() {
-      var abort, check_completion_ids, promises;
+      var abort, check_completion_ids;
       abort = this.states.getAbort('FetchingTasks');
       if (!this.tasks_completed_from || this.tasks_completed_from < ago(3, "weeks")) {
         this.tasks_completed_from = ago(2, "weeks");
       }
-      promises = [this.fetchNonCompletedTasks(this.tasks_completed_from, abort)];
-      if (!this.etags.tasks_completed) {
+      (yield this.fetchNonCompletedTasks(abort));
+      if (typeof abort === "function" ? abort() : void 0) {
+        return;
+      }
+      if (!this.etags.tasks_completed || !this.states.is('TasksCached')) {
         check_completion_ids = this.tasks.map(function(task) {
           return task.id;
         });
-        promises.push(this.fetchCompletedTasks(abort));
-      }
-      (yield Promise.all(promises));
-      if (typeof abort === "function" ? abort() : void 0) {
-        return;
+        (yield this.fetchCompletedTasks(abort));
+        if (typeof abort === "function" ? abort() : void 0) {
+          return;
+        }
       }
       if (check_completion_ids) {
         this.processTasksCompletions(check_completion_ids);
@@ -268,6 +280,13 @@
       return this.states.add('ListReady');
     });
 
+    TaskListSync.prototype.deleteTask = coroutine(function*(task_id, abort) {
+      return (yield this.req(this.tasks_api.tasks["delete"], {
+        tasklist: this.list.id,
+        task: task_id
+      }));
+    });
+
     TaskListSync.prototype.processTasksCompletions = function(ids) {
       var non_completed_ids;
       non_completed_ids = this.tasks.map(function(task) {
@@ -291,6 +310,7 @@
         etag: this.etags.tasks
       }));
       if (response[1].statusCode === 304) {
+        this.states.add('TasksCached');
         return console.log("[CACHED] tasks for '" + this.name + "'");
       } else {
         console.log("[FETCH] tasks for '" + this.name + "'");
@@ -350,7 +370,7 @@
       if (typeof abort === "function" ? abort() : void 0) {
         return;
       }
-      return this.completions_threads[id] = {
+      return this.query.completions[id] = {
         completed: true,
         time: moment()
       };
@@ -363,7 +383,7 @@
       if (typeof abort === "function" ? abort() : void 0) {
         return;
       }
-      return this.completions_threads[id] = {
+      return this.query.completions[id] = {
         completed: false,
         time: moment()
       };
@@ -389,7 +409,6 @@
       (yield this.req(this.tasks_api.tasks.patch, {
         tasklist: this.list.id,
         task: task.id,
-        userId: 'me',
         resource: {
           notes: task.notes
         }
@@ -446,7 +465,8 @@
     });
 
     TaskListSync.prototype.getAllTasks = function() {
-      return this.tasks.items.concat(this.tasks_completed.items || []);
+      var _ref1;
+      return this.tasks.items.concat(((_ref1 = this.tasks_completed) != null ? _ref1.items : void 0) || []);
     };
 
     TaskListSync.prototype.fetchThreadForTask = coroutine(function*(task, abort) {
@@ -497,6 +517,20 @@
           title: title,
           notes: "email:" + thread.id
         }
+      }));
+      this.push_dirty = true;
+      if (typeof abort === "function" ? abort() : void 0) {
+        return;
+      }
+      return type(res[0], ITask, 'ITask');
+    });
+
+    TaskListSync.prototype.createTask = coroutine(function*(task, abort) {
+      var res;
+      console.log("Adding task '" + task.title + "'");
+      res = (yield this.req(this.tasks_api.tasks.insert, {
+        tasklist: this.list.id,
+        resource: task
       }));
       this.push_dirty = true;
       if (typeof abort === "function" ? abort() : void 0) {

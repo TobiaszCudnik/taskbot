@@ -140,10 +140,10 @@
         auth: this.auth.client
       });
       this.gmail = new Gmail(this);
-      this.states.pipeForward('GmailEnabled', this.gmail.states, 'Enabled');
-      this.states.pipeForward('GmailSyncEnabled', this.gmail.states, 'SyncingEnabled');
-      this.initQueries();
-      this.auth.pipeForward('Ready', this.states, 'Authenticated');
+      this.states.pipe('GmailEnabled', this.gmail.states, 'Enabled');
+      this.states.pipe('GmailSyncEnabled', this.gmail.states, 'SyncingEnabled');
+      this.initTaskListsSync();
+      this.auth.pipe('Ready', this.states, 'Authenticated');
     }
 
     Sync.prototype.QueryLabelsSynced_state = function() {
@@ -207,7 +207,7 @@
         this.states.add(this.gmail.states, 'Dirty');
         this.states.drop('Dirty');
       } else {
-        this.states.drop(this.gmail.states, 'QueryLabelsSynced');
+        this.gmail.states.drop('QueryLabelsSynced');
       }
       _ref1 = this.task_lists_sync;
       _results = [];
@@ -218,7 +218,22 @@
       return _results;
     };
 
-    Sync.prototype.initQueries = function() {
+    Sync.prototype.findTaskForThread = function(thread_id) {
+      var list, task;
+      task = null;
+      list = null;
+      this.task_lists_sync.each(function(list_sync) {
+        var found;
+        found = list_sync.getTaskForThread(thread_id);
+        if (found) {
+          task = found;
+          return list = list_sync;
+        }
+      });
+      return [task, list];
+    };
+
+    Sync.prototype.initTaskListsSync = function() {
       var data, name, task_list, _ref1, _results;
       _ref1 = this.config.tasks.queries;
       _results = [];
@@ -228,9 +243,9 @@
           continue;
         }
         task_list = new TaskListSync(name, data, this);
-        this.states.pipeForward('TaskListSyncEnabled', task_list.states, 'Enabled');
-        task_list.states.pipeForward('Synced', this.states, 'TaskListsSynced');
-        task_list.states.pipeForward('Syncing', this.states, 'SyncingTaskLists');
+        this.states.pipe('TaskListSyncEnabled', task_list.states, 'Enabled', false);
+        task_list.states.pipe('Synced', this.states, 'TaskListsSynced');
+        task_list.states.pipe('Syncing', this.states, 'SyncingTaskLists');
         _results.push(this.task_lists_sync.push(task_list));
       }
       return _results;

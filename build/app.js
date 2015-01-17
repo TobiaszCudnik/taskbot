@@ -23,5 +23,3 @@
   new Sync(settings);
 
 }).call(this);
-
-//# sourceMappingURL=app.js.map

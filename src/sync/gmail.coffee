@@ -69,7 +69,7 @@ class Gmail
 		@api = @sync.gmail_api
 		@config = @sync.config
 		@initQueryLabels()
-		@states.pipeForward 'QueryLabelsSynced', @sync.states
+		@states.pipe 'QueryLabelsSynced', @sync.states
 
 
 	# ----- -----

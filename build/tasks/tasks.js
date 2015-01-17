@@ -25,5 +25,3 @@
   })();
 
 }).call(this);
-
-//# sourceMappingURL=tasks.js.map

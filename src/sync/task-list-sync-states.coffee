@@ -19,7 +19,7 @@ class States extends asyncmachine.AsyncMachine
 
 
 	Restart:blocks: ['TasksFetched', 'CompletedTasksSynced', 'ThreadsToTasksSynced',
-		'TasksToThreadsSynced', 'CompletedThreadsSynced']
+		'TasksToThreadsSynced', 'CompletedThreadsSynced', 'TasksCached']
 
 
 	# list
@@ -36,6 +36,7 @@ class States extends asyncmachine.AsyncMachine
 		requires: ['Syncing', 'ListReady']
 		blocks: ['TasksFetched']
 	TasksFetched: requires: ['ListReady'], blocks: ['FetchingTasks']
+	TasksCached: {}
 
 
 	# thread-to-tasks

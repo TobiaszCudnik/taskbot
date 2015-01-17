@@ -38,6 +38,7 @@ class TaskListSync
 #  @defineType 'states', QueryStates, 'QueryStates'
 
 	tasks: null
+	tasks_completed: null
 	tasks_completed_from: null
 	threads: null
 
@@ -66,14 +67,13 @@ class TaskListSync
 		@tasks_in_threads = []
 		@tasks = []
 		@etags = {}
-		@completions_threads = {}
 		@completions_tasks = {}
 		@last_sync_time = null
 		@query = @sync.gmail.createQuery @data.query, 'TaskList', yes
 		# bind to query states
-		@query.states.pipeForward 'ThreadsFetched', this.states
-		@query.states.pipeForward 'MsgsFetched', this.states
-		@states.pipeForward 'Enabled', @query.states
+		@query.states.pipe 'ThreadsFetched', this.states
+		@query.states.pipe 'MsgsFetched', this.states
+		@states.pipe 'Enabled', @query.states
 
 
 	# ----- -----
@@ -99,10 +99,6 @@ class TaskListSync
 		console.log "TaskList #{@name} synced in: #{@last_sync_time}ms"
 
 
-	# TODO a new flag state
-	FetchingTasks_FetchingTasks: -> @FetchingTasks_state.apply this, arguments
-
-
 	SyncingThreadsToTasks_state: coroutine ->
 		abort = @states.getAbort 'SyncingThreadsToTasks'
 		yield Promise.all @query.threads.map coroutine (thread) =>
@@ -115,7 +111,21 @@ class TaskListSync
 						task_completed.unix() < thread_not_completed.unix()
 					yield @uncompleteTask task.id, abort
 			else
-				yield @createTaskFromThread thread, abort
+				[task, list_sync] = @sync.findTaskForThread thread.id
+				# try to "move" the task from another list
+				if task
+					console.log "Moving task \"#{task.title}\""
+					# mark current instance as deleted
+					task.deleted = yes
+					promises = [
+						list_sync.deleteTask task.id
+						@createTask
+							title: task.title
+							notes: task.notes
+					]
+					yield Promise.all promises
+				else
+					yield @createTaskFromThread thread, abort
 
 		return if abort?()
 		@states.add 'ThreadsToTasksSynced'
@@ -131,6 +141,7 @@ class TaskListSync
 			return if not task.title or task.parent
 
 			thread_id = @taskLinkedToThread task
+			 # TODO support tasks moved from other lists
 			if thread_id
 				thread_completed = @query.threadWasCompleted thread_id
 				task_not_completed = @taskWasNotCompleted task.id
@@ -148,14 +159,16 @@ class TaskListSync
 	SyncingCompletedThreads_state: coroutine ->
 		abort = @states.getAbort 'SyncingCompletedThreads'
 
-		yield Promise.all(@completions_threads
+		yield Promise.all(@query.completions
 			.map coroutine (row, thread_id) =>
 				return if not row.completed
 				task = @getTaskForThread thread_id
 				return if not task
 				task_not_completed = @taskWasNotCompleted task.id
 				if task_not_completed and
-						row.time.unix() > task_not_completed.unix()
+						row.time.unix() > task_not_completed.unix() and
+						# TODO possible race condition
+						not task.deleted
 					yield @completeTask task.id, abort
 		)
 
@@ -207,14 +220,16 @@ class TaskListSync
 	FetchingTasks_state: coroutine ->
 		abort = @states.getAbort 'FetchingTasks'
 		# fetch all non-completed and max 2-weeks old completed ones
+		# TODO use moment module to date operations
 		if not @tasks_completed_from or @tasks_completed_from < ago 3, "weeks"
 			@tasks_completed_from = ago 2, "weeks"
-		promises = [@fetchNonCompletedTasks @tasks_completed_from, abort]
-		if not @etags.tasks_completed
-			check_completion_ids = @tasks.map (task) -> task.id
-			promises.push @fetchCompletedTasks abort
-		yield Promise.all promises
+		yield @fetchNonCompletedTasks abort
 		return if abort?()
+
+		if not @etags.tasks_completed or not @states.is 'TasksCached'
+			check_completion_ids = @tasks.map (task) -> task.id
+			yield @fetchCompletedTasks abort
+			return if abort?()
 
 		if check_completion_ids
 			@processTasksCompletions check_completion_ids
@@ -248,10 +263,18 @@ class TaskListSync
 	# Methods
 	# ----- -----
 
+
+	# TODO remove from tasks collections
+	deleteTask: coroutine (task_id, abort) ->
+		yield @req @tasks_api.tasks.delete,
+			tasklist: @list.id
+			task: task_id
+
+
 	processTasksCompletions: (ids) ->
 		non_completed_ids = @tasks.map (task) -> task.id
 		(ids.difference non_completed_ids).forEach (id) ->
-			# time of completion is actually fake, but doesnt require a request
+			# time of completion is actually fake, but doesn't require a request
 			@completions_tasks[id] = completed: yes, time: moment()
 
 
@@ -264,6 +287,7 @@ class TaskListSync
 			etag: @etags.tasks
 			
 		if response[1].statusCode is 304
+			@states.add 'TasksCached'
 			console.log "[CACHED] tasks for '#{@name}'"
 		else
 			console.log "[FETCH] tasks for '#{@name}'"
@@ -307,7 +331,7 @@ class TaskListSync
 		yield @gmail.modifyLabels id, [], @uncompletedThreadLabels(), abort
 		@push_dirty = yes
 		return if abort?()
-		@completions_threads[id] = completed: yes, time: moment()
+		@query.completions[id] = completed: yes, time: moment()
 
 
 	uncompleteThread: coroutine (id, abort) ->
@@ -315,7 +339,7 @@ class TaskListSync
 		yield @gmail.modifyLabels id, @uncompletedThreadLabels(), [], abort
 		@push_dirty = yes
 		return if abort?()
-		@completions_threads[id] = completed: no, time: moment()
+		@query.completions[id] = completed: no, time: moment()
 
 
 	createThreadForTask: coroutine (task, abort) ->
@@ -337,7 +361,6 @@ class TaskListSync
 		yield @req @tasks_api.tasks.patch,
 			tasklist: @list.id
 			task: task.id
-			userId: 'me'
 			resource:notes: task.notes
 		@push_dirty = yes
 		# TODO update the DB
@@ -378,7 +401,7 @@ class TaskListSync
 		@completions_tasks[task_id] = completed: yes, time: moment()
 
 
-	getAllTasks: -> @tasks.items.concat @tasks_completed.items or []
+	getAllTasks: -> @tasks.items.concat @tasks_completed?.items or []
 
 
 	fetchThreadForTask: coroutine (task, abort) ->
@@ -422,6 +445,18 @@ class TaskListSync
 			resource:
 				title: title
 				notes: "email:#{thread.id}"
+		@push_dirty = yes
+		return if abort?()
+		# TODO update the db
+
+		type res[0], ITask, 'ITask'
+
+
+	createTask: coroutine (task, abort) ->
+		console.log "Adding task '#{task.title}'"
+		res = yield @req @tasks_api.tasks.insert,
+			tasklist: @list.id
+			resource: task
 		@push_dirty = yes
 		return if abort?()
 		# TODO update the db

@@ -119,11 +119,11 @@ class Sync
 		@gmail_api = new google.gmail 'v1', auth: @auth.client
 
 		@gmail = new Gmail this
-		@states.pipeForward 'GmailEnabled', @gmail.states, 'Enabled'
-		@states.pipeForward 'GmailSyncEnabled', @gmail.states, 'SyncingEnabled'
-		@initQueries()
+		@states.pipe 'GmailEnabled', @gmail.states, 'Enabled'
+		@states.pipe 'GmailSyncEnabled', @gmail.states, 'SyncingEnabled'
+		@initTaskListsSync()
 
-		@auth.pipeForward 'Ready', @states, 'Authenticated'
+		@auth.pipe 'Ready', @states, 'Authenticated'
 
 			
 	# ----- -----
@@ -185,7 +185,8 @@ class Sync
 			@states.drop 'Dirty'
 		else
 			# Reset synced states in children
-			@states.drop @gmail.states, 'QueryLabelsSynced'
+#			@states.drop @gmail.states, 'QueryLabelsSynced'
+			@gmail.states.drop 'QueryLabelsSynced'
 		for list in @task_lists_sync
 			@states.add list.states, 'Restart'
 
@@ -195,13 +196,25 @@ class Sync
 	# ----- -----
 
 
-	initQueries: ->
+	findTaskForThread: (thread_id) ->
+		task = null
+		list = null
+		@task_lists_sync.each (list_sync) ->
+			found = list_sync.getTaskForThread thread_id
+			if found
+				task = found
+				list = list_sync
+
+		[task, list]
+
+
+	initTaskListsSync: ->
 		for name, data of @config.tasks.queries
 			continue if name is 'labels_defaults'
 			task_list = new TaskListSync name, data, this
-			@states.pipeForward 'TaskListSyncEnabled', task_list.states, 'Enabled'
-			task_list.states.pipeForward 'Synced', this.states, 'TaskListsSynced'
-			task_list.states.pipeForward 'Syncing', this.states, 'SyncingTaskLists'
+			@states.pipe 'TaskListSyncEnabled', task_list.states, 'Enabled', no
+			task_list.states.pipe 'Synced', this.states, 'TaskListsSynced'
+			task_list.states.pipe 'Syncing', this.states, 'SyncingTaskLists'
 			# TODO handle error of non existing task list in the inner classes
 			#			task_list.states.on 'Restart.enter', => @states.drop 'TaskListsFetched'
 			@task_lists_sync.push task_list

@@ -91,6 +91,7 @@ class GmailQuery
     @states.add 'ThreadsFetched'
 
     if @fetch_msgs
+      abort = @states.getAbort 'ThreadsFetched'
       @states.add 'FetchingMsgs', history_id, abort
 
 

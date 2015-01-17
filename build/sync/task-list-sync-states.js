@@ -23,7 +23,7 @@
     };
 
     States.prototype.Restart = {
-      blocks: ['TasksFetched', 'CompletedTasksSynced', 'ThreadsToTasksSynced', 'TasksToThreadsSynced', 'CompletedThreadsSynced']
+      blocks: ['TasksFetched', 'CompletedTasksSynced', 'ThreadsToTasksSynced', 'TasksToThreadsSynced', 'CompletedThreadsSynced', 'TasksCached']
     };
 
     States.prototype.PreparingList = {
@@ -46,6 +46,8 @@
       requires: ['ListReady'],
       blocks: ['FetchingTasks']
     };
+
+    States.prototype.TasksCached = {};
 
     States.prototype.SyncingThreadsToTasks = {
       auto: true,
