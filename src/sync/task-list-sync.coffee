@@ -20,10 +20,11 @@ timestamp = require 'internet-timestamp'
 # TODO loose
 ago = require 'ago'
 moment = require 'moment'
+events = require 'events'
 
 
 
-class TaskListSync
+class TaskListSync extends events.EventEmitter
 
 	data: null
 	name: null
@@ -54,6 +55,7 @@ class TaskListSync
 	query: null
 	etags: null
 	completions_tasks: null
+	quota_exceeded: no
 
 
 	constructor: (@name, @data, @sync) ->
@@ -359,7 +361,7 @@ class TaskListSync
 
 	createThreadForTask: coroutine (task, abort) ->
 		yield @gmail.createThread(
-			@createEmail(task.title), @uncompletedThreadLabels(), abort
+			@gmail.createEmail(task.title), @uncompletedThreadLabels(), abort
 		)
 		@push_dirty = yes
 
@@ -434,7 +436,18 @@ class TaskListSync
 
 
 	req: coroutine (method, params) ->
-		yield @sync.req.apply @sync, arguments
+		try yield @sync.req.apply @sync, arguments
+		catch err
+			# catch quote exceeded exceptions only
+			throw err if err.code? isnt 403
+			@quota_exceeded = yes
+			# wait 0.5sec
+			setTimeout (@emit.bind this, 'retry-requests'), 500
+			while @quota_exceeded
+				yield new Promise (resolve) =>
+					@once 'retry-requests', resolve
+
+			yield @req method, params
 
 
 	# TODO abort
@@ -504,11 +517,14 @@ class TaskListSync
 
 	getTaskTitleFromThread: (thread) ->
 		type thread, IThread, 'IThread'
-		title = @gmail.getTitleFromThread thread
+		# TODO use the snippet when no title available
+		title = @gmail.getTitleFromThread(thread) or '[notitle]'
 		# TODO clenup
 		#		return title if not @sync.config.def_title
 
-		[title, labels] = @getlabelsFromTitle title
+#		console.dir thread.messages
+#		console.dir thread.messages[0].payload.headers
+		[title, labels] = @getLabelsFromTitle title
 		# TODO add labels from the thread
 		# remove labels defining this query list
 		for label in @data.labels_new_task
@@ -527,7 +543,8 @@ class TaskListSync
 	@name string
 	@return [ string, Array<Label> ]
 	###
-	getlabelsFromTitle: (title) ->
+	getLabelsFromTitle: (title) ->
+#		console.log "title: #{title}"
 		type title, String
 		labels = []
 		for r in @sync.config.auto_labels

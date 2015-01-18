@@ -219,6 +219,7 @@ class Gmail
 	getLabelsIds: (labels) ->
 		if not Object.isArray labels
 			labels = [labels]
+
 		labels.map (name) =>
 			label = @labels.find (label) ->
 				label.name.toLowerCase() is name.toLowerCase()
@@ -245,9 +246,10 @@ class Gmail
 			log_msg += "-(#{remove_labels.join ' '})"
 		console.log log_msg
 
-		yield @req @api.users.messages.modify,
+		yield @req @api.users.threads.modify,
 			id: thread_id
 			userId: 'me'
+			fields: 'id'
 			resource:
 				addLabelIds: add_label_ids
 				removeLabelIds: remove_label_ids

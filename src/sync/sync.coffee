@@ -5,6 +5,7 @@
 auth = require '../auth'
 TaskListSync = require './task-list-sync'
 type = require '../type'
+events = require 'events'
 
 asyncmachine = require 'asyncmachine'
 google = require 'googleapis'
@@ -86,7 +87,7 @@ class States extends asyncmachine.AsyncMachine
 
 
 
-class Sync
+class Sync extends events.EventEmitter
 
 
 	states: null
@@ -96,6 +97,9 @@ class Sync
 	gmail_api: null
 	task_lists: null
 	etags: null
+	active_requests: null
+	executed_requests: null
+	@max_active_requests: 5
 
 	history_id: null
 	Object.defineProperty @::, 'history_id', set: (history_id) ->
@@ -114,6 +118,8 @@ class Sync
 		@auth = new auth.Auth config
 		@task_lists_sync = []
 		@etags = {}
+		@active_requests = 0
+		@setMaxListeners 0
 
 		@tasks_api = new google.tasks 'v1', auth: @auth.client
 		@gmail_api = new google.gmail 'v1', auth: @auth.client
@@ -165,6 +171,7 @@ class Sync
 	# TODO measure the time taken
 	Synced_state: ->
 		console.log '!!! SYNCED !!!'
+		console.log "Requests: #{@executed_requests}"
 		@last_sync_end = new Date()
 		@last_sync_time = @last_sync_end - @last_sync_start
 		console.log "Time: #{@last_sync_time}ms"
@@ -175,6 +182,7 @@ class Sync
 
 	Syncing_state: ->
 		console.log '--- SYNCING ---'
+		@executed_requests = 0
 		# TODO define in the prototype
 		@last_sync_start = new Date()
 		@last_sync_end = null
@@ -220,13 +228,31 @@ class Sync
 			@task_lists_sync.push task_list
 
 
+	# TODO support the abort param
 	req: coroutine (method, params) ->
+		# wait until new request will be possible
+		while @active_requests >= @constructor.max_active_requests
+			yield new Promise (resolve) =>
+				@once 'request-finished', resolve
+		@active_requests++
+#		console.log "@active_requests++"
+
 		params ?= {}
 		@log ['REQUEST', params], 3
+		console.log params
 		params.auth = @auth.client
-		# TODO catch  reason: 'insufficientPermissions's
+		# TODO catch errors
 		method = promisify method
-		yield method params
+		ret = yield method params
+#		console.log "@active_requests--"
+		@active_requests--
+		@emit 'request-finished'
+		@executed_requests++
+
+#		delete params.auth
+#		console.log params
+#		console.log ret[0]
+		ret
 
 
 	log: (msgs, level) ->

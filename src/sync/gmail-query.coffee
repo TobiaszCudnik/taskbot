@@ -44,6 +44,7 @@ class GmailQuery
   threads: null
   completions: null
   result: null
+  previous_results: null
   query: null
   fetch_msgs: null
   Object.defineProperty @::, 'threads', get: -> @result.threads
@@ -58,10 +59,9 @@ class GmailQuery
       @states.debug "GmailQuery(#{name}) / ", process.env['DEBUG']# - 1
 
 
-  # TODO ensure all the threads are downloaded (stream per pasge if required)
+  # TODO should download messages in parallel with next threads list pages
   FetchingThreads_state: coroutine (states) ->
     abort = @states.getAbort 'FetchingThreads'
-    # TODO this break half of the gmail queries
     if yield @isCached abort
       return if abort()
       console.log "[CACHED] threads for '#{@query}'"
@@ -71,16 +71,31 @@ class GmailQuery
     return if abort?()
 
     console.log "[FETCH] threads' list for '#{@query}'"
-    res = yield @req @api.users.threads.list,
-      q: @query
-      userId: "me"
-      fields: "threads(historyId,id)"
-    return if abort?()
+    while yes
+      params =
+        q: @query
+        userId: "me"
+        fields: "nextPageToken,threads(historyId,id)"
+      if res?[0].nextPageToken
+        console.log "[FETCH] next page for threads' list for '#{@query}'"
+        params.pageToken = res[0].nextPageToken
 
+      res = yield @req @api.users.threads.list, params
+      return if abort?()
+
+      if not results
+        results = res[0]
+      else
+        results.threads.union res[0].threads
+
+      break unless res[0].nextPageToken
+
+    # TODO could be done in parallel with downloading of the results
     history_id = yield @gmail.getHistoryId abort
     return if abort?()
 
-    @result = res[0]
+    @previous_results = @result
+    @result = results
     @result.threads ?= []
     @updateThreadsCompletions()
 
@@ -93,17 +108,29 @@ class GmailQuery
     if @fetch_msgs
       abort = @states.getAbort 'ThreadsFetched'
       @states.add 'FetchingMsgs', history_id, abort
+    else
+      @previous_results = null
 
 
   FetchingMsgs_state: coroutine (states, history_id, abort) ->
     abort = @states.getAbort 'FetchingMsgs', abort
 
     threads = yield Promise.all @threads.map coroutine (thread) =>
-      yield @gmail.fetchThread thread.id, thread.historyId, abort
+      # check if the thread has been previously downloaded and if
+      # the history ID has changed
+      previous = @previous_results?.threads.find (item) ->
+        item.id is thread.id and item.historyId is thread.historyId
+
+      if previous
+        previous
+      else
+        yield @gmail.fetchThread thread.id, thread.historyId, abort
+
     return if abort()
 
     @synced_history_id = history_id
     @result.threads = threads
+    @previous_results = null
     @states.add 'MsgsFetched'
 
 
