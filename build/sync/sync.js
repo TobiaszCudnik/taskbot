@@ -166,10 +166,10 @@
       return this.states.add('Synced');
     };
 
-    Sync.prototype.FetchingTaskLists_state = coroutine(function*() {
+    Sync.prototype.FetchingTaskLists_state() {
       var abort, res;
       abort = this.states.getAbort('FetchingTaskLists');
-      res = (yield this.req(this.tasks_api.tasklists.list, {
+      res = (await this.req(this.tasks_api.tasklists.list, {
         etag: this.etags.task_lists
       }));
       if (typeof abort === "function" ? abort() : void 0) {
@@ -268,7 +268,7 @@
     Sync.prototype.req = coroutine(function*(method, params) {
       var ret;
       while (this.active_requests >= this.constructor.max_active_requests) {
-        (yield new Promise((function(_this) {
+        (await new Promise((function(_this) {
           return function(resolve) {
             return _this.once('request-finished', resolve);
           };
@@ -282,7 +282,7 @@
       console.log(params);
       params.auth = this.auth.client;
       method = promisify(method);
-      ret = (yield method(params));
+      ret = (await method(params));
       this.active_requests--;
       this.emit('request-finished');
       this.executed_requests++;

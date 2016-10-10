@@ -26,23 +26,20 @@
     "service"
   ],
   "dependencies": {
+    "asyncmachine": "^3.0.0",
     "ago": "^1.0.0",
     "async": "latest",
-    "asyncmachine": "asyncmachine",
-    "bluebird": "latest",
-    "coffee-script": "jashkenas/coffeescript",
     "dateformat": "^1.0.8",
     "internet-timestamp": "0.0.1",
     "moment": "^2.8.4",
     "source-map-support": "latest",
     "suspend": "latest",
-    "tracery": "latest",
     "underscore": "latest",
     "underscore.string": "latest",
-    "underscore.transparent": "latest"
+    "underscore.transparent": "latest",
+    "typescript": "^2.0.0",
+    "google-api-nodejs-tsd": "procrastinatos/google-api-nodejs-tsd"
   },
-  "bundleDependencies": [],
-  "devDependencies": {},
   "license": "MIT",
   "engine": {
     "node": ">=0.8"

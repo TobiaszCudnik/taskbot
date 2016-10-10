@@ -1,0 +1,18 @@
+{
+    "compilerOptions": {
+        "target": "es6",
+        "lib": [
+            "es2017",
+            "dom"
+        ],
+        "module": "commonjs"
+    },
+    "include": [
+        "typings/index.d.ts",
+        "src/**/*"
+    ]
+    // "include": [
+    //     "typings/index.d.ts",
+    //     "src/app.ts"
+    // ]
+}

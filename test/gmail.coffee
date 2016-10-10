@@ -9,14 +9,14 @@ go = suspend.resume
 describe "Connection", ->
 	beforeEach ->
 		@gmail = gmail.Connection settings
-		yield gmail.once 'Connected', go()
+		await gmail.once 'Connected', go()
 		sinon.mock gmail.Query
 		@gmail.set 'Active'
 		
 	afterEach ->
 		@gmail.set 'Disconnected'
-		yield gmail.once 'Disconnected', go()
-#		yield gmail.onceSet 'Disconnected', go()
+		await gmail.once 'Disconnected', go()
+#		await gmail.onceSet 'Disconnected', go()
 		
 	it 'should connect to the server', ->
 	it 'should open the mailbox'
