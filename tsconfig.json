@@ -5,7 +5,16 @@
             "es2017",
             "dom"
         ],
-        "module": "commonjs"
+        "module": "commonjs",
+        "sourceMap": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "strictNullChecks": true,
+        "noImplicitReturns": true,
+        "noImplicitThis": true,
+        "noImplicitAny": true,
+        "suppressImplicitAnyIndexErrors": true,
+        "preserveConstEnums": true
     },
     "include": [
         "typings/index.d.ts",

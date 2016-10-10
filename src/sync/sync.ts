@@ -10,11 +10,11 @@ import TaskListSync from './task-list-sync';
 import { EventEmitter } from 'events';
 
 import AsyncMachine from 'asyncmachine';
+import { promisify } from 'typed-promisify'
 import * as google from 'googleapis';
-import * as async from 'async';
 import { Gmail } from './gmail';
-import { ApiError } from '../exceptions';
-
+// import { ApiError } from '../exceptions'
+import { Semaphore } from 'await-semaphore';
 
 
 class States extends AsyncMachine {
@@ -74,27 +74,27 @@ class States extends AsyncMachine {
 
 class Sync extends EventEmitter {
 
-	max_active_requests: number;
-	states = null;
-	config = null;
-	auth = null;
-	tasks_api = null;
+	max_active_requests = 5;
+	semaphore: Semaphore;
+	states;
+	config;
+	auth;
+	tasks_api;
 	gmail: Gmail;
 	gmail_api: google.gmail.v1.Gmail;
 	task_lists_sync: TaskListSync[];
-	task_lists = null;
-	etags = null;
-	active_requests = null;
+	task_lists;
+	etags;
+	active_requests number;
 	labels: google.gmail.v1.Label[];
-	executed_requests = null;
-	static max_active_requests = 5;
+	executed_requests;
 	historyId: number;
 
 	last_sync_end: number;
 	last_sync_time: number;
 	next_sync_timeout: number;
 
-	set history_id(history_id) {
+	set history_id(history_id: number) {
 		this.historyId = Math.max(this.history_id, history_id);
 	}
 
@@ -109,6 +109,7 @@ class Sync extends EventEmitter {
 		if (process.env['DEBUG']) {
 			this.states.debug('Sync / ', process.env['DEBUG']);
 		}
+		this.semaphore = new Semaphore(this.max_active_requests)
 		this.task_lists = [];
 		this.labels = [];
 		this.auth = new auth.Auth(config);
@@ -240,7 +241,7 @@ class Sync extends EventEmitter {
 
 
 	// TODO support the abort param
-	async req(method, params) {
+	async req<T>(method: (...params: any[]) => T, params: {}): Promise<T> {
 		// wait until new request will be possible
 		while (this.active_requests >= this.max_active_requests) {
 			await new Promise(resolve => {
@@ -257,8 +258,8 @@ class Sync extends EventEmitter {
 		params.auth = this.auth.client;
 		// TODO catch errors
 		// TODO loose promisify
-		method = promisify(method);
-		let ret = await method(params);
+		let promise_method = promisify(method);
+		let ret = await promise_method(...params);
 //		console.log "@active_requests--"
 		this.active_requests--;
 		this.emit('request-finished');

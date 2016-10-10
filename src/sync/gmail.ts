@@ -2,6 +2,8 @@
 
 import AsyncMachine from 'asyncmachine';
 import { GmailQuery } from './gmail-query';
+import { Sync } from './sync'
+import { Semaphore } from 'await-semaphore';
 
 
 class States extends AsyncMachine {
@@ -50,28 +52,28 @@ class States extends AsyncMachine {
 
 class Gmail {
 
-
-	states = null;
-	api: google.gmail.v1.Gmail = null;
-	config = null;
-	sync = null;
-	completions = null;
+	states: States;
+	api: google.gmail.v1.Gmail;
+	config;
+	sync: Sync;
+	completions;
 	history_id_timeout = 3000;
-	history_id = null;
-	last_sync_time = null;
-	query_labels = null;
-	queries = null;
-	query_labels_timer = null;
+	history_id;
+	last_sync_time;
+	query_labels;
+	queries;
+	query_labels_timer;
 	labels: google.gmail.v1.Label[];
+	semaphore: Semaphore;
 
 
-	constructor(sync) {
+	constructor(sync: Sync) {
 		this.sync = sync;
+		this.semaphore = sync.semaphore
 		this.states = new States;
 		this.states.setTarget(this);
-		if (process.env['DEBUG']) {
-			this.states.debug('Gmail / ', process.env['DEBUG']);
-		}
+		if (process.env['DEBUG'])
+			this.states.id('Gmail').logLevel(process.env['DEBUG'])
 
 		this.completions = {};
 		this.queries = [];
@@ -93,29 +95,28 @@ class Gmail {
 		let abort = this.states.getAbort('SyncingQueryLabels');
 
 		let dirty = false;
-		await Promise.all(this.query_labels.map(async function(query, name) {
+		await Promise.all(this.query_labels.map(async function(query: GmailQuery, name) {
 
-			query.states.add('Enabled');
-			// TODO await query.states.whenOnce 'ThreadsFetched'
-			query.states.whenOnce('ThreadsFetched');
-			if (abort()) { return; }
+			query.states.add('Enabled')
+			await query.states.when('ThreadsFetched');
+			if (abort())
+				return
 			query.states.drop('Enabled');
 
 			let labels = this.config.query_labels[name];
-			// TODO await Promise.all query.threads.map coroutine (thread) =>
-			return Promise.all(query.threads.map(function(thread) {
-				// TODO await @modifyLabels thread.id, labels[0], labels[1], abort
-				this.modifyLabels(thread.id, labels[0], labels[1], abort);
-				return dirty = true;
-			})
-			)
+			await Promise.all(query.threads.map(async (thread) => {
+				await this.modifyLabels(thread.id, labels[0], labels[1], abort);
+				dirty = true;
+			}))
 		}))
-		if (dirty) { this.states.add('Dirty'); }
-		if (__guardFunc__(abort, f => f())) { return; }
+		if (dirty)
+			this.states.add('Dirty')
 
-		if (!dirty) {
-			return this.states.add('QueryLabelsSynced');
-		}
+		if (abort())
+			return
+
+		if (!dirty)
+			this.states.add('QueryLabelsSynced');
 	};
 
 
@@ -227,7 +228,7 @@ class Gmail {
 	}
 
 
-	normalizeLabelName(label) {
+	normalizeLabelName(label: string) {
 		return label
 			.replace('/', '-')
 			.replace(' ', '-')
@@ -240,16 +241,18 @@ class Gmail {
 	}
 
 
-	async isCached(history_id, abort) {
+	async isCached(history_id: number, abort: () => boolean) {
 		if (!this.isHistoryIdValid()) {
 			if (!this.states.is('FetchingHistoryId')) {
 				this.states.add('FetchingHistoryId', abort);
 				// We need to wait for FetchingHistoryId being really added, not only queued
-				await this.states.whenOnce('FetchingHistoryId', abort);
-				if (__guardFunc__(abort, f => f())) { return; }
+				await this.states.when('FetchingHistoryId', abort);
+				if (abort())
+					return
 			}
-			await this.states.whenOnce('HistoryIdFetched', abort);
-			if (__guardFunc__(abort, f1 => f1())) { return; }
+			await this.states.when('HistoryIdFetched', abort);
+			if (abort())
+				return
 		}
 
 		return this.history_id <= history_id;
@@ -261,7 +264,7 @@ class Gmail {
 //			query = new GmailQuery this, query, no
 
 
-	getLabelsIds(labels) {
+	getLabelsIds(labels: string[] | string): string[] {
 		if (!Array.isArray(labels)) {
 			labels = [labels];
 		}
@@ -274,7 +277,7 @@ class Gmail {
 	}
 
 
-	async modifyLabels(thread_id, add_labels, remove_labels, abort) {
+	async modifyLabels(thread_id: string, add_labels?: string[], remove_labels?: string[], abort?: () => boolean) {
 		if (typeof add_labels === 'undefined' || add_labels === null) { add_labels = []; }
 		if (typeof remove_labels === 'undefined' || remove_labels === null) { remove_labels = []; }
 		let add_label_ids = this.getLabelsIds(add_labels);
@@ -345,7 +348,7 @@ class Gmail {
 	};
 
 
-	createEmail(subject) {
+	createEmail(subject: string) {
 			let email = [`From: ${this.sync.config.gmail_username} <${this.sync.config.gmail_username}>s`,
 							 `To: ${this.sync.config.gmail_username}`,
 							 "Content-type: text/html;charset=utf-8",
