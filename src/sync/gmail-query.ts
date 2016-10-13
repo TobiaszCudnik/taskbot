@@ -45,7 +45,10 @@ class GmailQuery {
   threads: Thread[] = [];
   query: string;
   name: string;
-  completions: Map<string, Thread> = new Map
+  completions: Map<string, {
+    completed: boolean,
+    time: moment.Moment
+  }> = new Map
   previous_threads: Thread[] | null = null;
   fetch_msgs: boolean;
 
@@ -177,10 +180,10 @@ class GmailQuery {
       let completion = this.completions[thread.id];
       // update the completion if thread is new or completion status has changed
       if (completion && completion.completed || !completion) {
-        this.completions[thread.id] = {
+        this.completions.set(thread.id, {
           completed: false,
           time: moment()
-        }
+        })
       }
 
       non_completed_ids.push(thread.id)
@@ -200,22 +203,24 @@ class GmailQuery {
   }
 
 
-  threadWasCompleted(id: string): boolean {
-    if (this.completions[id] && this.completions[id].completed)
-      return this.completions[id].time;
-    return false
+  threadWasCompleted(id: string): moment.Moment | null {
+    let thread = this.completions.get(id)
+    if (thread && thread.completed)
+      return thread.time
+    return null
   }
 
 
-  threadWasNotCompleted(id: string): boolean {
-    if (this.completions[id] && !this.completions[id].completed)
-      return this.completions[id].time;
-    return false
+  threadWasNotCompleted(id: string): moment.Moment | null {
+    let thread = this.completions.get(id)
+    if (thread && !thread.completed)
+      return thread.time;
+    return null
   }
 
 
   threadSeen(id: string) {
-    return Boolean(this.completions[id]);
+    return Boolean(this.completions.get(id))
   }
 }
 

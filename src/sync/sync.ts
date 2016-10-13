@@ -25,7 +25,14 @@ export type TConfig = {
 		0: string[],
 		// remove
 		1: string[]
-	}}
+	}},
+	tasks: {
+		queries: {
+			labels_defaults: {
+				labels_new_task: string[]
+			}
+		}
+	}
 }
 
 class States extends AsyncMachine {
