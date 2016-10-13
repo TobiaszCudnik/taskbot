@@ -16,6 +16,17 @@ import { Gmail } from './gmail';
 // import { ApiError } from '../exceptions'
 import { Semaphore } from 'await-semaphore';
 
+export type TConfig = {
+	gmail_username: string,
+	gmail_password: string,
+	gmail_host: string,
+	query_labels: { [query: string]: {
+		// add
+		0: string[],
+		// remove
+		1: string[]
+	}}
+}
 
 class States extends AsyncMachine {
 
@@ -77,7 +88,7 @@ class Sync extends EventEmitter {
 	max_active_requests = 5;
 	semaphore: Semaphore;
 	states;
-	config;
+	config: TConfig;
 	auth;
 	tasks_api;
 	gmail: Gmail;
@@ -101,7 +112,7 @@ class Sync extends EventEmitter {
 //	Sync.defineType 'auth', auth.Auth, 'auth.Auth'
 
 
-	constructor(config) {
+	constructor(config: TConfig) {
 		super()
 		this.config = config;
 		this.states = new States;
@@ -239,27 +250,26 @@ class Sync extends EventEmitter {
 		return result;
 	}
 
-
-	// TODO support the abort param
-	async req<T>(method: (...params: any[]) => T, params: {}): Promise<T> {
-		// wait until new request will be possible
-		while (this.active_requests >= this.max_active_requests) {
-			await new Promise(resolve => {
-				return this.once('request-finished', resolve);
-			}
-			);
+	// TODO take abort() as the second param
+	async req<A,T>(method: (arg: A, cb: (err: any, res: T) => void) => void, params?: A, abort?: () => boolean): Promise<T | null> {
+		let release = await this.semaphore.acquire()
+		if (abort && abort()) {
+			release()
+			return null
 		}
 		this.active_requests++;
 //		console.log "@active_requests++"
 
-		if (typeof params === 'undefined' || params === null) { params = {}; }
+		if (!params)
+			params = {} as A
 		this.log(['REQUEST', params], 3);
 		console.log(params);
-		params.auth = this.auth.client;
+		(params as any).auth = this.auth.client;
 		// TODO catch errors
 		// TODO loose promisify
 		let promise_method = promisify(method);
-		let ret = await promise_method(...params);
+		let ret = await promise_method(params)
+		release()
 //		console.log "@active_requests--"
 		this.active_requests--;
 		this.emit('request-finished');

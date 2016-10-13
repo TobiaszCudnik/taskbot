@@ -7,7 +7,7 @@ import * as moment from 'moment';
 import { EventEmitter } from 'events';
 import { Gmail } from './gmail'
 import { Sync } from './sync'
-
+import { GmailQuery } from './gmail-query'
 
 
 class TaskListSync extends EventEmitter {
@@ -17,21 +17,21 @@ class TaskListSync extends EventEmitter {
 //  @defineType 'data',
 	list = null;
 
-	tasks_api = null;
+	tasks_api: google.tasks.v1.Tasks;
 //  @defineType 'tasks_api', [ITask], '[ITask]'
 
-	states = null;
+	states: States;
 //  @defineType 'states', QueryStates, 'QueryStates'
 
-	tasks = null;
+	tasks: google.tasks.v1.TaskLists | null;
 	tasks_completed = null;
 	tasks_completed_from = null;
 	threads = null;
 
 	push_dirty: boolean;
 	last_sync_start: number;
-	last_sync_end: number;
-	last_sync_time: number;
+	last_sync_end: number | null;
+	last_sync_time: number | null;
 
 //	@defineType 'completions_threads', [typedef {
 //		type: String, time: Object
@@ -41,7 +41,7 @@ class TaskListSync extends EventEmitter {
 //	}], '[{completed: Boolean, time: Object}]'
 
 	sync: Sync;
-	query = null;
+	query: GmailQuery;
 	etags = null;
 	completions_tasks = null;
 	quota_exceeded = false;
@@ -52,7 +52,7 @@ class TaskListSync extends EventEmitter {
 	gmail_api: google.gmail.v1.Gmail;
 
 
-	constructor(name, data, sync) {
+	constructor(name: string, data, sync: Sync) {
 		super()
 		this.name = name;
 		this.data = data;
@@ -90,7 +90,7 @@ class TaskListSync extends EventEmitter {
 	Syncing_state() {
 		this.push_dirty = false;
 		// TODO define in the prototype
-		this.last_sync_start = new Date();
+		this.last_sync_start = Date.now()
 		this.last_sync_end = null;
 		return this.last_sync_time = null;
 	}
@@ -98,7 +98,7 @@ class TaskListSync extends EventEmitter {
 
 	Synced_state() {
 		if (this.push_dirty) { this.states.add(this.sync.states, 'Dirty'); }
-		this.last_sync_end = new Date();
+		this.last_sync_end = Date.now()
 		this.last_sync_time = this.last_sync_end - this.last_sync_start;
 		return console.log(`TaskList ${this.name} synced in: ${this.last_sync_time}ms`);
 	}
@@ -106,7 +106,7 @@ class TaskListSync extends EventEmitter {
 
 	async SyncingThreadsToTasks_state() {
 		let abort = this.states.getAbort('SyncingThreadsToTasks');
-		await Promise.all(this.query.threads.map(async function(thread) {
+		await Promise.all(this.query.threads.map(async (thread) => {
 
 			let task = this.getTaskForThread(thread.id);
 			if (task) {
@@ -151,13 +151,13 @@ class TaskListSync extends EventEmitter {
 					return this.createTaskFromThread(thread, abort);
 				}
 			}
-		}
-		)
-		);
+		}));
 
-		if (__guardFunc__(abort, f => f())) { return; }
+		if (abort())
+			return
+		// TODO merge?
 		this.states.add('ThreadsToTasksSynced');
-		return this.states.add('Synced');
+		this.states.add('Synced');
 	};
 
 
@@ -165,7 +165,7 @@ class TaskListSync extends EventEmitter {
 		let abort = this.states.getAbort('SyncingTasksToThreads');
 
 		// loop over non completed tasks
-		await Promise.all(this.tasks.items.map(async function(task) {
+		await Promise.all(this.tasks.items.map(async (task) => {
 			// TODO support children tasks
 			if (!task.title || task.parent) { return; }
 
@@ -195,7 +195,7 @@ class TaskListSync extends EventEmitter {
 		let abort = this.states.getAbort('SyncingCompletedThreads');
 
 		await Promise.all(this.query.completions
-			.map(async function(row, thread_id) {
+			.map(async (row, thread_id) => {
 				if (!row.completed) { return; }
 				let task = this.getTaskForThread(thread_id);
 				if (!task) { return; }
@@ -219,7 +219,7 @@ class TaskListSync extends EventEmitter {
 	async SyncingCompletedTasks_state() {
 		let abort = this.states.getAbort('SyncingCompletedTasks');
 
-		await Promise.all(this.completions_tasks.map(async function(row, task_id) {
+		await Promise.all(this.completions_tasks.map(async (row, task_id) => {
 			if (!row.completed) { return; }
 			let task = this.getTask(task_id);
 			if (!task) { return; }
@@ -440,17 +440,16 @@ class TaskListSync extends EventEmitter {
 
 	async uncompleteTask(task_id, abort) {
 		console.log(`Un-completing task ${task_id}`);
-		let res = await this.req(this.tasks_api.tasks.patch, {
+		await this.req(this.tasks_api.tasks.patch, {
 			tasklist: this.list.id,
 			task: task_id,
 			resource: {
 				status: 'needsAction',
 				completed: null
-			}
-		}
-		);
+			}, abort});
 		this.push_dirty = true;
-		if (__guardFunc__(abort, f => f())) { return; }
+		if (abort && abort())
+			return
 		// TODO update the task in the db
 		return this.completions_tasks[task_id] = {
 			completed: false,
@@ -482,7 +481,8 @@ class TaskListSync extends EventEmitter {
 
 
 	getAllTasks() {
-		if (!__guard__(this.tasks, x => x.items)) { return []; }
+		if (!this.tasks || !this.tasks.items))
+			return []
 		return this.tasks.items.concat(__guard__(this.tasks_completed, x1 => x1.items) || []);
 	}
 
@@ -570,9 +570,9 @@ class TaskListSync extends EventEmitter {
 		}
 		);
 		this.push_dirty = true;
-		if (__guardFunc__(abort, f => f())) {
-			return;
-		}
+		if (abort && abort())
+			return
+		
 		// TODO update the db
 
 		// return type(res[0], ITask, 'ITask');

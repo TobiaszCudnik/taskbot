@@ -1,38 +1,38 @@
 /// <reference path="../../node_modules/google-api-nodejs-tsd/dist/googleapis.gmail.v1/googleapis.gmail.v1.d.ts" />
-import AsyncMachine from 'asyncmachine';
+import AsyncMachine, {
+  IState
+} from 'asyncmachine';
 import * as moment from 'moment';
 import { Gmail } from './gmail'
 import { Semaphore } from 'await-semaphore';
-import { promisify } from 'typed-promisify'
 
 type Thread = google.gmail.v1.Thread
 
 class States extends AsyncMachine {
 
+  Enabled: IState = {};
+  Dirty: IState = {
+    blocks: ['MsgsFetched', 'ThreadsFetched']
+  };
 
-  Enabled = {};
-  Dirty = { blocks: ['MsgsFetched', 'ThreadsFetched'] };
-
-
-  FetchingThreads = {
+  FetchingThreads: IState = {
     auto: true,
     requires: ['Enabled'],
     blocks: ['ThreadsFetched']
   };
-  ThreadsFetched = {
+  ThreadsFetched: IState = {
     requires: ['Enabled'],
     blocks: ['FetchingThreads']
   };
 
-
-  FetchingMsgs = {
+  FetchingMsgs: IState = {
     requires: ['Enabled', 'ThreadsFetched'],
     blocks: ['MsgsFetched']
   };
-  MsgsFetched =
-  { blocks: ['FetchingMsgs'] };
+  MsgsFetched: IState = {
+    blocks: ['FetchingMsgs']
+  };
 }
-
 
 
 class GmailQuery {
@@ -40,7 +40,7 @@ class GmailQuery {
 	api: google.gmail.v1.Gmail;
   states: States;
 	semaphore: Semaphore;
-  synced_history_id: number;
+  synced_history_id: number | null;
 
   threads: Thread[] = [];
   query: string;
@@ -65,6 +65,10 @@ class GmailQuery {
     }
   }
 
+	async req<A,T>(method: (arg: A, cb: (err: any, res: T) => void) => void, params?: A, abort?: () => boolean): Promise<T | null> {
+    return this.gmail.req(method, params, abort)
+  }
+
   // TODO should download messages in parallel with next threads list pages
   async FetchingThreads_state() {
     let abort = this.states.getAbort('FetchingThreads');
@@ -80,30 +84,30 @@ class GmailQuery {
 
     console.log(`[FETCH] threads' list for '${this.query}'`);
     let results: google.gmail.v1.Thread[] = []
+    let prevRes: any
     while (true) {
-      let res: google.gmail.v1.ListThreadsResponse | null = null
       let params = {
         q: this.query,
         userId: "me",
+        foo: 'bar',
         fields: "nextPageToken,threads(historyId,id)",
         pageToken: undefined
       };
-      if (res && res[0].nextPageToken) {
+      if (prevRes && prevRes[0].nextPageToken) {
         console.log(`[FETCH] next page for threads' list for '${this.query}'`);
-        params.pageToken = res[0].nextPageToken;
+        params.pageToken = prevRes[0].nextPageToken;
       }
 
-      await this.semaphore.acquire()
-      if (abort())
-        return
-      res = await promisify(this.api.users.threads.list)(params);
-      if (abort())
-        return
+      let res = await this.req(this.api.users.threads.list, params, abort)
+      if (abort() || !res)
+        return 
 
-      results.push(...res[0].threads)
+      results.push(...res.threads)
 
-      if (!res[0].nextPageToken)
+      if (!res.nextPageToken)
         break
+
+      prevRes = res
     }
 
     // TODO could be done in parallel with downloading of the results
@@ -131,10 +135,10 @@ class GmailQuery {
     }
   }
 
-  async FetchingMsgs_state(history_id: number, abort: () => boolean) {
+  async FetchingMsgs_state(history_id: number, abort?: () => boolean) {
     abort = this.states.getAbort('FetchingMsgs', abort);
 
-    // TODO use typed map
+    // TODO use the awaitable map
     let threads = await Promise.all(this.threads.map(async (thread) => {
       // check if the thread has been previously downloaded and if
       // the history ID has changed
@@ -144,7 +148,7 @@ class GmailQuery {
       if (previous)
         return previous;
       else
-        return await this.gmail.fetchThread(thread.id, thread.historyId, abort);
+        return await this.gmail.fetchThread(thread.id, parseInt(thread.historyId, 10), abort);
     }))
 
     if (abort())
@@ -196,35 +200,24 @@ class GmailQuery {
   }
 
 
-  threadWasCompleted(id) {
-    if (__guard__(this.completions[id], x => x.completed) === true) {
+  threadWasCompleted(id: string): boolean {
+    if (this.completions[id] && this.completions[id].completed)
       return this.completions[id].time;
-    } else { return false; }
+    return false
   }
 
 
-  threadWasNotCompleted(id) {
-    if (__guard__(this.completions[id], x => x.completed) === false) {
+  threadWasNotCompleted(id: string): boolean {
+    if (this.completions[id] && !this.completions[id].completed)
       return this.completions[id].time;
-    } else { return false; }
+    return false
   }
 
 
-  threadSeen(id) {
+  threadSeen(id: string) {
     return Boolean(this.completions[id]);
   }
 }
 
 
 export { GmailQuery, States };
-
-// TODO remove
-function __guardFunc__(func, transform) {
-  return typeof func === 'function' ? transform(func) : undefined;
-}
-function __guard__(value, transform) {
-  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
-}
-function __in__(needle, haystack) {
-  return haystack.indexOf(needle) >= 0;
-}

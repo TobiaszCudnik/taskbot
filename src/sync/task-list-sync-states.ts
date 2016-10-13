@@ -1,97 +1,98 @@
-import asyncmachine from 'asyncmachine';
+import AsyncMachine, {
+	IState
+} from 'asyncmachine';
 
 
+class States extends AsyncMachine {
 
-class States extends asyncmachine.AsyncMachine {
+	Enabled: IState = {};
 
-
-	Enabled = {};
-
-
-	Syncing = {
+	Syncing: IState = {
 		auto: true,
 		requires: ['Enabled'],
 		blocks: ['Synced', 'Restart']
 	};
-	Synced = {
+	Synced: IState = {
 		blocks: ['Syncing'],
 		requires: ['CompletedTasksSynced', 'ThreadsToTasksSynced',
 			'TasksToThreadsSynced', 'CompletedThreadsSynced']
 	};
 
-
-	Restart = {blocks: ['TasksFetched', 'CompletedTasksSynced', 'ThreadsToTasksSynced',
-		'TasksToThreadsSynced', 'CompletedThreadsSynced', 'TasksCached']
-};
-
+	Restart: IState = {
+		blocks: ['TasksFetched', 'CompletedTasksSynced', 'ThreadsToTasksSynced',
+			'TasksToThreadsSynced', 'CompletedThreadsSynced', 'TasksCached']
+	};
 
 	// list
-	PreparingList = {
+	PreparingList: IState = {
 		auto: true,
 		requires: ['Syncing'],
 		blocks: ['ListReady']
 	};
-	ListReady = {blocks: ['PreparingList']};
-
+	ListReady: IState = {
+		blocks: ['PreparingList']
+	};
 
 	// tasks
-	FetchingTasks = {
+	FetchingTasks: IState = {
 		auto: true,
 		requires: ['Syncing', 'ListReady'],
 		blocks: ['TasksFetched']
 	};
-	TasksFetched = {requires: ['ListReady'], blocks: ['FetchingTasks']};
-	TasksCached = {};
-
+	TasksFetched: IState = {
+		requires: ['ListReady'], 
+		blocks: ['FetchingTasks']
+	};
+	TasksCached: IState = {};
 
 	// thread-to-tasks
-	SyncingThreadsToTasks = {
+	SyncingThreadsToTasks: IState = {
 		auto: true,
 		requires: ['Syncing', 'TasksFetched', 'MsgsFetched'],
 		blocks: ['ThreadsToTasksSynced']
 	};
-	ThreadsToTasksSynced = {blocks: ['SyncingThreadsToTasks']};
-
+	ThreadsToTasksSynced: IState = {
+		blocks: ['SyncingThreadsToTasks']
+	};
 
 	// tasks-to-threads
-	SyncingTasksToThreads = {
+	SyncingTasksToThreads: IState = {
 		auto: true,
 		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched'],
 		blocks: ['TasksToThreadsSynced']
 	};
-	TasksToThreadsSynced ={blocks: ['SyncingTasksToThreads']};
-
+	TasksToThreadsSynced: IState = {
+		blocks: ['SyncingTasksToThreads']
+	};
 
 	// complete threads
-	SyncingCompletedThreads = {
+	SyncingCompletedThreads: IState = {
 		auto: true,
 		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched'],
 		blocks: ['CompletedThreadsSynced']
 	};
-	CompletedThreadsSynced ={blocks: ['SyncingCompletedThreads']};
-
+	CompletedThreadsSynced: IState = {
+		blocks: ['SyncingCompletedThreads']
+	};
 
 	// complete tasks
-	SyncingCompletedTasks = {
+	SyncingCompletedTasks: IState = {
 		auto: true,
 		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched'],
 		blocks: ['CompletedTasksSynced']
 	};
-	CompletedTasksSynced ={blocks: ['SyncingCompletedTasks']};
-
+	CompletedTasksSynced: IState = {
+		blocks: ['SyncingCompletedTasks']
+	};
 
 //	SyncingTaskNames: {}
 
-
 	// ----- External States
 
+	ThreadsFetched: IState = {};
 
-	ThreadsFetched = {};
-
-
-	MsgsFetched = {};
+	MsgsFetched: IState = {};
 }
-
 
 
 export default States;
