@@ -1,16 +1,17 @@
 /// <reference path="../../node_modules/google-api-nodejs-tsd/dist/googleapis.gmail.v1/googleapis.gmail.v1.d.ts" />
 /// <reference path="../..//node_modules/google-api-nodejs-tsd/dist/googleapis.tasks.v1/googleapis.tasks.v1.d.ts" />
 
-//thread = require './thread'
-//Thread = thread.Thread
-//label = require './label'
-//Label = label.Label
 import Auth from '../auth';
 import TaskListSync from './task-list-sync';
 import { EventEmitter } from 'events';
 
-import AsyncMachine from 'asyncmachine';
-import { promisify } from 'typed-promisify'
+import AsyncMachine, {
+	IState
+} from 'asyncmachine';
+import {
+	promisify,
+	promisifyArray
+} from 'typed-promisify'
 import * as google from 'googleapis';
 import { Gmail } from './gmail';
 // import { ApiError } from '../exceptions'
@@ -23,57 +24,58 @@ import {
 
 class States extends AsyncMachine {
 
-	Enabled = {auto: true};
-
-
-	Authenticating = {
-		auto: true,
-		requires: ['Enabled'],
-		blocks: ['Authenticated']
+	Enabled: IState = {
+		auto: true
 	};
-	Authenticated ={blocks: ['Authenticating']};
 
-
-	Syncing = {
+	Authenticating: IState = {
 		auto: true,
-		requires: ['Enabled', 'Authenticated'],
-		blocks: ['Synced']
+		require: ['Enabled'],
+		drop: ['Authenticated']
 	};
-	Synced = {
-		requires: ['Enabled', 'Authenticated', 'TaskListsSynced',
+	Authenticated: IState = {
+		drop: ['Authenticating']
+	};
+
+	Syncing: IState = {
+		auto: true,
+		require: ['Enabled', 'Authenticated'],
+		drop: ['Synced']
+	};
+	Synced: IState = {
+		require: ['Enabled', 'Authenticated', 'TaskListsSynced',
 			'QueryLabelsSynced'],
-		blocks: ['Syncing']
+		drop: ['Syncing']
 	};
 
-
-	TaskListSyncEnabled = {
+	TaskListSyncEnabled: IState = {
 		auto: true,
-		requires:	['TaskListsFetched', 'QueryLabelsSynced']
+		require: ['TaskListsFetched', 'QueryLabelsSynced']
 	};
 
+	GmailEnabled: IState = {
+		auto: true
+	};
+	GmailSyncEnabled: IState = {
+		auto: true
+	};
 
-	GmailEnabled ={auto: true};
-	GmailSyncEnabled ={auto: true};
-
-
-	FetchingTaskLists = {
+	FetchingTaskLists: IState = {
 		auto: true,
-		requires: ['Enabled'],
-		blocks: ['TaskListsFetched']
+		require: ['Enabled'],
+		drop: ['TaskListsFetched']
 	};
-	TaskListsFetched ={blocks: ['FetchingTaskLists']};
+	TaskListsFetched: IState = {
+		drop: ['FetchingTaskLists']
+	};
 
+	QueryLabelsSynced: IState = {};
 
-	QueryLabelsSynced = {};
+	SyncingTaskLists: IState = {};
+	TaskListsSynced: IState = {};
 
-
-	SyncingTaskLists = {};
-	TaskListsSynced = {};
-
-
-	Dirty = {};
+	Dirty: IState = {};
 }
-
 
 
 class Sync extends EventEmitter {
@@ -86,12 +88,17 @@ class Sync extends EventEmitter {
 	tasks_api: google.tasks.v1.Tasks;
 	gmail: Gmail;
 	gmail_api: google.gmail.v1.Gmail;
-	task_lists_sync: google.tasks.v1.TaskList[];
-	task_lists: TaskListSync[];
+	task_lists_sync: TaskListSync[] = [];
+	task_lists: google.tasks.v1.TaskList[];
 	active_requests: number;
-	labels: google.gmail.v1.Label[];
+	labels: google.gmail.v1.Label[] = [];
 	executed_requests: number;
 	historyId: number;
+	etags: {
+		task_lists: string | null,
+	} = {
+		task_lists: null,
+	};
 
 	last_sync_start: number | null;
 	last_sync_end: number | null;
@@ -102,23 +109,18 @@ class Sync extends EventEmitter {
 		this.historyId = Math.max(this.history_id, history_id);
 	}
 
-//	Sync.defineType 'auth', auth.Auth, 'auth.Auth'
-
-
 	constructor(config: IConfig) {
 		super()
 		this.config = config;
 		this.states = new States;
 		this.states.setTarget(this);
 		if (process.env['DEBUG']) {
-			this.states.debug('Sync / ', process.env['DEBUG']);
+			this.states.id('Sync')
+				.logLevel(process.env['DEBUG']);
 		}
 		this.semaphore = new Semaphore(this.max_active_requests)
-		this.task_lists = [];
-		this.labels = [];
+		// this.task_lists = [];
 		this.auth = new Auth(config);
-		this.task_lists_sync = [];
-		this.etags = {};
 		this.active_requests = 0;
 		this.setMaxListeners(0);
 
@@ -132,12 +134,10 @@ class Sync extends EventEmitter {
 
 		this.auth.pipe('Ready', this.states, 'Authenticated');
 	}
-
 			
 	// ----- -----
 	// Transitions
 	// ----- -----
-
 
 	// Try to set Synced state in all deps
 	QueryLabelsSynced_state() { return this.states.add('Synced'); }
@@ -148,7 +148,7 @@ class Sync extends EventEmitter {
 		// TODO throttle updates
 		let res = await this.req(this.tasks_api.tasklists.list, {
 			etag: this.etags.task_lists
-		});
+		}, abort, true);
 		if (abort()) {
 			console.log('abort', abort);
 			return;
@@ -161,18 +161,15 @@ class Sync extends EventEmitter {
 			console.log('[CACHED] tasks lists');
 		}
 		return this.states.add('TaskListsFetched');
-	};
-
+	}
 
 	TaskListsSynced_enter() {
 		return this.task_lists_sync.every(list => list.states.is('Synced'));
 	}
 
-
 	SyncingTaskLists_exit() {
 		return !this.task_lists_sync.some(list => list.states.is('Syncing'));
 	}
-
 
 	// Schedule the next sync
 	// TODO measure the time taken
@@ -186,7 +183,6 @@ class Sync extends EventEmitter {
 		return this.next_sync_timeout = setTimeout((this.states.addByListener('Syncing')),
 			this.config.sync_frequency);
 	}
-
 
 	Syncing_state() {
 		console.log('--- SYNCING ---');
@@ -208,11 +204,9 @@ class Sync extends EventEmitter {
 			this.states.add(list.states, 'Restart'));
 	}
 
-
 	// ----- -----
 	// Methods
 	// ----- -----
-
 
 	// TODO return a more sensible format
 	findTaskForThread(thread_id: string):
@@ -227,9 +221,7 @@ class Sync extends EventEmitter {
 		return [null, null];
 	}
 
-
 	initTaskListsSync() {
-		let result = [];
 		for (let [name, data] of Object.entries(this.config.tasks.queries)) {
 			if (name === 'labels_defaults')
 				continue
@@ -239,13 +231,14 @@ class Sync extends EventEmitter {
 			task_list.states.pipe('Syncing', this.states, 'SyncingTaskLists');
 			// TODO handle error of non existing task list in the inner classes
 			//			task_list.states.on 'Restart.enter', => @states.drop 'TaskListsFetched'
-			result.push(this.task_lists_sync.push(task_list));
+			this.task_lists_sync.push(task_list)
 		}
-		return result;
 	}
 
 	// TODO take abort() as the second param
-	async req<A,T>(method: (arg: A, cb: (err: any, res: T) => void) => void, params?: A, abort?: () => boolean): Promise<T | null> {
+	async req<A,T,T2>(method: (arg: A, cb: (err: any, res: T, res2: T2) => void) => void, params: A, abort: (() => boolean) | null | undefined, returnArray: true): Promise<{0:T,1:T2} | null>;
+	async req<A,T>(method: (arg: A, cb: (err: any, res: T) => void) => void, params: A, abort: (() => boolean) | null | undefined, returnArray: false): Promise<T | null>;
+	async req<A,T>(method: (arg: A, cb: (err: any, res: T) => void) => void, params: A, abort: (() => boolean) | null | undefined, returnArray: boolean): Promise<any> {
 		let release = await this.semaphore.acquire()
 		if (abort && abort()) {
 			release()
@@ -261,7 +254,7 @@ class Sync extends EventEmitter {
 		(params as any).auth = this.auth.client;
 		// TODO catch errors
 		// TODO loose promisify
-		let promise_method = promisify(method);
+		let promise_method = returnArray ? promisifyArray(method) : promisify(method)
 		let ret = await promise_method(params)
 		release()
 //		console.log "@active_requests--"
@@ -276,9 +269,10 @@ class Sync extends EventEmitter {
 	};
 
 
-	log(msgs, level) {
+	log(msgs: string | any[], level: number) {
 		if (!process.env['DEBUG']) { return; }
-		if (level && level > process.env['DEBUG']) { return; }
+		if (level && level > parseInt(process.env['DEBUG'], 10))
+			return
 		if (!(msgs instanceof Array)) {
 			msgs = [msgs];
 		}

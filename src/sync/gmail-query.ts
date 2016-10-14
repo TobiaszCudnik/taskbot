@@ -12,25 +12,25 @@ class States extends AsyncMachine {
 
   Enabled: IState = {};
   Dirty: IState = {
-    blocks: ['MsgsFetched', 'ThreadsFetched']
+    drop: ['MsgsFetched', 'ThreadsFetched']
   };
 
   FetchingThreads: IState = {
     auto: true,
-    requires: ['Enabled'],
-    blocks: ['ThreadsFetched']
+    require: ['Enabled'],
+    drop: ['ThreadsFetched']
   };
   ThreadsFetched: IState = {
-    requires: ['Enabled'],
-    blocks: ['FetchingThreads']
+    require: ['Enabled'],
+    drop: ['FetchingThreads']
   };
 
   FetchingMsgs: IState = {
-    requires: ['Enabled', 'ThreadsFetched'],
-    blocks: ['MsgsFetched']
+    require: ['Enabled', 'ThreadsFetched'],
+    drop: ['MsgsFetched']
   };
   MsgsFetched: IState = {
-    blocks: ['FetchingMsgs']
+    drop: ['FetchingMsgs']
   };
 }
 
@@ -45,10 +45,10 @@ class GmailQuery {
   threads: Thread[] = [];
   query: string;
   name: string;
-  completions: Map<string, {
+  completions = new Map<string, {
     completed: boolean,
     time: moment.Moment
-  }> = new Map
+  }>();
   previous_threads: Thread[] | null = null;
   fetch_msgs: boolean;
 
@@ -62,14 +62,17 @@ class GmailQuery {
     this.states = new States;
     this.states.setTarget(this);
     if (process.env['DEBUG']) {
-      this.states
-        .id(`GmailQuery(${name})`)
+      this.states.id(`GmailQuery(${name})`)
         .logLevel(process.env['DEBUG'])
     }
   }
 
-	async req<A,T>(method: (arg: A, cb: (err: any, res: T) => void) => void, params?: A, abort?: () => boolean): Promise<T | null> {
-    return this.gmail.req(method, params, abort)
+	async req<A,T,T2>(method: (arg: A, cb: (err: any, res: T, res2: T2) => void) => void, params: A, abort: (() => boolean) | null | undefined, returnArray: true): Promise<{0:T,1:T2} | null>;
+	async req<A,T>(method: (arg: A, cb: (err: any, res: T) => void) => void, params: A, abort: (() => boolean) | null | undefined, returnArray: false): Promise<T | null>;
+	async req<A,T>(method: (arg: A, cb: (err: any, res: T) => void) => void, params: A, abort: (() => boolean) | null | undefined, returnArray: boolean): Promise<any> {
+    return returnArray
+      ? this.gmail.req(method, params, abort, true)
+      : this.gmail.req(method, params, abort, false)
   }
 
   // TODO should download messages in parallel with next threads list pages
@@ -90,6 +93,10 @@ class GmailQuery {
     let prevRes: any
     while (true) {
       let params = {
+        // TODO this should be optional
+        includeSpamTrash: false,
+        labelIds: undefined,
+        maxResults: 1000,
         q: this.query,
         userId: "me",
         foo: 'bar',
@@ -101,7 +108,7 @@ class GmailQuery {
         params.pageToken = prevRes[0].nextPageToken;
       }
 
-      let res = await this.req(this.api.users.threads.list, params, abort)
+      let res = await this.req(this.api.users.threads.list, params, abort, false)
       if (abort() || !res)
         return 
 
@@ -157,18 +164,23 @@ class GmailQuery {
     if (abort())
       return;
 
-    this.synced_history_id = history_id;
-    this.threads = threads;
-    this.previous_threads = null;
-    this.states.add('MsgsFetched');
+    // ensure all the requested threads were downloaded
+    if (threads && threads.every( thread => Boolean(thread))) {
+      this.synced_history_id = history_id;
+      this.threads = threads as google.gmail.v1.Thread[];
+      this.previous_threads = null;
+      this.states.add('MsgsFetched')
+    }
   }
 
   Dirty_state() {
     this.states.drop('Dirty');
   }
 
-  async isCached(abort: () => boolean) {
-    return await this.gmail.isCached(this.synced_history_id, abort);
+  async isCached(abort: () => boolean): Promise<boolean | null> {
+    return this.synced_history_id
+      ? await this.gmail.isCached(this.synced_history_id, abort)
+      : false
   }
 
 

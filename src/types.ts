@@ -59,3 +59,5 @@ export enum LabelsInTitles {
     B,
     C
 }
+
+export type TRawEmail = string;

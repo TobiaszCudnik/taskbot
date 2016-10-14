@@ -11,22 +11,22 @@ export default class Auth extends AsyncMachine {
 	// TODO (by supporting an error state?)
 	Ready: IState = {
 		auto: true,
-		requires: ['TokenRefreshed']
+		require: ['TokenRefreshed']
 	};
 
 	Error: IState = {
-		blocks: ['Ready']
+		drop: ['Ready']
 	};
 
 	TokenRefreshed: IState = {
-		requires: ['CredentialsSet'],
-		blocks: ['RefreshingToken']
+		require: ['CredentialsSet'],
+		drop: ['RefreshingToken']
 	};
 
 	RefreshingToken: IState = {
 		auto: true,
-		requires: ['CredentialsSet'],
-		blocks: ['TokenRefreshed']
+		require: ['CredentialsSet'],
+		drop: ['TokenRefreshed']
 	};
 
 	client: google.oauth2.v2.Oauth2;

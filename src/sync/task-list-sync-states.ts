@@ -9,80 +9,80 @@ class States extends AsyncMachine {
 
 	Syncing: IState = {
 		auto: true,
-		requires: ['Enabled'],
-		blocks: ['Synced', 'Restart']
+		require: ['Enabled'],
+		drop: ['Synced', 'Restart']
 	};
 	Synced: IState = {
-		blocks: ['Syncing'],
-		requires: ['CompletedTasksSynced', 'ThreadsToTasksSynced',
+		drop: ['Syncing'],
+		require: ['CompletedTasksSynced', 'ThreadsToTasksSynced',
 			'TasksToThreadsSynced', 'CompletedThreadsSynced']
 	};
 
 	Restart: IState = {
-		blocks: ['TasksFetched', 'CompletedTasksSynced', 'ThreadsToTasksSynced',
+		drop: ['TasksFetched', 'CompletedTasksSynced', 'ThreadsToTasksSynced',
 			'TasksToThreadsSynced', 'CompletedThreadsSynced', 'TasksCached']
 	};
 
 	// list
 	PreparingList: IState = {
 		auto: true,
-		requires: ['Syncing'],
-		blocks: ['ListReady']
+		require: ['Syncing'],
+		drop: ['ListReady']
 	};
 	ListReady: IState = {
-		blocks: ['PreparingList']
+		drop: ['PreparingList']
 	};
 
 	// tasks
 	FetchingTasks: IState = {
 		auto: true,
-		requires: ['Syncing', 'ListReady'],
-		blocks: ['TasksFetched']
+		require: ['Syncing', 'ListReady'],
+		drop: ['TasksFetched']
 	};
 	TasksFetched: IState = {
-		requires: ['ListReady'], 
-		blocks: ['FetchingTasks']
+		require: ['ListReady'], 
+		drop: ['FetchingTasks']
 	};
 	TasksCached: IState = {};
 
 	// thread-to-tasks
 	SyncingThreadsToTasks: IState = {
 		auto: true,
-		requires: ['Syncing', 'TasksFetched', 'MsgsFetched'],
-		blocks: ['ThreadsToTasksSynced']
+		require: ['Syncing', 'TasksFetched', 'MsgsFetched'],
+		drop: ['ThreadsToTasksSynced']
 	};
 	ThreadsToTasksSynced: IState = {
-		blocks: ['SyncingThreadsToTasks']
+		drop: ['SyncingThreadsToTasks']
 	};
 
 	// tasks-to-threads
 	SyncingTasksToThreads: IState = {
 		auto: true,
-		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched'],
-		blocks: ['TasksToThreadsSynced']
+		require: ['Syncing', 'TasksFetched', 'ThreadsFetched'],
+		drop: ['TasksToThreadsSynced']
 	};
 	TasksToThreadsSynced: IState = {
-		blocks: ['SyncingTasksToThreads']
+		drop: ['SyncingTasksToThreads']
 	};
 
 	// complete threads
 	SyncingCompletedThreads: IState = {
 		auto: true,
-		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched'],
-		blocks: ['CompletedThreadsSynced']
+		require: ['Syncing', 'TasksFetched', 'ThreadsFetched'],
+		drop: ['CompletedThreadsSynced']
 	};
 	CompletedThreadsSynced: IState = {
-		blocks: ['SyncingCompletedThreads']
+		drop: ['SyncingCompletedThreads']
 	};
 
 	// complete tasks
 	SyncingCompletedTasks: IState = {
 		auto: true,
-		requires: ['Syncing', 'TasksFetched', 'ThreadsFetched'],
-		blocks: ['CompletedTasksSynced']
+		require: ['Syncing', 'TasksFetched', 'ThreadsFetched'],
+		drop: ['CompletedTasksSynced']
 	};
 	CompletedTasksSynced: IState = {
-		blocks: ['SyncingCompletedTasks']
+		drop: ['SyncingCompletedTasks']
 	};
 
 //	SyncingTaskNames: {}
