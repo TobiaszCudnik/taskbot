@@ -1,5 +1,5 @@
-/settings.coffee
 /settings.js
+/settings.ts
 /*.iml
 /.idea
 /node_modules/

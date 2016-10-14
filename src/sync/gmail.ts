@@ -2,22 +2,19 @@
 
 import AsyncMachine, { IState } from 'asyncmachine';
 import { GmailQuery } from './gmail-query';
-import { Sync, TConfig } from './sync'
+import { Sync, IConfig } from './sync'
 import { Semaphore } from 'await-semaphore';
 import * as _ from 'underscore'
 
 
 class States extends AsyncMachine {
 
-
 	Enabled: IState = {};
 	SyncingEnabled: IState = {};
-
 
 	Dirty: IState = {
 		blocks: ['QueryLabelsSynced', 'SyncingQueryLabels']
 	};
-
 
 	SyncingQueryLabels: IState = {
 		auto: true,
@@ -28,7 +25,6 @@ class States extends AsyncMachine {
 		blocks: ['SyncingQueryLabels']
 	};
 
-
 	FetchingLabels: IState = {
 		auto: true,
 		requires: ['Enabled'],
@@ -37,7 +33,6 @@ class States extends AsyncMachine {
 	LabelsFetched: IState = {
 		blocks: ['FetchingLabels']
 	};
-
 
 	FetchingHistoryId: IState = {
 		auto: true,
@@ -54,7 +49,7 @@ class Gmail {
 
 	states: States;
 	api: google.gmail.v1.Gmail;
-	config: TConfig;
+	config: IConfig;
 	sync: Sync;
 	completions: { [index: string]: {
 		completed: boolean,

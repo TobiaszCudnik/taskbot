@@ -190,7 +190,7 @@ class GmailQuery {
     }
 
     // complete threads not found in the query results
-    for (let [id, row] of Object.entries(this.completions)) {
+    for (let [id, row] of this.completions.entries()) {
       // TODO build non_completed
       if (non_completed_ids.includes(id))
         return

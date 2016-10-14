@@ -8,13 +8,10 @@ import { EventEmitter } from 'events';
 import { Gmail } from './gmail'
 import { Sync } from './sync'
 import { GmailQuery } from './gmail-query'
+import { IListConfig } from '../types'
 
-export interface IListConfig {
-	labels_in_title: boolean,
-	query: string,
-	labels_new_task?: string[]
-}
 
+// TODO check if needed
 export interface ITasks {
 	'etag': string;
 	'items': google.tasks.v1.Task[];
@@ -61,6 +58,7 @@ class TaskListSync extends EventEmitter {
 		tasks: null,
 		tasks_completed: null
 	};
+	// TODO change to a real Map
 	completions_tasks: { [task_id: string]: {
 		completed: boolean,
 		time: moment.Moment,
@@ -129,15 +127,15 @@ class TaskListSync extends EventEmitter {
 		let abort = this.states.getAbort('SyncingThreadsToTasks');
 		await Promise.all(this.query.threads.map(async (thread) => {
 
-			let task = this.getTaskForThread(thread.id);
+			let task = this.getTaskForThread(thread.id)
 			if (task) {
-				let task_completed = this.taskWasCompleted(task.id);
-				let thread_not_completed = this.query.threadWasNotCompleted(thread.id);
-				if (task_completed &&
+				let task_completed = this.taskWasCompleted(task.id)
+				let thread_not_completed = this.query.threadWasNotCompleted(thread.id)
+				if (task_completed && thread_not_completed &&
 						task_completed.unix() < thread_not_completed.unix()) {
 					//await @uncompleteTask task.id, abort
 					// TODO await
-					this.uncompleteTask(task.id, abort);
+					this.uncompleteTask(task.id, abort)
 				}
 					
 				return;
@@ -150,11 +148,12 @@ class TaskListSync extends EventEmitter {
 				this.completeThread(thread.id);
 				return delete this.completions_tasks[task_id];
 			} else {
-				let list_sync;
-				[task, list_sync] = this.sync.findTaskForThread(thread.id);
+				let find = this.sync.findTaskForThread(thread.id)
+				let task = find[0]
+				let list_sync = find[1]
 				// try to "move" the task from another list
 				// TODO extract to a method
-				if (task) {
+				if (task && list_sync) {
 					console.log(`Moving task \"${task.title}\"`);
 					// mark current instance as deleted
 					task.deleted = true;
@@ -199,7 +198,8 @@ class TaskListSync extends EventEmitter {
 			if (thread_id) {
 				let thread_completed = this.query.threadWasCompleted(thread_id);
 				let task_not_completed = this.taskWasNotCompleted(task.id);
-				if (!(this.query.threadSeen(thread_id)) || (thread_completed &&
+				if (!(this.query.threadSeen(thread_id)) || (
+						thread_completed && task_not_completed && 
 						thread_completed.unix() < task_not_completed.unix())) {
 					// TODO await @uncompleteThread thread_id, abort
 					return this.uncompleteThread(thread_id, abort);
@@ -210,9 +210,11 @@ class TaskListSync extends EventEmitter {
 			}
 		}));
 
-		if (abort()) { return; }
+		if (abort())
+			return
+
 		this.states.add('TasksToThreadsSynced');
-		return this.states.add('Synced');
+		this.states.add('Synced');
 	};
 
 
@@ -245,16 +247,19 @@ class TaskListSync extends EventEmitter {
 	async SyncingCompletedTasks_state() {
 		let abort = this.states.getAbort('SyncingCompletedTasks');
 
+		// TODO completions_tasks to Map
 		await Promise.all(this.completions_tasks.map(async (row, task_id) => {
-			if (!row.completed) { return; }
+			if (!row.completed)
+				return
 			let task = this.getTask(task_id);
-			if (!task) { return; }
+			if (!task)
+				return
 			let thread_id = this.taskLinkedToThread(task);
+			if (!thread_id)
+				return
 			let thread_not_completed = this.query.threadWasNotCompleted(thread_id);
-			if (thread_not_completed && row.time.unix() > thread_not_completed.unix()) {
-				// TODO await @completeThread thread_id, abort
-				return this.completeThread(thread_id, abort);
-			}
+			if (thread_not_completed && row.time.unix() > thread_not_completed.unix())
+				await this.completeThread(thread_id, abort)
 		}));
 
 		if (abort()) { return; }
@@ -265,10 +270,10 @@ class TaskListSync extends EventEmitter {
 
 	async PreparingList_state() {
 		let abort = this.states.getAbort('PreparingList');
-		let list = null;
+		let list: google.tasks.v1.TaskList
 
 		// TODO? move?
-		this.def_title = this.data.labels_in_title || this.sync.config.labels_in_title;
+		// this.def_title = this.data.labels_in_title || this.sync.config.labels_in_title;
 
 		// create or retrive task list
 		for (let i = 0; i < this.sync.task_lists.length; i++) {
@@ -285,8 +290,10 @@ class TaskListSync extends EventEmitter {
 			console.log(`Creating tasklist '${this.name}'`);
 		}
 
-		this.list = list
-		return this.states.add('ListReady');
+		if (list) {
+			this.list = list
+			this.states.add('ListReady')
+		}
 	};
 
 
@@ -321,7 +328,7 @@ class TaskListSync extends EventEmitter {
 
 
 	// TODO remove from tasks collections
-	async deleteTask(task_id: string, abort: () => boolean): Promise<void> {
+	async deleteTask(task_id: string, abort?: () => boolean): Promise<void> {
 		await this.req(this.tasks_api.tasks.delete, {
 			tasklist: this.list.id,
 			task: task_id
@@ -543,22 +550,21 @@ class TaskListSync extends EventEmitter {
 	};
 
 
-	async req(method, params) {
-		try { return await this.sync.req.apply(this.sync, arguments); }
-		catch (err) {
+	async req<A,T>(method: (arg: A, cb: (err: any, res: T) => void) => void, params?: A, abort?: () => boolean): Promise<T | null> {
+		try {
+			return await this.sync.req(method, params, abort)
+		} catch (err) {
 			// catch quote exceeded exceptions only
-			if ((err.code != null) !== 403) { throw err; }
+			if (err.code !== 403)
+				throw err
 			this.quota_exceeded = true;
 			// wait 0.5sec
-			setTimeout((this.emit.bind(this, 'retry-requests')), 500);
-			while (this.quota_exceeded) {
-				await new Promise(resolve => {
-					return this.once('retry-requests', resolve);
-				}
-				);
-			}
+			// TODO rewrite
+			setTimeout((this.emit.bind(this, 'retry-requests')), 500)
+			while (this.quota_exceeded)
+				await new Promise(resolve => this.once('retry-requests', resolve))
 
-			return await this.req(method, params);
+			return await this.sync.req(method, params, abort)
 		}
 	}
 
@@ -583,10 +589,9 @@ class TaskListSync extends EventEmitter {
 	}
 
 
-	async createTaskList(name, abort) {
-		let res = await this.req(this.tasks_api.tasklists.insert,
-			{resource: { title: name } });
-		return res[1].body
+	async createTaskList(name: string, abort?: () => boolean): Promise<google.tasks.v1.TaskList | null> {
+		return await this.req(this.tasks_api.tasklists.insert, {
+			resource: { title: name } }, abort);
 	}
 
 
@@ -612,13 +617,12 @@ class TaskListSync extends EventEmitter {
 	}
 
 
-	async createTask(task, abort) {
+	async createTask(task: {title: string, notes: string}, abort?: () => boolean) {
 		console.log(`Adding task '${task.title}'`);
 		let res = await this.req(this.tasks_api.tasks.insert, {
 			tasklist: this.list.id,
 			resource: task
-		}
-		);
+		});
 		this.push_dirty = true;
 		if (abort && abort())
 			return
@@ -630,35 +634,35 @@ class TaskListSync extends EventEmitter {
 	}
 
 
-	getTask(task_id) {
+	getTask(task_id: string) {
 		return this.getAllTasks().find(task => task.id === task_id);
 	}
 
 
-	getTaskForThread(thread_id) {
+	getTaskForThread(thread_id: string) {
 
-		return this.getAllTasks().find(task => __guard__(task.notes, x => x.match(`email:${thread_id}`)));
+		return this.getAllTasks().find(task => Boolean(
+			task.notes && task.notes.match(`email:${thread_id}`)))
 	}
 
 //		type task, ITask, 'ITask'
 
 
-	getTaskTitleFromThread(thread) {
-		let labels;
-		// type(thread, IThread, 'IThread');
+	getTaskTitleFromThread(thread: google.gmail.v1.Thread) {
 		// TODO use the snippet when no title available
-		let title = this.gmail.getTitleFromThread(thread) || '[notitle]';
+		let title = this.gmail.getTitleFromThread(thread) || '[notitle]'
 		// TODO clenup
 		//		return title if not @sync.config.def_title
 
 //		console.dir thread.messages
 //		console.dir thread.messages[0].payload.headers
-		[title, labels] = this.getLabelsFromTitle(title);
+		let result = this.getLabelsFromTitle(title)
+		title = result[0]
+		let labels = result[1]
 		// TODO add labels from the thread
 		// remove labels defining this query list
-		for (let i = 0; i < this.data.labels_new_task.length; i++) {
-			let label = this.data.labels_new_task[i];
-			labels = labels.without(label);
+		for (let label of this.data.labels_new_task) {
+			labels = _.without(labels, label);
 		}
 
 		// encode auto labels again, for readability
@@ -673,55 +677,51 @@ class TaskListSync extends EventEmitter {
 
 	/*
   TODO move to the gmail class
-	@name string
-	@return [ string, Array<Label> ]
 	*/
-	getLabelsFromTitle(title) {
+	getLabelsFromTitle(title: string): {0: string, 1: string[]} {
 
-		let labels = [];
-		for (let i = 0; i < this.sync.config.auto_labels.length; i++) {
-			let r = this.sync.config.auto_labels[i];
-			let { symbol } = r;
-			let { label } = r;
-			let { prefix } = r;
+		let labels: string[] = [];
+		for (let r of this.sync.config.auto_labels) {
+			let {
+				symbol,
+				label,
+				prefix
+			} = r;
 			var name = r.shortcut ? r.shortcut : "\\w+";
-			title = title.replace(`\b${symbol}(${name})\b`, '', name => labels.push(prefix + (label || name))
-			);
+			title = title.replace(new RegExp(`\b${symbol}(${name})\b`), name => {
+				labels.push(prefix + (label || name))
+				return ''
+			});
 		}
 		title = title.trim();
 
 		return [title, labels];
 	}
 
-
 	// this is a marvelous method's name...
-	getTaskForThreadFromCompletions(thread_id) {
+	getTaskForThreadFromCompletions(thread_id: string): string | null {
 		for (let task_id in this.completions_tasks) {
 			let completion = this.completions_tasks[task_id];
-			if (completion.thread_id === thread_id) { return task_id; }
+			if (completion.thread_id === thread_id)
+				return task_id
 		}
-	}
-			
-
-	taskWasCompleted(id) {
-		if (__guard__(this.completions_tasks[id], x => x.completed) === true) {
-			return this.completions_tasks[id].time;
-		} else { return false; }
+		return null
 	}
 
-
-	taskWasNotCompleted(id) {
-		if (__guard__(this.completions_tasks[id], x => x.completed) === false) {
+	taskWasCompleted(id: string) {
+		if (this.completions_tasks[id] && this.completions_tasks[id].completed === true) {
 			return this.completions_tasks[id].time;
-		} else { return false; }
+		}
+		return null
+	}
+
+	taskWasNotCompleted(id: string): moment.Moment | null {
+		if (this.completions_tasks[id] && this.completions_tasks[id].completed === false) {
+			return this.completions_tasks[id].time;
+		}
+		return null
 	}
 }
 
 
 export default TaskListSync;
-function __guardFunc__(func, transform) {
-  return typeof func === 'function' ? transform(func) : undefined;
-}
-function __guard__(value, transform) {
-  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
-}

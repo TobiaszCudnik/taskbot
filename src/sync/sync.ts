@@ -5,7 +5,7 @@
 //Thread = thread.Thread
 //label = require './label'
 //Label = label.Label
-import auth from '../auth';
+import Auth from '../auth';
 import TaskListSync from './task-list-sync';
 import { EventEmitter } from 'events';
 
@@ -15,25 +15,11 @@ import * as google from 'googleapis';
 import { Gmail } from './gmail';
 // import { ApiError } from '../exceptions'
 import { Semaphore } from 'await-semaphore';
+import {
+	IConfig,
+	IListConfig
+} from '../types'
 
-export type TConfig = {
-	gmail_username: string,
-	gmail_password: string,
-	gmail_host: string,
-	query_labels: { [query: string]: {
-		// add
-		0: string[],
-		// remove
-		1: string[]
-	}},
-	tasks: {
-		queries: {
-			labels_defaults: {
-				labels_new_task: string[]
-			}
-		}
-	}
-}
 
 class States extends AsyncMachine {
 
@@ -94,23 +80,23 @@ class Sync extends EventEmitter {
 
 	max_active_requests = 5;
 	semaphore: Semaphore;
-	states;
-	config: TConfig;
-	auth;
-	tasks_api;
+	states: States;
+	config: IConfig;
+	auth : Auth;
+	tasks_api: google.tasks.v1.Tasks;
 	gmail: Gmail;
 	gmail_api: google.gmail.v1.Gmail;
-	task_lists_sync: TaskListSync[];
-	task_lists;
-	etags;
-	active_requests number;
+	task_lists_sync: google.tasks.v1.TaskList[];
+	task_lists: TaskListSync[];
+	active_requests: number;
 	labels: google.gmail.v1.Label[];
-	executed_requests;
+	executed_requests: number;
 	historyId: number;
 
-	last_sync_end: number;
-	last_sync_time: number;
-	next_sync_timeout: number;
+	last_sync_start: number | null;
+	last_sync_end: number | null;
+	last_sync_time: number | null;
+	next_sync_timeout: NodeJS.Timer | null;
 
 	set history_id(history_id: number) {
 		this.historyId = Math.max(this.history_id, history_id);
@@ -119,7 +105,7 @@ class Sync extends EventEmitter {
 //	Sync.defineType 'auth', auth.Auth, 'auth.Auth'
 
 
-	constructor(config: TConfig) {
+	constructor(config: IConfig) {
 		super()
 		this.config = config;
 		this.states = new States;
@@ -130,7 +116,7 @@ class Sync extends EventEmitter {
 		this.semaphore = new Semaphore(this.max_active_requests)
 		this.task_lists = [];
 		this.labels = [];
-		this.auth = new auth.Auth(config);
+		this.auth = new Auth(config);
 		this.task_lists_sync = [];
 		this.etags = {};
 		this.active_requests = 0;
@@ -160,8 +146,10 @@ class Sync extends EventEmitter {
 	async FetchingTaskLists_state() {
 		let abort = this.states.getAbort('FetchingTaskLists');
 		// TODO throttle updates
-		let res = await this.req(this.tasks_api.tasklists.list, {etag: this.etags.task_lists});
-		if (__guardFunc__(abort, f => f())) {
+		let res = await this.req(this.tasks_api.tasklists.list, {
+			etag: this.etags.task_lists
+		});
+		if (abort()) {
 			console.log('abort', abort);
 			return;
 		}
@@ -191,7 +179,7 @@ class Sync extends EventEmitter {
 	Synced_state() {
 		console.log('!!! SYNCED !!!');
 		console.log(`Requests: ${this.executed_requests}`);
-		this.last_sync_end = new Date();
+		this.last_sync_end = Date.now()
 		this.last_sync_time = this.last_sync_end - this.last_sync_start;
 		console.log(`Time: ${this.last_sync_time}ms`);
 		if (this.next_sync_timeout) { clearTimeout(this.next_sync_timeout); }
@@ -204,7 +192,7 @@ class Sync extends EventEmitter {
 		console.log('--- SYNCING ---');
 		this.executed_requests = 0;
 		// TODO define in the prototype
-		this.last_sync_start = new Date();
+		this.last_sync_start = Date.now()
 		this.last_sync_end = null;
 		this.last_sync_time = null;
 		if (this.states.is('Dirty')) {
@@ -226,27 +214,26 @@ class Sync extends EventEmitter {
 	// ----- -----
 
 
-	findTaskForThread(thread_id) {
-		let task = null;
-		let list = null;
-		this.task_lists_sync.forEach(function(list_sync) {
-			let found = list_sync.getTaskForThread(thread_id);
+	// TODO return a more sensible format
+	findTaskForThread(thread_id: string):
+			{0: google.tasks.v1.Task, 1: TaskListSync} | {0: null, 1: null} {
+		for (let list_sync of this.task_lists_sync) {
+			let found = list_sync.getTaskForThread(thread_id)
 			if (found) {
-				task = found;
-				return list = list_sync;
+				return [found, list_sync]
 			}
-		});
+		}
 
-		return [task, list];
+		return [null, null];
 	}
 
 
 	initTaskListsSync() {
 		let result = [];
-		for (let name in this.config.tasks.queries) {
-			let data = this.config.tasks.queries[name];
-			if (name === 'labels_defaults') { continue; }
-			let task_list = new TaskListSync(name, data, this);
+		for (let [name, data] of Object.entries(this.config.tasks.queries)) {
+			if (name === 'labels_defaults')
+				continue
+			let task_list = new TaskListSync(name, data as IListConfig, this);
 			this.states.pipe('TaskListSyncEnabled', task_list.states, 'Enabled', false);
 			task_list.states.pipe('Synced', this.states, 'TaskListsSynced');
 			task_list.states.pipe('Syncing', this.states, 'SyncingTaskLists');
@@ -300,6 +287,3 @@ class Sync extends EventEmitter {
 }
 
 export { Sync, States };
-function __guardFunc__(func, transform) {
-  return typeof func === 'function' ? transform(func) : undefined;
-}
