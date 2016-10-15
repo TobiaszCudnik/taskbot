@@ -1,6 +1,3 @@
-/// <reference path="../../node_modules/google-api-nodejs-tsd/dist/googleapis.gmail.v1/googleapis.gmail.v1.d.ts" />
-/// <reference path="../..//node_modules/google-api-nodejs-tsd/dist/googleapis.tasks.v1/googleapis.tasks.v1.d.ts" />
-
 import Auth from '../auth';
 import TaskListSync from './task-list-sync';
 import { EventEmitter } from 'events';

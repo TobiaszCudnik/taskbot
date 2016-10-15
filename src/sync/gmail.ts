@@ -1,5 +1,3 @@
-/// <reference path="../../node_modules/google-api-nodejs-tsd/dist/googleapis.gmail.v1/googleapis.gmail.v1.d.ts" />
-
 import AsyncMachine, { IState } from 'asyncmachine';
 import { GmailQuery } from './gmail-query';
 import { Sync } from './sync'
@@ -152,11 +150,12 @@ class Gmail {
 			userId: 'me',
 			fields: 'historyId'
 		}, abort, false)
-		if (abort && abort())
+		// TODO redo when no response?
+		if (!response || abort && abort())
 			return
-		this.history_id = response[0].historyId;
-		this.last_sync_time = Date.now();
-		return this.states.add('HistoryIdFetched')
+		this.history_id = parseInt(response.historyId, 10)
+		this.last_sync_time = Date.now()
+		this.states.add('HistoryIdFetched')
 	};
 
 	// ----- -----
@@ -314,18 +313,21 @@ class Gmail {
 
 	async getHistoryId(abort?: () => boolean): Promise<number | null> {
 		if (!this.history_id) {
-			this.states.add('FetchingHistoryId');
-			await this.states.when('HistoryIdFetched');
+			this.states.add('FetchingHistoryId', abort)
+			await this.states.when('HistoryIdFetched')
 		}
 
 		return this.history_id;
 	};
 
 	// TODO check raw_email
+	/**
+	 * @returns Thread ID or null
+	 */
 	async createThread(raw_email: string, labels: string[], abort?: () => boolean):
-			Promise<google.gmail.v1.Thread | null> {
+			Promise<string | null> {
 		console.log(`Creating thread (${labels.join(' ')})`);
-		let res = await this.req(this.api.users.messages.insert, {
+		let message = await this.req(this.api.users.messages.insert, {
 			userId: 'me',
 			resource: {
 				raw: raw_email,
@@ -333,10 +335,10 @@ class Gmail {
 			}}, abort, false)
 		// TODO labels?
 		this.states.add('Dirty', labels);
-		if (abort && abort())
+		if (!message || abort && abort())
 			return null
-		return res;
-	};
+		return message.threadId
+	}
 
 	createEmail(subject: string): TRawEmail {
 		let email = [`From: ${this.sync.config.gmail_username} <${this.sync.config.gmail_username}>s`,

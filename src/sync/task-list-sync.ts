@@ -152,7 +152,7 @@ class TaskListSync extends EventEmitter {
 						this.createTask({
 							title: task.title,
 							notes: task.notes
-						})
+						} as google.tasks.v1.Task)
 					];
 					// TODO await Promise.all promises
 					return Promise.all(promises);
@@ -302,20 +302,17 @@ class TaskListSync extends EventEmitter {
 		return this.states.add('TasksFetched');
 	};
 
-
 	// ----- -----
 	// Methods
 	// ----- -----
-
 
 	// TODO remove from tasks collections
 	async deleteTask(task_id: string, abort?: () => boolean): Promise<void> {
 		await this.req(this.tasks_api.tasks.delete, {
 			tasklist: this.list.id,
 			task: task_id
-		});
-	};
-
+		}, abort, false)
+	}
 
 	processTasksDeletion(previous_ids: string[]) {
 		let current_ids = this.getAllTasks().map(task => task.id);
@@ -329,7 +326,6 @@ class TaskListSync extends EventEmitter {
 			})
 		}
 	}
-
 
 	async fetchNonCompletedTasks(abort: () => boolean) {
 		let response = await this.req(this.tasks_api.tasks.list, {
@@ -363,39 +359,41 @@ class TaskListSync extends EventEmitter {
 			// return this.tasks = type(response[0], ITasks, 'ITasks');
 			this.tasks = response[0]
 		}
-	};
-
+	}
 
 	async fetchCompletedTasks(abort?: () => boolean): Promise<void> {
-		// TODO no type
 		let response = await this.req(this.tasks_api.tasks.list, {
-			updatedMin: timestamp(new Date(this.tasks_completed_from)),
+			updatedMin: timestamp(new Date(this.tasks_completed_from)) as string,
 			tasklist: this.list.id,
 			fields: "etag,items(id,title,notes,updated,etag,status,completed)",
-			maxResults: 1000,
+			// TODO config / paginate
+			maxResults: '1000',
 			showCompleted: true,
-			etag: this.etags.tasks_completed
+			etag: this.etags.tasks_completed || ''
 		}, abort, true)
 
+		if (!response)
+			return
+
 		if (response[1].statusCode === 304) {
-			return console.log(`[CACHED] completed tasks for '${this.name}'`);
+			console.log(`[CACHED] completed tasks for '${this.name}'`);
 		} else {
-			console.log(`[FETCHED] completed tasks for '${this.name}'`);
+			console.log(`[FETCHED] completed tasks for '${this.name}'`)
 			this.etags.tasks_completed = response[1].headers.etag;
-			if (response[0].items == null) { response[0].items = []; }
-			response[0].items = response[0].items.filter(item => item.status === 'completed');
+			if (!response[0].items)
+				response[0].items = []
+			response[0].items = response[0].items.filter(item => item.status === 'completed')
 			response[0].items.forEach(task => {
-				return this.completions_tasks[task.id] = {
+				this.completions_tasks[task.id] = {
 					completed: true,
 					time: moment(task.completed),
 					thread_id: this.taskLinkedToThread(task)
-				};
+				}
 			})
 
 			this.tasks_completed = response[0]
 		}
-	};
-
+	}
 
 	async completeThread(id: string, abort?: () => boolean): Promise<void> {
 		console.log(`Completing thread '${id}'`);
@@ -407,8 +405,7 @@ class TaskListSync extends EventEmitter {
 			completed: true,
 			time: moment()
 		})
-	};
-
+	}
 
 	async uncompleteThread(id: string, abort?: () => boolean): Promise<void> {
 		console.log(`Un-completing thread '${id}'`);
@@ -420,23 +417,20 @@ class TaskListSync extends EventEmitter {
 			completed: false,
 			time: moment()
 		})
-	};
-
+	}
 
 	async createThreadForTask(task: google.tasks.v1.Task, abort?: () => boolean): Promise<void> {
 		await this.gmail.createThread(
 			this.gmail.createEmail(task.title), this.uncompletedThreadLabels(), abort
 		);
 		this.push_dirty = true;
-	};
-
+	}
 
 	// returns thread ID
 	taskLinkedToThread(task: google.tasks.v1.Task): string | null {
 		let match = task.notes && task.notes.match(/\bemail:\w+\b/)
 		return match ? match[1] : null
 	}
-
 
 	async linkTaskToThread(task: google.tasks.v1.Task, thread_id: string,
 			abort?: () => boolean): Promise<void> {
@@ -448,15 +442,14 @@ class TaskListSync extends EventEmitter {
 			task: task.id,
 			resource: {
 				notes: task.notes}
-		})
+		}, abort, true)
 		if (abort && abort)
 			return
 		this.completions_tasks.get(task.id).thread_id = thread_id
 		this.push_dirty = true;
-	};
+	}
 		// TODO update the DB
 		//return if abort?()
-
 
 	uncompletedThreadLabels(): string[] {
 		let labels: string[] = []
@@ -475,12 +468,13 @@ class TaskListSync extends EventEmitter {
 	async uncompleteTask(task_id: string, abort: () => boolean): Promise<void> {
 		console.log(`Un-completing task ${task_id}`);
 		await this.req(this.tasks_api.tasks.patch, {
-			tasklist: this.list.id,
-			task: task_id,
-			resource: {
-				status: 'needsAction',
-				completed: null
-			}, abort});
+				tasklist: this.list.id,
+				task: task_id,
+				resource: {
+					status: 'needsAction',
+					completed: null
+				}
+			}, abort, false);
 		this.push_dirty = true;
 		if (abort && abort())
 			return
@@ -497,12 +491,12 @@ class TaskListSync extends EventEmitter {
 	async completeTask(task_id: string, abort?: () => boolean): Promise<void> {
 		console.log(`Completing task ${task_id}`);
 		await this.req(this.tasks_api.tasks.patch, {
-			tasklist: this.list.id,
-			task: task_id,
-			resource: {
-				status: 'completed'
-			}
-		})
+				tasklist: this.list.id,
+				task: task_id,
+				resource: {
+					status: 'completed'
+				}
+			}, abort, false)
 		this.push_dirty = true;
 		if (abort && abort())
 			return
@@ -565,12 +559,12 @@ class TaskListSync extends EventEmitter {
 			console.log(`Updating task title to \"${title}\"`);
 			// TODO use etag
 			await this.req(this.tasks_api.tasks.patch, {
-				tasklist: this.list.id,
-				task: task.id,
-				resource: {
-					title
-				}
-			})
+					tasklist: this.list.id,
+					task: task.id,
+					resource: {
+						title
+					}
+				}, null, false)
 			// TODO assign the new task? that would update the etag
 			task.title = title;
 			this.push_dirty = true;
@@ -590,36 +584,35 @@ class TaskListSync extends EventEmitter {
 		let title = this.getTaskTitleFromThread(thread);
 		console.log(`Adding task '${title}'`);
 		let res = await this.req(this.tasks_api.tasks.insert, {
-			tasklist: this.list.id,
-			resource: {
-				title,
-				notes: `email:${thread.id}`
-			}
-		})
+				tasklist: this.list.id,
+				resource: {
+					title,
+					notes: `email:${thread.id}`
+				}
+			}, abort, false)
 		this.push_dirty = true;
 		if (abort && abort())
 			return null
 		// TODO update the db
 
-		return res[0]
+		return res
 	}
 
 
-	async createTask(task: {title: string, notes: string}, abort?: () => boolean): 
+	async createTask(task: google.tasks.v1.Task, abort?: () => boolean): 
 			Promise<google.tasks.v1.Task | null> {
 		console.log(`Adding task '${task.title}'`);
 		let res = await this.req(this.tasks_api.tasks.insert, {
-			tasklist: this.list.id,
-			resource: task
-		});
-		this.push_dirty = true;
+				tasklist: this.list.id,
+				resource: task
+			}, abort, false)
+		this.push_dirty = true
 		if (abort && abort())
 			return null
 		
 		// TODO update the db
 
-		// return type(res[0], ITask, 'ITask');
-		return res[0]
+		return res
 	}
 
 	getTask(task_id: string) {

@@ -1,4 +1,3 @@
-/// <reference path="../../node_modules/google-api-nodejs-tsd/dist/googleapis.gmail.v1/googleapis.gmail.v1.d.ts" />
 import AsyncMachine, {
   IState
 } from 'asyncmachine';
