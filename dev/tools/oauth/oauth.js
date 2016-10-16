@@ -24,7 +24,7 @@ var plus = google.plus('v1');
 // https://code.google.com/apis/console
 var CLIENT_ID = "900809192866-270pemf710e7me8l9aaptsirjmkvit66.apps.googleusercontent.com";
 var CLIENT_SECRET = "TohSI-VXNRKKNq0cYTkS72S6";
-var REDIRECT_URL = 'https://alaihi-macuca.codio.io/oauth2callback'
+var REDIRECT_URL = 'http://local.me/oauth2callback'
 var SCOPES = ['https://www.googleapis.com/auth/tasks', 'https://www.googleapis.com/auth/gmail.modify']
 
 var oauth2Client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URL);
@@ -46,6 +46,8 @@ rl.question('Enter the code here:', function(code) {
     oauth2Client.getToken(code, function(err, tokens) {
         // set tokens to the client
         // TODO: tokens should be set by OAuth2 client.
+        if (err)
+            console.error(err)
         console.log(tokens)
         oauth2Client.setCredentials(tokens);
     });

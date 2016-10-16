@@ -5,9 +5,9 @@ import * as moment from 'moment';
 import { Gmail } from './gmail'
 import { Semaphore } from 'await-semaphore';
 
-type Thread = google.gmail.v1.Thread
+export type Thread = google.gmail.v1.Thread
 
-class States extends AsyncMachine {
+export class States extends AsyncMachine {
 
   Enabled: IState = {};
   Dirty: IState = {
@@ -31,10 +31,15 @@ class States extends AsyncMachine {
   MsgsFetched: IState = {
     drop: ['FetchingMsgs']
   };
+
+	constructor(target: GmailQuery) {
+		super(target)
+		this.registerAll()
+	}
 }
 
 
-class GmailQuery {
+export default class GmailQuery {
   gmail: Gmail;
 	api: google.gmail.v1.Gmail;
   states: States;
@@ -58,11 +63,11 @@ class GmailQuery {
     this.semaphore = gmail.semaphore
     this.fetch_msgs = fetch_msgs;
     this.api = this.gmail.api;
-    this.states = new States;
-    this.states.setTarget(this);
+    this.states = new States(this)
     if (process.env['DEBUG']) {
-      this.states.id(`GmailQuery(${name})`)
+      this.states.id(`GmailQuery '${name}'`)
         .logLevel(process.env['DEBUG'])
+      global.am_network.addMachine(this.states)
     }
   }
 
@@ -78,10 +83,12 @@ class GmailQuery {
   async FetchingThreads_state() {
     let abort = this.states.getAbort('FetchingThreads');
     if (await this.isCached(abort)) {
-      if (abort()) { return; }
-      console.log(`[CACHED] threads for '${this.query}'`);
-      this.states.add('ThreadsFetched');
-      if (this.fetch_msgs) { this.states.add('MsgsFetched'); }
+      if (abort())
+        return
+      console.log(`[CACHED] threads for '${this.query}'`)
+      this.states.add('ThreadsFetched')
+      if (this.fetch_msgs)
+        this.states.add('MsgsFetched')
       return;
     }
     if (abort())
@@ -234,6 +241,3 @@ class GmailQuery {
     return Boolean(this.completions.get(id))
   }
 }
-
-
-export { GmailQuery, States };

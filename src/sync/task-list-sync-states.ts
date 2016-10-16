@@ -1,6 +1,7 @@
 import AsyncMachine, {
 	IState
 } from 'asyncmachine';
+import TaskListSync from './task-list-sync'
 
 
 class States extends AsyncMachine {
@@ -92,6 +93,11 @@ class States extends AsyncMachine {
 	ThreadsFetched: IState = {};
 
 	MsgsFetched: IState = {};
+
+	constructor(target: TaskListSync) {
+		super(target)
+		this.registerAll()
+	}
 }
 
 

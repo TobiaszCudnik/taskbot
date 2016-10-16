@@ -3,7 +3,8 @@ import TaskListSync from './task-list-sync';
 import { EventEmitter } from 'events';
 
 import AsyncMachine, {
-	IState
+	IState,
+	PipeFlags
 } from 'asyncmachine';
 import {
 	promisify,
@@ -17,6 +18,8 @@ import {
 	IConfig,
 	IListConfig
 } from '../types'
+import Logger from 'asyncmachine-inspector/build/logger'
+import Network from 'asyncmachine-inspector/build/network'
 
 
 class States extends AsyncMachine {
@@ -72,8 +75,20 @@ class States extends AsyncMachine {
 	TaskListsSynced: IState = {};
 
 	Dirty: IState = {};
+
+	constructor(target: Sync) {
+		super(target)
+		this.registerAll()
+	}
 }
 
+// TODO doesnt work
+namespace NodeJS {
+	export interface Global {
+		am_network: Network,
+		am_logger_client: Logger
+	}
+}
 
 class Sync extends EventEmitter {
 
@@ -108,28 +123,30 @@ class Sync extends EventEmitter {
 
 	constructor(config: IConfig) {
 		super()
-		this.config = config;
-		this.states = new States;
-		this.states.setTarget(this);
+		this.config = config
+		this.states = new States(this)
 		if (process.env['DEBUG']) {
 			this.states.id('Sync')
-				.logLevel(process.env['DEBUG']);
+				.logLevel(process.env['DEBUG'])
+			global.am_network = new Network()
+			global.am_network.addMachine(this.states)
+			global.am_logger_client = new Logger(global.am_network, 'http://localhost:3030/logger')
 		}
 		this.semaphore = new Semaphore(this.max_active_requests)
 		// this.task_lists = [];
-		this.auth = new Auth(config);
-		this.active_requests = 0;
-		this.setMaxListeners(0);
+		this.auth = new Auth(config)
+		this.active_requests = 0
+		this.setMaxListeners(0)
 
-		this.tasks_api = google.tasks('v1', {auth: this.auth.client});
-		this.gmail_api = google.gmail('v1', {auth: this.auth.client});
+		this.tasks_api = google.tasks('v1', {auth: this.auth.client})
+		this.gmail_api = google.gmail('v1', {auth: this.auth.client})
 
-		this.gmail = new Gmail(this);
-		this.states.pipe('GmailEnabled', this.gmail.states, 'Enabled');
-		this.states.pipe('GmailSyncEnabled', this.gmail.states, 'SyncingEnabled');
-		this.initTaskListsSync();
+		this.gmail = new Gmail(this)
+		this.states.pipe('GmailEnabled', this.gmail.states, 'Enabled')
+		this.states.pipe('GmailSyncEnabled', this.gmail.states, 'SyncingEnabled')
+		this.initTaskListsSync()
 
-		this.auth.pipe('Ready', this.states, 'Authenticated');
+		this.auth.pipe('Ready', this.states, 'Authenticated')
 	}
 			
 	// ----- -----
@@ -137,12 +154,16 @@ class Sync extends EventEmitter {
 	// ----- -----
 
 	// Try to set Synced state in all deps
-	QueryLabelsSynced_state() { return this.states.add('Synced'); }
-	TaskListsSynced_state() { return this.states.add('Synced'); }
+	QueryLabelsSynced_state() {
+		this.states.add('Synced')
+	}
+
+	TaskListsSynced_state() {
+		this.states.add('Synced')
+	}
 
 	async FetchingTaskLists_state() {
 		let abort = this.states.getAbort('FetchingTaskLists');
-		// TODO throttle updates
 		let res = await this.req(this.tasks_api.tasklists.list, {
 			etag: this.etags.task_lists
 		}, abort, true);
@@ -222,10 +243,10 @@ class Sync extends EventEmitter {
 		for (let [name, data] of Object.entries(this.config.tasks.queries)) {
 			if (name === 'labels_defaults')
 				continue
-			let task_list = new TaskListSync(name, data as IListConfig, this);
-			this.states.pipe('TaskListSyncEnabled', task_list.states, 'Enabled', false);
-			task_list.states.pipe('Synced', this.states, 'TaskListsSynced');
-			task_list.states.pipe('Syncing', this.states, 'SyncingTaskLists');
+			let task_list = new TaskListSync(name, data as IListConfig, this)
+			this.states.pipe('TaskListSyncEnabled', task_list.states, 'Enabled', PipeFlags.LOCAL_QUEUE)
+			task_list.states.pipe('Synced', this.states, 'TaskListsSynced')
+			task_list.states.pipe('Syncing', this.states, 'SyncingTaskLists')
 			// TODO handle error of non existing task list in the inner classes
 			//			task_list.states.on 'Restart.enter', => @states.drop 'TaskListsFetched'
 			this.task_lists_sync.push(task_list)
@@ -262,9 +283,8 @@ class Sync extends EventEmitter {
 //		delete params.auth
 //		console.log params
 //		console.log ret[0]
-		return ret;
-	};
-
+		return ret
+	}
 
 	log(msgs: string | any[], level: number) {
 		if (!process.env['DEBUG']) { return; }
@@ -277,4 +297,4 @@ class Sync extends EventEmitter {
 	}
 }
 
-export { Sync, States };
+export { Sync, States }

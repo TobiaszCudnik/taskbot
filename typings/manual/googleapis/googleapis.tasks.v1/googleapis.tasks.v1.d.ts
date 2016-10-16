@@ -19,7 +19,7 @@ declare module google {
                     'delete': (parameters: {'tasklist': string, 'fields'?: string}, callback: (error: any, body: any, response: any) => void) => Request;
                     'get': (parameters: {'tasklist': string, 'fields'?: string}, callback: (error: any, body: TaskList, response: any) => void) => Request;
                     'insert': (parameters: any, callback: (error: any, body: TaskList, response: any) => void) => Request;
-                    'list': (parameters: {'maxResults'?: string, 'pageToken'?: string, 'fields'?: string}, callback: (error: any, body: TaskLists, response: any) => void) => Request;
+                    'list': (parameters: {'maxResults'?: string, 'pageToken'?: string, 'fields'?: string, 'etag'?: string}, callback: (error: any, body: TaskLists, response: any) => void) => Request;
                     'patch': (parameters: {'tasklist': string, 'fields'?: string}, callback: (error: any, body: TaskList, response: any) => void) => Request;
                     'update': (parameters: {'tasklist': string, 'fields'?: string}, callback: (error: any, body: TaskList, response: any) => void) => Request;
                 };

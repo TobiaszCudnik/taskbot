@@ -70,18 +70,18 @@ class TaskListSync extends EventEmitter {
 		this.sync = sync;
 		// this.defineType('list', ITaskList, 'ITaskList');
 		// this.defineType('labels', [ILabel], '[ILabel]');
-		this.states = new States;
-		this.states.setTarget(this);
+		this.states = new States(this)
 		if (process.env['DEBUG']) {
-			this.states.id('TaskList')
+			this.states.id(`TaskList ${name}`)
 				.logLevel(process.env['DEBUG'])
+			global.am_network.addMachine(this.states)
 		}
 		this.gmail_api = this.sync.gmail_api;
 		this.gmail = this.sync.gmail;
 		this.tasks_api = this.sync.tasks_api;
 		// this.tasks_in_threads = [];
 		this.last_sync_time = null;
-		this.query = this.sync.gmail.createQuery(this.data.query, 'TaskList', true);
+		this.query = this.sync.gmail.createQuery(this.data.query, name, true);
 		// bind to query states
 		this.query.states.pipe('ThreadsFetched', this.states);
 		this.query.states.pipe('MsgsFetched', this.states);

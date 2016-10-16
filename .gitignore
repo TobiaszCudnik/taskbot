@@ -7,3 +7,7 @@
 /build/settings.js
 /.vscode
 /.DS_Store
+/src/**.js
+/test/**.js
+/settings.d.ts
+/settings.js.map

@@ -1,5 +1,7 @@
-import AsyncMachine, { IState } from 'asyncmachine';
-import { GmailQuery } from './gmail-query';
+import AsyncMachine, {
+	IState
+} from 'asyncmachine';
+import GmailQuery from './gmail-query';
 import { Sync } from './sync'
 import { Semaphore } from 'await-semaphore';
 import * as _ from 'underscore'
@@ -43,7 +45,12 @@ class States extends AsyncMachine {
 	};
 	HistoryIdFetched: IState = {
 		drop: ['FetchingHistoryId']
-	};
+	}
+
+	constructor(target: Gmail) {
+		super(target)
+		this.registerAll()
+	}
 }
 
 
@@ -70,12 +77,12 @@ class Gmail {
 	constructor(sync: Sync) {
 		this.sync = sync;
 		this.semaphore = sync.semaphore
-		this.states = new States;
-		this.states.setTarget(this);
+		this.states = new States(this)
 		if (process.env['DEBUG']) {
 			this.states
 				.id('Gmail')
 				.logLevel(process.env['DEBUG'])
+			global.am_network.addMachine(this.states)
 		}
 		this.api = this.sync.gmail_api;
 		this.config = this.sync.config;
@@ -172,7 +179,6 @@ class Gmail {
 			format: 'metadata',
 			fields: 'id,historyId,messages(id,labelIds,payload(headers))'
 		}, null, false)
-		// TODO delete the thread?
 		if (abort && abort())
 			return null
 
@@ -219,6 +225,7 @@ class Gmail {
 				exclusive_query += ' (label:' +
 					(<string[]>labels[1]).map(this.normalizeLabelName).join(' OR label:') + ')';
 			}
+			// TODO better query names
 			this.query_labels[query] = this.createQuery(exclusive_query, `QueryLabels ${++count}`);
 		}
 

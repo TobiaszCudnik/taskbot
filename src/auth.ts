@@ -29,18 +29,20 @@ export default class Auth extends AsyncMachine {
 		drop: ['TokenRefreshed']
 	};
 
-	client: google.oauth2.v2.Oauth2;
+	client: any;
 	settings: IConfig;
 
 	constructor(settings: IConfig) {
 		super(null, false)
+		// google.options({ params: { quotaUser: 'user123@example.com' } });
 		this.settings = settings;
+		this.register('Ready', 'CredentialsSet', 'RefreshingToken', 'TokenRefreshed')
 		if (process.env['DEBUG']) {
 			this.id('Auth')
 				.logLevel(process.env['DEBUG']);
+			global.am_network.addMachine(this)
 		}
-		this.register('Ready', 'CredentialsSet', 'RefreshingToken', 'TokenRefreshed')
-		this.client = new google.oauth2.v2.Oauth2(settings.client_id, settings.client_secret,
+		this.client = new google.auth.OAuth2(settings.client_id, settings.client_secret,
 			settings.redirect_url);
 		if (settings.access_token && settings.refresh_token) {
 			this.add('CredentialsSet');
