@@ -123,9 +123,7 @@ class TaskListSync extends EventEmitter {
 				let thread_not_completed = this.query.threadWasNotCompleted(thread.id)
 				if (task_completed && thread_not_completed &&
 						task_completed.unix() < thread_not_completed.unix()) {
-					//await @uncompleteTask task.id, abort
-					// TODO await
-					this.uncompleteTask(task.id, abort)
+					await this.uncompleteTask(task.id, abort)
 				}
 					
 				return;
@@ -136,7 +134,7 @@ class TaskListSync extends EventEmitter {
 			let task_id = this.getTaskForThreadFromCompletions(thread.id);
 			if (task_id) {
 				this.completeThread(thread.id);
-				return delete this.completions_tasks[task_id];
+				delete this.completions_tasks[task_id];
 			} else {
 				let find = this.sync.findTaskForThread(thread.id)
 				let task = find[0]
@@ -154,11 +152,9 @@ class TaskListSync extends EventEmitter {
 							notes: task.notes
 						} as google.tasks.v1.Task)
 					];
-					// TODO await Promise.all promises
-					return Promise.all(promises);
+					await Promise.all(promises);
 				} else {
-					// TODO await @createTaskFromThread thread, abort
-					return this.createTaskFromThread(thread, abort);
+					await this.createTaskFromThread(thread, abort);
 				}
 			}
 		}));
@@ -191,12 +187,10 @@ class TaskListSync extends EventEmitter {
 				if (!(this.query.threadSeen(thread_id)) || (
 						thread_completed && task_not_completed && 
 						thread_completed.unix() < task_not_completed.unix())) {
-					// TODO await @uncompleteThread thread_id, abort
-					return this.uncompleteThread(thread_id, abort);
+					await this.uncompleteThread(thread_id, abort);
 				}
 			} else {
-				// TODO await @createThreadForTask task, abort
-				return this.createThreadForTask(task, abort);
+				await this.createThreadForTask(task, abort);
 			}
 		}));
 
@@ -222,8 +216,7 @@ class TaskListSync extends EventEmitter {
 					row.time.unix() > task_not_completed.unix() &&
 					// TODO possible race condition
 					!task.deleted) {
-				// TODO await @completeTask task.id, abort
-				this.completeTask(task.id, abort);
+				await this.completeTask(task.id, abort);
 			}})
 		)
 
@@ -345,10 +338,11 @@ class TaskListSync extends EventEmitter {
 		} else {
 			console.log(`[FETCH] tasks for '${this.name}'`);
 			// this.etags.tasks = response[1].headers.etag;
+			// TODO check these indexes
 			this.etags.tasks = response[1].etag;
-			if (!response[1].items)
-				response[1].items = []
-			for (let task of response[1].items) {
+			if (!response[0].items)
+				response[0].items = []
+			for (let task of response[0].items) {
 				this.completions_tasks[task.id] = {
 					completed: false,
 					time: moment(task.completed),
@@ -356,7 +350,6 @@ class TaskListSync extends EventEmitter {
 				}
 			}
 
-			// return this.tasks = type(response[0], ITasks, 'ITasks');
 			this.tasks = response[0]
 		}
 	}

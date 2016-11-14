@@ -198,7 +198,7 @@ class Sync extends EventEmitter {
 		this.last_sync_time = this.last_sync_end - this.last_sync_start;
 		console.log(`Time: ${this.last_sync_time}ms`);
 		if (this.next_sync_timeout) { clearTimeout(this.next_sync_timeout); }
-		return this.next_sync_timeout = setTimeout((this.states.addByListener('Syncing')),
+		this.next_sync_timeout = setTimeout((this.states.addByListener('Syncing')),
 			this.config.sync_frequency);
 	}
 

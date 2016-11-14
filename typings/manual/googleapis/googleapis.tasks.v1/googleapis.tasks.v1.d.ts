@@ -10,6 +10,9 @@ declare module google {
         tasks(version: 'v1'): tasks.v1.Tasks;
     }
 
+    // TODO type response as IncomingMessage
+    // TOTO type request
+
     namespace tasks {
         namespace v1 {
             export interface Tasks {

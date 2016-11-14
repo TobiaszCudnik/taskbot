@@ -11,3 +11,10 @@
 /test/**.js
 /settings.d.ts
 /settings.js.map
+/src/**/*.js
+/src/**/*.d.ts
+/src/**/*.js.map
+/test/**/*.js
+/test/**/*.d.ts
+/test/**/*.js.map
+/build/
