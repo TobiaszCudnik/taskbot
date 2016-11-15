@@ -2,9 +2,13 @@ import AsyncMachine, {
 	IState
 } from 'asyncmachine';
 import TaskListSync from './task-list-sync'
+import {
+	IBind,
+	IEmit
+} from 'asyncmachine/src/events'
 
 
-class States extends AsyncMachine {
+class States extends AsyncMachine<IBind, IEmit> {
 
 	Enabled: IState = {};
 
@@ -95,6 +99,7 @@ class States extends AsyncMachine {
 	MsgsFetched: IState = {};
 
 	constructor(target: TaskListSync) {
+		// TODO constructor should accept any object
 		super(target)
 		this.registerAll()
 	}

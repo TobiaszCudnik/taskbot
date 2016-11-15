@@ -1,14 +1,19 @@
 import States from './task-list-sync-states';
 // TODO loose
-import timestamp from 'internet-timestamp';
+import * as timestamp from 'internet-timestamp';
 // TODO loose
-import ago from 'ago';
+import * as ago from 'ago';
 import * as moment from 'moment';
 import { EventEmitter } from 'events';
-import { Gmail } from './gmail'
-import { Sync } from './sync'
-import { GmailQuery } from './gmail-query'
+import Gmail from './gmail'
+import Sync from './sync'
+import GmailQuery, {
+	TCompletion
+} from './gmail-query'
 import { IListConfig } from '../types'
+import * as google from 'googleapis'
+import * as _ from 'underscore'
+import { map } from 'typed-promisify'
 
 
 // TODO check if needed
@@ -19,7 +24,7 @@ export interface ITasks {
 	'nextPageToken': string;
 }
 
-class TaskListSync extends EventEmitter {
+export default class TaskListSync extends EventEmitter {
 
 	data: IListConfig;
 	name: string;
@@ -205,9 +210,7 @@ class TaskListSync extends EventEmitter {
 	async SyncingCompletedThreads_state() {
 		let abort = this.states.getAbort('SyncingCompletedThreads');
 
-		await Promise.all(this.query.completions
-				.entries().map( async (completion) => {
-			let [thread_id, row] = completion
+		await map([...this.query.completions.values()], async ({thread_id, row}: TCompletion) => {
 			if (!row.completed) { return; }
 			let task = this.getTaskForThread(thread_id);
 			if (!task) { return; }
@@ -321,7 +324,7 @@ class TaskListSync extends EventEmitter {
 	}
 
 	async fetchNonCompletedTasks(abort: () => boolean) {
-		let response = await this.req(this.tasks_api.tasks.list, {
+		let [ list, res ] = await this.req(this.tasks_api.tasks.list, {
 			tasklist: this.list.id,
 			// fields: "etag,items(id,title,notes,updated,etag,status)",
 			maxResults: '1000',
@@ -329,20 +332,18 @@ class TaskListSync extends EventEmitter {
 			// etag: this.etags.tasks
 		}, abort, true)
 
-		if (abort && abort() || !response)
+		if (abort && abort() || !res)
 			return
 
-		if (response[1].statusCode === 304) {
+		if (res.statusCode === 304) {
 			this.states.add('TasksCached');
 			console.log(`[CACHED] tasks for '${this.name}'`);
 		} else {
 			console.log(`[FETCH] tasks for '${this.name}'`);
-			// this.etags.tasks = response[1].headers.etag;
-			// TODO check these indexes
-			this.etags.tasks = response[1].etag;
-			if (!response[0].items)
-				response[0].items = []
-			for (let task of response[0].items) {
+			this.etags.tasks = res.headers['etag'] as string
+			if (!list.items)
+				list.items = []
+			for (let task of list.items) {
 				this.completions_tasks[task.id] = {
 					completed: false,
 					time: moment(task.completed),
@@ -350,12 +351,12 @@ class TaskListSync extends EventEmitter {
 				}
 			}
 
-			this.tasks = response[0]
+			this.tasks = list
 		}
 	}
 
 	async fetchCompletedTasks(abort?: () => boolean): Promise<void> {
-		let response = await this.req(this.tasks_api.tasks.list, {
+		let [ list, res ] = await this.req(this.tasks_api.tasks.list, {
 			updatedMin: timestamp(new Date(this.tasks_completed_from)) as string,
 			tasklist: this.list.id,
 			fields: "etag,items(id,title,notes,updated,etag,status,completed)",
@@ -365,18 +366,18 @@ class TaskListSync extends EventEmitter {
 			etag: this.etags.tasks_completed || ''
 		}, abort, true)
 
-		if (!response)
+		if (!list)
 			return
 
-		if (response[1].statusCode === 304) {
-			console.log(`[CACHED] completed tasks for '${this.name}'`);
+		if (res.statusCode === 304) {
+			console.log(`[CACHED] completed tasks for '${this.name}'`)
 		} else {
 			console.log(`[FETCHED] completed tasks for '${this.name}'`)
-			this.etags.tasks_completed = response[1].headers.etag;
-			if (!response[0].items)
-				response[0].items = []
-			response[0].items = response[0].items.filter(item => item.status === 'completed')
-			response[0].items.forEach(task => {
+			this.etags.tasks_completed = res.headers['etag'] as string
+			if (!list.items)
+				list.items = []
+			list.items = list.items.filter(item => item.status === 'completed')
+			list.items.forEach(task => {
 				this.completions_tasks[task.id] = {
 					completed: true,
 					time: moment(task.completed),
@@ -384,7 +385,7 @@ class TaskListSync extends EventEmitter {
 				}
 			})
 
-			this.tasks_completed = response[0]
+			this.tasks_completed = list
 		}
 	}
 
@@ -518,7 +519,7 @@ class TaskListSync extends EventEmitter {
 	};
 
 
-	async req<A,T,T2>(method: (arg: A, cb: (err: any, res: T, res2: T2) => void) => void, params: A, abort: (() => boolean) | null | undefined, returnArray: true): Promise<{0:T,1:T2} | null>;
+	async req<A,T,T2>(method: (arg: A, cb: (err: any, res: T, res2: T2) => void) => void, params: A, abort: (() => boolean) | null | undefined, returnArray: true): Promise<[T,T2] | null>;
 	async req<A,T>(method: (arg: A, cb: (err: any, res: T) => void) => void, params: A, abort: (() => boolean) | null | undefined, returnArray: false): Promise<T | null>;
 	async req<A,T>(method: (arg: A, cb: (err: any, res: T) => void) => void, params: A, abort: (() => boolean) | null | undefined, returnArray: boolean): Promise<any> {
 		try {
@@ -690,6 +691,3 @@ class TaskListSync extends EventEmitter {
 		return null
 	}
 }
-
-
-export default TaskListSync;

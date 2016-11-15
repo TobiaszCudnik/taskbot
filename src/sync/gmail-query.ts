@@ -1,13 +1,18 @@
-import AsyncMachine, {
-  IState
-} from 'asyncmachine';
+import AsyncMachine from 'asyncmachine'
+import { IState } from 'asyncmachine/src/types'
+import {
+  IBind,
+  IEmit
+} from 'asyncmachine/src/events'
 import * as moment from 'moment';
-import { Gmail } from './gmail'
+import Gmail from './gmail'
 import { Semaphore } from 'await-semaphore';
+import * as google from 'googleapis'
+import { map } from 'typed-promisify'
 
 export type Thread = google.gmail.v1.Thread
 
-export class States extends AsyncMachine {
+export class States extends AsyncMachine<IBind, IEmit> {
 
   Enabled: IState = {};
   Dirty: IState = {
@@ -29,6 +34,7 @@ export class States extends AsyncMachine {
     drop: ['MsgsFetched']
   };
   MsgsFetched: IState = {
+    require: ['Enabled'],
     drop: ['FetchingMsgs']
   };
 
@@ -38,6 +44,10 @@ export class States extends AsyncMachine {
 	}
 }
 
+export type TCompletion = {
+  completed: boolean,
+  time: moment.Moment
+}
 
 export default class GmailQuery {
   gmail: Gmail;
@@ -49,10 +59,7 @@ export default class GmailQuery {
   threads: Thread[] = [];
   query: string;
   name: string;
-  completions = new Map<string, {
-    completed: boolean,
-    time: moment.Moment
-  }>();
+  completions = new Map<string, TCompletion>();
   previous_threads: Thread[] | null = null;
   fetch_msgs: boolean;
 
@@ -100,30 +107,33 @@ export default class GmailQuery {
     while (true) {
       let params = {
         // TODO this should be optional
-        includeSpamTrash: false,
-        labelIds: undefined,
+        // labelIds: '',
+        // pageToken: ''
+        // includeSpamTrash: false,
         maxResults: 1000,
         q: this.query,
         userId: "me",
-        foo: 'bar',
         fields: "nextPageToken,threads(historyId,id)",
-        pageToken: undefined
-      };
-      if (prevRes && prevRes[0].nextPageToken) {
+      }
+      if (prevRes && prevRes.nextPageToken) {
         console.log(`[FETCH] next page for threads' list for '${this.query}'`);
-        params.pageToken = prevRes[0].nextPageToken;
+        params.pageToken = prevRes.nextPageToken;
       }
 
-      let res = await this.req(this.api.users.threads.list, params, abort, false)
-      if (abort() || !res)
-        return 
+      let list = await this.req(this.api.users.threads.list, params, abort, false)
+      // TODO WTF
+      if (!list)
+        break;
+      if (abort())
+        return
 
-      results.push(...res.threads)
+      if (list.threads)
+        results.push(...list.threads)
 
-      if (!res.nextPageToken)
+      if (!list.nextPageToken)
         break
 
-      prevRes = res
+      prevRes = list
     }
 
     // TODO could be done in parallel with downloading of the results
@@ -152,10 +162,10 @@ export default class GmailQuery {
   }
 
   async FetchingMsgs_state(history_id: number, abort?: () => boolean) {
-    abort = this.states.getAbort('FetchingMsgs', abort);
+    abort = this.states.getAbort('FetchingMsgs', abort)
 
     // TODO use the awaitable map
-    let threads = await Promise.all(this.threads.map(async (thread) => {
+    let threads = await map(this.threads, async (thread: google.gmail.v1.Thread) => {
       // check if the thread has been previously downloaded and if
       // the history ID has changed
       let previous = this.previous_threads && this.previous_threads.find(item => (
@@ -165,17 +175,20 @@ export default class GmailQuery {
         return previous;
       else
         return await this.gmail.fetchThread(thread.id, parseInt(thread.historyId, 10), abort);
-    }))
+    })
 
     if (abort())
       return;
 
     // ensure all the requested threads were downloaded
+    // TODO retry the missing ones?
     if (threads && threads.every( thread => Boolean(thread))) {
       this.synced_history_id = history_id;
       this.threads = threads as google.gmail.v1.Thread[];
       this.previous_threads = null;
       this.states.add('MsgsFetched')
+    } else {
+      console.log('[FetchingMsgs] nore results or some missing]')
     }
   }
 

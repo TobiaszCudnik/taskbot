@@ -1,17 +1,22 @@
-import AsyncMachine, {
-	IState
-} from 'asyncmachine';
+import AsyncMachine from 'asyncmachine';
+import { IState } from 'asyncmachine/src/types'
+import {
+	IBind,
+	IEmit
+} from 'asyncmachine/src/events'
 import GmailQuery from './gmail-query';
-import { Sync } from './sync'
+import Sync from './sync'
 import { Semaphore } from 'await-semaphore';
 import * as _ from 'underscore'
+import * as google from 'googleapis'
 import {
 	IConfig,
 	TRawEmail
 } from '../types'
+import { map } from 'typed-promisify'
 
 
-class States extends AsyncMachine {
+export class States extends AsyncMachine<IBind, IEmit> {
 
 	Enabled: IState = {};
 	SyncingEnabled: IState = {};
@@ -54,7 +59,7 @@ class States extends AsyncMachine {
 }
 
 
-class Gmail {
+export default class Gmail {
 
 	states: States;
 	api: google.gmail.v1.Gmail;
@@ -68,8 +73,7 @@ class Gmail {
 	history_id: number | null;
 	last_sync_time: number;
 	queries: GmailQuery[] = [];
-	query_labels: {
-		[query: string]: GmailQuery };
+	query_labels = new Map<string, GmailQuery>();
 	query_labels_timer: number | null;
 	labels: google.gmail.v1.Label[];
 	semaphore: Semaphore;
@@ -100,21 +104,26 @@ class Gmail {
 		let abort = this.states.getAbort('SyncingQueryLabels');
 
 		let dirty = false;
-		await Promise.all(_.map(this.query_labels, 
-				async (query: GmailQuery, name: string) => {
+		await map([...this.query_labels],
+				async ([name, query]: [string, GmailQuery]) => {
 
 			query.states.add('Enabled')
-			await query.states.when('ThreadsFetched');
+			// TODO timeout?
+			debugger
+			await query.states.when('MsgsFetched')
 			if (abort())
 				return
-			query.states.drop('Enabled');
+			// TODO this probably resets the download states, while still 
+			// keeping the cache
+			query.states.drop('Enabled')
 
 			let labels = this.config.query_labels[name];
 			await Promise.all(query.threads.map(async (thread) => {
 				await this.modifyLabels(thread.id, labels[0], labels[1], abort);
 				dirty = true;
 			}))
-		}))
+		})
+
 		if (dirty)
 			this.states.add('Dirty')
 
@@ -122,8 +131,8 @@ class Gmail {
 			return
 
 		if (!dirty)
-			this.states.add('QueryLabelsSynced');
-	};
+			this.states.add('QueryLabelsSynced')
+	}
 
 	// TODO extract to a separate class
 	QueryLabelsSynced_state() {
@@ -139,12 +148,14 @@ class Gmail {
 			return
 		this.labels = res.labels;
 		this.states.add('LabelsFetched')
-	};
+	}
 
 	Dirty_state() {
 		this.history_id = null;
 		for (let i = 0; i < this.queries.length; i++) {
-			let query = this.queries[i];
+			let query = this.queries[i]
+			// Add the Dirty states to all child queries
+			// TODO could be easily narrowed down
 			this.states.add(query.states, 'Dirty')
 		}
 
@@ -163,7 +174,7 @@ class Gmail {
 		this.history_id = parseInt(response.historyId, 10)
 		this.last_sync_time = Date.now()
 		this.states.add('HistoryIdFetched')
-	};
+	}
 
 	// ----- -----
 	// Methods
@@ -171,8 +182,8 @@ class Gmail {
 
 	async fetchThread(id: string, historyId: number | null, abort?: () => boolean):
 			Promise<google.gmail.v1.Thread | null> {
-		// TODO type is missing
-		let response = await this.req(this.api.users.threads.get, {
+		// TODO limit the max msgs amount
+		let thread = await this.req(this.api.users.threads.get, {
 			id,
 			userId: 'me',
 			metadataHeaders: 'SUBJECT',
@@ -182,7 +193,7 @@ class Gmail {
 		if (abort && abort())
 			return null
 
-		return response
+		return thread
 	}
 
 	createQuery(query: string, name: string = '', fetch_msgs = false): GmailQuery {
@@ -208,7 +219,6 @@ class Gmail {
 	}
 
 	initQueryLabels() {
-		this.query_labels = {};
 		let count = 0;
 		for (let query in this.config.query_labels) {
 			// narrow the query to results requiring the labels modification
@@ -226,10 +236,10 @@ class Gmail {
 					(<string[]>labels[1]).map(this.normalizeLabelName).join(' OR label:') + ')';
 			}
 			// TODO better query names
-			this.query_labels[query] = this.createQuery(exclusive_query, `QueryLabels ${++count}`);
+			this.query_labels.set(query, this.createQuery(exclusive_query, `QueryLabels ${++count}`, true))
 		}
 
-		return this.sync.log(`Initialized ${Object.keys(this.query_labels).length} queries`, 2);
+		return this.sync.log(`Initialized ${this.query_labels.size} queries`, 2);
 	}
 
 	normalizeLabelName(label: string) {
@@ -362,9 +372,9 @@ class Gmail {
 
 	// TODO static or move to the thread class
 	getTitleFromThread(thread: google.gmail.v1.Thread) {
-		try { return thread.messages[0].payload.headers[0].value; }
+		try { return thread.messages[0].payload.headers[0].value }
 		catch (e) {
-			throw new Error('Thread content not fetched');
+			throw new Error('Thread content not fetched')
 		}
 	}
 
@@ -375,7 +385,7 @@ class Gmail {
 		// for msg in thread.messages
 		// 	for label_id in msg.labelIds
 
-	async req<A,T,T2>(method: (arg: A, cb: (err: any, res: T, res2: T2) => void) => void, params: A, abort: (() => boolean) | null | undefined, returnArray: true): Promise<{0:T,1:T2} | null>;
+	async req<A,T,T2>(method: (arg: A, cb: (err: any, res: T, res2: T2) => void) => void, params: A, abort: (() => boolean) | null | undefined, returnArray: true): Promise<[T,T2] | null>;
 	async req<A,T>(method: (arg: A, cb: (err: any, res: T) => void) => void, params: A, abort: (() => boolean) | null | undefined, returnArray: false): Promise<T | null>;
 	async req<A,T>(method: (arg: A, cb: (err: any, res: T) => void) => void, params: A, abort: (() => boolean) | null | undefined, returnArray: boolean): Promise<any> {
 		return returnArray
@@ -383,6 +393,3 @@ class Gmail {
 			: this.sync.req(method, params, abort, false)
 	}
 }
-
-
-export { Gmail, States };

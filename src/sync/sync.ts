@@ -3,15 +3,19 @@ import TaskListSync from './task-list-sync';
 import { EventEmitter } from 'events';
 
 import AsyncMachine, {
-	IState,
 	PipeFlags
 } from 'asyncmachine';
+import {
+	IBind,
+	IEmit
+} from 'asyncmachine/src/events'
+import { IState } from 'asyncmachine/src/types'
 import {
 	promisify,
 	promisifyArray
 } from 'typed-promisify'
 import * as google from 'googleapis';
-import { Gmail } from './gmail';
+import Gmail from './gmail';
 // import { ApiError } from '../exceptions'
 import { Semaphore } from 'await-semaphore';
 import {
@@ -22,7 +26,7 @@ import Logger from 'asyncmachine-inspector/build/logger'
 import Network from 'asyncmachine-inspector/build/network'
 
 
-class States extends AsyncMachine {
+export class States extends AsyncMachine<IBind, IEmit> {
 
 	Enabled: IState = {
 		auto: true
@@ -82,15 +86,8 @@ class States extends AsyncMachine {
 	}
 }
 
-// TODO doesnt work
-namespace NodeJS {
-	export interface Global {
-		am_network: Network,
-		am_logger_client: Logger
-	}
-}
-
-class Sync extends EventEmitter {
+// TODO default
+export default class Sync extends EventEmitter {
 
 	max_active_requests = 5;
 	semaphore: Semaphore;
@@ -164,17 +161,17 @@ class Sync extends EventEmitter {
 
 	async FetchingTaskLists_state() {
 		let abort = this.states.getAbort('FetchingTaskLists');
-		let res = await this.req(this.tasks_api.tasklists.list, {
+		let [list, res] = await this.req(this.tasks_api.tasklists.list, {
 			etag: this.etags.task_lists
 		}, abort, true);
 		if (abort()) {
 			console.log('abort', abort);
 			return;
 		}
-		if (res[1].statusCode !== 304) {
+		if (res.statusCode !== 304) {
 			console.log('[FETCHED] tasks lists');
-			this.etags.task_lists = res[1].headers.etag;
-			// this.task_lists = type(res[0].items, ITaskLists, 'ITaskLists');
+			this.etags.task_lists = res.headers.etag;
+			this.task_lists = list.items;
 		} else {
 			console.log('[CACHED] tasks lists');
 		}
@@ -254,7 +251,7 @@ class Sync extends EventEmitter {
 	}
 
 	// TODO take abort() as the second param
-	async req<A,T,T2>(method: (arg: A, cb: (err: any, res: T, res2: T2) => void) => void, params: A, abort: (() => boolean) | null | undefined, returnArray: true): Promise<{0:T,1:T2} | null>;
+	async req<A,T,T2>(method: (arg: A, cb: (err: any, res: T, res2: T2) => void) => void, params: A, abort: (() => boolean) | null | undefined, returnArray: true): Promise<[T,T2] | null>;
 	async req<A,T>(method: (arg: A, cb: (err: any, res: T) => void) => void, params: A, abort: (() => boolean) | null | undefined, returnArray: false): Promise<T | null>;
 	async req<A,T>(method: (arg: A, cb: (err: any, res: T) => void) => void, params: A, abort: (() => boolean) | null | undefined, returnArray: boolean): Promise<any> {
 		let release = await this.semaphore.acquire()
@@ -268,7 +265,8 @@ class Sync extends EventEmitter {
 		if (!params)
 			params = {} as A
 		this.log(['REQUEST', params], 3);
-		console.log(params);
+		if (process.env['DEBUG'])
+			console.log(params);
 		(params as any).auth = this.auth.client;
 		// TODO catch errors
 		// TODO loose promisify
@@ -296,5 +294,3 @@ class Sync extends EventEmitter {
 		return console.log.apply(console, msgs);
 	}
 }
-
-export { Sync, States }

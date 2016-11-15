@@ -1,10 +1,14 @@
 import * as google from "googleapis";
-import AsyncMachine, {
-	IState
-} from "asyncmachine";
+import AsyncMachine from "asyncmachine";
+import {
+	IBind,
+	IEmit
+} from 'asyncmachine/src/events'
+import { IState } from 'asyncmachine/src/types'
 import { IConfig } from './types'
 
-export default class Auth extends AsyncMachine {
+
+export default class Auth extends AsyncMachine<IBind, IEmit> {
 
 	CredentialsSet: IState = {};
 
