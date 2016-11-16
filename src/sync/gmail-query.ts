@@ -44,7 +44,7 @@ export class States extends AsyncMachine<IBind, IEmit> {
 	}
 }
 
-export type TCompletion = {
+export type TThreadCompletion = {
   completed: boolean,
   time: moment.Moment
 }
@@ -59,7 +59,7 @@ export default class GmailQuery {
   threads: Thread[] = [];
   query: string;
   name: string;
-  completions = new Map<string, TCompletion>();
+  completions = new Map<string, TThreadCompletion>();
   previous_threads: Thread[] | null = null;
   fetch_msgs: boolean;
 

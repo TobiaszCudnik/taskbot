@@ -8,7 +8,7 @@ import { EventEmitter } from 'events';
 import Gmail from './gmail'
 import Sync from './sync'
 import GmailQuery, {
-	TCompletion
+	TThreadCompletion
 } from './gmail-query'
 import { IListConfig } from '../types'
 import * as google from 'googleapis'
@@ -22,6 +22,12 @@ export interface ITasks {
 	'items': google.tasks.v1.Task[];
 	'kind': string;
 	'nextPageToken': string;
+}
+
+type TTaskCompletion = {
+	completed: boolean,
+	time: moment.Moment,
+	thread_id: string | null
 }
 
 export default class TaskListSync extends EventEmitter {
@@ -55,11 +61,7 @@ export default class TaskListSync extends EventEmitter {
 		tasks: null,
 		tasks_completed: null
 	};
-	completions_tasks = new Map<string, {
-		completed: boolean,
-		time: moment.Moment,
-		thread_id: string | null
-	}>();
+	completions_tasks = new Map<string, TTaskCompletion>();
 	quota_exceeded = false;
 
 	def_title: string;
@@ -157,7 +159,7 @@ export default class TaskListSync extends EventEmitter {
 							notes: task.notes
 						} as google.tasks.v1.Task)
 					];
-					await Promise.all(promises);
+					await Promise.all<any>(promises);
 				} else {
 					await this.createTaskFromThread(thread, abort);
 				}
@@ -210,7 +212,8 @@ export default class TaskListSync extends EventEmitter {
 	async SyncingCompletedThreads_state() {
 		let abort = this.states.getAbort('SyncingCompletedThreads');
 
-		await map([...this.query.completions.values()], async ({thread_id, row}: TCompletion) => {
+		await map([...this.query.completions],
+				async ([thread_id, row]: [string, TThreadCompletion]) => {
 			if (!row.completed) { return; }
 			let task = this.getTaskForThread(thread_id);
 			if (!task) { return; }
@@ -219,9 +222,9 @@ export default class TaskListSync extends EventEmitter {
 					row.time.unix() > task_not_completed.unix() &&
 					// TODO possible race condition
 					!task.deleted) {
-				await this.completeTask(task.id, abort);
-			}})
-		)
+				await this.completeTask(task.id, abort)
+			}
+		})
 
 		if (abort())
 			return
@@ -234,9 +237,8 @@ export default class TaskListSync extends EventEmitter {
 	async SyncingCompletedTasks_state() {
 		let abort = this.states.getAbort('SyncingCompletedTasks');
 
-		// TODO completions_tasks to Map
-		await Promise.all(this.completions_tasks.entries().map(async (entry) => {
-			let [task_id, row] = entry
+		await map([...this.completions_tasks],
+				async ([task_id, row]: [string, TTaskCompletion]) => {
 			if (!row.completed)
 				return
 			let task = this.getTask(task_id);
@@ -248,9 +250,10 @@ export default class TaskListSync extends EventEmitter {
 			let thread_not_completed = this.query.threadWasNotCompleted(thread_id);
 			if (thread_not_completed && row.time.unix() > thread_not_completed.unix())
 				await this.completeThread(thread_id, abort)
-		}));
+		})
 
-		if (abort()) { return; }
+		if (abort())
+			return
 		this.states.add('CompletedTasksSynced');
 		return this.states.add('Synced');
 	};
