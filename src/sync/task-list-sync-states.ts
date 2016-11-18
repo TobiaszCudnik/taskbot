@@ -1,14 +1,14 @@
-import AsyncMachine, {
-	IState
-} from 'asyncmachine';
+import AsyncMachine from 'asyncmachine'
 import TaskListSync from './task-list-sync'
 import {
+	IState,
 	IBind,
-	IEmit
-} from 'asyncmachine/src/events'
+	IEmit,
+	TStates
+} from './task-list-sync-states-types'
 
 
-class States extends AsyncMachine<IBind, IEmit> {
+export default class States extends AsyncMachine<TStates, IBind, IEmit> {
 
 	Enabled: IState = {};
 
@@ -104,6 +104,3 @@ class States extends AsyncMachine<IBind, IEmit> {
 		this.registerAll()
 	}
 }
-
-
-export default States;

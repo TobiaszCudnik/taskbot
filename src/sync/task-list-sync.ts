@@ -113,7 +113,8 @@ export default class TaskListSync extends EventEmitter {
 
 
 	Synced_state() {
-		if (this.push_dirty) { this.states.add(this.sync.states, 'Dirty'); }
+		if (this.push_dirty)
+			this.states.add(this.sync.states, 'Dirty')
 		this.last_sync_end = Date.now()
 		this.last_sync_time = this.last_sync_end - this.last_sync_start;
 		return console.log(`TaskList ${this.name} synced in: ${this.last_sync_time}ms`);

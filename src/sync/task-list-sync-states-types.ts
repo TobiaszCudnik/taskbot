@@ -1,4 +1,7 @@
 
+import { IState as IStateBase } from 'asyncmachine/src/types'
+
+
 export interface IBind {
 
     // Enabled
@@ -580,6 +583,12 @@ export type TTransitions = 'Exception_Enabled'
   | 'Exception_CompletedTasksSynced'
   | 'Exception_ThreadsFetched'
   | 'Exception_MsgsFetched';
+
+// For this implementation
+export interface IState extends IStateBase<TStates> {}
+
+// For sub classes
+export interface IStateExt<T extends string> extends IStateBase<T | TStates> {}
 
 export interface IBind {
 
