@@ -1,3 +1,4 @@
+
 export interface IBind {
 
     // Enabled
@@ -58,452 +59,10 @@ export interface IBind {
     (event: 'MsgsFetched_enter', listener: (/* param1, param2 */) => boolean | undefined, context?: Object): this;
     (event: 'MsgsFetched_state', listener: (/* param1, param2 */) => any, context?: Object): this;
 
-
-    // Non-params events
-    (event: 'Enabled_exit', listener: () => boolean | undefined, context?: Object): this;
-    (event: 'Enabled_end', listener: () => any, context?: Object): this;
-    (event: 'Syncing_exit', listener: () => boolean | undefined, context?: Object): this;
-    (event: 'Syncing_end', listener: () => any, context?: Object): this;
-    (event: 'Synced_exit', listener: () => boolean | undefined, context?: Object): this;
-    (event: 'Synced_end', listener: () => any, context?: Object): this;
-    (event: 'Restart_exit', listener: () => boolean | undefined, context?: Object): this;
-    (event: 'Restart_end', listener: () => any, context?: Object): this;
-    (event: 'PreparingList_exit', listener: () => boolean | undefined, context?: Object): this;
-    (event: 'PreparingList_end', listener: () => any, context?: Object): this;
-    (event: 'ListReady_exit', listener: () => boolean | undefined, context?: Object): this;
-    (event: 'ListReady_end', listener: () => any, context?: Object): this;
-    (event: 'FetchingTasks_exit', listener: () => boolean | undefined, context?: Object): this;
-    (event: 'FetchingTasks_end', listener: () => any, context?: Object): this;
-    (event: 'TasksFetched_exit', listener: () => boolean | undefined, context?: Object): this;
-    (event: 'TasksFetched_end', listener: () => any, context?: Object): this;
-    (event: 'TasksCached_exit', listener: () => boolean | undefined, context?: Object): this;
-    (event: 'TasksCached_end', listener: () => any, context?: Object): this;
-    (event: 'SyncingThreadsToTasks_exit', listener: () => boolean | undefined, context?: Object): this;
-    (event: 'SyncingThreadsToTasks_end', listener: () => any, context?: Object): this;
-    (event: 'ThreadsToTasksSynced_exit', listener: () => boolean | undefined, context?: Object): this;
-    (event: 'ThreadsToTasksSynced_end', listener: () => any, context?: Object): this;
-    (event: 'SyncingTasksToThreads_exit', listener: () => boolean | undefined, context?: Object): this;
-    (event: 'SyncingTasksToThreads_end', listener: () => any, context?: Object): this;
-    (event: 'TasksToThreadsSynced_exit', listener: () => boolean | undefined, context?: Object): this;
-    (event: 'TasksToThreadsSynced_end', listener: () => any, context?: Object): this;
-    (event: 'SyncingCompletedThreads_exit', listener: () => boolean | undefined, context?: Object): this;
-    (event: 'SyncingCompletedThreads_end', listener: () => any, context?: Object): this;
-    (event: 'CompletedThreadsSynced_exit', listener: () => boolean | undefined, context?: Object): this;
-    (event: 'CompletedThreadsSynced_end', listener: () => any, context?: Object): this;
-    (event: 'SyncingCompletedTasks_exit', listener: () => boolean | undefined, context?: Object): this;
-    (event: 'SyncingCompletedTasks_end', listener: () => any, context?: Object): this;
-    (event: 'CompletedTasksSynced_exit', listener: () => boolean | undefined, context?: Object): this;
-    (event: 'CompletedTasksSynced_end', listener: () => any, context?: Object): this;
-    (event: 'ThreadsFetched_exit', listener: () => boolean | undefined, context?: Object): this;
-    (event: 'ThreadsFetched_end', listener: () => any, context?: Object): this;
-    (event: 'MsgsFetched_exit', listener: () => boolean | undefined, context?: Object): this;
-    (event: 'MsgsFetched_end', listener: () => any, context?: Object): this;
-
-    // Transitions
-
-    (event: 'Enabled_Any'): this;
-    (event: 'Enabled_Syncing'): this;
-    (event: 'Enabled_Synced'): this;
-    (event: 'Enabled_Restart'): this;
-    (event: 'Enabled_PreparingList'): this;
-    (event: 'Enabled_ListReady'): this;
-    (event: 'Enabled_FetchingTasks'): this;
-    (event: 'Enabled_TasksFetched'): this;
-    (event: 'Enabled_TasksCached'): this;
-    (event: 'Enabled_SyncingThreadsToTasks'): this;
-    (event: 'Enabled_ThreadsToTasksSynced'): this;
-    (event: 'Enabled_SyncingTasksToThreads'): this;
-    (event: 'Enabled_TasksToThreadsSynced'): this;
-    (event: 'Enabled_SyncingCompletedThreads'): this;
-    (event: 'Enabled_CompletedThreadsSynced'): this;
-    (event: 'Enabled_SyncingCompletedTasks'): this;
-    (event: 'Enabled_CompletedTasksSynced'): this;
-    (event: 'Enabled_ThreadsFetched'): this;
-    (event: 'Enabled_MsgsFetched'): this;
-    (event: 'Enabled_Exception'): this;
-    (event: 'Syncing_Enabled'): this;
-    (event: 'Syncing_Any'): this;
-    (event: 'Syncing_Synced'): this;
-    (event: 'Syncing_Restart'): this;
-    (event: 'Syncing_PreparingList'): this;
-    (event: 'Syncing_ListReady'): this;
-    (event: 'Syncing_FetchingTasks'): this;
-    (event: 'Syncing_TasksFetched'): this;
-    (event: 'Syncing_TasksCached'): this;
-    (event: 'Syncing_SyncingThreadsToTasks'): this;
-    (event: 'Syncing_ThreadsToTasksSynced'): this;
-    (event: 'Syncing_SyncingTasksToThreads'): this;
-    (event: 'Syncing_TasksToThreadsSynced'): this;
-    (event: 'Syncing_SyncingCompletedThreads'): this;
-    (event: 'Syncing_CompletedThreadsSynced'): this;
-    (event: 'Syncing_SyncingCompletedTasks'): this;
-    (event: 'Syncing_CompletedTasksSynced'): this;
-    (event: 'Syncing_ThreadsFetched'): this;
-    (event: 'Syncing_MsgsFetched'): this;
-    (event: 'Syncing_Exception'): this;
-    (event: 'Synced_Enabled'): this;
-    (event: 'Synced_Syncing'): this;
-    (event: 'Synced_Any'): this;
-    (event: 'Synced_Restart'): this;
-    (event: 'Synced_PreparingList'): this;
-    (event: 'Synced_ListReady'): this;
-    (event: 'Synced_FetchingTasks'): this;
-    (event: 'Synced_TasksFetched'): this;
-    (event: 'Synced_TasksCached'): this;
-    (event: 'Synced_SyncingThreadsToTasks'): this;
-    (event: 'Synced_ThreadsToTasksSynced'): this;
-    (event: 'Synced_SyncingTasksToThreads'): this;
-    (event: 'Synced_TasksToThreadsSynced'): this;
-    (event: 'Synced_SyncingCompletedThreads'): this;
-    (event: 'Synced_CompletedThreadsSynced'): this;
-    (event: 'Synced_SyncingCompletedTasks'): this;
-    (event: 'Synced_CompletedTasksSynced'): this;
-    (event: 'Synced_ThreadsFetched'): this;
-    (event: 'Synced_MsgsFetched'): this;
-    (event: 'Synced_Exception'): this;
-    (event: 'Restart_Enabled'): this;
-    (event: 'Restart_Syncing'): this;
-    (event: 'Restart_Synced'): this;
-    (event: 'Restart_Any'): this;
-    (event: 'Restart_PreparingList'): this;
-    (event: 'Restart_ListReady'): this;
-    (event: 'Restart_FetchingTasks'): this;
-    (event: 'Restart_TasksFetched'): this;
-    (event: 'Restart_TasksCached'): this;
-    (event: 'Restart_SyncingThreadsToTasks'): this;
-    (event: 'Restart_ThreadsToTasksSynced'): this;
-    (event: 'Restart_SyncingTasksToThreads'): this;
-    (event: 'Restart_TasksToThreadsSynced'): this;
-    (event: 'Restart_SyncingCompletedThreads'): this;
-    (event: 'Restart_CompletedThreadsSynced'): this;
-    (event: 'Restart_SyncingCompletedTasks'): this;
-    (event: 'Restart_CompletedTasksSynced'): this;
-    (event: 'Restart_ThreadsFetched'): this;
-    (event: 'Restart_MsgsFetched'): this;
-    (event: 'Restart_Exception'): this;
-    (event: 'PreparingList_Enabled'): this;
-    (event: 'PreparingList_Syncing'): this;
-    (event: 'PreparingList_Synced'): this;
-    (event: 'PreparingList_Restart'): this;
-    (event: 'PreparingList_Any'): this;
-    (event: 'PreparingList_ListReady'): this;
-    (event: 'PreparingList_FetchingTasks'): this;
-    (event: 'PreparingList_TasksFetched'): this;
-    (event: 'PreparingList_TasksCached'): this;
-    (event: 'PreparingList_SyncingThreadsToTasks'): this;
-    (event: 'PreparingList_ThreadsToTasksSynced'): this;
-    (event: 'PreparingList_SyncingTasksToThreads'): this;
-    (event: 'PreparingList_TasksToThreadsSynced'): this;
-    (event: 'PreparingList_SyncingCompletedThreads'): this;
-    (event: 'PreparingList_CompletedThreadsSynced'): this;
-    (event: 'PreparingList_SyncingCompletedTasks'): this;
-    (event: 'PreparingList_CompletedTasksSynced'): this;
-    (event: 'PreparingList_ThreadsFetched'): this;
-    (event: 'PreparingList_MsgsFetched'): this;
-    (event: 'PreparingList_Exception'): this;
-    (event: 'ListReady_Enabled'): this;
-    (event: 'ListReady_Syncing'): this;
-    (event: 'ListReady_Synced'): this;
-    (event: 'ListReady_Restart'): this;
-    (event: 'ListReady_PreparingList'): this;
-    (event: 'ListReady_Any'): this;
-    (event: 'ListReady_FetchingTasks'): this;
-    (event: 'ListReady_TasksFetched'): this;
-    (event: 'ListReady_TasksCached'): this;
-    (event: 'ListReady_SyncingThreadsToTasks'): this;
-    (event: 'ListReady_ThreadsToTasksSynced'): this;
-    (event: 'ListReady_SyncingTasksToThreads'): this;
-    (event: 'ListReady_TasksToThreadsSynced'): this;
-    (event: 'ListReady_SyncingCompletedThreads'): this;
-    (event: 'ListReady_CompletedThreadsSynced'): this;
-    (event: 'ListReady_SyncingCompletedTasks'): this;
-    (event: 'ListReady_CompletedTasksSynced'): this;
-    (event: 'ListReady_ThreadsFetched'): this;
-    (event: 'ListReady_MsgsFetched'): this;
-    (event: 'ListReady_Exception'): this;
-    (event: 'FetchingTasks_Enabled'): this;
-    (event: 'FetchingTasks_Syncing'): this;
-    (event: 'FetchingTasks_Synced'): this;
-    (event: 'FetchingTasks_Restart'): this;
-    (event: 'FetchingTasks_PreparingList'): this;
-    (event: 'FetchingTasks_ListReady'): this;
-    (event: 'FetchingTasks_Any'): this;
-    (event: 'FetchingTasks_TasksFetched'): this;
-    (event: 'FetchingTasks_TasksCached'): this;
-    (event: 'FetchingTasks_SyncingThreadsToTasks'): this;
-    (event: 'FetchingTasks_ThreadsToTasksSynced'): this;
-    (event: 'FetchingTasks_SyncingTasksToThreads'): this;
-    (event: 'FetchingTasks_TasksToThreadsSynced'): this;
-    (event: 'FetchingTasks_SyncingCompletedThreads'): this;
-    (event: 'FetchingTasks_CompletedThreadsSynced'): this;
-    (event: 'FetchingTasks_SyncingCompletedTasks'): this;
-    (event: 'FetchingTasks_CompletedTasksSynced'): this;
-    (event: 'FetchingTasks_ThreadsFetched'): this;
-    (event: 'FetchingTasks_MsgsFetched'): this;
-    (event: 'FetchingTasks_Exception'): this;
-    (event: 'TasksFetched_Enabled'): this;
-    (event: 'TasksFetched_Syncing'): this;
-    (event: 'TasksFetched_Synced'): this;
-    (event: 'TasksFetched_Restart'): this;
-    (event: 'TasksFetched_PreparingList'): this;
-    (event: 'TasksFetched_ListReady'): this;
-    (event: 'TasksFetched_FetchingTasks'): this;
-    (event: 'TasksFetched_Any'): this;
-    (event: 'TasksFetched_TasksCached'): this;
-    (event: 'TasksFetched_SyncingThreadsToTasks'): this;
-    (event: 'TasksFetched_ThreadsToTasksSynced'): this;
-    (event: 'TasksFetched_SyncingTasksToThreads'): this;
-    (event: 'TasksFetched_TasksToThreadsSynced'): this;
-    (event: 'TasksFetched_SyncingCompletedThreads'): this;
-    (event: 'TasksFetched_CompletedThreadsSynced'): this;
-    (event: 'TasksFetched_SyncingCompletedTasks'): this;
-    (event: 'TasksFetched_CompletedTasksSynced'): this;
-    (event: 'TasksFetched_ThreadsFetched'): this;
-    (event: 'TasksFetched_MsgsFetched'): this;
-    (event: 'TasksFetched_Exception'): this;
-    (event: 'TasksCached_Enabled'): this;
-    (event: 'TasksCached_Syncing'): this;
-    (event: 'TasksCached_Synced'): this;
-    (event: 'TasksCached_Restart'): this;
-    (event: 'TasksCached_PreparingList'): this;
-    (event: 'TasksCached_ListReady'): this;
-    (event: 'TasksCached_FetchingTasks'): this;
-    (event: 'TasksCached_TasksFetched'): this;
-    (event: 'TasksCached_Any'): this;
-    (event: 'TasksCached_SyncingThreadsToTasks'): this;
-    (event: 'TasksCached_ThreadsToTasksSynced'): this;
-    (event: 'TasksCached_SyncingTasksToThreads'): this;
-    (event: 'TasksCached_TasksToThreadsSynced'): this;
-    (event: 'TasksCached_SyncingCompletedThreads'): this;
-    (event: 'TasksCached_CompletedThreadsSynced'): this;
-    (event: 'TasksCached_SyncingCompletedTasks'): this;
-    (event: 'TasksCached_CompletedTasksSynced'): this;
-    (event: 'TasksCached_ThreadsFetched'): this;
-    (event: 'TasksCached_MsgsFetched'): this;
-    (event: 'TasksCached_Exception'): this;
-    (event: 'SyncingThreadsToTasks_Enabled'): this;
-    (event: 'SyncingThreadsToTasks_Syncing'): this;
-    (event: 'SyncingThreadsToTasks_Synced'): this;
-    (event: 'SyncingThreadsToTasks_Restart'): this;
-    (event: 'SyncingThreadsToTasks_PreparingList'): this;
-    (event: 'SyncingThreadsToTasks_ListReady'): this;
-    (event: 'SyncingThreadsToTasks_FetchingTasks'): this;
-    (event: 'SyncingThreadsToTasks_TasksFetched'): this;
-    (event: 'SyncingThreadsToTasks_TasksCached'): this;
-    (event: 'SyncingThreadsToTasks_Any'): this;
-    (event: 'SyncingThreadsToTasks_ThreadsToTasksSynced'): this;
-    (event: 'SyncingThreadsToTasks_SyncingTasksToThreads'): this;
-    (event: 'SyncingThreadsToTasks_TasksToThreadsSynced'): this;
-    (event: 'SyncingThreadsToTasks_SyncingCompletedThreads'): this;
-    (event: 'SyncingThreadsToTasks_CompletedThreadsSynced'): this;
-    (event: 'SyncingThreadsToTasks_SyncingCompletedTasks'): this;
-    (event: 'SyncingThreadsToTasks_CompletedTasksSynced'): this;
-    (event: 'SyncingThreadsToTasks_ThreadsFetched'): this;
-    (event: 'SyncingThreadsToTasks_MsgsFetched'): this;
-    (event: 'SyncingThreadsToTasks_Exception'): this;
-    (event: 'ThreadsToTasksSynced_Enabled'): this;
-    (event: 'ThreadsToTasksSynced_Syncing'): this;
-    (event: 'ThreadsToTasksSynced_Synced'): this;
-    (event: 'ThreadsToTasksSynced_Restart'): this;
-    (event: 'ThreadsToTasksSynced_PreparingList'): this;
-    (event: 'ThreadsToTasksSynced_ListReady'): this;
-    (event: 'ThreadsToTasksSynced_FetchingTasks'): this;
-    (event: 'ThreadsToTasksSynced_TasksFetched'): this;
-    (event: 'ThreadsToTasksSynced_TasksCached'): this;
-    (event: 'ThreadsToTasksSynced_SyncingThreadsToTasks'): this;
-    (event: 'ThreadsToTasksSynced_Any'): this;
-    (event: 'ThreadsToTasksSynced_SyncingTasksToThreads'): this;
-    (event: 'ThreadsToTasksSynced_TasksToThreadsSynced'): this;
-    (event: 'ThreadsToTasksSynced_SyncingCompletedThreads'): this;
-    (event: 'ThreadsToTasksSynced_CompletedThreadsSynced'): this;
-    (event: 'ThreadsToTasksSynced_SyncingCompletedTasks'): this;
-    (event: 'ThreadsToTasksSynced_CompletedTasksSynced'): this;
-    (event: 'ThreadsToTasksSynced_ThreadsFetched'): this;
-    (event: 'ThreadsToTasksSynced_MsgsFetched'): this;
-    (event: 'ThreadsToTasksSynced_Exception'): this;
-    (event: 'SyncingTasksToThreads_Enabled'): this;
-    (event: 'SyncingTasksToThreads_Syncing'): this;
-    (event: 'SyncingTasksToThreads_Synced'): this;
-    (event: 'SyncingTasksToThreads_Restart'): this;
-    (event: 'SyncingTasksToThreads_PreparingList'): this;
-    (event: 'SyncingTasksToThreads_ListReady'): this;
-    (event: 'SyncingTasksToThreads_FetchingTasks'): this;
-    (event: 'SyncingTasksToThreads_TasksFetched'): this;
-    (event: 'SyncingTasksToThreads_TasksCached'): this;
-    (event: 'SyncingTasksToThreads_SyncingThreadsToTasks'): this;
-    (event: 'SyncingTasksToThreads_ThreadsToTasksSynced'): this;
-    (event: 'SyncingTasksToThreads_Any'): this;
-    (event: 'SyncingTasksToThreads_TasksToThreadsSynced'): this;
-    (event: 'SyncingTasksToThreads_SyncingCompletedThreads'): this;
-    (event: 'SyncingTasksToThreads_CompletedThreadsSynced'): this;
-    (event: 'SyncingTasksToThreads_SyncingCompletedTasks'): this;
-    (event: 'SyncingTasksToThreads_CompletedTasksSynced'): this;
-    (event: 'SyncingTasksToThreads_ThreadsFetched'): this;
-    (event: 'SyncingTasksToThreads_MsgsFetched'): this;
-    (event: 'SyncingTasksToThreads_Exception'): this;
-    (event: 'TasksToThreadsSynced_Enabled'): this;
-    (event: 'TasksToThreadsSynced_Syncing'): this;
-    (event: 'TasksToThreadsSynced_Synced'): this;
-    (event: 'TasksToThreadsSynced_Restart'): this;
-    (event: 'TasksToThreadsSynced_PreparingList'): this;
-    (event: 'TasksToThreadsSynced_ListReady'): this;
-    (event: 'TasksToThreadsSynced_FetchingTasks'): this;
-    (event: 'TasksToThreadsSynced_TasksFetched'): this;
-    (event: 'TasksToThreadsSynced_TasksCached'): this;
-    (event: 'TasksToThreadsSynced_SyncingThreadsToTasks'): this;
-    (event: 'TasksToThreadsSynced_ThreadsToTasksSynced'): this;
-    (event: 'TasksToThreadsSynced_SyncingTasksToThreads'): this;
-    (event: 'TasksToThreadsSynced_Any'): this;
-    (event: 'TasksToThreadsSynced_SyncingCompletedThreads'): this;
-    (event: 'TasksToThreadsSynced_CompletedThreadsSynced'): this;
-    (event: 'TasksToThreadsSynced_SyncingCompletedTasks'): this;
-    (event: 'TasksToThreadsSynced_CompletedTasksSynced'): this;
-    (event: 'TasksToThreadsSynced_ThreadsFetched'): this;
-    (event: 'TasksToThreadsSynced_MsgsFetched'): this;
-    (event: 'TasksToThreadsSynced_Exception'): this;
-    (event: 'SyncingCompletedThreads_Enabled'): this;
-    (event: 'SyncingCompletedThreads_Syncing'): this;
-    (event: 'SyncingCompletedThreads_Synced'): this;
-    (event: 'SyncingCompletedThreads_Restart'): this;
-    (event: 'SyncingCompletedThreads_PreparingList'): this;
-    (event: 'SyncingCompletedThreads_ListReady'): this;
-    (event: 'SyncingCompletedThreads_FetchingTasks'): this;
-    (event: 'SyncingCompletedThreads_TasksFetched'): this;
-    (event: 'SyncingCompletedThreads_TasksCached'): this;
-    (event: 'SyncingCompletedThreads_SyncingThreadsToTasks'): this;
-    (event: 'SyncingCompletedThreads_ThreadsToTasksSynced'): this;
-    (event: 'SyncingCompletedThreads_SyncingTasksToThreads'): this;
-    (event: 'SyncingCompletedThreads_TasksToThreadsSynced'): this;
-    (event: 'SyncingCompletedThreads_Any'): this;
-    (event: 'SyncingCompletedThreads_CompletedThreadsSynced'): this;
-    (event: 'SyncingCompletedThreads_SyncingCompletedTasks'): this;
-    (event: 'SyncingCompletedThreads_CompletedTasksSynced'): this;
-    (event: 'SyncingCompletedThreads_ThreadsFetched'): this;
-    (event: 'SyncingCompletedThreads_MsgsFetched'): this;
-    (event: 'SyncingCompletedThreads_Exception'): this;
-    (event: 'CompletedThreadsSynced_Enabled'): this;
-    (event: 'CompletedThreadsSynced_Syncing'): this;
-    (event: 'CompletedThreadsSynced_Synced'): this;
-    (event: 'CompletedThreadsSynced_Restart'): this;
-    (event: 'CompletedThreadsSynced_PreparingList'): this;
-    (event: 'CompletedThreadsSynced_ListReady'): this;
-    (event: 'CompletedThreadsSynced_FetchingTasks'): this;
-    (event: 'CompletedThreadsSynced_TasksFetched'): this;
-    (event: 'CompletedThreadsSynced_TasksCached'): this;
-    (event: 'CompletedThreadsSynced_SyncingThreadsToTasks'): this;
-    (event: 'CompletedThreadsSynced_ThreadsToTasksSynced'): this;
-    (event: 'CompletedThreadsSynced_SyncingTasksToThreads'): this;
-    (event: 'CompletedThreadsSynced_TasksToThreadsSynced'): this;
-    (event: 'CompletedThreadsSynced_SyncingCompletedThreads'): this;
-    (event: 'CompletedThreadsSynced_Any'): this;
-    (event: 'CompletedThreadsSynced_SyncingCompletedTasks'): this;
-    (event: 'CompletedThreadsSynced_CompletedTasksSynced'): this;
-    (event: 'CompletedThreadsSynced_ThreadsFetched'): this;
-    (event: 'CompletedThreadsSynced_MsgsFetched'): this;
-    (event: 'CompletedThreadsSynced_Exception'): this;
-    (event: 'SyncingCompletedTasks_Enabled'): this;
-    (event: 'SyncingCompletedTasks_Syncing'): this;
-    (event: 'SyncingCompletedTasks_Synced'): this;
-    (event: 'SyncingCompletedTasks_Restart'): this;
-    (event: 'SyncingCompletedTasks_PreparingList'): this;
-    (event: 'SyncingCompletedTasks_ListReady'): this;
-    (event: 'SyncingCompletedTasks_FetchingTasks'): this;
-    (event: 'SyncingCompletedTasks_TasksFetched'): this;
-    (event: 'SyncingCompletedTasks_TasksCached'): this;
-    (event: 'SyncingCompletedTasks_SyncingThreadsToTasks'): this;
-    (event: 'SyncingCompletedTasks_ThreadsToTasksSynced'): this;
-    (event: 'SyncingCompletedTasks_SyncingTasksToThreads'): this;
-    (event: 'SyncingCompletedTasks_TasksToThreadsSynced'): this;
-    (event: 'SyncingCompletedTasks_SyncingCompletedThreads'): this;
-    (event: 'SyncingCompletedTasks_CompletedThreadsSynced'): this;
-    (event: 'SyncingCompletedTasks_Any'): this;
-    (event: 'SyncingCompletedTasks_CompletedTasksSynced'): this;
-    (event: 'SyncingCompletedTasks_ThreadsFetched'): this;
-    (event: 'SyncingCompletedTasks_MsgsFetched'): this;
-    (event: 'SyncingCompletedTasks_Exception'): this;
-    (event: 'CompletedTasksSynced_Enabled'): this;
-    (event: 'CompletedTasksSynced_Syncing'): this;
-    (event: 'CompletedTasksSynced_Synced'): this;
-    (event: 'CompletedTasksSynced_Restart'): this;
-    (event: 'CompletedTasksSynced_PreparingList'): this;
-    (event: 'CompletedTasksSynced_ListReady'): this;
-    (event: 'CompletedTasksSynced_FetchingTasks'): this;
-    (event: 'CompletedTasksSynced_TasksFetched'): this;
-    (event: 'CompletedTasksSynced_TasksCached'): this;
-    (event: 'CompletedTasksSynced_SyncingThreadsToTasks'): this;
-    (event: 'CompletedTasksSynced_ThreadsToTasksSynced'): this;
-    (event: 'CompletedTasksSynced_SyncingTasksToThreads'): this;
-    (event: 'CompletedTasksSynced_TasksToThreadsSynced'): this;
-    (event: 'CompletedTasksSynced_SyncingCompletedThreads'): this;
-    (event: 'CompletedTasksSynced_CompletedThreadsSynced'): this;
-    (event: 'CompletedTasksSynced_SyncingCompletedTasks'): this;
-    (event: 'CompletedTasksSynced_Any'): this;
-    (event: 'CompletedTasksSynced_ThreadsFetched'): this;
-    (event: 'CompletedTasksSynced_MsgsFetched'): this;
-    (event: 'CompletedTasksSynced_Exception'): this;
-    (event: 'ThreadsFetched_Enabled'): this;
-    (event: 'ThreadsFetched_Syncing'): this;
-    (event: 'ThreadsFetched_Synced'): this;
-    (event: 'ThreadsFetched_Restart'): this;
-    (event: 'ThreadsFetched_PreparingList'): this;
-    (event: 'ThreadsFetched_ListReady'): this;
-    (event: 'ThreadsFetched_FetchingTasks'): this;
-    (event: 'ThreadsFetched_TasksFetched'): this;
-    (event: 'ThreadsFetched_TasksCached'): this;
-    (event: 'ThreadsFetched_SyncingThreadsToTasks'): this;
-    (event: 'ThreadsFetched_ThreadsToTasksSynced'): this;
-    (event: 'ThreadsFetched_SyncingTasksToThreads'): this;
-    (event: 'ThreadsFetched_TasksToThreadsSynced'): this;
-    (event: 'ThreadsFetched_SyncingCompletedThreads'): this;
-    (event: 'ThreadsFetched_CompletedThreadsSynced'): this;
-    (event: 'ThreadsFetched_SyncingCompletedTasks'): this;
-    (event: 'ThreadsFetched_CompletedTasksSynced'): this;
-    (event: 'ThreadsFetched_Any'): this;
-    (event: 'ThreadsFetched_MsgsFetched'): this;
-    (event: 'ThreadsFetched_Exception'): this;
-    (event: 'MsgsFetched_Enabled'): this;
-    (event: 'MsgsFetched_Syncing'): this;
-    (event: 'MsgsFetched_Synced'): this;
-    (event: 'MsgsFetched_Restart'): this;
-    (event: 'MsgsFetched_PreparingList'): this;
-    (event: 'MsgsFetched_ListReady'): this;
-    (event: 'MsgsFetched_FetchingTasks'): this;
-    (event: 'MsgsFetched_TasksFetched'): this;
-    (event: 'MsgsFetched_TasksCached'): this;
-    (event: 'MsgsFetched_SyncingThreadsToTasks'): this;
-    (event: 'MsgsFetched_ThreadsToTasksSynced'): this;
-    (event: 'MsgsFetched_SyncingTasksToThreads'): this;
-    (event: 'MsgsFetched_TasksToThreadsSynced'): this;
-    (event: 'MsgsFetched_SyncingCompletedThreads'): this;
-    (event: 'MsgsFetched_CompletedThreadsSynced'): this;
-    (event: 'MsgsFetched_SyncingCompletedTasks'): this;
-    (event: 'MsgsFetched_CompletedTasksSynced'): this;
-    (event: 'MsgsFetched_ThreadsFetched'): this;
-    (event: 'MsgsFetched_Any'): this;
-    (event: 'MsgsFetched_Exception'): this;
-    (event: 'Exception_Enabled'): this;
-    (event: 'Exception_Syncing'): this;
-    (event: 'Exception_Synced'): this;
-    (event: 'Exception_Restart'): this;
-    (event: 'Exception_PreparingList'): this;
-    (event: 'Exception_ListReady'): this;
-    (event: 'Exception_FetchingTasks'): this;
-    (event: 'Exception_TasksFetched'): this;
-    (event: 'Exception_TasksCached'): this;
-    (event: 'Exception_SyncingThreadsToTasks'): this;
-    (event: 'Exception_ThreadsToTasksSynced'): this;
-    (event: 'Exception_SyncingTasksToThreads'): this;
-    (event: 'Exception_TasksToThreadsSynced'): this;
-    (event: 'Exception_SyncingCompletedThreads'): this;
-    (event: 'Exception_CompletedThreadsSynced'): this;
-    (event: 'Exception_SyncingCompletedTasks'): this;
-    (event: 'Exception_CompletedTasksSynced'): this;
-    (event: 'Exception_ThreadsFetched'): this;
-    (event: 'Exception_MsgsFetched'): this;
 }
 
 export interface IEmit {
-    
+
     // Enabled
     (event: 'Enabled_enter' /*, param1, param2 */): this;
     (event: 'Enabled_state' /*, param1, param2 */): this;
@@ -562,7 +121,513 @@ export interface IEmit {
     (event: 'MsgsFetched_enter' /*, param1, param2 */): this;
     (event: 'MsgsFetched_state' /*, param1, param2 */): this;
 
+}
 
+export type TStates = 'Enabled'
+  | 'Syncing'
+  | 'Synced'
+  | 'Restart'
+  | 'PreparingList'
+  | 'ListReady'
+  | 'FetchingTasks'
+  | 'TasksFetched'
+  | 'TasksCached'
+  | 'SyncingThreadsToTasks'
+  | 'ThreadsToTasksSynced'
+  | 'SyncingTasksToThreads'
+  | 'TasksToThreadsSynced'
+  | 'SyncingCompletedThreads'
+  | 'CompletedThreadsSynced'
+  | 'SyncingCompletedTasks'
+  | 'CompletedTasksSynced'
+  | 'ThreadsFetched'
+  | 'MsgsFetched';
+
+export type TTransitions = 'Exception_Enabled'
+  | 'Exception_Syncing'
+  | 'Exception_Synced'
+  | 'Exception_Restart'
+  | 'Exception_PreparingList'
+  | 'Exception_ListReady'
+  | 'Exception_FetchingTasks'
+  | 'Exception_TasksFetched'
+  | 'Exception_TasksCached'
+  | 'Exception_SyncingThreadsToTasks'
+  | 'Exception_ThreadsToTasksSynced'
+  | 'Exception_SyncingTasksToThreads'
+  | 'Exception_TasksToThreadsSynced'
+  | 'Exception_SyncingCompletedThreads'
+  | 'Exception_CompletedThreadsSynced'
+  | 'Exception_SyncingCompletedTasks'
+  | 'Exception_CompletedTasksSynced'
+  | 'Exception_ThreadsFetched'
+  | 'Exception_MsgsFetched'
+  | 'Enabled_Exception'
+  | 'Enabled_Any'
+  | 'Enabled_Syncing'
+  | 'Enabled_Synced'
+  | 'Enabled_Restart'
+  | 'Enabled_PreparingList'
+  | 'Enabled_ListReady'
+  | 'Enabled_FetchingTasks'
+  | 'Enabled_TasksFetched'
+  | 'Enabled_TasksCached'
+  | 'Enabled_SyncingThreadsToTasks'
+  | 'Enabled_ThreadsToTasksSynced'
+  | 'Enabled_SyncingTasksToThreads'
+  | 'Enabled_TasksToThreadsSynced'
+  | 'Enabled_SyncingCompletedThreads'
+  | 'Enabled_CompletedThreadsSynced'
+  | 'Enabled_SyncingCompletedTasks'
+  | 'Enabled_CompletedTasksSynced'
+  | 'Enabled_ThreadsFetched'
+  | 'Enabled_MsgsFetched'
+  | 'Enabled_Exception'
+  | 'Syncing_Exception'
+  | 'Syncing_Enabled'
+  | 'Syncing_Any'
+  | 'Syncing_Synced'
+  | 'Syncing_Restart'
+  | 'Syncing_PreparingList'
+  | 'Syncing_ListReady'
+  | 'Syncing_FetchingTasks'
+  | 'Syncing_TasksFetched'
+  | 'Syncing_TasksCached'
+  | 'Syncing_SyncingThreadsToTasks'
+  | 'Syncing_ThreadsToTasksSynced'
+  | 'Syncing_SyncingTasksToThreads'
+  | 'Syncing_TasksToThreadsSynced'
+  | 'Syncing_SyncingCompletedThreads'
+  | 'Syncing_CompletedThreadsSynced'
+  | 'Syncing_SyncingCompletedTasks'
+  | 'Syncing_CompletedTasksSynced'
+  | 'Syncing_ThreadsFetched'
+  | 'Syncing_MsgsFetched'
+  | 'Syncing_Exception'
+  | 'Synced_Exception'
+  | 'Synced_Enabled'
+  | 'Synced_Syncing'
+  | 'Synced_Any'
+  | 'Synced_Restart'
+  | 'Synced_PreparingList'
+  | 'Synced_ListReady'
+  | 'Synced_FetchingTasks'
+  | 'Synced_TasksFetched'
+  | 'Synced_TasksCached'
+  | 'Synced_SyncingThreadsToTasks'
+  | 'Synced_ThreadsToTasksSynced'
+  | 'Synced_SyncingTasksToThreads'
+  | 'Synced_TasksToThreadsSynced'
+  | 'Synced_SyncingCompletedThreads'
+  | 'Synced_CompletedThreadsSynced'
+  | 'Synced_SyncingCompletedTasks'
+  | 'Synced_CompletedTasksSynced'
+  | 'Synced_ThreadsFetched'
+  | 'Synced_MsgsFetched'
+  | 'Synced_Exception'
+  | 'Restart_Exception'
+  | 'Restart_Enabled'
+  | 'Restart_Syncing'
+  | 'Restart_Synced'
+  | 'Restart_Any'
+  | 'Restart_PreparingList'
+  | 'Restart_ListReady'
+  | 'Restart_FetchingTasks'
+  | 'Restart_TasksFetched'
+  | 'Restart_TasksCached'
+  | 'Restart_SyncingThreadsToTasks'
+  | 'Restart_ThreadsToTasksSynced'
+  | 'Restart_SyncingTasksToThreads'
+  | 'Restart_TasksToThreadsSynced'
+  | 'Restart_SyncingCompletedThreads'
+  | 'Restart_CompletedThreadsSynced'
+  | 'Restart_SyncingCompletedTasks'
+  | 'Restart_CompletedTasksSynced'
+  | 'Restart_ThreadsFetched'
+  | 'Restart_MsgsFetched'
+  | 'Restart_Exception'
+  | 'PreparingList_Exception'
+  | 'PreparingList_Enabled'
+  | 'PreparingList_Syncing'
+  | 'PreparingList_Synced'
+  | 'PreparingList_Restart'
+  | 'PreparingList_Any'
+  | 'PreparingList_ListReady'
+  | 'PreparingList_FetchingTasks'
+  | 'PreparingList_TasksFetched'
+  | 'PreparingList_TasksCached'
+  | 'PreparingList_SyncingThreadsToTasks'
+  | 'PreparingList_ThreadsToTasksSynced'
+  | 'PreparingList_SyncingTasksToThreads'
+  | 'PreparingList_TasksToThreadsSynced'
+  | 'PreparingList_SyncingCompletedThreads'
+  | 'PreparingList_CompletedThreadsSynced'
+  | 'PreparingList_SyncingCompletedTasks'
+  | 'PreparingList_CompletedTasksSynced'
+  | 'PreparingList_ThreadsFetched'
+  | 'PreparingList_MsgsFetched'
+  | 'PreparingList_Exception'
+  | 'ListReady_Exception'
+  | 'ListReady_Enabled'
+  | 'ListReady_Syncing'
+  | 'ListReady_Synced'
+  | 'ListReady_Restart'
+  | 'ListReady_PreparingList'
+  | 'ListReady_Any'
+  | 'ListReady_FetchingTasks'
+  | 'ListReady_TasksFetched'
+  | 'ListReady_TasksCached'
+  | 'ListReady_SyncingThreadsToTasks'
+  | 'ListReady_ThreadsToTasksSynced'
+  | 'ListReady_SyncingTasksToThreads'
+  | 'ListReady_TasksToThreadsSynced'
+  | 'ListReady_SyncingCompletedThreads'
+  | 'ListReady_CompletedThreadsSynced'
+  | 'ListReady_SyncingCompletedTasks'
+  | 'ListReady_CompletedTasksSynced'
+  | 'ListReady_ThreadsFetched'
+  | 'ListReady_MsgsFetched'
+  | 'ListReady_Exception'
+  | 'FetchingTasks_Exception'
+  | 'FetchingTasks_Enabled'
+  | 'FetchingTasks_Syncing'
+  | 'FetchingTasks_Synced'
+  | 'FetchingTasks_Restart'
+  | 'FetchingTasks_PreparingList'
+  | 'FetchingTasks_ListReady'
+  | 'FetchingTasks_Any'
+  | 'FetchingTasks_TasksFetched'
+  | 'FetchingTasks_TasksCached'
+  | 'FetchingTasks_SyncingThreadsToTasks'
+  | 'FetchingTasks_ThreadsToTasksSynced'
+  | 'FetchingTasks_SyncingTasksToThreads'
+  | 'FetchingTasks_TasksToThreadsSynced'
+  | 'FetchingTasks_SyncingCompletedThreads'
+  | 'FetchingTasks_CompletedThreadsSynced'
+  | 'FetchingTasks_SyncingCompletedTasks'
+  | 'FetchingTasks_CompletedTasksSynced'
+  | 'FetchingTasks_ThreadsFetched'
+  | 'FetchingTasks_MsgsFetched'
+  | 'FetchingTasks_Exception'
+  | 'TasksFetched_Exception'
+  | 'TasksFetched_Enabled'
+  | 'TasksFetched_Syncing'
+  | 'TasksFetched_Synced'
+  | 'TasksFetched_Restart'
+  | 'TasksFetched_PreparingList'
+  | 'TasksFetched_ListReady'
+  | 'TasksFetched_FetchingTasks'
+  | 'TasksFetched_Any'
+  | 'TasksFetched_TasksCached'
+  | 'TasksFetched_SyncingThreadsToTasks'
+  | 'TasksFetched_ThreadsToTasksSynced'
+  | 'TasksFetched_SyncingTasksToThreads'
+  | 'TasksFetched_TasksToThreadsSynced'
+  | 'TasksFetched_SyncingCompletedThreads'
+  | 'TasksFetched_CompletedThreadsSynced'
+  | 'TasksFetched_SyncingCompletedTasks'
+  | 'TasksFetched_CompletedTasksSynced'
+  | 'TasksFetched_ThreadsFetched'
+  | 'TasksFetched_MsgsFetched'
+  | 'TasksFetched_Exception'
+  | 'TasksCached_Exception'
+  | 'TasksCached_Enabled'
+  | 'TasksCached_Syncing'
+  | 'TasksCached_Synced'
+  | 'TasksCached_Restart'
+  | 'TasksCached_PreparingList'
+  | 'TasksCached_ListReady'
+  | 'TasksCached_FetchingTasks'
+  | 'TasksCached_TasksFetched'
+  | 'TasksCached_Any'
+  | 'TasksCached_SyncingThreadsToTasks'
+  | 'TasksCached_ThreadsToTasksSynced'
+  | 'TasksCached_SyncingTasksToThreads'
+  | 'TasksCached_TasksToThreadsSynced'
+  | 'TasksCached_SyncingCompletedThreads'
+  | 'TasksCached_CompletedThreadsSynced'
+  | 'TasksCached_SyncingCompletedTasks'
+  | 'TasksCached_CompletedTasksSynced'
+  | 'TasksCached_ThreadsFetched'
+  | 'TasksCached_MsgsFetched'
+  | 'TasksCached_Exception'
+  | 'SyncingThreadsToTasks_Exception'
+  | 'SyncingThreadsToTasks_Enabled'
+  | 'SyncingThreadsToTasks_Syncing'
+  | 'SyncingThreadsToTasks_Synced'
+  | 'SyncingThreadsToTasks_Restart'
+  | 'SyncingThreadsToTasks_PreparingList'
+  | 'SyncingThreadsToTasks_ListReady'
+  | 'SyncingThreadsToTasks_FetchingTasks'
+  | 'SyncingThreadsToTasks_TasksFetched'
+  | 'SyncingThreadsToTasks_TasksCached'
+  | 'SyncingThreadsToTasks_Any'
+  | 'SyncingThreadsToTasks_ThreadsToTasksSynced'
+  | 'SyncingThreadsToTasks_SyncingTasksToThreads'
+  | 'SyncingThreadsToTasks_TasksToThreadsSynced'
+  | 'SyncingThreadsToTasks_SyncingCompletedThreads'
+  | 'SyncingThreadsToTasks_CompletedThreadsSynced'
+  | 'SyncingThreadsToTasks_SyncingCompletedTasks'
+  | 'SyncingThreadsToTasks_CompletedTasksSynced'
+  | 'SyncingThreadsToTasks_ThreadsFetched'
+  | 'SyncingThreadsToTasks_MsgsFetched'
+  | 'SyncingThreadsToTasks_Exception'
+  | 'ThreadsToTasksSynced_Exception'
+  | 'ThreadsToTasksSynced_Enabled'
+  | 'ThreadsToTasksSynced_Syncing'
+  | 'ThreadsToTasksSynced_Synced'
+  | 'ThreadsToTasksSynced_Restart'
+  | 'ThreadsToTasksSynced_PreparingList'
+  | 'ThreadsToTasksSynced_ListReady'
+  | 'ThreadsToTasksSynced_FetchingTasks'
+  | 'ThreadsToTasksSynced_TasksFetched'
+  | 'ThreadsToTasksSynced_TasksCached'
+  | 'ThreadsToTasksSynced_SyncingThreadsToTasks'
+  | 'ThreadsToTasksSynced_Any'
+  | 'ThreadsToTasksSynced_SyncingTasksToThreads'
+  | 'ThreadsToTasksSynced_TasksToThreadsSynced'
+  | 'ThreadsToTasksSynced_SyncingCompletedThreads'
+  | 'ThreadsToTasksSynced_CompletedThreadsSynced'
+  | 'ThreadsToTasksSynced_SyncingCompletedTasks'
+  | 'ThreadsToTasksSynced_CompletedTasksSynced'
+  | 'ThreadsToTasksSynced_ThreadsFetched'
+  | 'ThreadsToTasksSynced_MsgsFetched'
+  | 'ThreadsToTasksSynced_Exception'
+  | 'SyncingTasksToThreads_Exception'
+  | 'SyncingTasksToThreads_Enabled'
+  | 'SyncingTasksToThreads_Syncing'
+  | 'SyncingTasksToThreads_Synced'
+  | 'SyncingTasksToThreads_Restart'
+  | 'SyncingTasksToThreads_PreparingList'
+  | 'SyncingTasksToThreads_ListReady'
+  | 'SyncingTasksToThreads_FetchingTasks'
+  | 'SyncingTasksToThreads_TasksFetched'
+  | 'SyncingTasksToThreads_TasksCached'
+  | 'SyncingTasksToThreads_SyncingThreadsToTasks'
+  | 'SyncingTasksToThreads_ThreadsToTasksSynced'
+  | 'SyncingTasksToThreads_Any'
+  | 'SyncingTasksToThreads_TasksToThreadsSynced'
+  | 'SyncingTasksToThreads_SyncingCompletedThreads'
+  | 'SyncingTasksToThreads_CompletedThreadsSynced'
+  | 'SyncingTasksToThreads_SyncingCompletedTasks'
+  | 'SyncingTasksToThreads_CompletedTasksSynced'
+  | 'SyncingTasksToThreads_ThreadsFetched'
+  | 'SyncingTasksToThreads_MsgsFetched'
+  | 'SyncingTasksToThreads_Exception'
+  | 'TasksToThreadsSynced_Exception'
+  | 'TasksToThreadsSynced_Enabled'
+  | 'TasksToThreadsSynced_Syncing'
+  | 'TasksToThreadsSynced_Synced'
+  | 'TasksToThreadsSynced_Restart'
+  | 'TasksToThreadsSynced_PreparingList'
+  | 'TasksToThreadsSynced_ListReady'
+  | 'TasksToThreadsSynced_FetchingTasks'
+  | 'TasksToThreadsSynced_TasksFetched'
+  | 'TasksToThreadsSynced_TasksCached'
+  | 'TasksToThreadsSynced_SyncingThreadsToTasks'
+  | 'TasksToThreadsSynced_ThreadsToTasksSynced'
+  | 'TasksToThreadsSynced_SyncingTasksToThreads'
+  | 'TasksToThreadsSynced_Any'
+  | 'TasksToThreadsSynced_SyncingCompletedThreads'
+  | 'TasksToThreadsSynced_CompletedThreadsSynced'
+  | 'TasksToThreadsSynced_SyncingCompletedTasks'
+  | 'TasksToThreadsSynced_CompletedTasksSynced'
+  | 'TasksToThreadsSynced_ThreadsFetched'
+  | 'TasksToThreadsSynced_MsgsFetched'
+  | 'TasksToThreadsSynced_Exception'
+  | 'SyncingCompletedThreads_Exception'
+  | 'SyncingCompletedThreads_Enabled'
+  | 'SyncingCompletedThreads_Syncing'
+  | 'SyncingCompletedThreads_Synced'
+  | 'SyncingCompletedThreads_Restart'
+  | 'SyncingCompletedThreads_PreparingList'
+  | 'SyncingCompletedThreads_ListReady'
+  | 'SyncingCompletedThreads_FetchingTasks'
+  | 'SyncingCompletedThreads_TasksFetched'
+  | 'SyncingCompletedThreads_TasksCached'
+  | 'SyncingCompletedThreads_SyncingThreadsToTasks'
+  | 'SyncingCompletedThreads_ThreadsToTasksSynced'
+  | 'SyncingCompletedThreads_SyncingTasksToThreads'
+  | 'SyncingCompletedThreads_TasksToThreadsSynced'
+  | 'SyncingCompletedThreads_Any'
+  | 'SyncingCompletedThreads_CompletedThreadsSynced'
+  | 'SyncingCompletedThreads_SyncingCompletedTasks'
+  | 'SyncingCompletedThreads_CompletedTasksSynced'
+  | 'SyncingCompletedThreads_ThreadsFetched'
+  | 'SyncingCompletedThreads_MsgsFetched'
+  | 'SyncingCompletedThreads_Exception'
+  | 'CompletedThreadsSynced_Exception'
+  | 'CompletedThreadsSynced_Enabled'
+  | 'CompletedThreadsSynced_Syncing'
+  | 'CompletedThreadsSynced_Synced'
+  | 'CompletedThreadsSynced_Restart'
+  | 'CompletedThreadsSynced_PreparingList'
+  | 'CompletedThreadsSynced_ListReady'
+  | 'CompletedThreadsSynced_FetchingTasks'
+  | 'CompletedThreadsSynced_TasksFetched'
+  | 'CompletedThreadsSynced_TasksCached'
+  | 'CompletedThreadsSynced_SyncingThreadsToTasks'
+  | 'CompletedThreadsSynced_ThreadsToTasksSynced'
+  | 'CompletedThreadsSynced_SyncingTasksToThreads'
+  | 'CompletedThreadsSynced_TasksToThreadsSynced'
+  | 'CompletedThreadsSynced_SyncingCompletedThreads'
+  | 'CompletedThreadsSynced_Any'
+  | 'CompletedThreadsSynced_SyncingCompletedTasks'
+  | 'CompletedThreadsSynced_CompletedTasksSynced'
+  | 'CompletedThreadsSynced_ThreadsFetched'
+  | 'CompletedThreadsSynced_MsgsFetched'
+  | 'CompletedThreadsSynced_Exception'
+  | 'SyncingCompletedTasks_Exception'
+  | 'SyncingCompletedTasks_Enabled'
+  | 'SyncingCompletedTasks_Syncing'
+  | 'SyncingCompletedTasks_Synced'
+  | 'SyncingCompletedTasks_Restart'
+  | 'SyncingCompletedTasks_PreparingList'
+  | 'SyncingCompletedTasks_ListReady'
+  | 'SyncingCompletedTasks_FetchingTasks'
+  | 'SyncingCompletedTasks_TasksFetched'
+  | 'SyncingCompletedTasks_TasksCached'
+  | 'SyncingCompletedTasks_SyncingThreadsToTasks'
+  | 'SyncingCompletedTasks_ThreadsToTasksSynced'
+  | 'SyncingCompletedTasks_SyncingTasksToThreads'
+  | 'SyncingCompletedTasks_TasksToThreadsSynced'
+  | 'SyncingCompletedTasks_SyncingCompletedThreads'
+  | 'SyncingCompletedTasks_CompletedThreadsSynced'
+  | 'SyncingCompletedTasks_Any'
+  | 'SyncingCompletedTasks_CompletedTasksSynced'
+  | 'SyncingCompletedTasks_ThreadsFetched'
+  | 'SyncingCompletedTasks_MsgsFetched'
+  | 'SyncingCompletedTasks_Exception'
+  | 'CompletedTasksSynced_Exception'
+  | 'CompletedTasksSynced_Enabled'
+  | 'CompletedTasksSynced_Syncing'
+  | 'CompletedTasksSynced_Synced'
+  | 'CompletedTasksSynced_Restart'
+  | 'CompletedTasksSynced_PreparingList'
+  | 'CompletedTasksSynced_ListReady'
+  | 'CompletedTasksSynced_FetchingTasks'
+  | 'CompletedTasksSynced_TasksFetched'
+  | 'CompletedTasksSynced_TasksCached'
+  | 'CompletedTasksSynced_SyncingThreadsToTasks'
+  | 'CompletedTasksSynced_ThreadsToTasksSynced'
+  | 'CompletedTasksSynced_SyncingTasksToThreads'
+  | 'CompletedTasksSynced_TasksToThreadsSynced'
+  | 'CompletedTasksSynced_SyncingCompletedThreads'
+  | 'CompletedTasksSynced_CompletedThreadsSynced'
+  | 'CompletedTasksSynced_SyncingCompletedTasks'
+  | 'CompletedTasksSynced_Any'
+  | 'CompletedTasksSynced_ThreadsFetched'
+  | 'CompletedTasksSynced_MsgsFetched'
+  | 'CompletedTasksSynced_Exception'
+  | 'ThreadsFetched_Exception'
+  | 'ThreadsFetched_Enabled'
+  | 'ThreadsFetched_Syncing'
+  | 'ThreadsFetched_Synced'
+  | 'ThreadsFetched_Restart'
+  | 'ThreadsFetched_PreparingList'
+  | 'ThreadsFetched_ListReady'
+  | 'ThreadsFetched_FetchingTasks'
+  | 'ThreadsFetched_TasksFetched'
+  | 'ThreadsFetched_TasksCached'
+  | 'ThreadsFetched_SyncingThreadsToTasks'
+  | 'ThreadsFetched_ThreadsToTasksSynced'
+  | 'ThreadsFetched_SyncingTasksToThreads'
+  | 'ThreadsFetched_TasksToThreadsSynced'
+  | 'ThreadsFetched_SyncingCompletedThreads'
+  | 'ThreadsFetched_CompletedThreadsSynced'
+  | 'ThreadsFetched_SyncingCompletedTasks'
+  | 'ThreadsFetched_CompletedTasksSynced'
+  | 'ThreadsFetched_Any'
+  | 'ThreadsFetched_MsgsFetched'
+  | 'ThreadsFetched_Exception'
+  | 'MsgsFetched_Exception'
+  | 'MsgsFetched_Enabled'
+  | 'MsgsFetched_Syncing'
+  | 'MsgsFetched_Synced'
+  | 'MsgsFetched_Restart'
+  | 'MsgsFetched_PreparingList'
+  | 'MsgsFetched_ListReady'
+  | 'MsgsFetched_FetchingTasks'
+  | 'MsgsFetched_TasksFetched'
+  | 'MsgsFetched_TasksCached'
+  | 'MsgsFetched_SyncingThreadsToTasks'
+  | 'MsgsFetched_ThreadsToTasksSynced'
+  | 'MsgsFetched_SyncingTasksToThreads'
+  | 'MsgsFetched_TasksToThreadsSynced'
+  | 'MsgsFetched_SyncingCompletedThreads'
+  | 'MsgsFetched_CompletedThreadsSynced'
+  | 'MsgsFetched_SyncingCompletedTasks'
+  | 'MsgsFetched_CompletedTasksSynced'
+  | 'MsgsFetched_ThreadsFetched'
+  | 'MsgsFetched_Any'
+  | 'MsgsFetched_Exception'
+  | 'Exception_Enabled'
+  | 'Exception_Syncing'
+  | 'Exception_Synced'
+  | 'Exception_Restart'
+  | 'Exception_PreparingList'
+  | 'Exception_ListReady'
+  | 'Exception_FetchingTasks'
+  | 'Exception_TasksFetched'
+  | 'Exception_TasksCached'
+  | 'Exception_SyncingThreadsToTasks'
+  | 'Exception_ThreadsToTasksSynced'
+  | 'Exception_SyncingTasksToThreads'
+  | 'Exception_TasksToThreadsSynced'
+  | 'Exception_SyncingCompletedThreads'
+  | 'Exception_CompletedThreadsSynced'
+  | 'Exception_SyncingCompletedTasks'
+  | 'Exception_CompletedTasksSynced'
+  | 'Exception_ThreadsFetched'
+  | 'Exception_MsgsFetched';
+
+export interface IBind {
+
+    // Non-params events
+    (event: 'Enabled_exit', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'Enabled_end', listener: () => any, context?: Object): this;
+    (event: 'Syncing_exit', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'Syncing_end', listener: () => any, context?: Object): this;
+    (event: 'Synced_exit', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'Synced_end', listener: () => any, context?: Object): this;
+    (event: 'Restart_exit', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'Restart_end', listener: () => any, context?: Object): this;
+    (event: 'PreparingList_exit', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'PreparingList_end', listener: () => any, context?: Object): this;
+    (event: 'ListReady_exit', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'ListReady_end', listener: () => any, context?: Object): this;
+    (event: 'FetchingTasks_exit', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'FetchingTasks_end', listener: () => any, context?: Object): this;
+    (event: 'TasksFetched_exit', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'TasksFetched_end', listener: () => any, context?: Object): this;
+    (event: 'TasksCached_exit', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'TasksCached_end', listener: () => any, context?: Object): this;
+    (event: 'SyncingThreadsToTasks_exit', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'SyncingThreadsToTasks_end', listener: () => any, context?: Object): this;
+    (event: 'ThreadsToTasksSynced_exit', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'ThreadsToTasksSynced_end', listener: () => any, context?: Object): this;
+    (event: 'SyncingTasksToThreads_exit', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'SyncingTasksToThreads_end', listener: () => any, context?: Object): this;
+    (event: 'TasksToThreadsSynced_exit', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'TasksToThreadsSynced_end', listener: () => any, context?: Object): this;
+    (event: 'SyncingCompletedThreads_exit', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'SyncingCompletedThreads_end', listener: () => any, context?: Object): this;
+    (event: 'CompletedThreadsSynced_exit', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'CompletedThreadsSynced_end', listener: () => any, context?: Object): this;
+    (event: 'SyncingCompletedTasks_exit', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'SyncingCompletedTasks_end', listener: () => any, context?: Object): this;
+    (event: 'CompletedTasksSynced_exit', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'CompletedTasksSynced_end', listener: () => any, context?: Object): this;
+    (event: 'ThreadsFetched_exit', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'ThreadsFetched_end', listener: () => any, context?: Object): this;
+    (event: 'MsgsFetched_exit', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'MsgsFetched_end', listener: () => any, context?: Object): this;
+
+    // Transitions
+    (event: TTransitions): this;
+}
+
+export interface IEmit {
     // Non-params events
     (event: 'Enabled_exit'): this;
     (event: 'Enabled_end'): this;
@@ -604,404 +669,5 @@ export interface IEmit {
     (event: 'MsgsFetched_end'): this;
 
     // Transitions
-
-    (event: 'Enabled_Any'): this;
-    (event: 'Enabled_Syncing'): this;
-    (event: 'Enabled_Synced'): this;
-    (event: 'Enabled_Restart'): this;
-    (event: 'Enabled_PreparingList'): this;
-    (event: 'Enabled_ListReady'): this;
-    (event: 'Enabled_FetchingTasks'): this;
-    (event: 'Enabled_TasksFetched'): this;
-    (event: 'Enabled_TasksCached'): this;
-    (event: 'Enabled_SyncingThreadsToTasks'): this;
-    (event: 'Enabled_ThreadsToTasksSynced'): this;
-    (event: 'Enabled_SyncingTasksToThreads'): this;
-    (event: 'Enabled_TasksToThreadsSynced'): this;
-    (event: 'Enabled_SyncingCompletedThreads'): this;
-    (event: 'Enabled_CompletedThreadsSynced'): this;
-    (event: 'Enabled_SyncingCompletedTasks'): this;
-    (event: 'Enabled_CompletedTasksSynced'): this;
-    (event: 'Enabled_ThreadsFetched'): this;
-    (event: 'Enabled_MsgsFetched'): this;
-    (event: 'Enabled_Exception'): this;
-    (event: 'Syncing_Enabled'): this;
-    (event: 'Syncing_Any'): this;
-    (event: 'Syncing_Synced'): this;
-    (event: 'Syncing_Restart'): this;
-    (event: 'Syncing_PreparingList'): this;
-    (event: 'Syncing_ListReady'): this;
-    (event: 'Syncing_FetchingTasks'): this;
-    (event: 'Syncing_TasksFetched'): this;
-    (event: 'Syncing_TasksCached'): this;
-    (event: 'Syncing_SyncingThreadsToTasks'): this;
-    (event: 'Syncing_ThreadsToTasksSynced'): this;
-    (event: 'Syncing_SyncingTasksToThreads'): this;
-    (event: 'Syncing_TasksToThreadsSynced'): this;
-    (event: 'Syncing_SyncingCompletedThreads'): this;
-    (event: 'Syncing_CompletedThreadsSynced'): this;
-    (event: 'Syncing_SyncingCompletedTasks'): this;
-    (event: 'Syncing_CompletedTasksSynced'): this;
-    (event: 'Syncing_ThreadsFetched'): this;
-    (event: 'Syncing_MsgsFetched'): this;
-    (event: 'Syncing_Exception'): this;
-    (event: 'Synced_Enabled'): this;
-    (event: 'Synced_Syncing'): this;
-    (event: 'Synced_Any'): this;
-    (event: 'Synced_Restart'): this;
-    (event: 'Synced_PreparingList'): this;
-    (event: 'Synced_ListReady'): this;
-    (event: 'Synced_FetchingTasks'): this;
-    (event: 'Synced_TasksFetched'): this;
-    (event: 'Synced_TasksCached'): this;
-    (event: 'Synced_SyncingThreadsToTasks'): this;
-    (event: 'Synced_ThreadsToTasksSynced'): this;
-    (event: 'Synced_SyncingTasksToThreads'): this;
-    (event: 'Synced_TasksToThreadsSynced'): this;
-    (event: 'Synced_SyncingCompletedThreads'): this;
-    (event: 'Synced_CompletedThreadsSynced'): this;
-    (event: 'Synced_SyncingCompletedTasks'): this;
-    (event: 'Synced_CompletedTasksSynced'): this;
-    (event: 'Synced_ThreadsFetched'): this;
-    (event: 'Synced_MsgsFetched'): this;
-    (event: 'Synced_Exception'): this;
-    (event: 'Restart_Enabled'): this;
-    (event: 'Restart_Syncing'): this;
-    (event: 'Restart_Synced'): this;
-    (event: 'Restart_Any'): this;
-    (event: 'Restart_PreparingList'): this;
-    (event: 'Restart_ListReady'): this;
-    (event: 'Restart_FetchingTasks'): this;
-    (event: 'Restart_TasksFetched'): this;
-    (event: 'Restart_TasksCached'): this;
-    (event: 'Restart_SyncingThreadsToTasks'): this;
-    (event: 'Restart_ThreadsToTasksSynced'): this;
-    (event: 'Restart_SyncingTasksToThreads'): this;
-    (event: 'Restart_TasksToThreadsSynced'): this;
-    (event: 'Restart_SyncingCompletedThreads'): this;
-    (event: 'Restart_CompletedThreadsSynced'): this;
-    (event: 'Restart_SyncingCompletedTasks'): this;
-    (event: 'Restart_CompletedTasksSynced'): this;
-    (event: 'Restart_ThreadsFetched'): this;
-    (event: 'Restart_MsgsFetched'): this;
-    (event: 'Restart_Exception'): this;
-    (event: 'PreparingList_Enabled'): this;
-    (event: 'PreparingList_Syncing'): this;
-    (event: 'PreparingList_Synced'): this;
-    (event: 'PreparingList_Restart'): this;
-    (event: 'PreparingList_Any'): this;
-    (event: 'PreparingList_ListReady'): this;
-    (event: 'PreparingList_FetchingTasks'): this;
-    (event: 'PreparingList_TasksFetched'): this;
-    (event: 'PreparingList_TasksCached'): this;
-    (event: 'PreparingList_SyncingThreadsToTasks'): this;
-    (event: 'PreparingList_ThreadsToTasksSynced'): this;
-    (event: 'PreparingList_SyncingTasksToThreads'): this;
-    (event: 'PreparingList_TasksToThreadsSynced'): this;
-    (event: 'PreparingList_SyncingCompletedThreads'): this;
-    (event: 'PreparingList_CompletedThreadsSynced'): this;
-    (event: 'PreparingList_SyncingCompletedTasks'): this;
-    (event: 'PreparingList_CompletedTasksSynced'): this;
-    (event: 'PreparingList_ThreadsFetched'): this;
-    (event: 'PreparingList_MsgsFetched'): this;
-    (event: 'PreparingList_Exception'): this;
-    (event: 'ListReady_Enabled'): this;
-    (event: 'ListReady_Syncing'): this;
-    (event: 'ListReady_Synced'): this;
-    (event: 'ListReady_Restart'): this;
-    (event: 'ListReady_PreparingList'): this;
-    (event: 'ListReady_Any'): this;
-    (event: 'ListReady_FetchingTasks'): this;
-    (event: 'ListReady_TasksFetched'): this;
-    (event: 'ListReady_TasksCached'): this;
-    (event: 'ListReady_SyncingThreadsToTasks'): this;
-    (event: 'ListReady_ThreadsToTasksSynced'): this;
-    (event: 'ListReady_SyncingTasksToThreads'): this;
-    (event: 'ListReady_TasksToThreadsSynced'): this;
-    (event: 'ListReady_SyncingCompletedThreads'): this;
-    (event: 'ListReady_CompletedThreadsSynced'): this;
-    (event: 'ListReady_SyncingCompletedTasks'): this;
-    (event: 'ListReady_CompletedTasksSynced'): this;
-    (event: 'ListReady_ThreadsFetched'): this;
-    (event: 'ListReady_MsgsFetched'): this;
-    (event: 'ListReady_Exception'): this;
-    (event: 'FetchingTasks_Enabled'): this;
-    (event: 'FetchingTasks_Syncing'): this;
-    (event: 'FetchingTasks_Synced'): this;
-    (event: 'FetchingTasks_Restart'): this;
-    (event: 'FetchingTasks_PreparingList'): this;
-    (event: 'FetchingTasks_ListReady'): this;
-    (event: 'FetchingTasks_Any'): this;
-    (event: 'FetchingTasks_TasksFetched'): this;
-    (event: 'FetchingTasks_TasksCached'): this;
-    (event: 'FetchingTasks_SyncingThreadsToTasks'): this;
-    (event: 'FetchingTasks_ThreadsToTasksSynced'): this;
-    (event: 'FetchingTasks_SyncingTasksToThreads'): this;
-    (event: 'FetchingTasks_TasksToThreadsSynced'): this;
-    (event: 'FetchingTasks_SyncingCompletedThreads'): this;
-    (event: 'FetchingTasks_CompletedThreadsSynced'): this;
-    (event: 'FetchingTasks_SyncingCompletedTasks'): this;
-    (event: 'FetchingTasks_CompletedTasksSynced'): this;
-    (event: 'FetchingTasks_ThreadsFetched'): this;
-    (event: 'FetchingTasks_MsgsFetched'): this;
-    (event: 'FetchingTasks_Exception'): this;
-    (event: 'TasksFetched_Enabled'): this;
-    (event: 'TasksFetched_Syncing'): this;
-    (event: 'TasksFetched_Synced'): this;
-    (event: 'TasksFetched_Restart'): this;
-    (event: 'TasksFetched_PreparingList'): this;
-    (event: 'TasksFetched_ListReady'): this;
-    (event: 'TasksFetched_FetchingTasks'): this;
-    (event: 'TasksFetched_Any'): this;
-    (event: 'TasksFetched_TasksCached'): this;
-    (event: 'TasksFetched_SyncingThreadsToTasks'): this;
-    (event: 'TasksFetched_ThreadsToTasksSynced'): this;
-    (event: 'TasksFetched_SyncingTasksToThreads'): this;
-    (event: 'TasksFetched_TasksToThreadsSynced'): this;
-    (event: 'TasksFetched_SyncingCompletedThreads'): this;
-    (event: 'TasksFetched_CompletedThreadsSynced'): this;
-    (event: 'TasksFetched_SyncingCompletedTasks'): this;
-    (event: 'TasksFetched_CompletedTasksSynced'): this;
-    (event: 'TasksFetched_ThreadsFetched'): this;
-    (event: 'TasksFetched_MsgsFetched'): this;
-    (event: 'TasksFetched_Exception'): this;
-    (event: 'TasksCached_Enabled'): this;
-    (event: 'TasksCached_Syncing'): this;
-    (event: 'TasksCached_Synced'): this;
-    (event: 'TasksCached_Restart'): this;
-    (event: 'TasksCached_PreparingList'): this;
-    (event: 'TasksCached_ListReady'): this;
-    (event: 'TasksCached_FetchingTasks'): this;
-    (event: 'TasksCached_TasksFetched'): this;
-    (event: 'TasksCached_Any'): this;
-    (event: 'TasksCached_SyncingThreadsToTasks'): this;
-    (event: 'TasksCached_ThreadsToTasksSynced'): this;
-    (event: 'TasksCached_SyncingTasksToThreads'): this;
-    (event: 'TasksCached_TasksToThreadsSynced'): this;
-    (event: 'TasksCached_SyncingCompletedThreads'): this;
-    (event: 'TasksCached_CompletedThreadsSynced'): this;
-    (event: 'TasksCached_SyncingCompletedTasks'): this;
-    (event: 'TasksCached_CompletedTasksSynced'): this;
-    (event: 'TasksCached_ThreadsFetched'): this;
-    (event: 'TasksCached_MsgsFetched'): this;
-    (event: 'TasksCached_Exception'): this;
-    (event: 'SyncingThreadsToTasks_Enabled'): this;
-    (event: 'SyncingThreadsToTasks_Syncing'): this;
-    (event: 'SyncingThreadsToTasks_Synced'): this;
-    (event: 'SyncingThreadsToTasks_Restart'): this;
-    (event: 'SyncingThreadsToTasks_PreparingList'): this;
-    (event: 'SyncingThreadsToTasks_ListReady'): this;
-    (event: 'SyncingThreadsToTasks_FetchingTasks'): this;
-    (event: 'SyncingThreadsToTasks_TasksFetched'): this;
-    (event: 'SyncingThreadsToTasks_TasksCached'): this;
-    (event: 'SyncingThreadsToTasks_Any'): this;
-    (event: 'SyncingThreadsToTasks_ThreadsToTasksSynced'): this;
-    (event: 'SyncingThreadsToTasks_SyncingTasksToThreads'): this;
-    (event: 'SyncingThreadsToTasks_TasksToThreadsSynced'): this;
-    (event: 'SyncingThreadsToTasks_SyncingCompletedThreads'): this;
-    (event: 'SyncingThreadsToTasks_CompletedThreadsSynced'): this;
-    (event: 'SyncingThreadsToTasks_SyncingCompletedTasks'): this;
-    (event: 'SyncingThreadsToTasks_CompletedTasksSynced'): this;
-    (event: 'SyncingThreadsToTasks_ThreadsFetched'): this;
-    (event: 'SyncingThreadsToTasks_MsgsFetched'): this;
-    (event: 'SyncingThreadsToTasks_Exception'): this;
-    (event: 'ThreadsToTasksSynced_Enabled'): this;
-    (event: 'ThreadsToTasksSynced_Syncing'): this;
-    (event: 'ThreadsToTasksSynced_Synced'): this;
-    (event: 'ThreadsToTasksSynced_Restart'): this;
-    (event: 'ThreadsToTasksSynced_PreparingList'): this;
-    (event: 'ThreadsToTasksSynced_ListReady'): this;
-    (event: 'ThreadsToTasksSynced_FetchingTasks'): this;
-    (event: 'ThreadsToTasksSynced_TasksFetched'): this;
-    (event: 'ThreadsToTasksSynced_TasksCached'): this;
-    (event: 'ThreadsToTasksSynced_SyncingThreadsToTasks'): this;
-    (event: 'ThreadsToTasksSynced_Any'): this;
-    (event: 'ThreadsToTasksSynced_SyncingTasksToThreads'): this;
-    (event: 'ThreadsToTasksSynced_TasksToThreadsSynced'): this;
-    (event: 'ThreadsToTasksSynced_SyncingCompletedThreads'): this;
-    (event: 'ThreadsToTasksSynced_CompletedThreadsSynced'): this;
-    (event: 'ThreadsToTasksSynced_SyncingCompletedTasks'): this;
-    (event: 'ThreadsToTasksSynced_CompletedTasksSynced'): this;
-    (event: 'ThreadsToTasksSynced_ThreadsFetched'): this;
-    (event: 'ThreadsToTasksSynced_MsgsFetched'): this;
-    (event: 'ThreadsToTasksSynced_Exception'): this;
-    (event: 'SyncingTasksToThreads_Enabled'): this;
-    (event: 'SyncingTasksToThreads_Syncing'): this;
-    (event: 'SyncingTasksToThreads_Synced'): this;
-    (event: 'SyncingTasksToThreads_Restart'): this;
-    (event: 'SyncingTasksToThreads_PreparingList'): this;
-    (event: 'SyncingTasksToThreads_ListReady'): this;
-    (event: 'SyncingTasksToThreads_FetchingTasks'): this;
-    (event: 'SyncingTasksToThreads_TasksFetched'): this;
-    (event: 'SyncingTasksToThreads_TasksCached'): this;
-    (event: 'SyncingTasksToThreads_SyncingThreadsToTasks'): this;
-    (event: 'SyncingTasksToThreads_ThreadsToTasksSynced'): this;
-    (event: 'SyncingTasksToThreads_Any'): this;
-    (event: 'SyncingTasksToThreads_TasksToThreadsSynced'): this;
-    (event: 'SyncingTasksToThreads_SyncingCompletedThreads'): this;
-    (event: 'SyncingTasksToThreads_CompletedThreadsSynced'): this;
-    (event: 'SyncingTasksToThreads_SyncingCompletedTasks'): this;
-    (event: 'SyncingTasksToThreads_CompletedTasksSynced'): this;
-    (event: 'SyncingTasksToThreads_ThreadsFetched'): this;
-    (event: 'SyncingTasksToThreads_MsgsFetched'): this;
-    (event: 'SyncingTasksToThreads_Exception'): this;
-    (event: 'TasksToThreadsSynced_Enabled'): this;
-    (event: 'TasksToThreadsSynced_Syncing'): this;
-    (event: 'TasksToThreadsSynced_Synced'): this;
-    (event: 'TasksToThreadsSynced_Restart'): this;
-    (event: 'TasksToThreadsSynced_PreparingList'): this;
-    (event: 'TasksToThreadsSynced_ListReady'): this;
-    (event: 'TasksToThreadsSynced_FetchingTasks'): this;
-    (event: 'TasksToThreadsSynced_TasksFetched'): this;
-    (event: 'TasksToThreadsSynced_TasksCached'): this;
-    (event: 'TasksToThreadsSynced_SyncingThreadsToTasks'): this;
-    (event: 'TasksToThreadsSynced_ThreadsToTasksSynced'): this;
-    (event: 'TasksToThreadsSynced_SyncingTasksToThreads'): this;
-    (event: 'TasksToThreadsSynced_Any'): this;
-    (event: 'TasksToThreadsSynced_SyncingCompletedThreads'): this;
-    (event: 'TasksToThreadsSynced_CompletedThreadsSynced'): this;
-    (event: 'TasksToThreadsSynced_SyncingCompletedTasks'): this;
-    (event: 'TasksToThreadsSynced_CompletedTasksSynced'): this;
-    (event: 'TasksToThreadsSynced_ThreadsFetched'): this;
-    (event: 'TasksToThreadsSynced_MsgsFetched'): this;
-    (event: 'TasksToThreadsSynced_Exception'): this;
-    (event: 'SyncingCompletedThreads_Enabled'): this;
-    (event: 'SyncingCompletedThreads_Syncing'): this;
-    (event: 'SyncingCompletedThreads_Synced'): this;
-    (event: 'SyncingCompletedThreads_Restart'): this;
-    (event: 'SyncingCompletedThreads_PreparingList'): this;
-    (event: 'SyncingCompletedThreads_ListReady'): this;
-    (event: 'SyncingCompletedThreads_FetchingTasks'): this;
-    (event: 'SyncingCompletedThreads_TasksFetched'): this;
-    (event: 'SyncingCompletedThreads_TasksCached'): this;
-    (event: 'SyncingCompletedThreads_SyncingThreadsToTasks'): this;
-    (event: 'SyncingCompletedThreads_ThreadsToTasksSynced'): this;
-    (event: 'SyncingCompletedThreads_SyncingTasksToThreads'): this;
-    (event: 'SyncingCompletedThreads_TasksToThreadsSynced'): this;
-    (event: 'SyncingCompletedThreads_Any'): this;
-    (event: 'SyncingCompletedThreads_CompletedThreadsSynced'): this;
-    (event: 'SyncingCompletedThreads_SyncingCompletedTasks'): this;
-    (event: 'SyncingCompletedThreads_CompletedTasksSynced'): this;
-    (event: 'SyncingCompletedThreads_ThreadsFetched'): this;
-    (event: 'SyncingCompletedThreads_MsgsFetched'): this;
-    (event: 'SyncingCompletedThreads_Exception'): this;
-    (event: 'CompletedThreadsSynced_Enabled'): this;
-    (event: 'CompletedThreadsSynced_Syncing'): this;
-    (event: 'CompletedThreadsSynced_Synced'): this;
-    (event: 'CompletedThreadsSynced_Restart'): this;
-    (event: 'CompletedThreadsSynced_PreparingList'): this;
-    (event: 'CompletedThreadsSynced_ListReady'): this;
-    (event: 'CompletedThreadsSynced_FetchingTasks'): this;
-    (event: 'CompletedThreadsSynced_TasksFetched'): this;
-    (event: 'CompletedThreadsSynced_TasksCached'): this;
-    (event: 'CompletedThreadsSynced_SyncingThreadsToTasks'): this;
-    (event: 'CompletedThreadsSynced_ThreadsToTasksSynced'): this;
-    (event: 'CompletedThreadsSynced_SyncingTasksToThreads'): this;
-    (event: 'CompletedThreadsSynced_TasksToThreadsSynced'): this;
-    (event: 'CompletedThreadsSynced_SyncingCompletedThreads'): this;
-    (event: 'CompletedThreadsSynced_Any'): this;
-    (event: 'CompletedThreadsSynced_SyncingCompletedTasks'): this;
-    (event: 'CompletedThreadsSynced_CompletedTasksSynced'): this;
-    (event: 'CompletedThreadsSynced_ThreadsFetched'): this;
-    (event: 'CompletedThreadsSynced_MsgsFetched'): this;
-    (event: 'CompletedThreadsSynced_Exception'): this;
-    (event: 'SyncingCompletedTasks_Enabled'): this;
-    (event: 'SyncingCompletedTasks_Syncing'): this;
-    (event: 'SyncingCompletedTasks_Synced'): this;
-    (event: 'SyncingCompletedTasks_Restart'): this;
-    (event: 'SyncingCompletedTasks_PreparingList'): this;
-    (event: 'SyncingCompletedTasks_ListReady'): this;
-    (event: 'SyncingCompletedTasks_FetchingTasks'): this;
-    (event: 'SyncingCompletedTasks_TasksFetched'): this;
-    (event: 'SyncingCompletedTasks_TasksCached'): this;
-    (event: 'SyncingCompletedTasks_SyncingThreadsToTasks'): this;
-    (event: 'SyncingCompletedTasks_ThreadsToTasksSynced'): this;
-    (event: 'SyncingCompletedTasks_SyncingTasksToThreads'): this;
-    (event: 'SyncingCompletedTasks_TasksToThreadsSynced'): this;
-    (event: 'SyncingCompletedTasks_SyncingCompletedThreads'): this;
-    (event: 'SyncingCompletedTasks_CompletedThreadsSynced'): this;
-    (event: 'SyncingCompletedTasks_Any'): this;
-    (event: 'SyncingCompletedTasks_CompletedTasksSynced'): this;
-    (event: 'SyncingCompletedTasks_ThreadsFetched'): this;
-    (event: 'SyncingCompletedTasks_MsgsFetched'): this;
-    (event: 'SyncingCompletedTasks_Exception'): this;
-    (event: 'CompletedTasksSynced_Enabled'): this;
-    (event: 'CompletedTasksSynced_Syncing'): this;
-    (event: 'CompletedTasksSynced_Synced'): this;
-    (event: 'CompletedTasksSynced_Restart'): this;
-    (event: 'CompletedTasksSynced_PreparingList'): this;
-    (event: 'CompletedTasksSynced_ListReady'): this;
-    (event: 'CompletedTasksSynced_FetchingTasks'): this;
-    (event: 'CompletedTasksSynced_TasksFetched'): this;
-    (event: 'CompletedTasksSynced_TasksCached'): this;
-    (event: 'CompletedTasksSynced_SyncingThreadsToTasks'): this;
-    (event: 'CompletedTasksSynced_ThreadsToTasksSynced'): this;
-    (event: 'CompletedTasksSynced_SyncingTasksToThreads'): this;
-    (event: 'CompletedTasksSynced_TasksToThreadsSynced'): this;
-    (event: 'CompletedTasksSynced_SyncingCompletedThreads'): this;
-    (event: 'CompletedTasksSynced_CompletedThreadsSynced'): this;
-    (event: 'CompletedTasksSynced_SyncingCompletedTasks'): this;
-    (event: 'CompletedTasksSynced_Any'): this;
-    (event: 'CompletedTasksSynced_ThreadsFetched'): this;
-    (event: 'CompletedTasksSynced_MsgsFetched'): this;
-    (event: 'CompletedTasksSynced_Exception'): this;
-    (event: 'ThreadsFetched_Enabled'): this;
-    (event: 'ThreadsFetched_Syncing'): this;
-    (event: 'ThreadsFetched_Synced'): this;
-    (event: 'ThreadsFetched_Restart'): this;
-    (event: 'ThreadsFetched_PreparingList'): this;
-    (event: 'ThreadsFetched_ListReady'): this;
-    (event: 'ThreadsFetched_FetchingTasks'): this;
-    (event: 'ThreadsFetched_TasksFetched'): this;
-    (event: 'ThreadsFetched_TasksCached'): this;
-    (event: 'ThreadsFetched_SyncingThreadsToTasks'): this;
-    (event: 'ThreadsFetched_ThreadsToTasksSynced'): this;
-    (event: 'ThreadsFetched_SyncingTasksToThreads'): this;
-    (event: 'ThreadsFetched_TasksToThreadsSynced'): this;
-    (event: 'ThreadsFetched_SyncingCompletedThreads'): this;
-    (event: 'ThreadsFetched_CompletedThreadsSynced'): this;
-    (event: 'ThreadsFetched_SyncingCompletedTasks'): this;
-    (event: 'ThreadsFetched_CompletedTasksSynced'): this;
-    (event: 'ThreadsFetched_Any'): this;
-    (event: 'ThreadsFetched_MsgsFetched'): this;
-    (event: 'ThreadsFetched_Exception'): this;
-    (event: 'MsgsFetched_Enabled'): this;
-    (event: 'MsgsFetched_Syncing'): this;
-    (event: 'MsgsFetched_Synced'): this;
-    (event: 'MsgsFetched_Restart'): this;
-    (event: 'MsgsFetched_PreparingList'): this;
-    (event: 'MsgsFetched_ListReady'): this;
-    (event: 'MsgsFetched_FetchingTasks'): this;
-    (event: 'MsgsFetched_TasksFetched'): this;
-    (event: 'MsgsFetched_TasksCached'): this;
-    (event: 'MsgsFetched_SyncingThreadsToTasks'): this;
-    (event: 'MsgsFetched_ThreadsToTasksSynced'): this;
-    (event: 'MsgsFetched_SyncingTasksToThreads'): this;
-    (event: 'MsgsFetched_TasksToThreadsSynced'): this;
-    (event: 'MsgsFetched_SyncingCompletedThreads'): this;
-    (event: 'MsgsFetched_CompletedThreadsSynced'): this;
-    (event: 'MsgsFetched_SyncingCompletedTasks'): this;
-    (event: 'MsgsFetched_CompletedTasksSynced'): this;
-    (event: 'MsgsFetched_ThreadsFetched'): this;
-    (event: 'MsgsFetched_Any'): this;
-    (event: 'MsgsFetched_Exception'): this;
-    (event: 'Exception_Enabled'): this;
-    (event: 'Exception_Syncing'): this;
-    (event: 'Exception_Synced'): this;
-    (event: 'Exception_Restart'): this;
-    (event: 'Exception_PreparingList'): this;
-    (event: 'Exception_ListReady'): this;
-    (event: 'Exception_FetchingTasks'): this;
-    (event: 'Exception_TasksFetched'): this;
-    (event: 'Exception_TasksCached'): this;
-    (event: 'Exception_SyncingThreadsToTasks'): this;
-    (event: 'Exception_ThreadsToTasksSynced'): this;
-    (event: 'Exception_SyncingTasksToThreads'): this;
-    (event: 'Exception_TasksToThreadsSynced'): this;
-    (event: 'Exception_SyncingCompletedThreads'): this;
-    (event: 'Exception_CompletedThreadsSynced'): this;
-    (event: 'Exception_SyncingCompletedTasks'): this;
-    (event: 'Exception_CompletedTasksSynced'): this;
-    (event: 'Exception_ThreadsFetched'): this;
-    (event: 'Exception_MsgsFetched'): this;
+    (event: TTransitions): boolean;
 }

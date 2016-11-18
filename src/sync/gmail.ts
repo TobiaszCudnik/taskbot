@@ -1,9 +1,10 @@
 import AsyncMachine from 'asyncmachine';
-import { IState } from 'asyncmachine/src/types'
 import {
+	IState,
 	IBind,
-	IEmit
-} from 'asyncmachine/src/events'
+	IEmit,
+	TStates
+} from './gmail-types'
 import GmailQuery from './gmail-query';
 import Sync from './sync'
 import { Semaphore } from 'await-semaphore';
@@ -16,7 +17,7 @@ import {
 import { map } from 'typed-promisify'
 
 
-export class States extends AsyncMachine<IBind, IEmit> {
+export class States extends AsyncMachine<TStates, IBind, IEmit> {
 
 	Enabled: IState = {};
 	SyncingEnabled: IState = {};

@@ -6,10 +6,11 @@ import AsyncMachine, {
 	PipeFlags
 } from 'asyncmachine';
 import {
+	IState,
 	IBind,
-	IEmit
-} from 'asyncmachine/src/events'
-import { IState } from 'asyncmachine/src/types'
+	IEmit,
+	TStates
+} from './sync-types'
 import {
 	promisify,
 	promisifyArray
@@ -26,7 +27,7 @@ import Logger from 'asyncmachine-inspector/build/logger'
 import Network from 'asyncmachine-inspector/build/network'
 
 
-export class States extends AsyncMachine<IBind, IEmit> {
+export class States extends AsyncMachine<TStates, IBind, IEmit> {
 
 	Enabled: IState = {
 		auto: true

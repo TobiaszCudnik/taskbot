@@ -1,9 +1,10 @@
 import AsyncMachine from 'asyncmachine'
-import { IState } from 'asyncmachine/src/types'
 import {
+  IState,
   IBind,
-  IEmit
-} from 'asyncmachine/src/events'
+  IEmit,
+  TStates
+} from './gmail-query-types'
 import * as moment from 'moment';
 import Gmail from './gmail'
 import { Semaphore } from 'await-semaphore';
@@ -12,7 +13,7 @@ import { map } from 'typed-promisify'
 
 export type Thread = google.gmail.v1.Thread
 
-export class States extends AsyncMachine<IBind, IEmit> {
+export class States extends AsyncMachine<TStates, IBind, IEmit> {
 
   Enabled: IState = {};
   Dirty: IState = {
@@ -26,7 +27,7 @@ export class States extends AsyncMachine<IBind, IEmit> {
   };
   ThreadsFetched: IState = {
     require: ['Enabled'],
-    drop: ['FetchingThreads']
+    drop: ['FetchingThreads'],
   };
 
   FetchingMsgs: IState = {
