@@ -23,8 +23,8 @@ import {
 	IConfig,
 	IListConfig
 } from '../types'
-import Logger from 'asyncmachine-inspector/build/logger'
-import Network from 'asyncmachine-inspector/build/network'
+import Logger from 'asyncmachine-inspector/src/logger'
+import Network from 'asyncmachine-inspector/src/network'
 
 
 export class States extends AsyncMachine<TStates, IBind, IEmit> {
