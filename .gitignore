@@ -18,3 +18,4 @@
 /test/**/*.d.ts
 /test/**/*.js.map
 /build/
+.DS_Store
