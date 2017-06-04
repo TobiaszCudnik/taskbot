@@ -2,6 +2,9 @@
 import { IState as IStateBase } from 'asyncmachine/src/types'
 
 
+/**
+ * Signatures for EventEmitter to bind to transitions.
+ */
 export interface IBind {
 
     // Enabled
@@ -34,38 +37,217 @@ export interface IBind {
 
 }
 
+/**
+ * Signatures for EventEmitter to emit transitions.
+ */
 export interface IEmit {
 
     // Enabled
-    (event: 'Enabled_enter' /*, param1, param2 */): this;
-    (event: 'Enabled_state' /*, param1, param2 */): this;
+    (event: 'Enabled_enter' /*, param1, param2 */): boolean | void;
+    (event: 'Enabled_state' /*, param1, param2 */): boolean | void;
     // SyncingEnabled
-    (event: 'SyncingEnabled_enter' /*, param1, param2 */): this;
-    (event: 'SyncingEnabled_state' /*, param1, param2 */): this;
+    (event: 'SyncingEnabled_enter' /*, param1, param2 */): boolean | void;
+    (event: 'SyncingEnabled_state' /*, param1, param2 */): boolean | void;
     // Dirty
-    (event: 'Dirty_enter' /*, param1, param2 */): this;
-    (event: 'Dirty_state' /*, param1, param2 */): this;
+    (event: 'Dirty_enter' /*, param1, param2 */): boolean | void;
+    (event: 'Dirty_state' /*, param1, param2 */): boolean | void;
     // SyncingQueryLabels
-    (event: 'SyncingQueryLabels_enter' /*, param1, param2 */): this;
-    (event: 'SyncingQueryLabels_state' /*, param1, param2 */): this;
+    (event: 'SyncingQueryLabels_enter' /*, param1, param2 */): boolean | void;
+    (event: 'SyncingQueryLabels_state' /*, param1, param2 */): boolean | void;
     // QueryLabelsSynced
-    (event: 'QueryLabelsSynced_enter' /*, param1, param2 */): this;
-    (event: 'QueryLabelsSynced_state' /*, param1, param2 */): this;
+    (event: 'QueryLabelsSynced_enter' /*, param1, param2 */): boolean | void;
+    (event: 'QueryLabelsSynced_state' /*, param1, param2 */): boolean | void;
     // FetchingLabels
-    (event: 'FetchingLabels_enter' /*, param1, param2 */): this;
-    (event: 'FetchingLabels_state' /*, param1, param2 */): this;
+    (event: 'FetchingLabels_enter' /*, param1, param2 */): boolean | void;
+    (event: 'FetchingLabels_state' /*, param1, param2 */): boolean | void;
     // LabelsFetched
-    (event: 'LabelsFetched_enter' /*, param1, param2 */): this;
-    (event: 'LabelsFetched_state' /*, param1, param2 */): this;
+    (event: 'LabelsFetched_enter' /*, param1, param2 */): boolean | void;
+    (event: 'LabelsFetched_state' /*, param1, param2 */): boolean | void;
     // FetchingHistoryId
-    (event: 'FetchingHistoryId_enter' /*, param1, param2 */): this;
-    (event: 'FetchingHistoryId_state' /*, param1, param2 */): this;
+    (event: 'FetchingHistoryId_enter' /*, param1, param2 */): boolean | void;
+    (event: 'FetchingHistoryId_state' /*, param1, param2 */): boolean | void;
     // HistoryIdFetched
-    (event: 'HistoryIdFetched_enter' /*, param1, param2 */): this;
-    (event: 'HistoryIdFetched_state' /*, param1, param2 */): this;
+    (event: 'HistoryIdFetched_enter' /*, param1, param2 */): boolean | void;
+    (event: 'HistoryIdFetched_state' /*, param1, param2 */): boolean | void;
 
 }
 
+/**
+ * All the possible transition methods machine can define.
+ */
+export interface ITransitions {
+
+    // Enabled
+    Enabled_enter?(/*param1, param2 */): boolean | void;
+    Enabled_state?(/*param1, param2 */): boolean | void | Promise;
+    // SyncingEnabled
+    SyncingEnabled_enter?(/*param1, param2 */): boolean | void;
+    SyncingEnabled_state?(/*param1, param2 */): boolean | void | Promise;
+    // Dirty
+    Dirty_enter?(/*param1, param2 */): boolean | void;
+    Dirty_state?(/*param1, param2 */): boolean | void | Promise;
+    // SyncingQueryLabels
+    SyncingQueryLabels_enter?(/*param1, param2 */): boolean | void;
+    SyncingQueryLabels_state?(/*param1, param2 */): boolean | void | Promise;
+    // QueryLabelsSynced
+    QueryLabelsSynced_enter?(/*param1, param2 */): boolean | void;
+    QueryLabelsSynced_state?(/*param1, param2 */): boolean | void | Promise;
+    // FetchingLabels
+    FetchingLabels_enter?(/*param1, param2 */): boolean | void;
+    FetchingLabels_state?(/*param1, param2 */): boolean | void | Promise;
+    // LabelsFetched
+    LabelsFetched_enter?(/*param1, param2 */): boolean | void;
+    LabelsFetched_state?(/*param1, param2 */): boolean | void | Promise;
+    // FetchingHistoryId
+    FetchingHistoryId_enter?(/*param1, param2 */): boolean | void;
+    FetchingHistoryId_state?(/*param1, param2 */): boolean | void | Promise;
+    // HistoryIdFetched
+    HistoryIdFetched_enter?(/*param1, param2 */): boolean | void;
+    HistoryIdFetched_state?(/*param1, param2 */): boolean | void | Promise;
+
+
+    Enabled_exit?(): boolean | void;
+    Enabled_end?(): boolean | void | Promise;
+    SyncingEnabled_exit?(): boolean | void;
+    SyncingEnabled_end?(): boolean | void | Promise;
+    Dirty_exit?(): boolean | void;
+    Dirty_end?(): boolean | void | Promise;
+    SyncingQueryLabels_exit?(): boolean | void;
+    SyncingQueryLabels_end?(): boolean | void | Promise;
+    QueryLabelsSynced_exit?(): boolean | void;
+    QueryLabelsSynced_end?(): boolean | void | Promise;
+    FetchingLabels_exit?(): boolean | void;
+    FetchingLabels_end?(): boolean | void | Promise;
+    LabelsFetched_exit?(): boolean | void;
+    LabelsFetched_end?(): boolean | void | Promise;
+    FetchingHistoryId_exit?(): boolean | void;
+    FetchingHistoryId_end?(): boolean | void | Promise;
+    HistoryIdFetched_exit?(): boolean | void;
+    HistoryIdFetched_end?(): boolean | void | Promise;
+
+    Exception_Enabled?(): boolean | void;
+    Exception_SyncingEnabled?(): boolean | void;
+    Exception_Dirty?(): boolean | void;
+    Exception_SyncingQueryLabels?(): boolean | void;
+    Exception_QueryLabelsSynced?(): boolean | void;
+    Exception_FetchingLabels?(): boolean | void;
+    Exception_LabelsFetched?(): boolean | void;
+    Exception_FetchingHistoryId?(): boolean | void;
+    Exception_HistoryIdFetched?(): boolean | void;
+    Enabled_Exception?(): boolean | void;
+    Enabled_Any?(): boolean | void;
+    Enabled_SyncingEnabled?(): boolean | void;
+    Enabled_Dirty?(): boolean | void;
+    Enabled_SyncingQueryLabels?(): boolean | void;
+    Enabled_QueryLabelsSynced?(): boolean | void;
+    Enabled_FetchingLabels?(): boolean | void;
+    Enabled_LabelsFetched?(): boolean | void;
+    Enabled_FetchingHistoryId?(): boolean | void;
+    Enabled_HistoryIdFetched?(): boolean | void;
+    Enabled_Exception?(): boolean | void;
+    SyncingEnabled_Exception?(): boolean | void;
+    SyncingEnabled_Enabled?(): boolean | void;
+    SyncingEnabled_Any?(): boolean | void;
+    SyncingEnabled_Dirty?(): boolean | void;
+    SyncingEnabled_SyncingQueryLabels?(): boolean | void;
+    SyncingEnabled_QueryLabelsSynced?(): boolean | void;
+    SyncingEnabled_FetchingLabels?(): boolean | void;
+    SyncingEnabled_LabelsFetched?(): boolean | void;
+    SyncingEnabled_FetchingHistoryId?(): boolean | void;
+    SyncingEnabled_HistoryIdFetched?(): boolean | void;
+    SyncingEnabled_Exception?(): boolean | void;
+    Dirty_Exception?(): boolean | void;
+    Dirty_Enabled?(): boolean | void;
+    Dirty_SyncingEnabled?(): boolean | void;
+    Dirty_Any?(): boolean | void;
+    Dirty_SyncingQueryLabels?(): boolean | void;
+    Dirty_QueryLabelsSynced?(): boolean | void;
+    Dirty_FetchingLabels?(): boolean | void;
+    Dirty_LabelsFetched?(): boolean | void;
+    Dirty_FetchingHistoryId?(): boolean | void;
+    Dirty_HistoryIdFetched?(): boolean | void;
+    Dirty_Exception?(): boolean | void;
+    SyncingQueryLabels_Exception?(): boolean | void;
+    SyncingQueryLabels_Enabled?(): boolean | void;
+    SyncingQueryLabels_SyncingEnabled?(): boolean | void;
+    SyncingQueryLabels_Dirty?(): boolean | void;
+    SyncingQueryLabels_Any?(): boolean | void;
+    SyncingQueryLabels_QueryLabelsSynced?(): boolean | void;
+    SyncingQueryLabels_FetchingLabels?(): boolean | void;
+    SyncingQueryLabels_LabelsFetched?(): boolean | void;
+    SyncingQueryLabels_FetchingHistoryId?(): boolean | void;
+    SyncingQueryLabels_HistoryIdFetched?(): boolean | void;
+    SyncingQueryLabels_Exception?(): boolean | void;
+    QueryLabelsSynced_Exception?(): boolean | void;
+    QueryLabelsSynced_Enabled?(): boolean | void;
+    QueryLabelsSynced_SyncingEnabled?(): boolean | void;
+    QueryLabelsSynced_Dirty?(): boolean | void;
+    QueryLabelsSynced_SyncingQueryLabels?(): boolean | void;
+    QueryLabelsSynced_Any?(): boolean | void;
+    QueryLabelsSynced_FetchingLabels?(): boolean | void;
+    QueryLabelsSynced_LabelsFetched?(): boolean | void;
+    QueryLabelsSynced_FetchingHistoryId?(): boolean | void;
+    QueryLabelsSynced_HistoryIdFetched?(): boolean | void;
+    QueryLabelsSynced_Exception?(): boolean | void;
+    FetchingLabels_Exception?(): boolean | void;
+    FetchingLabels_Enabled?(): boolean | void;
+    FetchingLabels_SyncingEnabled?(): boolean | void;
+    FetchingLabels_Dirty?(): boolean | void;
+    FetchingLabels_SyncingQueryLabels?(): boolean | void;
+    FetchingLabels_QueryLabelsSynced?(): boolean | void;
+    FetchingLabels_Any?(): boolean | void;
+    FetchingLabels_LabelsFetched?(): boolean | void;
+    FetchingLabels_FetchingHistoryId?(): boolean | void;
+    FetchingLabels_HistoryIdFetched?(): boolean | void;
+    FetchingLabels_Exception?(): boolean | void;
+    LabelsFetched_Exception?(): boolean | void;
+    LabelsFetched_Enabled?(): boolean | void;
+    LabelsFetched_SyncingEnabled?(): boolean | void;
+    LabelsFetched_Dirty?(): boolean | void;
+    LabelsFetched_SyncingQueryLabels?(): boolean | void;
+    LabelsFetched_QueryLabelsSynced?(): boolean | void;
+    LabelsFetched_FetchingLabels?(): boolean | void;
+    LabelsFetched_Any?(): boolean | void;
+    LabelsFetched_FetchingHistoryId?(): boolean | void;
+    LabelsFetched_HistoryIdFetched?(): boolean | void;
+    LabelsFetched_Exception?(): boolean | void;
+    FetchingHistoryId_Exception?(): boolean | void;
+    FetchingHistoryId_Enabled?(): boolean | void;
+    FetchingHistoryId_SyncingEnabled?(): boolean | void;
+    FetchingHistoryId_Dirty?(): boolean | void;
+    FetchingHistoryId_SyncingQueryLabels?(): boolean | void;
+    FetchingHistoryId_QueryLabelsSynced?(): boolean | void;
+    FetchingHistoryId_FetchingLabels?(): boolean | void;
+    FetchingHistoryId_LabelsFetched?(): boolean | void;
+    FetchingHistoryId_Any?(): boolean | void;
+    FetchingHistoryId_HistoryIdFetched?(): boolean | void;
+    FetchingHistoryId_Exception?(): boolean | void;
+    HistoryIdFetched_Exception?(): boolean | void;
+    HistoryIdFetched_Enabled?(): boolean | void;
+    HistoryIdFetched_SyncingEnabled?(): boolean | void;
+    HistoryIdFetched_Dirty?(): boolean | void;
+    HistoryIdFetched_SyncingQueryLabels?(): boolean | void;
+    HistoryIdFetched_QueryLabelsSynced?(): boolean | void;
+    HistoryIdFetched_FetchingLabels?(): boolean | void;
+    HistoryIdFetched_LabelsFetched?(): boolean | void;
+    HistoryIdFetched_FetchingHistoryId?(): boolean | void;
+    HistoryIdFetched_Any?(): boolean | void;
+    HistoryIdFetched_Exception?(): boolean | void;
+    Exception_Enabled?(): boolean | void;
+    Exception_SyncingEnabled?(): boolean | void;
+    Exception_Dirty?(): boolean | void;
+    Exception_SyncingQueryLabels?(): boolean | void;
+    Exception_QueryLabelsSynced?(): boolean | void;
+    Exception_FetchingLabels?(): boolean | void;
+    Exception_LabelsFetched?(): boolean | void;
+    Exception_FetchingHistoryId?(): boolean | void;
+    Exception_HistoryIdFetched?(): boolean | void;
+
+}
+
+/**
+ * All the state names.
+ */
 export type TStates = 'Enabled'
   | 'SyncingEnabled'
   | 'Dirty'
@@ -76,6 +258,9 @@ export type TStates = 'Enabled'
   | 'FetchingHistoryId'
   | 'HistoryIdFetched';
 
+/**
+ * All the transition names.
+ */
 export type TTransitions = 'Exception_Enabled'
   | 'Exception_SyncingEnabled'
   | 'Exception_Dirty'
@@ -194,10 +379,14 @@ export type TTransitions = 'Exception_Enabled'
   | 'Exception_FetchingHistoryId'
   | 'Exception_HistoryIdFetched';
 
-// For this implementation
+/**
+ * Typesafe state interface.
+ */
 export interface IState extends IStateBase<TStates> {}
 
-// For sub classes
+/**
+ * Subclassable typesafe state interface.
+ */
 export interface IStateExt<T extends string> extends IStateBase<T | TStates> {}
 
 export interface IBind {
@@ -228,25 +417,25 @@ export interface IBind {
 
 export interface IEmit {
     // Non-params events
-    (event: 'Enabled_exit'): this;
-    (event: 'Enabled_end'): this;
-    (event: 'SyncingEnabled_exit'): this;
-    (event: 'SyncingEnabled_end'): this;
-    (event: 'Dirty_exit'): this;
-    (event: 'Dirty_end'): this;
-    (event: 'SyncingQueryLabels_exit'): this;
-    (event: 'SyncingQueryLabels_end'): this;
-    (event: 'QueryLabelsSynced_exit'): this;
-    (event: 'QueryLabelsSynced_end'): this;
-    (event: 'FetchingLabels_exit'): this;
-    (event: 'FetchingLabels_end'): this;
-    (event: 'LabelsFetched_exit'): this;
-    (event: 'LabelsFetched_end'): this;
-    (event: 'FetchingHistoryId_exit'): this;
-    (event: 'FetchingHistoryId_end'): this;
-    (event: 'HistoryIdFetched_exit'): this;
-    (event: 'HistoryIdFetched_end'): this;
+    (event: 'Enabled_exit'): boolean | void;
+    (event: 'Enabled_end'): boolean | void;
+    (event: 'SyncingEnabled_exit'): boolean | void;
+    (event: 'SyncingEnabled_end'): boolean | void;
+    (event: 'Dirty_exit'): boolean | void;
+    (event: 'Dirty_end'): boolean | void;
+    (event: 'SyncingQueryLabels_exit'): boolean | void;
+    (event: 'SyncingQueryLabels_end'): boolean | void;
+    (event: 'QueryLabelsSynced_exit'): boolean | void;
+    (event: 'QueryLabelsSynced_end'): boolean | void;
+    (event: 'FetchingLabels_exit'): boolean | void;
+    (event: 'FetchingLabels_end'): boolean | void;
+    (event: 'LabelsFetched_exit'): boolean | void;
+    (event: 'LabelsFetched_end'): boolean | void;
+    (event: 'FetchingHistoryId_exit'): boolean | void;
+    (event: 'FetchingHistoryId_end'): boolean | void;
+    (event: 'HistoryIdFetched_exit'): boolean | void;
+    (event: 'HistoryIdFetched_end'): boolean | void;
 
     // Transitions
-    (event: TTransitions): boolean;
+    (event: TTransitions): boolean | void;
 }
