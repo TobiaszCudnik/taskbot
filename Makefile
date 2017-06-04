@@ -1,3 +1,4 @@
+STATES_TYPES_BIN = node_modules/asyncmachine/tools/states-to-types.js
 
 compile:
 	node_modules/.bin/tsc --pretty --noEmit
@@ -10,5 +11,15 @@ build:
 
 build-watch:
 	node_modules/.bin/tsc --watch
+
+format:
+	prettier --single-quote --no-semi --write src/**/*.ts
+
+state-types:
+	node $(STATES_TYPES_BIN) src/sync/task-list-sync-states.js -s
+	node $(STATES_TYPES_BIN) src/sync/gmail-query.js -s
+	node $(STATES_TYPES_BIN) src/sync/sync.js -s
+	node $(STATES_TYPES_BIN) src/sync/gmail.js -s
+	node $(STATES_TYPES_BIN) src/auth.js -s
 
 .PHONY: test break build
