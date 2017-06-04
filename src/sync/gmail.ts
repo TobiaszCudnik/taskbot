@@ -1,396 +1,444 @@
-import AsyncMachine from 'asyncmachine';
-import {
-	IState,
-	IBind,
-	IEmit,
-	TStates
-} from './gmail-types'
-import GmailQuery from './gmail-query';
+import AsyncMachine from 'asyncmachine'
+import { IState, IBind, IEmit, TStates } from './gmail-types'
+import GmailQuery from './gmail-query'
 import Sync from './sync'
-import { Semaphore } from 'await-semaphore';
+import { Semaphore } from 'await-semaphore'
 import * as _ from 'underscore'
 import * as google from 'googleapis'
-import {
-	IConfig,
-	TRawEmail
-} from '../types'
+import { IConfig, TRawEmail } from '../types'
 import { map } from 'typed-promisify'
 
-
 export class States extends AsyncMachine<TStates, IBind, IEmit> {
+  Enabled: IState = {}
+  SyncingEnabled: IState = {}
 
-	Enabled: IState = {};
-	SyncingEnabled: IState = {};
+  Dirty: IState = {
+    drop: ['QueryLabelsSynced', 'SyncingQueryLabels']
+  }
 
-	Dirty: IState = {
-		drop: ['QueryLabelsSynced', 'SyncingQueryLabels']
-	};
+  SyncingQueryLabels: IState = {
+    auto: true,
+    require: ['SyncingEnabled', 'LabelsFetched'],
+    drop: ['QueryLabelsSynced']
+  }
+  QueryLabelsSynced: IState = {
+    drop: ['SyncingQueryLabels']
+  }
 
-	SyncingQueryLabels: IState = {
-		auto: true,
-		require: ['SyncingEnabled', 'LabelsFetched'],
-		drop: ['QueryLabelsSynced']
-	};
-	QueryLabelsSynced: IState = {
-		drop: ['SyncingQueryLabels']
-	};
+  FetchingLabels: IState = {
+    auto: true,
+    require: ['Enabled'],
+    drop: ['LabelsFetched']
+  }
+  LabelsFetched: IState = {
+    drop: ['FetchingLabels']
+  }
 
-	FetchingLabels: IState = {
-		auto: true,
-		require: ['Enabled'],
-		drop: ['LabelsFetched']
-	};
-	LabelsFetched: IState = {
-		drop: ['FetchingLabels']
-	};
+  FetchingHistoryId: IState = {
+    auto: true,
+    require: ['Enabled'],
+    drop: ['HistoryIdFetched']
+  }
+  HistoryIdFetched: IState = {
+    drop: ['FetchingHistoryId']
+  }
 
-	FetchingHistoryId: IState = {
-		auto: true,
-		require: ['Enabled'],
-		drop: ['HistoryIdFetched']
-	};
-	HistoryIdFetched: IState = {
-		drop: ['FetchingHistoryId']
-	}
-
-	constructor(target: Gmail) {
-		super(target)
-		this.registerAll()
-	}
+  constructor(target: Gmail) {
+    super(target)
+    this.registerAll()
+  }
 }
 
-
 export default class Gmail {
+  states: States
+  api: google.gmail.v1.Gmail
+  config: IConfig
+  sync: Sync
+  // completions = new Map<string, {
+  // 	completed: boolean,
+  // 	time: number
+  // }>();
+  history_id_timeout = 3000
+  history_id: number | null
+  last_sync_time: number
+  queries: GmailQuery[] = []
+  query_labels = new Map<string, GmailQuery>()
+  query_labels_timer: number | null
+  labels: google.gmail.v1.Label[]
+  semaphore: Semaphore
 
-	states: States;
-	api: google.gmail.v1.Gmail;
-	config: IConfig;
-	sync: Sync;
-	// completions = new Map<string, {
-	// 	completed: boolean,
-	// 	time: number
-	// }>();
-	history_id_timeout = 3000;
-	history_id: number | null;
-	last_sync_time: number;
-	queries: GmailQuery[] = [];
-	query_labels = new Map<string, GmailQuery>();
-	query_labels_timer: number | null;
-	labels: google.gmail.v1.Label[];
-	semaphore: Semaphore;
+  constructor(sync: Sync) {
+    this.sync = sync
+    this.semaphore = sync.semaphore
+    this.states = new States(this)
+    if (process.env['DEBUG']) {
+      this.states.id('Gmail').logLevel(process.env['DEBUG'])
+      global.am_network.addMachine(this.states)
+    }
+    this.api = this.sync.gmail_api
+    this.config = this.sync.config
+    this.initQueryLabels()
+    this.states.pipe('QueryLabelsSynced', this.sync.states)
+  }
 
-	constructor(sync: Sync) {
-		this.sync = sync;
-		this.semaphore = sync.semaphore
-		this.states = new States(this)
-		if (process.env['DEBUG']) {
-			this.states
-				.id('Gmail')
-				.logLevel(process.env['DEBUG'])
-			global.am_network.addMachine(this.states)
-		}
-		this.api = this.sync.gmail_api;
-		this.config = this.sync.config;
-		this.initQueryLabels();
-		this.states.pipe('QueryLabelsSynced', this.sync.states);
-	}
+  // ----- -----
+  // Transitions
+  // ----- -----
 
-	// ----- -----
-	// Transitions
-	// ----- -----
+  // TODO extract to a separate class
+  async SyncingQueryLabels_state() {
+    this.query_labels_timer = Date.now()
+    let abort = this.states.getAbort('SyncingQueryLabels')
 
-	// TODO extract to a separate class
-	async SyncingQueryLabels_state() {
-		this.query_labels_timer = Date.now();
-		let abort = this.states.getAbort('SyncingQueryLabels');
+    let dirty = false
+    await map(
+      [...this.query_labels],
+      async ([name, query]: [string, GmailQuery]) => {
+        query.states.add('Enabled')
+        // TODO timeout?
+        debugger
+        await query.states.when('MsgsFetched')
+        if (abort()) return
+        // TODO this probably resets the download states, while still
+        // keeping the cache
+        query.states.drop('Enabled')
 
-		let dirty = false;
-		await map([...this.query_labels],
-				async ([name, query]: [string, GmailQuery]) => {
+        let labels = this.config.query_labels[name]
+        await Promise.all(
+          query.threads.map(async thread => {
+            await this.modifyLabels(thread.id, labels[0], labels[1], abort)
+            dirty = true
+          })
+        )
+      }
+    )
 
-			query.states.add('Enabled')
-			// TODO timeout?
-			debugger
-			await query.states.when('MsgsFetched')
-			if (abort())
-				return
-			// TODO this probably resets the download states, while still 
-			// keeping the cache
-			query.states.drop('Enabled')
+    if (dirty) this.states.add('Dirty')
 
-			let labels = this.config.query_labels[name];
-			await Promise.all(query.threads.map(async (thread) => {
-				await this.modifyLabels(thread.id, labels[0], labels[1], abort);
-				dirty = true;
-			}))
-		})
+    if (abort()) return
 
-		if (dirty)
-			this.states.add('Dirty')
+    if (!dirty) this.states.add('QueryLabelsSynced')
+  }
 
-		if (abort())
-			return
+  // TODO extract to a separate class
+  QueryLabelsSynced_state() {
+    this.last_sync_time = Date.now() - this.query_labels_timer
+    this.query_labels_timer = null
+    return console.log(`QueryLabels synced in: ${this.last_sync_time}ms`)
+  }
 
-		if (!dirty)
-			this.states.add('QueryLabelsSynced')
-	}
+  async FetchingLabels_state() {
+    let abort = this.states.getAbort('FetchingLabels')
+    let res = await this.req(
+      this.api.users.labels.list,
+      { userId: 'me' },
+      null,
+      false
+    )
+    if (abort() || !res) return
+    this.labels = res.labels
+    this.states.add('LabelsFetched')
+  }
 
-	// TODO extract to a separate class
-	QueryLabelsSynced_state() {
-		this.last_sync_time = Date.now() - this.query_labels_timer;
-		this.query_labels_timer = null;
-		return console.log(`QueryLabels synced in: ${this.last_sync_time}ms`);
-	}
+  Dirty_state() {
+    this.history_id = null
+    for (let i = 0; i < this.queries.length; i++) {
+      let query = this.queries[i]
+      // Add the Dirty states to all child queries
+      // TODO could be easily narrowed down
+      this.states.add(query.states, 'Dirty')
+    }
 
-	async FetchingLabels_state() {
-		let abort = this.states.getAbort('FetchingLabels')
-		let res = await this.req(this.api.users.labels.list, {userId: 'me'}, null, false);
-		if (abort() || !res)
-			return
-		this.labels = res.labels;
-		this.states.add('LabelsFetched')
-	}
+    return this.states.drop('Dirty')
+  }
 
-	Dirty_state() {
-		this.history_id = null;
-		for (let i = 0; i < this.queries.length; i++) {
-			let query = this.queries[i]
-			// Add the Dirty states to all child queries
-			// TODO could be easily narrowed down
-			this.states.add(query.states, 'Dirty')
-		}
+  async FetchingHistoryId_state(abort?: () => boolean) {
+    console.log('[FETCH] history ID')
+    let response = await this.req(
+      this.api.users.getProfile,
+      {
+        userId: 'me',
+        fields: 'historyId'
+      },
+      abort,
+      false
+    )
+    // TODO redo when no response?
+    if (!response || (abort && abort())) return
+    this.history_id = parseInt(response.historyId, 10)
+    this.last_sync_time = Date.now()
+    this.states.add('HistoryIdFetched')
+  }
 
-		return this.states.drop('Dirty')
-	}
+  // ----- -----
+  // Methods
+  // ----- -----
 
-	async FetchingHistoryId_state(abort?: () => boolean) {
-		console.log('[FETCH] history ID')
-		let response = await this.req(this.api.users.getProfile, {
-			userId: 'me',
-			fields: 'historyId'
-		}, abort, false)
-		// TODO redo when no response?
-		if (!response || abort && abort())
-			return
-		this.history_id = parseInt(response.historyId, 10)
-		this.last_sync_time = Date.now()
-		this.states.add('HistoryIdFetched')
-	}
+  async fetchThread(
+    id: string,
+    historyId: number | null,
+    abort?: () => boolean
+  ): Promise<google.gmail.v1.Thread | null> {
+    // TODO limit the max msgs amount
+    let thread = await this.req(
+      this.api.users.threads.get,
+      {
+        id,
+        userId: 'me',
+        metadataHeaders: 'SUBJECT',
+        format: 'metadata',
+        fields: 'id,historyId,messages(id,labelIds,payload(headers))'
+      },
+      null,
+      false
+    )
+    if (abort && abort()) return null
 
-	// ----- -----
-	// Methods
-	// ----- -----
+    return thread
+  }
 
-	async fetchThread(id: string, historyId: number | null, abort?: () => boolean):
-			Promise<google.gmail.v1.Thread | null> {
-		// TODO limit the max msgs amount
-		let thread = await this.req(this.api.users.threads.get, {
-			id,
-			userId: 'me',
-			metadataHeaders: 'SUBJECT',
-			format: 'metadata',
-			fields: 'id,historyId,messages(id,labelIds,payload(headers))'
-		}, null, false)
-		if (abort && abort())
-			return null
+  createQuery(
+    query: string,
+    name: string = '',
+    fetch_msgs = false
+  ): GmailQuery {
+    let gmail_query = new GmailQuery(this, query, name, fetch_msgs)
+    this.queries.push(gmail_query)
 
-		return thread
-	}
+    return gmail_query
+  }
 
-	createQuery(query: string, name: string = '', fetch_msgs = false): GmailQuery {
-		let gmail_query = new GmailQuery(this, query, name, fetch_msgs);
-		this.queries.push(gmail_query)
+  // Searches all present gmail queries for the thread with the given ID.
+  getThread(id: string, with_content = false): google.gmail.v1.Thread | null {
+    for (let query of this.queries) {
+      for (let thread of query.threads) {
+        if (thread.id !== id) continue
+        // TODO should break here?
+        if (with_content && thread.messages && !thread.messages.length) continue
+        return thread
+      }
+    }
+    return null
+  }
 
-		return gmail_query
-	}
+  initQueryLabels() {
+    let count = 0
+    for (let query in this.config.query_labels) {
+      // narrow the query to results requiring the labels modification
+      let labels = this.config.query_labels[query]
+      let exclusive_query = query
+      // labels to add
+      if (labels[0].length) {
+        exclusive_query +=
+          ' (-label:' +
+          labels[0].map(this.normalizeLabelName).join(' OR -label:') +
+          ')'
+      }
+      // labels to remove
+      // TODO loose casting once compiler will figure
+      if (labels[1] && (<string[]>labels[1]).length) {
+        exclusive_query +=
+          ' (label:' +
+          (<string[]>labels[1])
+            .map(this.normalizeLabelName)
+            .join(' OR label:') +
+          ')'
+      }
+      // TODO better query names
+      this.query_labels.set(
+        query,
+        this.createQuery(exclusive_query, `QueryLabels ${++count}`, true)
+      )
+    }
 
-	// Searches all present gmail queries for the thread with the given ID.
-	getThread(id: string, with_content = false): google.gmail.v1.Thread | null {
-		for (let query of this.queries) {
-			for (let thread of query.threads) {
-				if (thread.id !== id)
-					continue
-				// TODO should break here?
-				if (with_content && thread.messages && !thread.messages.length)
-					continue
-				return thread;
-			}
-		}
-		return null
-	}
+    return this.sync.log(`Initialized ${this.query_labels.size} queries`, 2)
+  }
 
-	initQueryLabels() {
-		let count = 0;
-		for (let query in this.config.query_labels) {
-			// narrow the query to results requiring the labels modification
-			let labels = this.config.query_labels[query];
-			let exclusive_query = query;
-			// labels to add
-			if (labels[0].length) {
-				exclusive_query += ' (-label:' +
-					labels[0].map(this.normalizeLabelName).join(' OR -label:') + ')';
-			}
-			// labels to remove
-			// TODO loose casting once compiler will figure
-			if (labels[1] && (<string[]>labels[1]).length) {
-				exclusive_query += ' (label:' +
-					(<string[]>labels[1]).map(this.normalizeLabelName).join(' OR label:') + ')';
-			}
-			// TODO better query names
-			this.query_labels.set(query, this.createQuery(exclusive_query, `QueryLabels ${++count}`, true))
-		}
+  normalizeLabelName(label: string) {
+    return label.replace('/', '-').replace(' ', '-').toLowerCase()
+  }
 
-		return this.sync.log(`Initialized ${this.query_labels.size} queries`, 2);
-	}
+  isHistoryIdValid() {
+    return (
+      this.history_id &&
+      Date.now() < this.last_sync_time + this.history_id_timeout
+    )
+  }
 
-	normalizeLabelName(label: string) {
-		return label
-			.replace('/', '-')
-			.replace(' ', '-')
-			.toLowerCase();
-	}
+  async isCached(
+    history_id: number,
+    abort: () => boolean
+  ): Promise<boolean | null> {
+    if (!this.isHistoryIdValid()) {
+      if (!this.states.is('FetchingHistoryId')) {
+        this.states.add('FetchingHistoryId', abort)
+        // We need to wait for FetchingHistoryId being really added, not only queued
+        await this.states.when('FetchingHistoryId', abort)
+        if (abort && abort()) return null
+      }
+      await this.states.when('HistoryIdFetched', abort)
+      if (abort && abort()) return null
+    }
 
-	isHistoryIdValid() {
-		return this.history_id && Date.now() < this.last_sync_time + this.history_id_timeout;
-	}
+    return this.history_id <= history_id
+  }
 
-	async isCached(history_id: number, abort: () => boolean): Promise<boolean | null> {
-		if (!this.isHistoryIdValid()) {
-			if (!this.states.is('FetchingHistoryId')) {
-				this.states.add('FetchingHistoryId', abort);
-				// We need to wait for FetchingHistoryId being really added, not only queued
-				await this.states.when('FetchingHistoryId', abort);
-				if (abort && abort())
-					return null
-			}
-			await this.states.when('HistoryIdFetched', abort);
-			if (abort && abort())
-				return null
-		}
+  initAutoLabels() {}
+  //		for query, labels of @config.query_labels
+  //			query = new GmailQuery this, query, no
 
-		return this.history_id <= history_id;
-	};
+  getLabelsIds(labels: string[] | string): string[] {
+    if (!Array.isArray(labels)) {
+      labels = [labels]
+    }
 
-	initAutoLabels() {}
-//		for query, labels of @config.query_labels
-//			query = new GmailQuery this, query, no
+    let ret: string[] = []
+    for (let name of labels) {
+      let label = this.labels.find(
+        label => label.name.toLowerCase() === name.toLowerCase()
+      )
+      if (label) ret.push(label.id)
+    }
+    return ret
+  }
 
-	getLabelsIds(labels: string[] | string): string[] {
-		if (!Array.isArray(labels)) {
-			labels = [labels];
-		}
+  async modifyLabels(
+    thread_id: string,
+    add_labels: string[] = [],
+    remove_labels: string[] = [],
+    abort?: () => boolean
+  ): Promise<boolean> {
+    let add_label_ids = this.getLabelsIds(add_labels)
+    let remove_label_ids = this.getLabelsIds(remove_labels)
+    let thread = this.getThread(thread_id, true)
 
-		let ret: string[] = []
-		for (let name of labels) {
-			let label = this.labels.find(
-				label => label.name.toLowerCase() === name.toLowerCase())
-			if (label)
-				ret.push(label.id)
-		}
-		return ret
-	}
+    let label = thread
+      ? `"${this.getTitleFromThread(thread)}"`
+      : `ID: ${thread_id}`
 
-	async modifyLabels(thread_id: string, add_labels: string[] = [], remove_labels: string[] = [],
-			abort?: () => boolean): Promise<boolean> {
-		let add_label_ids = this.getLabelsIds(add_labels)
-		let remove_label_ids = this.getLabelsIds(remove_labels)
-		let thread = this.getThread(thread_id, true)
+    let log_msg = `Modifing labels for thread ${label} `
+    if (add_labels.length) log_msg += `+(${add_labels.join(' ')}) `
 
-		let label = thread ? `"${this.getTitleFromThread(thread)}"` : `ID: ${thread_id}`
+    if (remove_labels.length) log_msg += `-(${remove_labels.join(' ')})`
 
-		let log_msg = `Modifing labels for thread ${label} `
-		if (add_labels.length) 
-			log_msg += `+(${add_labels.join(' ')}) `
+    console.log(log_msg)
 
-		if (remove_labels.length)
-			log_msg += `-(${remove_labels.join(' ')})`
+    let ret = await this.req(
+      this.api.users.threads.modify,
+      {
+        id: thread_id,
+        userId: 'me',
+        fields: 'id',
+        resource: {
+          addLabelIds: add_label_ids,
+          removeLabelIds: remove_label_ids
+        }
+      },
+      abort,
+      false
+    )
+    return Boolean(ret)
+  }
 
-		console.log(log_msg)
+  // TODO
+  //    # sync the DB
+  //    thread = @threads?.threads?.find (thread) ->
+  //      thread.id is thread_id
+  //    return if not thread
+  //
+  //    for msg in thread.messages
+  //      msg.labelIds = msg.labelIds.without.apply msg.labelIds, remove_label_ids
+  //      msg.labelIds.push add_label_ids
 
-		let ret = await this.req(this.api.users.threads.modify, {
-			id: thread_id,
-			userId: 'me',
-			fields: 'id',
-			resource: {
-				addLabelIds: add_label_ids,
-				removeLabelIds: remove_label_ids
-			}
-		}, abort, false)
-		return Boolean(ret)
-	}
+  async getHistoryId(abort?: () => boolean): Promise<number | null> {
+    if (!this.history_id) {
+      this.states.add('FetchingHistoryId', abort)
+      await this.states.when('HistoryIdFetched')
+    }
 
-		// TODO
-//    # sync the DB
-//    thread = @threads?.threads?.find (thread) ->
-//      thread.id is thread_id
-//    return if not thread
-//
-//    for msg in thread.messages
-//      msg.labelIds = msg.labelIds.without.apply msg.labelIds, remove_label_ids
-//      msg.labelIds.push add_label_ids
+    return this.history_id
+  }
 
-	async getHistoryId(abort?: () => boolean): Promise<number | null> {
-		if (!this.history_id) {
-			this.states.add('FetchingHistoryId', abort)
-			await this.states.when('HistoryIdFetched')
-		}
-
-		return this.history_id;
-	};
-
-	// TODO check raw_email
-	/**
+  // TODO check raw_email
+  /**
 	 * @returns Thread ID or null
 	 */
-	async createThread(raw_email: string, labels: string[], abort?: () => boolean):
-			Promise<string | null> {
-		console.log(`Creating thread (${labels.join(' ')})`);
-		let message = await this.req(this.api.users.messages.insert, {
-			userId: 'me',
-			resource: {
-				raw: raw_email,
-				labelIds: this.getLabelsIds(labels)
-			}}, abort, false)
-		// TODO labels?
-		this.states.add('Dirty', labels);
-		if (!message || abort && abort())
-			return null
-		return message.threadId
-	}
+  async createThread(
+    raw_email: string,
+    labels: string[],
+    abort?: () => boolean
+  ): Promise<string | null> {
+    console.log(`Creating thread (${labels.join(' ')})`)
+    let message = await this.req(
+      this.api.users.messages.insert,
+      {
+        userId: 'me',
+        resource: {
+          raw: raw_email,
+          labelIds: this.getLabelsIds(labels)
+        }
+      },
+      abort,
+      false
+    )
+    // TODO labels?
+    this.states.add('Dirty', labels)
+    if (!message || (abort && abort())) return null
+    return message.threadId
+  }
 
-	createEmail(subject: string): TRawEmail {
-		let email = [`From: ${this.sync.config.gmail_username} <${this.sync.config.gmail_username}>s`,
-			`To: ${this.sync.config.gmail_username}`,
-			"Content-type: text/html;charset=utf-8",
-			"MIME-Version: 1.0",
-			`Subject: ${subject}`].join("\r\n");
+  createEmail(subject: string): TRawEmail {
+    let email = [
+      `From: ${this.sync.config.gmail_username} <${this.sync.config
+        .gmail_username}>s`,
+      `To: ${this.sync.config.gmail_username}`,
+      'Content-type: text/html;charset=utf-8',
+      'MIME-Version: 1.0',
+      `Subject: ${subject}`
+    ].join('\r\n')
 
-		return new Buffer(email)
-			.toString('base64')
-			.replace(/\+/g, '-')
-			.replace(/\//g, '_') as TRawEmail;
-	}
+    return new Buffer(email)
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_') as TRawEmail
+  }
 
-	// TODO static or move to the thread class
-	getTitleFromThread(thread: google.gmail.v1.Thread) {
-		try { return thread.messages[0].payload.headers[0].value }
-		catch (e) {
-			throw new Error('Thread content not fetched')
-		}
-	}
+  // TODO static or move to the thread class
+  getTitleFromThread(thread: google.gmail.v1.Thread) {
+    try {
+      return thread.messages[0].payload.headers[0].value
+    } catch (e) {
+      throw new Error('Thread content not fetched')
+    }
+  }
 
-	// TODO static or move to the thread class
-	// threadHasLabels(thread: google.gmail.v1.Thread, labels: strings[]) {}
-		// if not @gmail.is 'LabelsFetched'
-		// 	throw new Error
-		// for msg in thread.messages
-		// 	for label_id in msg.labelIds
+  // TODO static or move to the thread class
+  // threadHasLabels(thread: google.gmail.v1.Thread, labels: strings[]) {}
+  // if not @gmail.is 'LabelsFetched'
+  // 	throw new Error
+  // for msg in thread.messages
+  // 	for label_id in msg.labelIds
 
-	async req<A,T,T2>(method: (arg: A, cb: (err: any, res: T, res2: T2) => void) => void, params: A, abort: (() => boolean) | null | undefined, returnArray: true): Promise<[T,T2] | null>;
-	async req<A,T>(method: (arg: A, cb: (err: any, res: T) => void) => void, params: A, abort: (() => boolean) | null | undefined, returnArray: false): Promise<T | null>;
-	async req<A,T>(method: (arg: A, cb: (err: any, res: T) => void) => void, params: A, abort: (() => boolean) | null | undefined, returnArray: boolean): Promise<any> {
-		return returnArray
-			? this.sync.req(method, params, abort, true)
-			: this.sync.req(method, params, abort, false)
-	}
+  async req<A, T, T2>(
+    method: (arg: A, cb: (err: any, res: T, res2: T2) => void) => void,
+    params: A,
+    abort: (() => boolean) | null | undefined,
+    returnArray: true
+  ): Promise<[T, T2] | null>
+  async req<A, T>(
+    method: (arg: A, cb: (err: any, res: T) => void) => void,
+    params: A,
+    abort: (() => boolean) | null | undefined,
+    returnArray: false
+  ): Promise<T | null>
+  async req<A, T>(
+    method: (arg: A, cb: (err: any, res: T) => void) => void,
+    params: A,
+    abort: (() => boolean) | null | undefined,
+    returnArray: boolean
+  ): Promise<any> {
+    return returnArray
+      ? this.sync.req(method, params, abort, true)
+      : this.sync.req(method, params, abort, false)
+  }
 }
