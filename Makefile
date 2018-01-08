@@ -12,6 +12,9 @@ build:
 build-watch:
 	node_modules/.bin/tsc --watch
 
+start:
+	node src/app.js
+
 format:
 	prettier --single-quote --no-semi --write src/**/*.ts
 

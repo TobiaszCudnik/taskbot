@@ -105,6 +105,7 @@ export default class Sync extends EventEmitter {
 
   set history_id(history_id: number) {
     this.historyId = Math.max(this.history_id, history_id)
+    this.addListener()
   }
 
   constructor(config: IConfig) {

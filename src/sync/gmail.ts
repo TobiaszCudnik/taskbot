@@ -1,3 +1,4 @@
+///<reference path="../../node_modules/typed-promisify/index.ts"/>
 import AsyncMachine from 'asyncmachine'
 import { IState, IBind, IEmit, TStates } from './gmail-types'
 import GmailQuery from './gmail-query'

@@ -118,7 +118,7 @@ export default class TaskListSync extends EventEmitter {
     let abort = this.states.getAbort('SyncingThreadsToTasks')
     await Promise.all(
       this.query.threads.map(async thread => {
-        let task = this.getTaskForThread(thread.id)
+        let task = this.getTaskForThreadId(thread.id)
         if (task) {
           let task_completed = this.taskWasCompleted(task.id)
           let thread_not_completed = this.query.threadWasNotCompleted(thread.id)
@@ -220,7 +220,7 @@ export default class TaskListSync extends EventEmitter {
         if (!row.completed) {
           return
         }
-        let task = this.getTaskForThread(thread_id)
+        let task = this.getTaskForThreadId(thread_id)
         if (!task) {
           return
         }
@@ -689,7 +689,7 @@ export default class TaskListSync extends EventEmitter {
     return this.getAllTasks().find(task => task.id === task_id)
   }
 
-  getTaskForThread(thread_id: string) {
+  getTaskForThreadId(thread_id: string) {
     return this.getAllTasks().find(task =>
       Boolean(task.notes && task.notes.match(`email:${thread_id}`))
     )
