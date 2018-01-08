@@ -7,7 +7,6 @@
     "files": [
       "node.d.ts"
     ],
-    "name": "node",
-    "type": "typings"
+    "name": "node"
   }
 }

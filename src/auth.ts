@@ -57,10 +57,10 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
 	}
 
 	CredentialsSet_state() {
-		return this.client.setCredentials({
+		this.client.credentials = {
 			access_token: this.settings.access_token,
 			refresh_token: this.settings.refresh_token
-		});
+		}
 	}
 
 	RefreshingToken_state() {

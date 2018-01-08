@@ -10,8 +10,7 @@ import Gmail from './gmail'
 // import { ApiError } from '../exceptions'
 import { Semaphore } from 'await-semaphore'
 import { IConfig, IListConfig } from '../types'
-import Logger from 'asyncmachine-inspector/src/logger'
-import Network from 'asyncmachine-inspector/src/network'
+import { Logger, Network } from 'ami-logger'
 
 export class States extends AsyncMachine<TStates, IBind, IEmit> {
   Enabled: IState = {
@@ -114,12 +113,17 @@ export default class Sync extends EventEmitter {
     this.states = new States(this)
     if (process.env['DEBUG']) {
       this.states.id('Sync').logLevel(process.env['DEBUG'])
+      // TODO make it less global
       global.am_network = new Network()
       global.am_network.addMachine(this.states)
-      global.am_logger_client = new Logger(
-        global.am_network,
-        'http://localhost:3030/logger'
-      )
+      global.am_logger = new Logger(global.am_network)
+      process.on('uncaughtException', function (err) {
+        global.am_logger.saveFile('snapshot-exception.json')
+      })
+      process.on('SIGINT', function (err) {
+        global.am_logger.saveFile('snapshot.json')
+        process.exit()
+      })
     }
     this.semaphore = new Semaphore(this.max_active_requests)
     // this.task_lists = [];

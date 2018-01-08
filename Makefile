@@ -15,6 +15,9 @@ build-watch:
 start:
 	node src/app.js
 
+debug:
+	DEBUG=3 node src/app.js
+
 format:
 	prettier --single-quote --no-semi --write src/**/*.ts
 
