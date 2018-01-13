@@ -5,100 +5,214 @@ import { IState as IStateBase } from 'asyncmachine/src/types'
  */
 export interface IBind {
   // Enabled
-  (event: 'Enabled_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'Enabled_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'Enabled_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'Enabled_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // Syncing
-  (event: 'Syncing_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'Syncing_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'Syncing_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'Syncing_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // Synced
-  (event: 'Synced_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'Synced_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'Synced_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'Synced_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // Restart
-  (event: 'Restart_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'Restart_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'Restart_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'Restart_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // PreparingList
-  (event: 'PreparingList_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'PreparingList_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'PreparingList_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'PreparingList_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // ListReady
-  (event: 'ListReady_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'ListReady_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'ListReady_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'ListReady_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // FetchingTasks
-  (event: 'FetchingTasks_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'FetchingTasks_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'FetchingTasks_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'FetchingTasks_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // TasksFetched
-  (event: 'TasksFetched_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'TasksFetched_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'TasksFetched_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'TasksFetched_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // TasksCached
-  (event: 'TasksCached_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'TasksCached_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'TasksCached_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'TasksCached_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // SyncingThreadsToTasks
-  (event: 'SyncingThreadsToTasks_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'SyncingThreadsToTasks_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'SyncingThreadsToTasks_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'SyncingThreadsToTasks_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // ThreadsToTasksSynced
-  (event: 'ThreadsToTasksSynced_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'ThreadsToTasksSynced_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'ThreadsToTasksSynced_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'ThreadsToTasksSynced_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // SyncingTasksToThreads
-  (event: 'SyncingTasksToThreads_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'SyncingTasksToThreads_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'SyncingTasksToThreads_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'SyncingTasksToThreads_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // TasksToThreadsSynced
-  (event: 'TasksToThreadsSynced_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'TasksToThreadsSynced_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'TasksToThreadsSynced_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'TasksToThreadsSynced_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // SyncingCompletedThreads
-  (event: 'SyncingCompletedThreads_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'SyncingCompletedThreads_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'SyncingCompletedThreads_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'SyncingCompletedThreads_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // CompletedThreadsSynced
-  (event: 'CompletedThreadsSynced_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'CompletedThreadsSynced_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'CompletedThreadsSynced_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'CompletedThreadsSynced_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // SyncingCompletedTasks
-  (event: 'SyncingCompletedTasks_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'SyncingCompletedTasks_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'SyncingCompletedTasks_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'SyncingCompletedTasks_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // CompletedTasksSynced
-  (event: 'CompletedTasksSynced_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'CompletedTasksSynced_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'CompletedTasksSynced_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'CompletedTasksSynced_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // ThreadsFetched
-  (event: 'ThreadsFetched_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'ThreadsFetched_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'ThreadsFetched_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'ThreadsFetched_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // MsgsFetched
-  (event: 'MsgsFetched_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'MsgsFetched_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'MsgsFetched_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'MsgsFetched_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
 }
 
 /**
@@ -1182,81 +1296,151 @@ export interface IStateExt<T extends string> extends IStateBase<T | TStates> {}
 
 export interface IBind {
   // Non-params events
-  (event: 'Enabled_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'Enabled_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'Enabled_end', listener: () => any, context?: Object): this
-  (event: 'Syncing_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'Syncing_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'Syncing_end', listener: () => any, context?: Object): this
-  (event: 'Synced_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'Synced_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'Synced_end', listener: () => any, context?: Object): this
-  (event: 'Restart_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'Restart_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'Restart_end', listener: () => any, context?: Object): this
-  (event: 'PreparingList_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'PreparingList_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'PreparingList_end', listener: () => any, context?: Object): this
-  (event: 'ListReady_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'ListReady_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'ListReady_end', listener: () => any, context?: Object): this
-  (event: 'FetchingTasks_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'FetchingTasks_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'FetchingTasks_end', listener: () => any, context?: Object): this
-  (event: 'TasksFetched_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'TasksFetched_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'TasksFetched_end', listener: () => any, context?: Object): this
-  (event: 'TasksCached_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'TasksCached_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'TasksCached_end', listener: () => any, context?: Object): this
-  (event: 'SyncingThreadsToTasks_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
-  (event: 'SyncingThreadsToTasks_end', listener: () => any, context?: Object): this
-  (event: 'ThreadsToTasksSynced_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
-  (event: 'ThreadsToTasksSynced_end', listener: () => any, context?: Object): this
-  (event: 'SyncingTasksToThreads_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
-  (event: 'SyncingTasksToThreads_end', listener: () => any, context?: Object): this
-  (event: 'TasksToThreadsSynced_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
-  (event: 'TasksToThreadsSynced_end', listener: () => any, context?: Object): this
-  (event: 'SyncingCompletedThreads_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
-  (event: 'SyncingCompletedThreads_end', listener: () => any, context?: Object): this
-  (event: 'CompletedThreadsSynced_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
-  (event: 'CompletedThreadsSynced_end', listener: () => any, context?: Object): this
-  (event: 'SyncingCompletedTasks_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
-  (event: 'SyncingCompletedTasks_end', listener: () => any, context?: Object): this
-  (event: 'CompletedTasksSynced_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
-  (event: 'CompletedTasksSynced_end', listener: () => any, context?: Object): this
-  (event: 'ThreadsFetched_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'SyncingThreadsToTasks_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
+  (
+    event: 'SyncingThreadsToTasks_end',
+    listener: () => any,
+    context?: Object
+  ): this
+  (
+    event: 'ThreadsToTasksSynced_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
+  (
+    event: 'ThreadsToTasksSynced_end',
+    listener: () => any,
+    context?: Object
+  ): this
+  (
+    event: 'SyncingTasksToThreads_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
+  (
+    event: 'SyncingTasksToThreads_end',
+    listener: () => any,
+    context?: Object
+  ): this
+  (
+    event: 'TasksToThreadsSynced_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
+  (
+    event: 'TasksToThreadsSynced_end',
+    listener: () => any,
+    context?: Object
+  ): this
+  (
+    event: 'SyncingCompletedThreads_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
+  (
+    event: 'SyncingCompletedThreads_end',
+    listener: () => any,
+    context?: Object
+  ): this
+  (
+    event: 'CompletedThreadsSynced_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
+  (
+    event: 'CompletedThreadsSynced_end',
+    listener: () => any,
+    context?: Object
+  ): this
+  (
+    event: 'SyncingCompletedTasks_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
+  (
+    event: 'SyncingCompletedTasks_end',
+    listener: () => any,
+    context?: Object
+  ): this
+  (
+    event: 'CompletedTasksSynced_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
+  (
+    event: 'CompletedTasksSynced_end',
+    listener: () => any,
+    context?: Object
+  ): this
+  (
+    event: 'ThreadsFetched_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'ThreadsFetched_end', listener: () => any, context?: Object): this
-  (event: 'MsgsFetched_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'MsgsFetched_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'MsgsFetched_end', listener: () => any, context?: Object): this
 
   // Transitions

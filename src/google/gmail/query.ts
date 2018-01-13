@@ -1,7 +1,7 @@
 import AsyncMachine from 'asyncmachine'
-import { IState, IBind, IEmit, TStates } from './gmail-query-types'
+import { IState, IBind, IEmit, TStates } from './query-types'
 import * as moment from 'moment'
-import Gmail from './gmail'
+import Gmail from './sync'
 import { Semaphore } from 'await-semaphore'
 import * as google from 'googleapis'
 import { map } from 'typed-promisify'
@@ -40,7 +40,7 @@ export class States extends AsyncMachine<TStates, IBind, IEmit> {
 }
 
 export type TThreadCompletion = {
-  completed: boolean,
+  completed: boolean
   time: moment.Moment
 }
 
@@ -77,7 +77,7 @@ export default class GmailQuery {
     params: A,
     abort: (() => boolean) | null | undefined,
     returnArray: true
-  ): Promise<{ 0: T, 1: T2 } | null>
+  ): Promise<{ 0: T; 1: T2 } | null>
   async req<A, T>(
     method: (arg: A, cb: (err: any, res: T) => void) => void,
     params: A,
@@ -132,7 +132,6 @@ export default class GmailQuery {
         abort,
         false
       )
-      // TODO WTF
       if (!list) break
       if (abort()) return
 

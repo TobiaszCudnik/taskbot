@@ -5,35 +5,71 @@ import { IState as IStateBase } from 'asyncmachine/src/types'
  */
 export interface IBind {
   // Enabled
-  (event: 'Enabled_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'Enabled_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'Enabled_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'Enabled_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // Dirty
-  (event: 'Dirty_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'Dirty_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'Dirty_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'Dirty_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // FetchingThreads
-  (event: 'FetchingThreads_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'FetchingThreads_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'FetchingThreads_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'FetchingThreads_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // ThreadsFetched
-  (event: 'ThreadsFetched_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'ThreadsFetched_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'ThreadsFetched_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'ThreadsFetched_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // FetchingMsgs
-  (event: 'FetchingMsgs_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'FetchingMsgs_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'FetchingMsgs_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'FetchingMsgs_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // MsgsFetched
-  (event: 'MsgsFetched_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'MsgsFetched_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'MsgsFetched_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'MsgsFetched_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
 }
 
 /**
@@ -246,29 +282,41 @@ export interface IStateExt<T extends string> extends IStateBase<T | TStates> {}
 
 export interface IBind {
   // Non-params events
-  (event: 'Enabled_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'Enabled_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'Enabled_end', listener: () => any, context?: Object): this
-  (event: 'Dirty_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'Dirty_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'Dirty_end', listener: () => any, context?: Object): this
-  (event: 'FetchingThreads_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'FetchingThreads_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'FetchingThreads_end', listener: () => any, context?: Object): this
-  (event: 'ThreadsFetched_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'ThreadsFetched_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'ThreadsFetched_end', listener: () => any, context?: Object): this
-  (event: 'FetchingMsgs_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'FetchingMsgs_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'FetchingMsgs_end', listener: () => any, context?: Object): this
-  (event: 'MsgsFetched_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'MsgsFetched_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'MsgsFetched_end', listener: () => any, context?: Object): this
 
   // Transitions

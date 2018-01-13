@@ -20,6 +20,7 @@ debug:
 
 format:
 	prettier --single-quote --no-semi --write src/**/*.ts
+	prettier --single-quote --no-semi --write src/**/**/*.ts
 
 state-types:
 	node $(STATES_TYPES_BIN) src/sync/task-list-sync-states.js -s

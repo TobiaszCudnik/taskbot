@@ -1,4 +1,4 @@
-import AsyncMachine from 'asyncmachine'
+import AsyncMachine from '../../../../asyncmachine/build/asyncmachine'
 import TaskListSync from './task-list-sync'
 import { IState, IBind, IEmit, TStates } from './task-list-sync-states-types'
 

@@ -5,50 +5,104 @@ import { IState as IStateBase } from 'asyncmachine/src/types'
  */
 export interface IBind {
   // Enabled
-  (event: 'Enabled_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'Enabled_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'Enabled_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'Enabled_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // SyncingEnabled
-  (event: 'SyncingEnabled_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'SyncingEnabled_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'SyncingEnabled_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'SyncingEnabled_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // Dirty
-  (event: 'Dirty_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'Dirty_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'Dirty_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'Dirty_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // SyncingQueryLabels
-  (event: 'SyncingQueryLabels_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'SyncingQueryLabels_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'SyncingQueryLabels_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'SyncingQueryLabels_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // QueryLabelsSynced
-  (event: 'QueryLabelsSynced_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'QueryLabelsSynced_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'QueryLabelsSynced_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'QueryLabelsSynced_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // FetchingLabels
-  (event: 'FetchingLabels_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'FetchingLabels_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'FetchingLabels_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'FetchingLabels_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // LabelsFetched
-  (event: 'LabelsFetched_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'LabelsFetched_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'LabelsFetched_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'LabelsFetched_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // FetchingHistoryId
-  (event: 'FetchingHistoryId_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'FetchingHistoryId_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'FetchingHistoryId_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'FetchingHistoryId_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // HistoryIdFetched
-  (event: 'HistoryIdFetched_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'HistoryIdFetched_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'HistoryIdFetched_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'HistoryIdFetched_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
 }
 
 /**
@@ -402,41 +456,59 @@ export interface IStateExt<T extends string> extends IStateBase<T | TStates> {}
 
 export interface IBind {
   // Non-params events
-  (event: 'Enabled_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'Enabled_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'Enabled_end', listener: () => any, context?: Object): this
-  (event: 'SyncingEnabled_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'SyncingEnabled_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'SyncingEnabled_end', listener: () => any, context?: Object): this
-  (event: 'Dirty_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'Dirty_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'Dirty_end', listener: () => any, context?: Object): this
-  (event: 'SyncingQueryLabels_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'SyncingQueryLabels_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'SyncingQueryLabels_end', listener: () => any, context?: Object): this
-  (event: 'QueryLabelsSynced_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'QueryLabelsSynced_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'QueryLabelsSynced_end', listener: () => any, context?: Object): this
-  (event: 'FetchingLabels_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'FetchingLabels_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'FetchingLabels_end', listener: () => any, context?: Object): this
-  (event: 'LabelsFetched_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'LabelsFetched_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'LabelsFetched_end', listener: () => any, context?: Object): this
-  (event: 'FetchingHistoryId_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'FetchingHistoryId_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'FetchingHistoryId_end', listener: () => any, context?: Object): this
-  (event: 'HistoryIdFetched_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'HistoryIdFetched_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'HistoryIdFetched_end', listener: () => any, context?: Object): this
 
   // Transitions

@@ -8,22 +8,22 @@ import { EventEmitter } from 'events'
 import Gmail from './gmail'
 import Sync from './sync'
 import GmailQuery, { TThreadCompletion } from './gmail-query'
-import { IListConfig } from '../types'
+import { IListConfig } from '../../types'
 import * as google from 'googleapis'
 import * as _ from 'underscore'
 import { map } from 'typed-promisify'
 
 // TODO check if needed
 export interface ITasks {
-  'etag': string
-  'items': google.tasks.v1.Task[]
-  'kind': string
-  'nextPageToken': string
+  etag: string
+  items: google.tasks.v1.Task[]
+  kind: string
+  nextPageToken: string
 }
 
 type TTaskCompletion = {
-  completed: boolean,
-  time: moment.Moment,
+  completed: boolean
+  time: moment.Moment
   thread_id: string | null
 }
 
@@ -51,7 +51,7 @@ export default class TaskListSync extends EventEmitter {
   sync: Sync
   query: GmailQuery
   etags: {
-    tasks: string | null,
+    tasks: string | null
     tasks_completed: string | null
   } = {
     tasks: null,
@@ -151,12 +151,10 @@ export default class TaskListSync extends EventEmitter {
             task.deleted = true
             let promises = [
               list_sync.deleteTask(task.id),
-              this.createTask(
-                ({
-                  title: task.title,
-                  notes: task.notes
-                }) as google.tasks.v1.Task
-              )
+              this.createTask({
+                title: task.title,
+                notes: task.notes
+              } as google.tasks.v1.Task)
             ]
             await Promise.all<any>(promises)
           } else {
@@ -337,7 +335,7 @@ export default class TaskListSync extends EventEmitter {
         time: moment(),
         thread_id:
           this.completions_tasks.get(id) &&
-            this.completions_tasks.get(id).thread_id
+          this.completions_tasks.get(id).thread_id
       })
     }
   }
@@ -400,7 +398,9 @@ export default class TaskListSync extends EventEmitter {
     } else {
       console.log(`[FETCHED] completed tasks for '${this.name}'`)
       this.etags.tasks_completed = res.headers['etag'] as string
-      if (!list.items) list.items = []
+      if (!list.items) {
+        list.items = []
+      }
       list.items = list.items.filter(item => item.status === 'completed')
       list.items.forEach(task => {
         this.completions_tasks[task.id] = {
@@ -618,7 +618,7 @@ export default class TaskListSync extends EventEmitter {
         null,
         false
       )
-      // TODO assign the new task? that would update the etag
+      // TODO assign a new task? that would update the etag
       task.title = title
       this.push_dirty = true
     }
@@ -724,7 +724,7 @@ export default class TaskListSync extends EventEmitter {
   }
 
   // TODO move to the gmail class
-  getLabelsFromTitle(title: string): { 0: string, 1: string[] } {
+  getLabelsFromTitle(title: string): { 0: string; 1: string[] } {
     let labels: string[] = []
     for (let r of this.sync.config.auto_labels) {
       let { symbol, label, prefix } = r

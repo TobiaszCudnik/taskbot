@@ -5,75 +5,159 @@ import { IState as IStateBase } from 'asyncmachine/src/types'
  */
 export interface IBind {
   // Enabled
-  (event: 'Enabled_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'Enabled_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'Enabled_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'Enabled_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // Authenticating
-  (event: 'Authenticating_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'Authenticating_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'Authenticating_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'Authenticating_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // Authenticated
-  (event: 'Authenticated_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'Authenticated_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'Authenticated_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'Authenticated_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // Syncing
-  (event: 'Syncing_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'Syncing_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'Syncing_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'Syncing_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // Synced
-  (event: 'Synced_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'Synced_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'Synced_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'Synced_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // TaskListSyncEnabled
-  (event: 'TaskListSyncEnabled_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'TaskListSyncEnabled_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'TaskListSyncEnabled_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'TaskListSyncEnabled_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // GmailEnabled
-  (event: 'GmailEnabled_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'GmailEnabled_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'GmailEnabled_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'GmailEnabled_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // GmailSyncEnabled
-  (event: 'GmailSyncEnabled_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'GmailSyncEnabled_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'GmailSyncEnabled_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'GmailSyncEnabled_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // FetchingTaskLists
-  (event: 'FetchingTaskLists_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'FetchingTaskLists_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'FetchingTaskLists_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'FetchingTaskLists_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // TaskListsFetched
-  (event: 'TaskListsFetched_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'TaskListsFetched_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'TaskListsFetched_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'TaskListsFetched_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // QueryLabelsSynced
-  (event: 'QueryLabelsSynced_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'QueryLabelsSynced_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'QueryLabelsSynced_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'QueryLabelsSynced_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // SyncingTaskLists
-  (event: 'SyncingTaskLists_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'SyncingTaskLists_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'SyncingTaskLists_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'SyncingTaskLists_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // TaskListsSynced
-  (event: 'TaskListsSynced_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'TaskListsSynced_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'TaskListsSynced_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'TaskListsSynced_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
   // Dirty
-  (event: 'Dirty_enter', listener: () =>
-    | boolean
-    | undefined /* param1, param2 */, context?: Object): this
-  (event: 'Dirty_state', listener: () => any /* param1, param2 */, context?: Object): this
+  (
+    event: 'Dirty_enter',
+    listener: () => boolean | undefined /* param1, param2 */,
+    context?: Object
+  ): this
+  (
+    event: 'Dirty_state',
+    listener: () => any /* param1, param2 */,
+    context?: Object
+  ): this
 }
 
 /**
@@ -742,61 +826,93 @@ export interface IStateExt<T extends string> extends IStateBase<T | TStates> {}
 
 export interface IBind {
   // Non-params events
-  (event: 'Enabled_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'Enabled_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'Enabled_end', listener: () => any, context?: Object): this
-  (event: 'Authenticating_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'Authenticating_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'Authenticating_end', listener: () => any, context?: Object): this
-  (event: 'Authenticated_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'Authenticated_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'Authenticated_end', listener: () => any, context?: Object): this
-  (event: 'Syncing_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'Syncing_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'Syncing_end', listener: () => any, context?: Object): this
-  (event: 'Synced_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'Synced_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'Synced_end', listener: () => any, context?: Object): this
-  (event: 'TaskListSyncEnabled_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
-  (event: 'TaskListSyncEnabled_end', listener: () => any, context?: Object): this
-  (event: 'GmailEnabled_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'TaskListSyncEnabled_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
+  (
+    event: 'TaskListSyncEnabled_end',
+    listener: () => any,
+    context?: Object
+  ): this
+  (
+    event: 'GmailEnabled_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'GmailEnabled_end', listener: () => any, context?: Object): this
-  (event: 'GmailSyncEnabled_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'GmailSyncEnabled_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'GmailSyncEnabled_end', listener: () => any, context?: Object): this
-  (event: 'FetchingTaskLists_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'FetchingTaskLists_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'FetchingTaskLists_end', listener: () => any, context?: Object): this
-  (event: 'TaskListsFetched_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'TaskListsFetched_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'TaskListsFetched_end', listener: () => any, context?: Object): this
-  (event: 'QueryLabelsSynced_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'QueryLabelsSynced_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'QueryLabelsSynced_end', listener: () => any, context?: Object): this
-  (event: 'SyncingTaskLists_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'SyncingTaskLists_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'SyncingTaskLists_end', listener: () => any, context?: Object): this
-  (event: 'TaskListsSynced_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'TaskListsSynced_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'TaskListsSynced_end', listener: () => any, context?: Object): this
-  (event: 'Dirty_exit', listener: () =>
-    | boolean
-    | undefined, context?: Object): this
+  (
+    event: 'Dirty_exit',
+    listener: () => boolean | undefined,
+    context?: Object
+  ): this
   (event: 'Dirty_end', listener: () => any, context?: Object): this
 
   // Transitions

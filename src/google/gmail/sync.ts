@@ -1,13 +1,14 @@
-///<reference path="../../node_modules/typed-promisify/index.ts"/>
-import AsyncMachine from 'asyncmachine'
+///<reference path="../../../node_modules/typed-promisify/index.ts"/>
+import AsyncMachine from '../../../../asyncmachine/build/asyncmachine'
 import { IState, IBind, IEmit, TStates } from './gmail-types'
 import GmailQuery from './gmail-query'
-import Sync from './sync'
+import Sync from '../../manager/sync'
 import { Semaphore } from 'await-semaphore'
 import * as _ from 'underscore'
 import * as google from 'googleapis'
-import { IConfig, TRawEmail } from '../types'
+import { IConfig, TRawEmail } from '../../types'
 import { map } from 'typed-promisify'
+import TaskListSync from '../tasks/task-list-sync'
 
 export class States extends AsyncMachine<TStates, IBind, IEmit> {
   Enabled: IState = {}
@@ -76,10 +77,10 @@ export default class Gmail {
       this.states.id('Gmail').logLevel(process.env['DEBUG'])
       global.am_network.addMachine(this.states)
     }
-    this.api = this.sync.gmail_api
+    this.api = google.gmail('v1', { auth: this.auth.client })
     this.config = this.sync.config
     this.initQueryLabels()
-    this.states.pipe('QueryLabelsSynced', this.sync.states)
+    this.states.pipe('QueryLabelsSynced', this.sync.state)
   }
 
   // ----- -----
@@ -175,6 +176,20 @@ export default class Gmail {
   // Methods
   // ----- -----
 
+  // TODO return a more sensible format
+  findTaskForThread(
+    thread_id: string
+  ): { 0: google.tasks.v1.Task; 1: TaskListSync } | { 0: null; 1: null } {
+    for (let list_sync of this.task_lists_sync) {
+      let found = list_sync.getTaskForThread(thread_id)
+      if (found) {
+        return [found, list_sync]
+      }
+    }
+
+    return [null, null]
+  }
+
   async fetchThread(
     id: string,
     historyId: number | null,
@@ -256,7 +271,10 @@ export default class Gmail {
   }
 
   normalizeLabelName(label: string) {
-    return label.replace('/', '-').replace(' ', '-').toLowerCase()
+    return label
+      .replace('/', '-')
+      .replace(' ', '-')
+      .toLowerCase()
   }
 
   isHistoryIdValid() {
