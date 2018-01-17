@@ -1,8 +1,7 @@
-import AsyncMachine from '../../../../asyncmachine/build/asyncmachine'
-import TaskListSync from './task-list-sync'
-import { IState, IBind, IEmit, TStates } from './task-list-sync-states-types'
+import { IState, IBind, IEmit, TStates } from './sync-list-states-types'
+import Sync, { SyncState } from '../../sync/sync'
 
-export default class States extends AsyncMachine<TStates, IBind, IEmit> {
+export default class State extends SyncState<TStates, IBind, IEmit> {
   Enabled: IState = {}
 
   Syncing: IState = {
@@ -101,8 +100,7 @@ export default class States extends AsyncMachine<TStates, IBind, IEmit> {
 
   MsgsFetched: IState = {}
 
-  constructor(target: TaskListSync) {
-    // TODO constructor should accept any object
+  constructor(target) {
     super(target)
     this.registerAll()
   }

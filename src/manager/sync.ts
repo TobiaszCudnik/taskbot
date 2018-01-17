@@ -1,49 +1,16 @@
-import Auth from '../google/auth'
-import TaskListSync from '../google/tasks/task-list-sync'
-import { EventEmitter } from 'events'
-
-import AsyncMachine, {
-  PipeFlags
-} from '../../../asyncmachine/build/asyncmachine'
+import GoogleSync from '../google/sync'
 import { IState, IBind, IEmit, TStates } from './sync-types'
-import { promisify, promisifyArray } from 'typed-promisify'
-import * as google from 'googleapis'
-import Gmail from '../google/gmail/gmail'
-// import { ApiError } from '../exceptions'
 import { Semaphore } from 'await-semaphore'
 import { IConfig, IListConfig } from '../types'
-import { Logger, Network } from 'ami-logger'
+import Sync, { SyncState } from '../sync/sync'
+// import * as assert from 'assert/'
+import { DataStore, List } from './datastore'
 
-export class State extends AsyncMachine<TStates, IBind, IEmit> {
-  Enabled: IState = {
-    auto: true
-  }
+export class State extends SyncState {
 
-  Writing = {
-    drop: ['WritingDone', 'Reading', 'ReadingDone'],
-    require: ['Enabled'],
-    add: ['Syncing']
-  }
-  WritingDone = {
-    drop: ['Writing', 'Reading', 'ReadingDone'],
-    require: ['Enabled'],
-    add: ['Synced']
-  }
-
-  Reading = {
-    drop: ['ReadingDone', 'Writing', 'WritingDone'],
-    require: ['Enabled'],
-    add: ['Syncing']
-  }
-  ReadingDone = {
-    drop: ['Reading', 'Writing', 'WritingDone'],
-    require: ['Enabled']
-  }
-
-  Syncing: { drop: ['Synced'] }
-  Synced: { drop: ['Syncing'] }
-
-  Dirty: IState = {}
+  SubsInited: IState = { require: ['ConfigSet'], auto: true }
+  SubsReady: IState = { require: ['SubsInited'], auto: true }
+  Ready: IState = { require: ['ConfigSet', 'SubsReady'] }
 
   constructor(target: Sync) {
     super(target)
@@ -51,11 +18,13 @@ export class State extends AsyncMachine<TStates, IBind, IEmit> {
   }
 }
 
-export default class Sync extends EventEmitter {
+export default class SyncManager extends Sync {
   max_active_requests = 5
   semaphore: Semaphore = new Semaphore(this.max_active_requests)
-  state: State = new State(this)
-  apis: Array
+  state: State
+  // TODO use map
+  subs: { [index: string]: Sync }
+  datastore = new DataStore<List>()
   active_requests: number
   executed_requests: number
   // historyId: number
@@ -70,43 +39,59 @@ export default class Sync extends EventEmitter {
   //   this.addListener()
   // }
 
-  constructor(public config: IConfig) {
+  constructor(config: IConfig) {
     super()
-    if (process.env['DEBUG']) {
-      this.initDebugging()
-    }
+    this.state.add('ConfigSet', config)
     this.active_requests = 0
+    this.initLists()
     // this.setMaxListeners(0)
   }
 
-  initSyncs() {
-    this.apis.gmail = new Gmail()
+  initLists() {
+    // assert(this.config, this.datastore)
+    for (const [name, config] of Object.entries(this.config.lists)) {
+      this.datastore.set(
+        name,
+        new List(name, config, this.config.list_defaults)
+      )
+    }
+  }
+
+  getState() {
+    const state = new State(this)
+    state.id('Manager')
+    return state
   }
 
   // ----- -----
   // Transitions
   // ----- -----
 
-  WritingDone_enter() {
-    return this.apis.every(api => api.state.is('WritingDone'))
+  SubsInited_state() {
+    // assert(this.config, this.datastore)
+    // TODO map
+    this.subs = {}
+    this.subs.google = new GoogleSync(this.datastore, this.config)
+    this.subs.google.state.add('Enabled')
+    this.bindToSubs()
   }
 
-  // Schedule the next sync
-  // TODO measure the time taken
-  Synced_state() {
-    console.log('!!! SYNCED !!!')
-    console.log(`Requests: ${this.executed_requests}`)
-    this.last_sync_end = Date.now()
-    this.last_sync_time = this.last_sync_end - this.last_sync_start
-    console.log(`Time: ${this.last_sync_time}ms`)
-    if (this.next_sync_timeout) {
-      clearTimeout(this.next_sync_timeout)
-    }
-    this.next_sync_timeout = setTimeout(
-      this.state.addByListener('Syncing'),
-      this.config.sync_frequency
-    )
-  }
+  // // Schedule the next sync
+  // // TODO measure the time taken
+  // Synced_state() {
+  //   console.log('!!! SYNCED !!!')
+  //   console.log(`Requests: ${this.executed_requests}`)
+  //   this.last_sync_end = Date.now()
+  //   this.last_sync_time = this.last_sync_end - this.last_sync_start
+  //   console.log(`Time: ${this.last_sync_time}ms`)
+  //   if (this.next_sync_timeout) {
+  //     clearTimeout(this.next_sync_timeout)
+  //   }
+  //   this.next_sync_timeout = setTimeout(
+  //     this.state.addByListener('Syncing'),
+  //     this.config.sync_frequency
+  //   )
+  // }
 
   // Syncing_state() {
   //   console.log('--- SYNCING ---')
@@ -133,72 +118,54 @@ export default class Sync extends EventEmitter {
   // Methods
   // ----- -----
 
-  initDebugging() {
-    this.state.id('Sync').logLevel(process.env['DEBUG'])
-    // TODO make it less global
-    global.am_network = new Network()
-    global.am_network.addMachine(this.state)
-    global.am_logger = new Logger(global.am_network)
-    process.on('uncaughtException', function(err) {
-      global.am_logger.saveFile('snapshot-exception.json')
-      console.log('snapshot-exception.json')
-      process.exit()
-    })
-    process.on('SIGINT', function(err) {
-      global.am_logger.saveFile('snapshot.json')
-      console.log('Saved a snapshot to snapshot.json')
-      process.exit()
-    })
-  }
-
-  // TODO take abort() as the second param
-  async req<A, T, T2>(
-    method: (arg: A, cb: (err: any, res: T, res2: T2) => void) => void,
-    params: A,
-    abort: (() => boolean) | null | undefined,
-    returnArray: true
-  ): Promise<[T, T2] | null>
-  async req<A, T>(
-    method: (arg: A, cb: (err: any, res: T) => void) => void,
-    params: A,
-    abort: (() => boolean) | null | undefined,
-    returnArray: false
-  ): Promise<T | null>
-  async req<A, T>(
-    method: (arg: A, cb: (err: any, res: T) => void) => void,
-    params: A,
-    abort: (() => boolean) | null | undefined,
-    returnArray: boolean
-  ): Promise<any> {
-    let release = await this.semaphore.acquire()
-    if (abort && abort()) {
-      release()
-      return null
-    }
-    this.active_requests++
-    //		console.log "@active_requests++"
-
-    if (!params) params = {} as A
-    this.log(['REQUEST', params], 3)
-    if (process.env['DEBUG']) console.log(params)
-    ;(params as any).auth = this.auth.client
-    // TODO catch errors
-    // TODO loose promisify
-    let promise_method = returnArray
-      ? promisifyArray(method)
-      : promisify(method)
-    let ret = await promise_method(params)
-    release()
-    //		console.log "@active_requests--"
-    this.active_requests--
-    this.emit('request-finished')
-    this.executed_requests++
-
-    //		delete params.auth
-    //		console.log params
-    //		console.log ret[0]
-    return ret
-  }
+  // // TODO take abort() as the second param
+  // async req<A, T, T2>(
+  //   method: (arg: A, cb: (err: any, res: T, res2: T2) => void) => void,
+  //   params: A,
+  //   abort: (() => boolean) | null | undefined,
+  //   returnArray: true
+  // ): Promise<[T, T2] | null>
+  // async req<A, T>(
+  //   method: (arg: A, cb: (err: any, res: T) => void) => void,
+  //   params: A,
+  //   abort: (() => boolean) | null | undefined,
+  //   returnArray: false
+  // ): Promise<T | null>
+  // async req<A, T>(
+  //   method: (arg: A, cb: (err: any, res: T) => void) => void,
+  //   params: A,
+  //   abort: (() => boolean) | null | undefined,
+  //   returnArray: boolean
+  // ): Promise<any> {
+  //   let release = await this.semaphore.acquire()
+  //   if (abort && abort()) {
+  //     release()
+  //     return null
+  //   }
+  //   this.active_requests++
+  //   //		console.log "@active_requests++"
+  //
+  //   if (!params) params = {} as A
+  //   this.log(['REQUEST', params], 3)
+  //   if (process.env['DEBUG']) console.log(params)
+  //   ;(params as any).auth = this.auth.client
+  //   // TODO catch errors
+  //   // TODO loose promisify
+  //   let promise_method = returnArray
+  //     ? promisifyArray(method)
+  //     : promisify(method)
+  //   let ret = await promise_method(params)
+  //   release()
+  //   //		console.log "@active_requests--"
+  //   this.active_requests--
+  //   this.emit('request-finished')
+  //   this.executed_requests++
+  //
+  //   //		delete params.auth
+  //   //		console.log params
+  //   //		console.log ret[0]
+  //   return ret
+  // }
 
   log(msgs: string | any[], level: number) {
     if (!process.env['DEBUG']) {

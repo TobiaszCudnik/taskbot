@@ -8,7 +8,7 @@ import { map } from 'typed-promisify'
 
 export type Thread = google.gmail.v1.Thread
 
-export class States extends AsyncMachine<TStates, IBind, IEmit> {
+export class State extends AsyncMachine<TStates, IBind, IEmit> {
   Enabled: IState = {}
   Dirty: IState = {
     drop: ['MsgsFetched', 'ThreadsFetched']
@@ -45,30 +45,29 @@ export type TThreadCompletion = {
 }
 
 export default class GmailQuery {
-  gmail: Gmail
   api: google.gmail.v1.Gmail
-  states: States
-  semaphore: Semaphore
-  synced_history_id: number | null
+  state: State
+  // synced_history_id: number | null
 
   threads: Thread[] = []
-  query: string
-  name: string
   completions = new Map<string, TThreadCompletion>()
   previous_threads: Thread[] | null = null
   fetch_msgs: boolean
 
-  constructor(gmail: Gmail, query: string, name = '', fetch_msgs = false) {
-    this.gmail = gmail
+  constructor(
+    public api: google.gmail.v1.Gmail,
+    public query: string,
+    public name = '',
+    public fetch_msgs = false
+  ) {
     this.query = query
     this.name = name
-    this.semaphore = gmail.semaphore
     this.fetch_msgs = fetch_msgs
-    this.api = this.gmail.api
-    this.states = new States(this)
+    this.state = new State(this)
+    this.state.id(this.name)
     if (process.env['DEBUG']) {
-      this.states.id(`GmailQuery '${name}'`).logLevel(process.env['DEBUG'])
-      global.am_network.addMachine(this.states)
+      this.state.logLevel(process.env['DEBUG'])
+      global.am_network.addMachine(this.state)
     }
   }
 
@@ -90,9 +89,10 @@ export default class GmailQuery {
     abort: (() => boolean) | null | undefined,
     returnArray: boolean
   ): Promise<any> {
-    return returnArray
-      ? this.gmail.req(method, params, abort, true)
-      : this.gmail.req(method, params, abort, false)
+    console.log(method, params)
+    // return returnArray
+    //   ? this.gmail.req(method, params, abort, true)
+    //   : this.gmail.req(method, params, abort, false)
   }
 
   // TODO should download messages in parallel with next threads list pages

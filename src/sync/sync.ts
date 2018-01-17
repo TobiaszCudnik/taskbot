@@ -1,14 +1,19 @@
 // import { IBind, IEmit, IState, TStates } from '../google/gmail/gmail-types'
 import { IBind, IEmit, IState } from 'asyncmachine/build/types'
-import Gmail from '../google/gmail/gmail'
 import AsyncMachine from 'asyncmachine'
+import { State } from '../google/gmail/sync-list'
+import { IConfig } from '../types'
 
 export class SyncState extends AsyncMachine<any, IBind, IEmit>
-    implements ISyncState{
+  implements ISyncState {
   Enabled: IState = {}
 
   Initializing: IState = { require: ['Enabled'] }
-  Ready: IState = { drop: ['Initializing'] }
+  Ready: IState = { auto: true, drop: ['Initializing'] }
+  // optional
+  ConfigSet = {}
+  SubsReady = {}
+  SubsInited = {}
 
   Writing: IState = {
     drop: ['WritingDone', 'Reading', 'ReadingDone'],
@@ -16,8 +21,7 @@ export class SyncState extends AsyncMachine<any, IBind, IEmit>
     add: ['Syncing']
   }
   WritingDone: IState = {
-    drop: ['Writing', 'Reading', 'ReadingDone'],
-    require: ['Enabled']
+    drop: ['Writing', 'Reading', 'ReadingDone']
   }
 
   Reading: IState = {
@@ -26,14 +30,15 @@ export class SyncState extends AsyncMachine<any, IBind, IEmit>
     add: ['Syncing']
   }
   ReadingDone: IState = {
-    drop: ['Reading', 'Writing', 'WritingDone'],
-    require: ['Enabled']
+    drop: ['Reading', 'Writing', 'WritingDone']
   }
 
   Syncing: IState = { drop: ['Synced'], require: ['Ready'] }
   Synced: IState = { drop: ['Syncing'] }
 
-  constructor(target: Gmail) {
+  Dirty: IState = {}
+
+  constructor(target: Sync) {
     super(target)
     this.registerAll()
   }
@@ -51,14 +56,74 @@ export interface ISyncState {
   Synced: IState
 }
 
-export default class Sync {
-  state: ISyncState
+export default abstract class Sync {
+  state: AsyncMachine<any, any, any>
+  active_requests: number
+  config: IConfig | null
+  sub_states = [
+    'Synced',
+    'Syncing',
+    'Reading',
+    'Writing',
+    'Ready',
+    'ReadingDone',
+    'WritingDone'
+  ]
+  subs: { [index: string]: Sync | Sync[] }
 
   constructor() {
-    this.state = new this.state_class(this)
+    this.state = this.getState()
+    this.state.add('Initializing')
+    if (process.env['DEBUG'] && global.am_network) {
+      this.state.logLevel(process.env['DEBUG'])
+      global.am_network.addMachine(this.state)
+    }
   }
 
-  get state_class() {
-    return SyncState
+  getState(): SyncState {
+    return new SyncState(this).id('Sync')
+  }
+
+  // ----- -----
+  // Transitions
+  // ----- -----
+
+  Enabled_state() {
+    if (!this.state.is('Ready')) {
+      this.state.add('Initializing')
+    }
+  }
+
+  ConfigSet_state(config: IConfig) {
+    this.config = config
+  }
+
+  WritingDone_enter() {
+    return this.subs.every(sync => sync.state.is('WritingDone'))
+  }
+
+  ReadingDone_enter() {
+    return this.subs.every(sync => sync.state.is('WritingDone'))
+  }
+
+  // ----- -----
+  // Methods
+  // ----- -----
+
+  initSubs() {}
+
+  bindToSubs() {
+    // TODO support arrays, Maps
+    for (const sync of Object.values(this.subs)) {
+      for (const state of this.sub_states) {
+        if (sync instanceof Sync) {
+          sync.state.pipe(state, this.state)
+        } else {
+          for (const sync2 of sync) {
+            sync2.state.pipe(state, this.state)
+          }
+        }
+      }
+    }
   }
 }

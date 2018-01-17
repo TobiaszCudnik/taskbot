@@ -1,7 +1,10 @@
 import * as google from 'googleapis'
-import TaskListSync from './task-list-sync'
+import GTasksListSync from './sync-list'
 import { IListConfig } from '../../types'
 import Sync from '../../sync/sync'
+import DataStore from '../../manager/datastore'
+
+// TODO state
 
 export default class GTasksSync extends Sync {
   etags: {
@@ -11,15 +14,30 @@ export default class GTasksSync extends Sync {
   }
   api: google.gmail.v1.Tasks
 
-  constructor() {
+  constructor(public datastore: DataStore, public config, public auth) {
     super()
     this.api = google.tasks('v1', { auth: this.auth.client })
+  }
+
+  getState() {
+    return super.getState().id('GTasks')
+  }
+
+  initSubs() {
+    for (const [name, config] of this.config.lists) {
+      this.subs[name] = new GTasksListSync(
+        this.datastore,
+        name,
+        config,
+        this.config.list_defaults
+      )
+    }
   }
 
   async FetchingTaskLists_state() {
     let abort = this.state.getAbort('FetchingTaskLists')
     let [list, res] = await this.req(
-      this.tasks_api.tasklists.list,
+      this.api.tasklists.list,
       {
         etag: this.etags.task_lists
       },

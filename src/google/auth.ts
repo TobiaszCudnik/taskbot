@@ -6,6 +6,17 @@ import { IConfig } from '../types'
 export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
   CredentialsSet: IState = {}
 
+  RefreshingToken: IState = {
+    auto: true,
+    require: ['CredentialsSet'],
+    drop: ['TokenRefreshed']
+  }
+
+  TokenRefreshed: IState = {
+    require: ['CredentialsSet'],
+    drop: ['RefreshingToken']
+  }
+
   // TODO (by supporting an error state?)
   Ready: IState = {
     auto: true,
@@ -14,17 +25,6 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
 
   Error: IState = {
     drop: ['Ready']
-  }
-
-  TokenRefreshed: IState = {
-    require: ['CredentialsSet'],
-    drop: ['RefreshingToken']
-  }
-
-  RefreshingToken: IState = {
-    auto: true,
-    require: ['CredentialsSet'],
-    drop: ['TokenRefreshed']
   }
 
   client: any

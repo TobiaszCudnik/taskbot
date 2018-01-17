@@ -1,17 +1,18 @@
-import States from './task-list-sync-states'
+import States from './sync-list-states'
 // TODO loose
 import * as timestamp from 'internet-timestamp'
 // TODO loose
 import * as ago from 'ago'
 import * as moment from 'moment'
 import { EventEmitter } from 'events'
-import Gmail from './gmail'
-import Sync from './sync'
-import GmailQuery, { TThreadCompletion } from './gmail-query'
+import Sync from '../../sync/sync'
+import { TThreadCompletion } from '../gmail/query'
 import { IListConfig } from '../../types'
 import * as google from 'googleapis'
 import * as _ from 'underscore'
 import { map } from 'typed-promisify'
+import DataStore from '../../manager/datastore'
+import { State } from '../gmail/sync'
 
 // TODO check if needed
 export interface ITasks {
@@ -27,13 +28,12 @@ type TTaskCompletion = {
   thread_id: string | null
 }
 
-export default class TaskListSync extends EventEmitter {
+export default class GTasksListSync extends Sync {
   data: IListConfig
   name: string
-  //  @defineType 'data',
   list: google.tasks.v1.TaskList
 
-  tasks_api: google.tasks.v1.Tasks
+  api: google.tasks.v1.Tasks
 
   states: States
 
@@ -49,7 +49,6 @@ export default class TaskListSync extends EventEmitter {
   last_sync_time: number | null
 
   sync: Sync
-  query: GmailQuery
   etags: {
     tasks: string | null
     tasks_completed: string | null
@@ -62,31 +61,31 @@ export default class TaskListSync extends EventEmitter {
 
   def_title: string
   // tasks_in_threads;
-  gmail: Gmail
-  gmail_api: google.gmail.v1.Gmail
 
-  constructor(name: string, data: IListConfig, sync: Sync) {
+  constructor(
+    public datastore: DataStore,
+    public api: google.tasks.v1.Tasks,
+    public name: string,
+    public config: IListConfig,
+    defaults: IListConfig
+  ) {
     super()
-    this.name = name
-    this.data = data
-    this.sync = sync
-    // this.defineType('list', ITaskList, 'ITaskList');
-    // this.defineType('labels', [ILabel], '[ILabel]');
-    this.states = new States(this)
-    if (process.env['DEBUG']) {
-      this.states.id(`TaskList ${name}`).logLevel(process.env['DEBUG'])
-      global.am_network.addMachine(this.states)
-    }
-    this.gmail_api = this.sync.gmail_api
-    this.gmail = this.sync.gmail
-    this.tasks_api = this.sync.tasks_api
-    // this.tasks_in_threads = [];
-    this.last_sync_time = null
-    this.query = this.sync.gmail.createQuery(this.data.query, name, true)
-    // bind to query states
-    this.query.states.pipe('ThreadsFetched', this.states)
-    this.query.states.pipe('MsgsFetched', this.states)
-    this.states.pipe('Enabled', this.query.states)
+    // this.gmail_api = this.sync.gmail_api
+    // this.gmail = this.sync.gmail
+    // this.tasks_api = this.sync.tasks_api
+    // // this.tasks_in_threads = [];
+    // this.last_sync_time = null
+    // this.query = this.sync.gmail.createQuery(this.data.query, name, true)
+    // // bind to query states
+    // this.query.states.pipe('ThreadsFetched', this.states)
+    // this.query.states.pipe('MsgsFetched', this.states)
+    // this.states.pipe('Enabled', this.query.states)
+  }
+
+  getState() {
+    const state = new State(this)
+    state.id(this.name)
+    return state
   }
 
   // ----- -----
@@ -579,22 +578,23 @@ export default class TaskListSync extends EventEmitter {
     abort: (() => boolean) | null | undefined,
     returnArray: boolean
   ): Promise<any> {
-    try {
-      if (returnArray) return await this.sync.req(method, params, abort, true)
-      else return await this.sync.req(method, params, abort, false)
-    } catch (err) {
-      // catch quote exceeded exceptions only
-      if (err.code !== 403) throw err
-      this.quota_exceeded = true
-      // wait 0.5sec
-      // TODO rewrite
-      setTimeout(this.emit.bind(this, 'retry-requests'), 500)
-      while (this.quota_exceeded)
-        await new Promise(resolve => this.once('retry-requests', resolve))
-
-      if (returnArray) return await this.sync.req(method, params, abort, true)
-      else return await this.sync.req(method, params, abort, false)
-    }
+    console.log(method, params)
+    // try {
+    //   if (returnArray) return await this.sync.req(method, params, abort, true)
+    //   else return await this.sync.req(method, params, abort, false)
+    // } catch (err) {
+    //   // catch quote exceeded exceptions only
+    //   if (err.code !== 403) throw err
+    //   this.quota_exceeded = true
+    //   // wait 0.5sec
+    //   // TODO rewrite
+    //   setTimeout(this.emit.bind(this, 'retry-requests'), 500)
+    //   while (this.quota_exceeded)
+    //     await new Promise(resolve => this.once('retry-requests', resolve))
+    //
+    //   if (returnArray) return await this.sync.req(method, params, abort, true)
+    //   else return await this.sync.req(method, params, abort, false)
+    // }
   }
 
   // TODO abort

@@ -1,31 +1,39 @@
-import { IBind, IEmit, IState, TStates } from './sync-query-types'
+// import { IBind, IEmit, IState, TStates } from './sync-query-types'
 import Gmail from './sync'
-import AsyncMachine from 'asyncmachine'
-import GmailQuery from './gmail-query'
+// import AsyncMachine from 'asyncmachine'
+import GmailQuery from './query'
 import { Entry, List } from '../../manager/datastore'
 import * as google from 'googleapis'
 import Sync, { SyncState } from '../../sync/sync'
+import DataStore from '../../manager/datastore'
 
-export class State extends SyncState<TStates, IBind, IEmit> {
-  Authenticating = {}
-  Authenticated = {}
+export class State extends SyncState {
+  // TODO
+  constructor(target: Sync) {
+    super(target)
+    this.registerAll()
+  }
 }
 
-export default class QueryGoogle extends Sync {
-  gmail: Gmail
+export default class GmailQuerySync extends Sync {
   labels: google.gmail.v1.Label[] = []
   last_read_start: number
   last_read_end: number
   last_write_start: number
   last_write_end: number
 
-  get state_class() {
-    return State
+  constructor(
+    public datastore: DataStore,
+    public api: google.gmail.v1.Gmail,
+    public name
+  ) {
+    super()
   }
 
-  constructor(public query: GmailQuery, public list: List) {
-    super()
-    this.gmail = query.gmail
+  getState() {
+    const state = new State(this)
+    state.id(this.name)
+    return state
   }
 
   onEntryChanged(entry: Entry, prev?: Entry) {

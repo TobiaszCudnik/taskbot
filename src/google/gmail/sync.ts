@@ -1,26 +1,32 @@
 ///<reference path="../../../node_modules/typed-promisify/index.ts"/>
-import AsyncMachine from '../../../../asyncmachine/build/asyncmachine'
-import { IState, IBind, IEmit, TStates } from './gmail-types'
-import GmailQuery from './gmail-query'
-import Sync from '../../manager/sync'
-import { Semaphore } from 'await-semaphore'
+import { IState, IBind, IEmit, TStates } from './sync-types'
+import Query from './query'
 import * as _ from 'underscore'
 import * as google from 'googleapis'
 import { IConfig, TRawEmail } from '../../types'
 import { map } from 'typed-promisify'
-import TaskListSync from '../tasks/task-list-sync'
+import Sync, { SyncState } from '../../sync/sync'
+import Auth from '../auth'
+import GmailTextLabelsSync from './sync-text-labels'
+import GmailQueryLabelsSync from './sync-query-labels'
+import { DataStore } from '../../manager/datastore'
 
-export class States extends AsyncMachine<TStates, IBind, IEmit> {
-  Enabled: IState = {}
-  SyncingEnabled: IState = {}
+export class State extends SyncState {
+  // -- overrides
 
   Dirty: IState = {
     drop: ['QueryLabelsSynced', 'SyncingQueryLabels']
   }
 
+  SubsInited: { require: ['ConfigSet']; auto: true }
+  SubsReady: { require: ['SubsInited']; auto: true }
+  Ready: IState = { require: ['ConfigSet', 'SubsReady'] }
+
+  // -- own
+
   SyncingQueryLabels: IState = {
     auto: true,
-    require: ['SyncingEnabled', 'LabelsFetched'],
+    require: ['Enabled', 'LabelsFetched'],
     drop: ['QueryLabelsSynced']
   }
   QueryLabelsSynced: IState = {
@@ -45,17 +51,16 @@ export class States extends AsyncMachine<TStates, IBind, IEmit> {
     drop: ['FetchingHistoryId']
   }
 
-  constructor(target: Gmail) {
+  constructor(target: GmailSync) {
     super(target)
     this.registerAll()
   }
 }
 
-export default class Gmail {
-  states: States
+export default class GmailSync extends Sync {
+  state: State
   api: google.gmail.v1.Gmail
-  config: IConfig
-  sync: Sync
+  // sync: GoogleSync
   // completions = new Map<string, {
   // 	completed: boolean,
   // 	time: number
@@ -63,39 +68,57 @@ export default class Gmail {
   history_id_timeout = 3000
   history_id: number | null
   last_sync_time: number
-  queries: GmailQuery[] = []
-  query_labels = new Map<string, GmailQuery>()
+  queries: Query[] = []
+  query_labels = new Map<string, Query>()
   query_labels_timer: number | null
   labels: google.gmail.v1.Label[]
-  semaphore: Semaphore
 
-  constructor(sync: Sync) {
-    this.sync = sync
-    this.semaphore = sync.semaphore
-    this.states = new States(this)
-    if (process.env['DEBUG']) {
-      this.states.id('Gmail').logLevel(process.env['DEBUG'])
-      global.am_network.addMachine(this.states)
-    }
+  constructor(
+    public datastore: DataStore,
+    public config: IConfig,
+    public auth: Auth
+  ) {
+    super()
+    this.state.add('ConfigSet', config)
     this.api = google.gmail('v1', { auth: this.auth.client })
-    this.config = this.sync.config
-    this.initQueryLabels()
-    this.states.pipe('QueryLabelsSynced', this.sync.state)
   }
+
+  getState() {
+    const state = new State(this)
+    state.id('Gmail')
+    return state
+  }
+
+  // bindToSubs() {
+  //   super.bindToSubs()
+  //
+  //   // this.state.pipe('QueryLabelsSynced', this.sync.state)
+  // }
 
   // ----- -----
   // Transitions
   // ----- -----
 
+  SubsInited_state() {
+    this.subs = {}
+    this.initQueryLabels()
+    this.subs.text_labels = new GmailTextLabelsSync(
+      this.datastore,
+      this.api,
+      this.config.text_labels
+    )
+    this.subs.text_labels.state.add('Enabled')
+  }
+
   // TODO extract to a separate class
   async SyncingQueryLabels_state() {
     this.query_labels_timer = Date.now()
-    let abort = this.states.getAbort('SyncingQueryLabels')
+    let abort = this.state.getAbort('SyncingQueryLabels')
 
     let dirty = false
     await map(
       [...this.query_labels],
-      async ([name, query]: [string, GmailQuery]) => {
+      async ([name, query]: [string, Query]) => {
         query.states.add('Enabled')
         // TODO timeout?
         debugger
@@ -115,11 +138,11 @@ export default class Gmail {
       }
     )
 
-    if (dirty) this.states.add('Dirty')
+    if (dirty) this.state.add('Dirty')
 
     if (abort()) return
 
-    if (!dirty) this.states.add('QueryLabelsSynced')
+    if (!dirty) this.state.add('QueryLabelsSynced')
   }
 
   // TODO extract to a separate class
@@ -130,7 +153,7 @@ export default class Gmail {
   }
 
   async FetchingLabels_state() {
-    let abort = this.states.getAbort('FetchingLabels')
+    let abort = this.state.getAbort('FetchingLabels')
     let res = await this.req(
       this.api.users.labels.list,
       { userId: 'me' },
@@ -139,7 +162,7 @@ export default class Gmail {
     )
     if (abort() || !res) return
     this.labels = res.labels
-    this.states.add('LabelsFetched')
+    this.state.add('LabelsFetched')
   }
 
   Dirty_state() {
@@ -148,10 +171,10 @@ export default class Gmail {
       let query = this.queries[i]
       // Add the Dirty states to all child queries
       // TODO could be easily narrowed down
-      this.states.add(query.states, 'Dirty')
+      this.state.add(query.states, 'Dirty')
     }
 
-    return this.states.drop('Dirty')
+    return this.state.drop('Dirty')
   }
 
   async FetchingHistoryId_state(abort?: () => boolean) {
@@ -169,7 +192,7 @@ export default class Gmail {
     if (!response || (abort && abort())) return
     this.history_id = parseInt(response.historyId, 10)
     this.last_sync_time = Date.now()
-    this.states.add('HistoryIdFetched')
+    this.state.add('HistoryIdFetched')
   }
 
   // ----- -----
@@ -213,12 +236,8 @@ export default class Gmail {
     return thread
   }
 
-  createQuery(
-    query: string,
-    name: string = '',
-    fetch_msgs = false
-  ): GmailQuery {
-    let gmail_query = new GmailQuery(this, query, name, fetch_msgs)
+  createQuery(query: string, name: string = '', fetch_msgs = false): Query {
+    let gmail_query = new Query(this, query, name, fetch_msgs)
     this.queries.push(gmail_query)
 
     return gmail_query
@@ -239,35 +258,17 @@ export default class Gmail {
 
   initQueryLabels() {
     let count = 0
-    for (let query in this.config.query_labels) {
-      // narrow the query to results requiring the labels modification
-      let labels = this.config.query_labels[query]
-      let exclusive_query = query
-      // labels to add
-      if (labels[0].length) {
-        exclusive_query +=
-          ' (-label:' +
-          labels[0].map(this.normalizeLabelName).join(' OR -label:') +
-          ')'
-      }
-      // labels to remove
-      // TODO loose casting once compiler will figure
-      if (labels[1] && (<string[]>labels[1]).length) {
-        exclusive_query +=
-          ' (label:' +
-          (<string[]>labels[1])
-            .map(this.normalizeLabelName)
-            .join(' OR label:') +
-          ')'
-      }
-      // TODO better query names
-      this.query_labels.set(
-        query,
-        this.createQuery(exclusive_query, `QueryLabels ${++count}`, true)
+    this.subs.query_labels = []
+    for (let query of this.config.query_labels) {
+      this.subs.query_labels.push(
+        new GmailQueryLabelsSync(
+          this.datastore,
+          this.api,
+          query,
+          `GQL ${++count}`
+        )
       )
     }
-
-    return this.sync.log(`Initialized ${this.query_labels.size} queries`, 2)
   }
 
   normalizeLabelName(label: string) {
@@ -289,13 +290,13 @@ export default class Gmail {
     abort: () => boolean
   ): Promise<boolean | null> {
     if (!this.isHistoryIdValid()) {
-      if (!this.states.is('FetchingHistoryId')) {
-        this.states.add('FetchingHistoryId', abort)
+      if (!this.state.is('FetchingHistoryId')) {
+        this.state.add('FetchingHistoryId', abort)
         // We need to wait for FetchingHistoryId being really added, not only queued
-        await this.states.when('FetchingHistoryId', abort)
+        await this.state.when('FetchingHistoryId', abort)
         if (abort && abort()) return null
       }
-      await this.states.when('HistoryIdFetched', abort)
+      await this.state.when('HistoryIdFetched', abort)
       if (abort && abort()) return null
     }
 
@@ -371,8 +372,8 @@ export default class Gmail {
 
   async getHistoryId(abort?: () => boolean): Promise<number | null> {
     if (!this.history_id) {
-      this.states.add('FetchingHistoryId', abort)
-      await this.states.when('HistoryIdFetched')
+      this.state.add('FetchingHistoryId', abort)
+      await this.state.when('HistoryIdFetched')
     }
 
     return this.history_id
@@ -401,7 +402,7 @@ export default class Gmail {
       false
     )
     // TODO labels?
-    this.states.add('Dirty', labels)
+    this.state.add('Dirty', labels)
     if (!message || (abort && abort())) return null
     return message.threadId
   }
@@ -456,8 +457,9 @@ export default class Gmail {
     abort: (() => boolean) | null | undefined,
     returnArray: boolean
   ): Promise<any> {
-    return returnArray
-      ? this.sync.req(method, params, abort, true)
-      : this.sync.req(method, params, abort, false)
+    console.log(method, params)
+    // return returnArray
+    //   ? this.sync.req(method, params, abort, true)
+    //   : this.sync.req(method, params, abort, false)
   }
 }
