@@ -69,19 +69,6 @@ export default class RootSync extends Sync {
   //   this.addListener()
   // }
 
-  callbacks_: {[index: string]: Function}
-  get callbacks(): {[index: string]: Function} {
-    if (!this.callbacks_) {
-      this.callbacks_ = {
-        req: async (...params) => await this.req(...params),
-        onLocalEnter: (record: DBRecord) => {
-          debugger
-        }
-      }
-    }
-    return this.callbacks_
-  }
-
   // ----- -----
   // Transitions
   // ----- -----
@@ -95,7 +82,7 @@ export default class RootSync extends Sync {
     // assert(this.config, this.datastore)
     // TODO map
     this.subs = {}
-    this.subs.google = new GoogleSync(this.config, this.data, this.callbacks)
+    this.subs.google = new GoogleSync(this)
     this.bindToSubs()
     this.subs.google.state.add('Enabled')
   }

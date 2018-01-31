@@ -20,15 +20,9 @@ if (process.env['DEBUG']) {
   // TODO dump all the network machines with states
   process.on('uncaughtException', function(err) {
     console.error(err)
-    global.am_logger.saveFile('snapshot-exception.json')
-    console.log('snapshot-exception.json')
-    // console.log(global.am_network.toString())
     process.exit()
   })
   process.on('SIGINT', function(err) {
-    global.am_logger.saveFile('snapshot.json')
-    console.log('Saved a snapshot to snapshot.json')
-    console.log(global.am_network.toString())
     process.exit()
   })
   process.on('exit', function(err) {

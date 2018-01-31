@@ -1,7 +1,7 @@
 import AsyncMachine from 'asyncmachine'
 import { IState, IBind, IEmit, TStates } from './query-types'
 import * as moment from 'moment'
-import Gmail from './sync'
+import GmailSync from './sync'
 import { Semaphore } from 'await-semaphore'
 import * as google from 'googleapis'
 import { map } from 'typed-promisify'
@@ -45,7 +45,7 @@ export type TThreadCompletion = {
 }
 
 export default class GmailQuery {
-  api: google.gmail.v1.Gmail
+  // api: google.gmail.v1.Gmail
   state: State
   // synced_history_id: number | null
 
@@ -55,16 +55,13 @@ export default class GmailQuery {
   fetch_msgs: boolean
 
   constructor(
-    public api: google.gmail.v1.Gmail,
+    public gmail: GmailSync,
     public query: string,
     public name = '',
     public fetch_msgs = false
   ) {
-    this.query = query
-    this.name = name
-    this.fetch_msgs = fetch_msgs
     this.state = new State(this)
-    this.state.id('GQ: ' + this.name)
+    this.state.id('Gmail/query: ' + this.name)
     if (process.env['DEBUG']) {
       this.state.logLevel(process.env['DEBUG'])
       global.am_network.addMachine(this.state)
@@ -73,12 +70,14 @@ export default class GmailQuery {
 
   // TODO should download messages in parallel with next threads list pages
   async FetchingThreads_state() {
-    let abort = this.states.getAbort('FetchingThreads')
+    let abort = this.state.getAbort('FetchingThreads')
     if (await this.isCached(abort)) {
       if (abort()) return
       console.log(`[CACHED] threads for '${this.query}'`)
-      this.states.add('ThreadsFetched')
-      if (this.fetch_msgs) this.states.add('MsgsFetched')
+      this.state.add('ThreadsFetched')
+      if (this.fetch_msgs) {
+        this.state.add('MsgsFetched')
+      }
       return
     }
     if (abort()) return
@@ -102,8 +101,8 @@ export default class GmailQuery {
         params.pageToken = prevRes.nextPageToken
       }
 
-      let list = await this.api.req(
-        this.api.users.threads.list,
+      let list = await this.gmail.api.req(
+        this.gmail.api.users.threads.list,
         params,
         abort,
         false
@@ -132,18 +131,18 @@ export default class GmailQuery {
       this.synced_history_id = history_id
     }
 
-    this.states.add('ThreadsFetched')
+    this.state.add('ThreadsFetched')
 
     if (this.fetch_msgs) {
-      abort = this.states.getAbort('ThreadsFetched')
-      this.states.add('FetchingMsgs', history_id, abort)
+      abort = this.state.getAbort('ThreadsFetched')
+      this.state.add('FetchingMsgs', history_id, abort)
     } else {
       this.previous_threads = null
     }
   }
 
   async FetchingMsgs_state(history_id: number, abort?: () => boolean) {
-    abort = this.states.getAbort('FetchingMsgs', abort)
+    abort = this.state.getAbort('FetchingMsgs', abort)
 
     // TODO use the awaitable map
     let threads = await map(
@@ -175,14 +174,14 @@ export default class GmailQuery {
       this.synced_history_id = history_id
       this.threads = threads as google.gmail.v1.Thread[]
       this.previous_threads = null
-      this.states.add('MsgsFetched')
+      this.state.add('MsgsFetched')
     } else {
       console.log('[FetchingMsgs] nore results or some missing]')
     }
   }
 
   Dirty_state() {
-    this.states.drop('Dirty')
+    this.state.drop('Dirty')
   }
 
   async isCached(abort: () => boolean): Promise<boolean | null> {

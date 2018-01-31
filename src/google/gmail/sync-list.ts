@@ -4,7 +4,9 @@ import GmailQuery, {Thread} from './query'
 import * as google from 'googleapis'
 import Sync, {SyncState, Reading} from '../../sync/sync'
 import * as _ from 'underscore'
-import {DBRecord} from "../../root/sync";
+import RootSync, {DBRecord} from "../../root/sync";
+import GmailSync from "./sync";
+import {IGmailQuery} from "../../types";
 
 export class State extends SyncState {
 
@@ -44,19 +46,19 @@ export default class GmailListSync extends Sync {
   last_ids: string[] = []
 
   constructor(
-    public config,
-    public data: DBCollection,
-    public callbacks: {[index: string]: Function},
-    public api: GmailAPI
+    public config: IGmailQuery,
+    public root: RootSync,
+    public gmail: GmailSync
   ) {
     super(config)
-    this.query = new GmailQuery(api, config.query, config.name)
+    this.query = new GmailQuery(this.gmail, config.query, config.name,
+        true)
     this.query.state.add('Enabled')
   }
 
   getState() {
     const state = new State(this)
-    state.id('L: ' + this.config.name)
+    state.id('Gmail/list: ' + this.config.name)
     return state
   }
 
@@ -66,7 +68,10 @@ export default class GmailListSync extends Sync {
   }
 
   async Reading_state() {
+    const abort = this.state.getAbort('Reading')
     this.query.state.add('FetchingThreads')
+    await this.query.state.when('MsgsFetched')
+    this.state.add('ReadingDone')
   }
 
   threads = new Map<string, Thread>()
@@ -75,7 +80,7 @@ export default class GmailListSync extends Sync {
     const ids = []
     let changed = 0
     for (const thread of this.query.threads) {
-      const entry = this.data.findOne(this.toDBID(thread.id))
+      const entry = this.root.data.findOne(this.toDBID(thread.id))
       if (!entry) {
         this.onLocalEnter(thread)
         changed++

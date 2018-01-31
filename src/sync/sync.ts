@@ -3,6 +3,7 @@ import { IBind, IEmit, IState } from 'asyncmachine/build/types'
 import AsyncMachine from 'asyncmachine'
 import { State } from '../google/gmail/sync-list'
 import { IConfig } from '../types'
+import RootSync from "../root/sync";
 
 // TODO define SyncState as a JSON
 export const Reading = {
@@ -63,9 +64,13 @@ export default abstract class Sync {
     ['WritingDone', 'WritingDone'], ['Ready', 'SubsReady']]
   sub_states_outbound = [['Reading', 'Reading'], ['Writing', 'Writing']]
   subs: { [index: string]: Sync | Sync[] } = {}
+  root: RootSync
 
-  constructor(config?) {
+  constructor(config?, root?) {
     this.config = config
+    if (root) {
+      this.root = root
+    }
     this.state = this.getState()
     this.state.add('Initializing')
     if (process.env['DEBUG'] && global.am_network) {

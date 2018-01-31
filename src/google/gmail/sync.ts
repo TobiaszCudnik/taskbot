@@ -10,6 +10,7 @@ import Auth from '../auth'
 import GmailTextLabelsSync from './sync-text-labels'
 import GmailListSync from './sync-list'
 import GmailLabelFilterSync from './sync-label-filter'
+import RootSync from "../../root/sync";
 
 export class State extends SyncState {
   // -- overrides
@@ -77,16 +78,15 @@ export default class GmailSync extends Sync {
   query_labels_timer: number | null
   labels: google.gmail.v1.Label[]
 
-  constructor(
-    public config: IConfig,
-    public data: LokiCollection,
-    public callbacks,
-    public auth: Auth
-  ) {
-    super(config)
+  constructor(public root: RootSync, public auth: Auth) {
+    super(root.config, root)
     this.api = google.gmail('v1', { auth: this.auth.client })
     this.api = Object.create(this.api)
-    this.api.req = callbacks.req
+    this.api.req = async (...params) => {
+      // haha
+      params[1].auth = this.auth.client
+      return await this.root.req(...params)
+    }
   }
 
   getState() {
@@ -107,29 +107,12 @@ export default class GmailSync extends Sync {
 
   threads = new Map<string, Thread>()
 
-  getCallbacks() {
-    return {
-      ...this.callbacks,
-      req(method, ...params) {
-        this.callbacks.req(this.api, method, ...params)
-      },
-      setThread(thread: Thread) {
-        // TODO GC
-        this.threads.set(thread.id, thread)
-      },
-      getThread(id: string) {
-        this.threads.get(id)
-      }
-    }
-  }
-
   SubsInited_state() {
     // TODO Map
     this.subs = {}
     this.subs.lists = []
     for (const config of this.config.gmail) {
-      const sub = new GmailListSync(config, this.data, this.getCallbacks(),
-        this.api)
+      const sub = new GmailListSync(config, this.root, this)
       this.subs.lists.push(sub)
       sub.state.add('Enabled')
     }
@@ -265,7 +248,7 @@ export default class GmailSync extends Sync {
     abort?: () => boolean
   ): Promise<google.gmail.v1.Thread | null> {
     // TODO limit the max msgs amount
-    let thread = await this.req(
+    let thread = await this.api.req(
       this.api.users.threads.get,
       {
         id,
@@ -283,7 +266,7 @@ export default class GmailSync extends Sync {
   }
 
   createQuery(query: string, name: string = '', fetch_msgs = false): Query {
-    let gmail_query = new Query(this, query, name, fetch_msgs)
+    let gmail_query = new Query(this.api, query, name, fetch_msgs)
     this.queries.push(gmail_query)
 
     return gmail_query
@@ -300,13 +283,6 @@ export default class GmailSync extends Sync {
       }
     }
     return null
-  }
-
-  normalizeLabelName(label: string) {
-    return label
-      .replace('/', '-')
-      .replace(' ', '-')
-      .toLowerCase()
   }
 
   isHistoryIdValid() {
@@ -469,4 +445,11 @@ export default class GmailSync extends Sync {
   // 	throw new Error
   // for msg in thread.messages
   // 	for label_id in msg.labelIds
+}
+
+export function normalizeLabelName(label: string) {
+  return label
+    .replace('/', '-')
+    .replace(' ', '-')
+    .toLowerCase()
 }
