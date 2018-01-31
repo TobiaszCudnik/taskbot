@@ -7,9 +7,16 @@ export interface ILabelDefaults {
   }
 }
 
-export interface IListConfig {
+export interface IGmailQuery {
+  query: string,
+  add: string[],
+  remove?: string[]
+}
+
+export interface IGTasksList {
   labels_in_title: LabelsInTitles,
   query: string,
+  name: string,
   labels_new_task?: string[]
 }
 
@@ -35,17 +42,12 @@ export type IConfig = {
   }[],
   status_labels: string[],
   sync_frequency: number,
-  query_labels: { [query: string]: {
-    // add
-    0: string[],
-    // remove
-    1?: string[]
-  }},
+  gmail_queries: IGmailQuery[],
   // TODO this could be dynamic?
   status_map: { [shortcut: string]: string },
   lists_labels_in_title: LabelsInTitles
   lists_defaults: ILabelDefaults,
-  lists: {[name: string]: IListConfig},
+  gtasks: IGTasksList[],
 }
 
 // TODO

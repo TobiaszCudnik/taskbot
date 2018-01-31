@@ -4,6 +4,13 @@ import AsyncMachine from 'asyncmachine'
 import { State } from '../google/gmail/sync-list'
 import { IConfig } from '../types'
 
+// TODO define SyncState as a JSON
+export const Reading = {
+  drop: ['ReadingDone', 'Writing', 'WritingDone'],
+  require: ['Enabled', 'Ready']
+}
+
+
 export class SyncState extends AsyncMachine<any, IBind, IEmit>
   implements ISyncState {
   Enabled: IState = {}
@@ -17,24 +24,16 @@ export class SyncState extends AsyncMachine<any, IBind, IEmit>
 
   Writing: IState = {
     drop: ['WritingDone', 'Reading', 'ReadingDone'],
-    require: ['Enabled', 'Ready'],
-    add: ['Syncing']
+    require: ['Enabled', 'Ready']
   }
   WritingDone: IState = {
     drop: ['Writing', 'Reading', 'ReadingDone']
   }
 
-  Reading: IState = {
-    drop: ['ReadingDone', 'Writing', 'WritingDone'],
-    require: ['Enabled', 'Ready'],
-    add: ['Syncing']
-  }
+  Reading: IState = Reading
   ReadingDone: IState = {
     drop: ['Reading', 'Writing', 'WritingDone']
   }
-
-  Syncing: IState = { drop: ['Synced'], require: ['Ready'] }
-  Synced: IState = { drop: ['Syncing'] }
 
   Dirty: IState = {}
 
@@ -44,39 +43,37 @@ export class SyncState extends AsyncMachine<any, IBind, IEmit>
   }
 }
 
+// TODO match SyncState
 export interface ISyncState {
   Enabled: IState
   Initializing: IState
   Ready: IState
+
   Writing: IState
   WritingDone: IState
   Reading: IState
   ReadingDone: IState
-  Syncing: IState
-  Synced: IState
 }
 
 export default abstract class Sync {
   state: AsyncMachine<any, any, any>
   active_requests: number
   config: IConfig | null
-  sub_states = [
-    'Synced',
-    'Syncing',
-    'Reading',
-    'Writing',
-    'Ready',
-    'ReadingDone',
-    'WritingDone'
-  ]
-  subs: { [index: string]: Sync | Sync[] }
+  sub_states_inbound = [['ReadingDone', 'ReadingDone'],
+    ['WritingDone', 'WritingDone'], ['Ready', 'SubsReady']]
+  sub_states_outbound = [['Reading', 'Reading'], ['Writing', 'Writing']]
+  subs: { [index: string]: Sync | Sync[] } = {}
 
-  constructor() {
+  constructor(config?) {
+    this.config = config
     this.state = this.getState()
     this.state.add('Initializing')
     if (process.env['DEBUG'] && global.am_network) {
       this.state.logLevel(process.env['DEBUG'])
       global.am_network.addMachine(this.state)
+    }
+    if (config) {
+      this.state.add('ConfigSet', config)
     }
   }
 
@@ -99,11 +96,15 @@ export default abstract class Sync {
   }
 
   WritingDone_enter() {
-    return this.subs.every(sync => sync.state.is('WritingDone'))
+    return Object.values(this.subs).every(sync => sync.state.is('WritingDone'))
   }
 
   ReadingDone_enter() {
-    return this.subs.every(sync => sync.state.is('WritingDone'))
+    return Object.values(this.subs).every(sync => sync.state.is('ReadingDone'))
+  }
+
+  SubsReady_enter() {
+    return Object.values(this.subs).every(sync => sync.state.is('Ready'))
   }
 
   // ----- -----
@@ -112,18 +113,56 @@ export default abstract class Sync {
 
   initSubs() {}
 
+  mapSubs(fn: (sub: Sync) => boolean) {
+    // TODO
+  }
+
+  sync(): Array {
+    let ret = []
+    for (const sub of Object.values(this.subs)) {
+      if (Array.isArray(sub)) {
+        for (const sub2 of sub) {
+          ret.push(...sub2.sync())
+        }
+      } else {
+        ret.push(...sub.sync())
+      }
+    }
+    return ret
+  }
+
   bindToSubs() {
     // TODO support arrays, Maps
     for (const sync of Object.values(this.subs)) {
-      for (const state of this.sub_states) {
+      for (const [source, target] of this.sub_states_inbound) {
         if (sync instanceof Sync) {
-          sync.state.pipe(state, this.state)
+          sync.state.pipe(source, this.state, target)
         } else {
           for (const sync2 of sync) {
-            sync2.state.pipe(state, this.state)
+            sync2.state.pipe(source, this.state, target)
+          }
+        }
+      }
+      for (const [source, target] of this.sub_states_outbound) {
+        if (sync instanceof Sync) {
+          this.state.pipe(source, sync.state, target)
+        } else {
+          for (const sync2 of sync) {
+            this.state.pipe(source, sync2.state, target)
           }
         }
       }
     }
+  }
+
+  log(msgs: string | any[], level: number) {
+    if (!process.env['DEBUG']) {
+      return
+    }
+    if (level && level > parseInt(process.env['DEBUG'], 10)) return
+    if (!(msgs instanceof Array)) {
+      msgs = [msgs]
+    }
+    return console.log.apply(console, msgs)
   }
 }

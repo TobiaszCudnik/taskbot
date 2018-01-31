@@ -7,7 +7,7 @@ import * as moment from 'moment'
 import { EventEmitter } from 'events'
 import Sync from '../../sync/sync'
 import { TThreadCompletion } from '../gmail/query'
-import { IListConfig } from '../../types'
+import { IGTasksList } from '../../types'
 import * as google from 'googleapis'
 import * as _ from 'underscore'
 import { map } from 'typed-promisify'
@@ -29,7 +29,7 @@ type TTaskCompletion = {
 }
 
 export default class GTasksListSync extends Sync {
-  data: IListConfig
+  data: IGTasksList
   name: string
   list: google.tasks.v1.TaskList
 
@@ -66,8 +66,8 @@ export default class GTasksListSync extends Sync {
     public datastore: DataStore,
     public api: google.tasks.v1.Tasks,
     public name: string,
-    public config: IListConfig,
-    defaults: IListConfig
+    public config: IGTasksList,
+    defaults: IGTasksList
   ) {
     super()
     // this.gmail_api = this.sync.gmail_api

@@ -1,7 +1,6 @@
 import Sync, { SyncState } from '../../sync/sync'
 import GmailQuery from './query'
 import * as google from 'googleapis'
-import DataStore from '../../manager/datastore'
 
 export class State extends SyncState {
   // TODO
@@ -11,7 +10,7 @@ export class State extends SyncState {
   }
 }
 
-export default class GmailQueryLabelsSync extends Sync {
+export default class GmailLabelFilterSync extends Sync {
   query: GmailQuery
 
   constructor(

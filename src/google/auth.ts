@@ -30,10 +30,10 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
   client: any
   settings: IConfig
 
-  constructor(settings: IConfig) {
+  constructor(config: IConfig) {
     super(null, false)
     // google.options({ params: { quotaUser: 'user123@example.com' } });
-    this.settings = settings
+    this.settings = config
     this.register(
       'Ready',
       'CredentialsSet',
@@ -45,11 +45,11 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
       global.am_network.addMachine(this)
     }
     this.client = new google.auth.OAuth2(
-      settings.client_id,
-      settings.client_secret,
-      settings.redirect_url
+      config.client_id,
+      config.client_secret,
+      config.redirect_url
     )
-    if (settings.access_token && settings.refresh_token) {
+    if (config.access_token && config.refresh_token) {
       this.add('CredentialsSet')
     } else {
       throw new Error('not-implemented')

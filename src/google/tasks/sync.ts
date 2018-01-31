@@ -1,8 +1,7 @@
 import * as google from 'googleapis'
 import GTasksListSync from './sync-list'
-import { IListConfig } from '../../types'
+import { IGTasksList } from '../../types'
 import Sync from '../../sync/sync'
-import DataStore from '../../manager/datastore'
 
 // TODO state
 
@@ -14,7 +13,7 @@ export default class GTasksSync extends Sync {
   }
   api: google.gmail.v1.Tasks
 
-  constructor(public datastore: DataStore, public config, public auth) {
+  constructor(public data: LokiCollection, public config, public auth) {
     super()
     this.api = google.tasks('v1', { auth: this.auth.client })
   }
@@ -61,7 +60,7 @@ export default class GTasksSync extends Sync {
   initTaskListsSync() {
     for (let [name, data] of Object.entries(this.config.tasks.queries)) {
       if (name === 'labels_defaults') continue
-      let task_list = new TaskListSync(name, data as IListConfig, this)
+      let task_list = new TaskListSync(name, data as IGTasksList, this)
       // this.states.pipe(
       //   'TaskListSyncEnabled',
       //   task_list.states,

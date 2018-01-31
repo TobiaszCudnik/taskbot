@@ -64,35 +64,11 @@ export default class GmailQuery {
     this.name = name
     this.fetch_msgs = fetch_msgs
     this.state = new State(this)
-    this.state.id(this.name)
+    this.state.id('GQ: ' + this.name)
     if (process.env['DEBUG']) {
       this.state.logLevel(process.env['DEBUG'])
       global.am_network.addMachine(this.state)
     }
-  }
-
-  async req<A, T, T2>(
-    method: (arg: A, cb: (err: any, res: T, res2: T2) => void) => void,
-    params: A,
-    abort: (() => boolean) | null | undefined,
-    returnArray: true
-  ): Promise<{ 0: T; 1: T2 } | null>
-  async req<A, T>(
-    method: (arg: A, cb: (err: any, res: T) => void) => void,
-    params: A,
-    abort: (() => boolean) | null | undefined,
-    returnArray: false
-  ): Promise<T | null>
-  async req<A, T>(
-    method: (arg: A, cb: (err: any, res: T) => void) => void,
-    params: A,
-    abort: (() => boolean) | null | undefined,
-    returnArray: boolean
-  ): Promise<any> {
-    console.log(method, params)
-    // return returnArray
-    //   ? this.gmail.req(method, params, abort, true)
-    //   : this.gmail.req(method, params, abort, false)
   }
 
   // TODO should download messages in parallel with next threads list pages
@@ -126,7 +102,7 @@ export default class GmailQuery {
         params.pageToken = prevRes.nextPageToken
       }
 
-      let list = await this.req(
+      let list = await this.api.req(
         this.api.users.threads.list,
         params,
         abort,

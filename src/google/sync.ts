@@ -3,16 +3,20 @@ import Auth from './auth'
 import { IBind, IEmit, TStates } from './sync-types'
 import Sync, { SyncState } from '../sync/sync'
 import GTasksSync from './tasks/sync'
-import DataStore from '../manager/datastore'
 import { IState } from './gmail/sync-types'
-import {IConfig} from "../types";
+import { IConfig } from '../types'
+import {DBRecord} from "../root/sync";
 
 export class State extends SyncState<TStates, IBind, IEmit> {
   Authenticated: IState = {}
 
   SubsInited: IState = { require: ['ConfigSet', 'Authenticated'], auto: true }
   SubsReady: IState = { require: ['SubsInited'], auto: true }
-  Ready: IState = { require: ['ConfigSet', 'SubsReady'] }
+  Ready: IState = {
+    auto: true,
+    require: ['ConfigSet', 'SubsReady'],
+    drop: ['Initializing']
+  }
 
   constructor(target: Sync) {
     super(target)
@@ -24,10 +28,15 @@ export default class GoogleSync extends Sync {
   auth: Auth
   state: State
 
-  constructor(public datastore: DataStore, config: IConfig) {
-    super()
-    this.state.add('ConfigSet', config)
-    this.auth = new Auth(this.config)
+  constructor(
+    config: IConfig,
+    public data: LokiCollection,
+    public callbacks: {
+      onLocalEntry: (record: DBRecord) => null
+    }[]
+  ) {
+    super(config)
+    this.auth = new Auth(config)
     this.auth.pipe('Ready', this.state, 'Authenticated')
   }
 
@@ -37,13 +46,24 @@ export default class GoogleSync extends Sync {
     return state
   }
 
+  getCallbacks() {
+    return {
+      ...this.callbacks,
+      req: async (...params) => {
+        // haha
+        params[1].auth = this.auth.client
+        return await this.callbacks.req(...params)
+      }
+    }
+  }
+
   SubsInited_state() {
     // TODO use Map
     this.subs = {}
-    this.subs.gmail = new GmailSync(this.datastore, this.config, this.auth)
-    this.subs.gmail.state.add('Enabled')
-    this.subs.tasks = new GTasksSync(this.datastore, this.config, this.auth)
-    this.subs.tasks.state.add('Enabled')
+    this.subs.gmail = new GmailSync(this.config, this.data, this.getCallbacks(), this.auth)
+    // this.subs.tasks = new GTasksSync(this.data, this.config, this.auth)
     this.bindToSubs()
+    this.subs.gmail.state.add('Enabled')
+    // this.subs.tasks.state.add('Enabled')
   }
 }

@@ -1,6 +1,6 @@
 ///<reference path="../../../node_modules/typed-promisify/index.ts"/>
 import { IState, IBind, IEmit, TStates } from './sync-types'
-import Query from './query'
+import Query, {Thread} from './query'
 import * as _ from 'underscore'
 import * as google from 'googleapis'
 import { IConfig, TRawEmail } from '../../types'
@@ -8,8 +8,8 @@ import { map } from 'typed-promisify'
 import Sync, { SyncState } from '../../sync/sync'
 import Auth from '../auth'
 import GmailTextLabelsSync from './sync-text-labels'
-import GmailQueryLabelsSync from './sync-query-labels'
-import { DataStore } from '../../manager/datastore'
+import GmailListSync from './sync-list'
+import GmailLabelFilterSync from './sync-label-filter'
 
 export class State extends SyncState {
   // -- overrides
@@ -18,9 +18,13 @@ export class State extends SyncState {
     drop: ['QueryLabelsSynced', 'SyncingQueryLabels']
   }
 
-  SubsInited: { require: ['ConfigSet']; auto: true }
-  SubsReady: { require: ['SubsInited']; auto: true }
-  Ready: IState = { require: ['ConfigSet', 'SubsReady'] }
+  SubsInited: IState = { require: ['ConfigSet'], auto: true }
+  SubsReady: IState = { require: ['SubsInited'], auto: true }
+  Ready: IState = {
+    auto: true,
+    require: ['ConfigSet', 'SubsReady'],
+    drop: ['Initializing']
+  }
 
   // -- own
 
@@ -74,13 +78,15 @@ export default class GmailSync extends Sync {
   labels: google.gmail.v1.Label[]
 
   constructor(
-    public datastore: DataStore,
     public config: IConfig,
+    public data: LokiCollection,
+    public callbacks,
     public auth: Auth
   ) {
-    super()
-    this.state.add('ConfigSet', config)
+    super(config)
     this.api = google.gmail('v1', { auth: this.auth.client })
+    this.api = Object.create(this.api)
+    this.api.req = callbacks.req
   }
 
   getState() {
@@ -99,50 +105,90 @@ export default class GmailSync extends Sync {
   // Transitions
   // ----- -----
 
-  SubsInited_state() {
-    this.subs = {}
-    this.initQueryLabels()
-    this.subs.text_labels = new GmailTextLabelsSync(
-      this.datastore,
-      this.api,
-      this.config.text_labels
-    )
-    this.subs.text_labels.state.add('Enabled')
+  threads = new Map<string, Thread>()
+
+  getCallbacks() {
+    return {
+      ...this.callbacks,
+      req(method, ...params) {
+        this.callbacks.req(this.api, method, ...params)
+      },
+      setThread(thread: Thread) {
+        // TODO GC
+        this.threads.set(thread.id, thread)
+      },
+      getThread(id: string) {
+        this.threads.get(id)
+      }
+    }
   }
+
+  SubsInited_state() {
+    // TODO Map
+    this.subs = {}
+    this.subs.lists = []
+    for (const config of this.config.gmail) {
+      const sub = new GmailListSync(config, this.data, this.getCallbacks(),
+        this.api)
+      this.subs.lists.push(sub)
+      sub.state.add('Enabled')
+    }
+    // this.initLabelFilters()
+    // this.subs.text_labels = new GmailTextLabelsSync(
+    //   this.data,
+    //   this.api,
+    //   this.config.text_labels
+    // )
+    // this.subs.text_labels.state.add('Enabled')
+    this.bindToSubs()
+  }
+
+  initLabelFilters() {
+    let count = 0
+    this.subs.query_labels = []
+    for (let config of this.config.query_labels) {
+      this.subs.query_labels.push(
+        new GmailLabelFilterSync(this.data, this.api, config, `GQL ${++count}`)
+      )
+    }
+  }
+
+  // TODO tmp
+  ReadingDone_enter() {}
 
   // TODO extract to a separate class
   async SyncingQueryLabels_state() {
-    this.query_labels_timer = Date.now()
-    let abort = this.state.getAbort('SyncingQueryLabels')
-
-    let dirty = false
-    await map(
-      [...this.query_labels],
-      async ([name, query]: [string, Query]) => {
-        query.states.add('Enabled')
-        // TODO timeout?
-        debugger
-        await query.states.when('MsgsFetched')
-        if (abort()) return
-        // TODO this probably resets the download states, while still
-        // keeping the cache
-        query.states.drop('Enabled')
-
-        let labels = this.config.query_labels[name]
-        await Promise.all(
-          query.threads.map(async thread => {
-            await this.modifyLabels(thread.id, labels[0], labels[1], abort)
-            dirty = true
-          })
-        )
-      }
-    )
-
-    if (dirty) this.state.add('Dirty')
-
-    if (abort()) return
-
-    if (!dirty) this.state.add('QueryLabelsSynced')
+    // this.query_labels_timer = Date.now()
+    // let abort = this.state.getAbort('SyncingQueryLabels')
+    //
+    // let dirty = false
+    // await map(
+    //   [...this.query_labels],
+    //   async ([name, query]: [string, Query]) => {
+    //     query.states.add('Enabled')
+    //     // TODO timeout?
+    //     debugger
+    //     await query.states.when('MsgsFetched')
+    //     if (abort()) return
+    //     // TODO this probably resets the download states, while still
+    //     // keeping the cache
+    //     query.states.drop('Enabled')
+    //
+    //     let labels = this.config.query_labels[name]
+    //     await Promise.all(
+    //       query.threads.map(async thread => {
+    //         await this.modifyLabels(thread.id, labels[0], labels[1], abort)
+    //         dirty = true
+    //       })
+    //     )
+    //   }
+    // )
+    //
+    // if (dirty) this.state.add('Dirty')
+    //
+    // if (abort()) return
+    //
+    // if (!dirty) this.state.add('QueryLabelsSynced')
   }
 
   // TODO extract to a separate class
@@ -154,7 +200,7 @@ export default class GmailSync extends Sync {
 
   async FetchingLabels_state() {
     let abort = this.state.getAbort('FetchingLabels')
-    let res = await this.req(
+    let res = await this.api.req(
       this.api.users.labels.list,
       { userId: 'me' },
       null,
@@ -179,7 +225,7 @@ export default class GmailSync extends Sync {
 
   async FetchingHistoryId_state(abort?: () => boolean) {
     console.log('[FETCH] history ID')
-    let response = await this.req(
+    let response = await this.api.req(
       this.api.users.getProfile,
       {
         userId: 'me',
@@ -254,21 +300,6 @@ export default class GmailSync extends Sync {
       }
     }
     return null
-  }
-
-  initQueryLabels() {
-    let count = 0
-    this.subs.query_labels = []
-    for (let query of this.config.query_labels) {
-      this.subs.query_labels.push(
-        new GmailQueryLabelsSync(
-          this.datastore,
-          this.api,
-          query,
-          `GQL ${++count}`
-        )
-      )
-    }
   }
 
   normalizeLabelName(label: string) {
@@ -438,28 +469,4 @@ export default class GmailSync extends Sync {
   // 	throw new Error
   // for msg in thread.messages
   // 	for label_id in msg.labelIds
-
-  async req<A, T, T2>(
-    method: (arg: A, cb: (err: any, res: T, res2: T2) => void) => void,
-    params: A,
-    abort: (() => boolean) | null | undefined,
-    returnArray: true
-  ): Promise<[T, T2] | null>
-  async req<A, T>(
-    method: (arg: A, cb: (err: any, res: T) => void) => void,
-    params: A,
-    abort: (() => boolean) | null | undefined,
-    returnArray: false
-  ): Promise<T | null>
-  async req<A, T>(
-    method: (arg: A, cb: (err: any, res: T) => void) => void,
-    params: A,
-    abort: (() => boolean) | null | undefined,
-    returnArray: boolean
-  ): Promise<any> {
-    console.log(method, params)
-    // return returnArray
-    //   ? this.sync.req(method, params, abort, true)
-    //   : this.sync.req(method, params, abort, false)
-  }
 }
