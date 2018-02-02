@@ -14,29 +14,29 @@ export const Reading = {
 
 export class SyncState extends AsyncMachine<any, IBind, IEmit>
   implements ISyncState {
-  Enabled: IState = {}
+  Enabled: IState<any> = {}
 
-  Initializing: IState = { require: ['Enabled'] }
-  Ready: IState = { auto: true, drop: ['Initializing'] }
+  Initializing: IState<any> = { require: ['Enabled'] }
+  Ready: IState<any> = { auto: true, drop: ['Initializing'] }
   // optional
   ConfigSet = {}
   SubsReady = {}
   SubsInited = {}
 
-  Writing: IState = {
+  Writing: IState<any> = {
     drop: ['WritingDone', 'Reading', 'ReadingDone'],
     require: ['Enabled', 'Ready']
   }
-  WritingDone: IState = {
+  WritingDone: IState<any> = {
     drop: ['Writing', 'Reading', 'ReadingDone']
   }
 
-  Reading: IState = Reading
-  ReadingDone: IState = {
+  Reading: IState<any> = Reading
+  ReadingDone: IState<any> = {
     drop: ['Reading', 'Writing', 'WritingDone']
   }
 
-  Dirty: IState = {}
+  Dirty: IState<any> = {}
 
   constructor(target: Sync) {
     super(target)
@@ -46,20 +46,21 @@ export class SyncState extends AsyncMachine<any, IBind, IEmit>
 
 // TODO match SyncState
 export interface ISyncState {
-  Enabled: IState
-  Initializing: IState
-  Ready: IState
+  Enabled: IState<any>
+  Initializing: IState<any>
+  Ready: IState<any>
 
-  Writing: IState
-  WritingDone: IState
-  Reading: IState
-  ReadingDone: IState
+  Writing: IState<any>
+  WritingDone: IState<any>
+  Reading: IState<any>
+  ReadingDone: IState<any>
 }
 
 export default abstract class Sync {
   state: AsyncMachine<any, any, any>
   active_requests: number
-  config: IConfig | null
+  // config: IConfig | null
+  config: any
   sub_states_inbound = [['ReadingDone', 'ReadingDone'],
     ['WritingDone', 'WritingDone'], ['Ready', 'SubsReady']]
   sub_states_outbound = [['Reading', 'Reading'], ['Writing', 'Writing']]
@@ -101,15 +102,15 @@ export default abstract class Sync {
   }
 
   WritingDone_enter() {
-    return Object.values(this.subs).every(sync => sync.state.is('WritingDone'))
+    return this.subs_flat.every(sync => sync.state.is('WritingDone'))
   }
 
   ReadingDone_enter() {
-    return Object.values(this.subs).every(sync => sync.state.is('ReadingDone'))
+    return this.subs_flat.every(sync => sync.state.is('ReadingDone'))
   }
 
   SubsReady_enter() {
-    return Object.values(this.subs).every(sync => sync.state.is('Ready'))
+    return this.subs_flat.every(sync => sync.state.is('Ready'))
   }
 
   // ----- -----
@@ -118,20 +119,22 @@ export default abstract class Sync {
 
   initSubs() {}
 
-  mapSubs(fn: (sub: Sync) => boolean) {
-    // TODO
-  }
-
-  sync(): Array {
+  get subs_flat(): Sync[] {
     let ret = []
     for (const sub of Object.values(this.subs)) {
       if (Array.isArray(sub)) {
-        for (const sub2 of sub) {
-          ret.push(...sub2.sync())
-        }
+        ret.push(...sub)
       } else {
-        ret.push(...sub.sync())
+        ret.push(sub)
       }
+    }
+    return ret
+  }
+
+  sync(): any[] {
+    let ret = []
+    for (const sub of this.subs_flat) {
+      ret.push(...sub.sync())
     }
     return ret
   }

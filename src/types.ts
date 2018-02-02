@@ -1,3 +1,5 @@
+import {DBRecord} from "./root/sync";
+
 export interface ILabelDefaults {
   email_unmatched?: string[],
   labels_new_task?: string[],
@@ -11,6 +13,16 @@ export interface IGmailQuery {
   query: string,
   add: string[],
   remove?: string[]
+  name: string,
+  db: (record: DBRecord) => boolean,
+  enter: {
+      add: string[],
+      remove: string[]
+  },
+  exit: {
+      add: string[],
+      remove: string[]
+  }
 }
 
 export interface IGTasksList {
@@ -42,7 +54,7 @@ export type IConfig = {
   }[],
   status_labels: string[],
   sync_frequency: number,
-  gmail_queries: IGmailQuery[],
+  gmail: IGmailQuery[],
   // TODO this could be dynamic?
   status_map: { [shortcut: string]: string },
   lists_labels_in_title: LabelsInTitles

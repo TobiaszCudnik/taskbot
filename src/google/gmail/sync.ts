@@ -62,9 +62,14 @@ export class State extends SyncState {
   }
 }
 
+// TODO tmp
+export interface GmailAPI extends google.gmail.v1.Gmail {
+  req(api, method, c, d): Promise<any>;
+}
+
 export default class GmailSync extends Sync {
   state: State
-  api: google.gmail.v1.Gmail
+  api: GmailAPI
   // sync: GoogleSync
   // completions = new Map<string, {
   // 	completed: boolean,
@@ -80,12 +85,12 @@ export default class GmailSync extends Sync {
 
   constructor(public root: RootSync, public auth: Auth) {
     super(root.config, root)
-    this.api = google.gmail('v1', { auth: this.auth.client })
+    // this.api = google.gmail('v1', { auth: this.auth.client })
+    this.api = <GmailAPI>google.gmail('v1')
     this.api = Object.create(this.api)
-    this.api.req = async (...params) => {
-      // haha
-      params[1].auth = this.auth.client
-      return await this.root.req(...params)
+    this.api.req = async (a, params, c, d) => {
+      params.auth = this.auth.client
+      return await this.root.req(a, params, c, d)
     }
   }
 
@@ -106,11 +111,17 @@ export default class GmailSync extends Sync {
   // ----- -----
 
   threads = new Map<string, Thread>()
+  subs: {
+    query_labels: Sync[],
+    lists: Sync[]
+  }
 
   SubsInited_state() {
     // TODO Map
-    this.subs = {}
-    this.subs.lists = []
+    this.subs = {
+      lists: [],
+      query_labels: [],
+    }
     for (const config of this.config.gmail) {
       const sub = new GmailListSync(config, this.root, this)
       this.subs.lists.push(sub)
@@ -128,16 +139,12 @@ export default class GmailSync extends Sync {
 
   initLabelFilters() {
     let count = 0
-    this.subs.query_labels = []
     for (let config of this.config.query_labels) {
       this.subs.query_labels.push(
-        new GmailLabelFilterSync(this.data, this.api, config, `GQL ${++count}`)
+        new GmailLabelFilterSync(this, this.api, config, `GQL ${++count}`)
       )
     }
   }
-
-  // TODO tmp
-  ReadingDone_enter() {}
 
   // TODO extract to a separate class
   async SyncingQueryLabels_state() {
@@ -200,7 +207,7 @@ export default class GmailSync extends Sync {
       let query = this.queries[i]
       // Add the Dirty states to all child queries
       // TODO could be easily narrowed down
-      this.state.add(query.states, 'Dirty')
+      this.state.add(query.state, 'Dirty')
     }
 
     return this.state.drop('Dirty')
@@ -229,18 +236,18 @@ export default class GmailSync extends Sync {
   // ----- -----
 
   // TODO return a more sensible format
-  findTaskForThread(
-    thread_id: string
-  ): { 0: google.tasks.v1.Task; 1: TaskListSync } | { 0: null; 1: null } {
-    for (let list_sync of this.task_lists_sync) {
-      let found = list_sync.getTaskForThread(thread_id)
-      if (found) {
-        return [found, list_sync]
-      }
-    }
-
-    return [null, null]
-  }
+  // findTaskForThread(
+  //   thread_id: string
+  // ): { 0: google.tasks.v1.Task; 1: TaskListSync } | { 0: null; 1: null } {
+  //   for (let list_sync of this.task_lists_sync) {
+  //     let found = list_sync.getTaskForThread(thread_id)
+  //     if (found) {
+  //       return [found, list_sync]
+  //     }
+  //   }
+  //
+  //   return [null, null]
+  // }
 
   async fetchThread(
     id: string,
@@ -266,7 +273,7 @@ export default class GmailSync extends Sync {
   }
 
   createQuery(query: string, name: string = '', fetch_msgs = false): Query {
-    let gmail_query = new Query(this.api, query, name, fetch_msgs)
+    let gmail_query = new Query(this, query, name, fetch_msgs)
     this.queries.push(gmail_query)
 
     return gmail_query
@@ -340,7 +347,7 @@ export default class GmailSync extends Sync {
     let thread = this.getThread(thread_id, true)
 
     let label = thread
-      ? `"${this.getTitleFromThread(thread)}"`
+      ? `"${getTitleFromThread(thread)}"`
       : `ID: ${thread_id}`
 
     let log_msg = `Modifing labels for thread ${label} `
@@ -350,7 +357,7 @@ export default class GmailSync extends Sync {
 
     console.log(log_msg)
 
-    let ret = await this.req(
+    let ret = await this.api.req(
       this.api.users.threads.modify,
       {
         id: thread_id,
@@ -396,7 +403,7 @@ export default class GmailSync extends Sync {
     abort?: () => boolean
   ): Promise<string | null> {
     console.log(`Creating thread (${labels.join(' ')})`)
-    let message = await this.req(
+    let message = await this.api.req(
       this.api.users.messages.insert,
       {
         userId: 'me',
@@ -416,9 +423,9 @@ export default class GmailSync extends Sync {
 
   createEmail(subject: string): TRawEmail {
     let email = [
-      `From: ${this.sync.config.gmail_username} <${this.sync.config
+      `From: ${this.config.gmail_username} <${this.config
         .gmail_username}>s`,
-      `To: ${this.sync.config.gmail_username}`,
+      `To: ${this.config.gmail_username}`,
       'Content-type: text/html;charset=utf-8',
       'MIME-Version: 1.0',
       `Subject: ${subject}`
@@ -431,20 +438,19 @@ export default class GmailSync extends Sync {
   }
 
   // TODO static or move to the thread class
-  getTitleFromThread(thread: google.gmail.v1.Thread) {
-    try {
-      return thread.messages[0].payload.headers[0].value
-    } catch (e) {
-      throw new Error('Thread content not fetched')
-    }
-  }
-
-  // TODO static or move to the thread class
   // threadHasLabels(thread: google.gmail.v1.Thread, labels: strings[]) {}
   // if not @gmail.is 'LabelsFetched'
   // 	throw new Error
   // for msg in thread.messages
   // 	for label_id in msg.labelIds
+}
+
+export function getTitleFromThread(thread: google.gmail.v1.Thread) {
+  try {
+    return thread.messages[0].payload.headers[0].value
+  } catch (e) {
+    throw new Error('Thread content not fetched')
+  }
 }
 
 export function normalizeLabelName(label: string) {

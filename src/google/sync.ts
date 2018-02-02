@@ -7,7 +7,7 @@ import { IState } from './gmail/sync-types'
 import { IConfig } from '../types'
 import {DBRecord, default as RootSync} from "../root/sync";
 
-export class State extends SyncState<TStates, IBind, IEmit> {
+export class State extends SyncState {
   Authenticated: IState = {}
 
   SubsInited: IState = { require: ['Authenticated', 'Enabled'], auto: true }

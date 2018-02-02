@@ -47,7 +47,8 @@ export type TThreadCompletion = {
 export default class GmailQuery {
   // api: google.gmail.v1.Gmail
   state: State
-  // synced_history_id: number | null
+  // history ID from the moment of reading
+  synced_history_id: number | null
 
   threads: Thread[] = []
   completions = new Map<string, TThreadCompletion>()
@@ -150,6 +151,7 @@ export default class GmailQuery {
       async (thread: google.gmail.v1.Thread) => {
         // check if the thread has been previously downloaded and if
         // the history ID has changed
+        // TODO compare against shared this.gmail.threads
         let previous =
           this.previous_threads &&
           this.previous_threads.find(

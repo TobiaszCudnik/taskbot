@@ -38,12 +38,27 @@ export class State extends SyncState {
   }
 }
 
-type DB = LokiCollection
+export type DB = LokiCollection<DBRecord>
 
 /**
  * Local DB record format.
  */
 export interface DBRecord {
+  id: DBRecordID
+  title: string
+  content: string
+  updated: number
+  parent?: DBRecordID
+  labels: { [index: string]: DBRecordLabel }
+}
+
+export type DBRecordID = string
+
+export interface DBRecordLabel {
+  // time
+  updated: number
+  // added or removed
+  active: boolean
 }
 
 export default class RootSync extends Sync {
@@ -74,7 +89,7 @@ export default class RootSync extends Sync {
   // ----- -----
 
   DBReady_state() {
-    this.db = new Loki()
+    this.db = new Loki('gtd-bot')
     this.data = this.db.getCollection('todos') || this.db.addCollection('todos')
   }
 
@@ -201,7 +216,7 @@ export default class RootSync extends Sync {
       }, [])
       console.log('changes', changes)
     } while (changes.length && ++c < MAX)
-    console.log(`SYNCED after ${c}`)
-    // TODO start writing
+    console.log(`SYNCED after ${c} rounds`)
+    return []
   }
 }
