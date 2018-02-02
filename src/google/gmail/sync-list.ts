@@ -45,7 +45,6 @@ export default class GmailListSync extends Sync {
   //   return [...this.dirty.values()].some(dirty => dirty)
   // }
   // last_ids: string[] = []
-  history_ids: {id: number, time: number}[] = []
 
   constructor(
     public config: IGmailQuery,
@@ -67,8 +66,14 @@ export default class GmailListSync extends Sync {
   async Reading_state() {
     const abort = this.state.getAbort('Reading')
     this.query.state.add('FetchingThreads')
+    // TODO pipe?
     await this.query.state.when('MsgsFetched')
     this.state.add('ReadingDone')
+  }
+
+  Writing_state() {
+    console.warn('WRITE ME')
+    process.exit()
   }
 
   // read the current list and add to the DB
@@ -84,8 +89,7 @@ export default class GmailListSync extends Sync {
       if (!record) {
         this.root.data.insert(this.toDB(thread))
         changed++
-      } else {
-        this.merge(thread, record)
+      } else if (this.merge(thread, record)) {
         changed++
       }
       // TODO should be done in the query class
@@ -93,14 +97,13 @@ export default class GmailListSync extends Sync {
       ids.push(thread.id)
     }
     // remove
+    // query the db for the current list where IDs arent present locally
+    // and apply the exit label changes
     // TODO use an index
     const find = (record: DBRecord) => {
       return this.config.db(record) && !ids.includes(this.toLocalID(record))
         && record.updated < this.timeFromHistoryID(this.query.synced_history_id)
-      // TODO check if there isnt a more recent change on those records
     }
-    // query the db for the current list where IDs arent present locally
-    // and apply the exit label changes
     this.root.data.findAndUpdate(find, (record: DBRecord) => {
       changed++
       this.applyLabels(record, this.config.exit)
@@ -129,7 +132,7 @@ export default class GmailListSync extends Sync {
       title: getTitleFromThread(thread),
       content: 'TODO content',
       labels: {},
-      updated: this.timeFromHistoryID(thread.historyId)
+      updated: Date.now()
     }
     this.applyLabels(record, this.config.enter)
     return record
@@ -140,27 +143,28 @@ export default class GmailListSync extends Sync {
     return (<any>source).id ? (<any>source).id : source
   }
 
-  timeFromHistoryID(history_id) {
+  // TODO support thread object as a param a parseInt(r.historyId, 10)
+  timeFromHistoryID(history_id: number) {
     // floor the guess (to the closest previous recorded history ID)
     // or now
-    const index = _.sortedIndex(this.history_ids, {id: history_id}, 'id')
-    if (this.history_ids[index-1])
-      return this.history_ids[index].time
-    else
-      return Date.now()
+    let index = _.sortedIndex(this.gmail.history_ids, {id: history_id}, 'id')
+    return index ? this.gmail.history_ids[index-1].time
+      // TODO initial guess to avoid a double merge
+      : this.gmail.history_ids[0].time
   }
 
-  merge(thread: Thread, record: DBRecord) {
+  merge(thread: Thread, record: DBRecord): boolean {
     // TODO support duplicating in case of a conflict ???
     //   or send a new email in the thread?
-    if (this.timeFromHistoryID(thread.historyId) < record.updated) {
-      // TODO check resolve conflict?
-      return
+    if (this.timeFromHistoryID(parseInt(thread.historyId, 10)) < record.updated) {
+      // TODO check resolve conflict? since the last sync
+      return false
     }
     // TODO compare the date via history_id
     record.updated = Date.now()
     // TODO content from emails
     this.applyLabels(record, this.config.enter)
+    return true
   }
 
   // toLocal(record: DBRecord): Thread {

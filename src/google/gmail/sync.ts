@@ -82,6 +82,7 @@ export default class GmailSync extends Sync {
   query_labels = new Map<string, Query>()
   query_labels_timer: number | null
   labels: google.gmail.v1.Label[]
+  history_ids: {id: number, time: number}[] = []
 
   constructor(public root: RootSync, public auth: Auth) {
     super(root.config, root)
@@ -227,6 +228,7 @@ export default class GmailSync extends Sync {
     // TODO redo when no response?
     if (!response || (abort && abort())) return
     this.history_id = parseInt(response.historyId, 10)
+    this.history_ids.push({id: this.history_id, time: Date.now()})
     this.last_sync_time = Date.now()
     this.state.add('HistoryIdFetched')
   }
