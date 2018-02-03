@@ -28,6 +28,7 @@ export class State extends AsyncMachine<TStates, IBind, IEmit> {
     require: ['Enabled', 'ThreadsFetched'],
     drop: ['MsgsFetched']
   }
+  // TODO create a Ready state
   MsgsFetched: IState = {
     require: ['Enabled'],
     drop: ['FetchingMsgs']

@@ -68,6 +68,7 @@ export default class GmailListSync extends Sync {
     this.query.state.add('FetchingThreads')
     // TODO pipe?
     await this.query.state.when('MsgsFetched')
+    if (abort()) return
     this.state.add('ReadingDone')
   }
 
@@ -85,7 +86,7 @@ export default class GmailListSync extends Sync {
     let changed = 0
     // add / merge
     for (const thread of this.query.threads) {
-      const record = this.root.data.findOne(this.toDBID(thread.id))
+      const record = this.root.data.findOne({id: this.toDBID(thread.id)})
       if (!record) {
         this.root.data.insert(this.toDB(thread))
         changed++
