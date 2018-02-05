@@ -2,7 +2,6 @@ import AsyncMachine from 'asyncmachine'
 import { IState, IBind, IEmit, TStates } from './query-types'
 import * as moment from 'moment'
 import GmailSync from './sync'
-import { Semaphore } from 'await-semaphore'
 import * as google from 'googleapis'
 import { map } from 'typed-promisify-tob'
 
@@ -128,10 +127,9 @@ export default class GmailQuery {
     let history_id = await this.gmail.getHistoryId(abort)
     if (abort()) return
 
+    // TODO keep in GmailSync
     this.previous_threads = this.threads
     this.threads = results
-
-    this.updateThreadsCompletions()
 
     //    console.log "Found #{@result.threads.length} threads"
     if (!this.fetch_msgs) {
@@ -151,7 +149,6 @@ export default class GmailQuery {
   async FetchingMsgs_state(history_id: number, abort?: () => boolean) {
     abort = this.state.getAbort('FetchingMsgs', abort)
 
-    // TODO use the awaitable map
     let threads = await map(
       this.threads,
       async (thread: google.gmail.v1.Thread) => {
@@ -184,7 +181,7 @@ export default class GmailQuery {
       this.previous_threads = null
       this.state.add('MsgsFetched')
     } else {
-      console.log('[FetchingMsgs] nore results or some missing]')
+      console.log('[FetchingMsgs] no results or some missing')
     }
   }
 
@@ -196,49 +193,5 @@ export default class GmailQuery {
     return this.synced_history_id
       ? await this.gmail.isCached(this.synced_history_id, abort)
       : false
-  }
-
-  // update completion statuses
-  updateThreadsCompletions() {
-    let non_completed_ids: string[] = []
-    // create / update existing threads completion data
-    for (let thread of this.threads) {
-      let completion = this.completions[thread.id]
-      // update the completion if thread is new or completion status has changed
-      if ((completion && completion.completed) || !completion) {
-        this.completions.set(thread.id, {
-          completed: false,
-          time: moment()
-        })
-      }
-
-      non_completed_ids.push(thread.id)
-    }
-
-    // complete threads not found in the query results
-    for (let [id, row] of this.completions.entries()) {
-      // TODO build non_completed
-      if (non_completed_ids.includes(id)) return
-      if (row.completed) return
-      row.completed = true
-      row.time = moment()
-      console.log(`Marking thread as completed by query (${id})`)
-    }
-  }
-
-  threadWasCompleted(id: string): moment.Moment | null {
-    let thread = this.completions.get(id)
-    if (thread && thread.completed) return thread.time
-    return null
-  }
-
-  threadWasNotCompleted(id: string): moment.Moment | null {
-    let thread = this.completions.get(id)
-    if (thread && !thread.completed) return thread.time
-    return null
-  }
-
-  threadSeen(id: string) {
-    return Boolean(this.completions.get(id))
   }
 }

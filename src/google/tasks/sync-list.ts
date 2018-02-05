@@ -1,6 +1,5 @@
-import State from './sync-list-states'
 import * as moment from 'moment'
-import Sync from '../../sync/sync'
+import Sync, {SyncState} from '../../sync/sync'
 import * as google from 'googleapis'
 import * as _ from 'underscore'
 import { map } from 'typed-promisify-tob'
@@ -23,6 +22,16 @@ type TTaskCompletion = {
   completed: boolean
   time: moment.Moment
   thread_id: string | null
+}
+
+export class State extends SyncState {
+
+  Cached = {}
+
+  constructor(target) {
+    super(target)
+    this.registerAll()
+  }
 }
 
 export default class GTasksListSync extends Sync {
@@ -109,7 +118,7 @@ export default class GTasksListSync extends Sync {
       this.tasks.api.tasks.list,
       {
         tasklist: this.list.id,
-        // fields: "etag,items(id,title,notes,updated,etag,status)",
+        fields: "etag,items(id,title,notes,updated,etag,status)",
         maxResults: '1000',
         showHidden: false,
         etag: this.etags.tasks
@@ -142,9 +151,9 @@ export default class GTasksListSync extends Sync {
     let changed = 0
     // add / merge
     for (const task of this.entries.items) {
-      const id = this.toDBID(task)
-      const record = id
-        ? this.root.data.findOne({id: this.toDBID(task)}) : null
+      // empty task placeholder
+      if (!task.title) continue
+      const record = this.getFromDB(task)
       if (!record) {
         this.root.data.insert(this.toDB(task))
         changed++
@@ -155,20 +164,35 @@ export default class GTasksListSync extends Sync {
     return changed ? [changed] : []
   }
 
+  // TODO try to make it in one query, indexes
+  getFromDB(task) {
+    const id = this.toDBID(task)
+    if (id) {
+      const record = this.root.data.findOne({id})
+      if (record) return record
+    }
+    return this.root.data.findOne((r: DBRecord) => r.tasks_ids[task.id])
+  }
+
   toDB(task: Task): DBRecord {
     const record: DBRecord = {
       id: this.toDBID(task) || uuid(),
       title: task.title,
-      content: task.notes,
+      content: this.getContent(task),
       labels: {},
       updated: moment(task.updated).unix(),
       tasks_ids: {
-        [this.list.id]: task.id
+        [task.id]: this.list.id
       }
     }
-    const labels = task.completed ? this.config.enter : this.config.exit
+    const labels = task.status == 'completed' ? this.config.enter
+      : this.config.exit
     this.applyLabels(record, labels)
     return record
+  }
+
+  getContent(task: Task): string {
+    return task.notes.replace(/\bemail:\w+\b/, '')
   }
 
   toDBID(task: Task): string | null {
@@ -176,20 +200,26 @@ export default class GTasksListSync extends Sync {
     if (match) {
       return match[1]
     }
-    // TODO check tasks_ids for list_id => task_id mapping
   }
 
   merge(task: Task, record: DBRecord): boolean {
     // TODO support duplicating in case of a conflict ???
     //   or send a new email in the thread?
     const task_updated = moment(task.updated).unix()
+    // TODO resolve conflicts
+    record.title = task.title
+    record.content = this.getContent(task)
     if (task_updated < record.updated) {
+      record.updated = task_updated
       // TODO check resolve conflict? since the last sync
       return false
     }
     record.updated = task_updated
+    record.tasks_ids = record.tasks_ids || {}
+    record.tasks_ids[task.id] = this.list.id
     // TODO notes
-    const labels = task.completed ? this.config.enter : this.config.exit
+    const labels = task.status == 'completed' ? this.config.enter
+      : this.config.exit
     this.applyLabels(record, labels)
     return true
   }
@@ -202,13 +232,13 @@ export default class GTasksListSync extends Sync {
     for (const label of labels.remove) {
       record.labels[label] = {
         active: false,
-        updated: Date.now()
+        updated: moment().unix()
       }
     }
     for (const label of labels.add) {
       record.labels[label] = {
         active: true,
-        updated: Date.now()
+        updated: moment().unix()
       }
     }
   }
@@ -227,14 +257,14 @@ export default class GTasksListSync extends Sync {
 //   Syncing_state() {
 //     this.push_dirty = false
 //     // TODO define in the prototype
-//     this.last_sync_start = Date.now()
+//     this.last_sync_start = moment().unix()
 //     this.last_sync_end = null
 //     return (this.last_sync_time = null)
 //   }
 //
 //   Synced_state() {
 //     if (this.push_dirty) this.state.add(this.sync.states, 'Dirty')
-//     this.last_sync_end = Date.now()
+//     this.last_sync_end = moment().unix()
 //     this.last_sync_time = this.last_sync_end - this.last_sync_start
 //     return console.log(
 //       `TaskList ${this.name} synced in: ${this.last_sync_time}ms`

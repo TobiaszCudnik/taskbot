@@ -316,7 +316,6 @@ declare module "googleapis" {
                 }
 
                 export interface Task {
-                    'completed': string;
                     'deleted': boolean;
                     'due': string;
                     'etag': string;

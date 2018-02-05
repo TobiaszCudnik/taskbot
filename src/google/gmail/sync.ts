@@ -11,6 +11,7 @@ import GmailTextLabelsSync from './sync-text-labels'
 import GmailListSync from './sync-list'
 import GmailLabelFilterSync from './sync-label-filter'
 import RootSync from "../../root/sync";
+import * as moment from 'moment'
 
 export class State extends SyncState {
   // -- overrides
@@ -150,7 +151,7 @@ export default class GmailSync extends Sync {
 
   // TODO extract to a separate class
   async SyncingQueryLabels_state() {
-    // this.query_labels_timer = Date.now()
+    // this.query_labels_timer = moment().unix()
     // let abort = this.state.getAbort('SyncingQueryLabels')
     //
     // let dirty = false
@@ -185,7 +186,7 @@ export default class GmailSync extends Sync {
 
   // TODO extract to a separate class
   // QueryLabelsSynced_state() {
-  //   this.last_sync_time = Date.now() - this.query_labels_timer
+  //   this.last_sync_time = moment().unix() - this.query_labels_timer
   //   this.query_labels_timer = null
   //   return console.log(`QueryLabels synced in: ${this.last_sync_time}ms`)
   // }
@@ -229,8 +230,8 @@ export default class GmailSync extends Sync {
     // TODO redo when no response?
     if (!response || (abort && abort())) return
     this.history_id = parseInt(response.historyId, 10)
-    this.history_ids.push({id: this.history_id, time: Date.now()})
-    this.last_sync_time = Date.now()
+    this.history_ids.push({id: this.history_id, time: moment().unix()})
+    this.last_sync_time = moment().unix()
     this.state.add('HistoryIdFetched')
   }
 
@@ -298,7 +299,7 @@ export default class GmailSync extends Sync {
   isHistoryIdValid() {
     return (
       this.history_id &&
-      Date.now() < this.last_sync_time + this.history_id_timeout
+      moment().unix() < this.last_sync_time + this.history_id_timeout
     )
   }
 

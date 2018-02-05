@@ -4,6 +4,7 @@ import GmailQuery, {Thread} from './query'
 import * as google from 'googleapis'
 import Sync, {SyncState, Reading} from '../../sync/sync'
 import * as _ from 'underscore'
+import * as moment from 'moment'
 import RootSync, {DBRecord} from "../../root/sync";
 import GmailSync, {getTitleFromThread} from "./sync";
 import {IListConfig} from "../../types";
@@ -113,7 +114,7 @@ export default class GmailListSync extends Sync {
       title: getTitleFromThread(thread),
       content: 'TODO content',
       labels: {},
-      updated: Date.now()
+      updated: moment().unix()
     }
     this.applyLabels(record, this.config.enter)
     return record
@@ -132,7 +133,7 @@ export default class GmailListSync extends Sync {
       return false
     }
     // TODO compare the date via history_id
-    record.updated = Date.now()
+    record.updated = moment().unix()
     // TODO content from emails
     this.applyLabels(record, this.config.enter)
     return true
@@ -168,13 +169,13 @@ export default class GmailListSync extends Sync {
     for (const label of labels.remove) {
       record.labels[label] = {
         active: false,
-        updated: Date.now()
+        updated: moment().unix()
       }
     }
     for (const label of labels.add) {
       record.labels[label] = {
         active: true,
-        updated: Date.now()
+        updated: moment().unix()
       }
     }
   }
@@ -184,13 +185,13 @@ export default class GmailListSync extends Sync {
   //  * @param thread
   //  */
   // onLocalEnter(thread: Thread) {
-  //   this.last_seen.set(thread.id, [Date.now(), true])
+  //   this.last_seen.set(thread.id, [moment().unix(), true])
   //   // TODO super, use the id
   //   this.gmail.onLocalEnter(this.toLocal(thread))
   // }
   //
   // onLocalExit(thread: Thread) {
-  //   this.last_seen.set(thread.id, [Date.now(), false])
+  //   this.last_seen.set(thread.id, [moment().unix(), false])
   // }
   //
   // onDBEnter(record: DBRecord) {
@@ -201,11 +202,11 @@ export default class GmailListSync extends Sync {
   //   } else {
   //     // execute add labels to local IDs
   //     console.log('execute add labels on local IDs')
-  //     this.last_seen.set(record.id, Date.now())
+  //     this.last_seen.set(record.id, moment().unix())
   //     this.dirty.set(record.id, true)
   //   }
   //   // check if this.last_update[local_id] < record.update
-  //   // this.last_update.set(thread.id, Date.now())
+  //   // this.last_update.set(thread.id, moment().unix())
   // }
   //
   // onDBMerge(record: DBRecord) {
@@ -216,7 +217,7 @@ export default class GmailListSync extends Sync {
   //   } else {
   //     // execute remove labels on local IDs
   //     console.log('execute remove labels on local IDs')
-  //     this.last_seen.set(record.id, Date.now())
+  //     this.last_seen.set(record.id, moment().unix())
   //     this.dirty.set(record.id, true)
   //   }
   // }
