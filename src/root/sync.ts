@@ -7,20 +7,20 @@ import * as Loki from 'lokijs'
 import {promisify, promisifyArray} from "typed-promisify-tob";
 
 export class State extends SyncState {
-  SubsInited: IState = {
+  SubsInited = {
     require: ['ConfigSet', 'DBReady'],
     auto: true,
     after: ['DBReady']
   }
-  SubsReady: IState = { require: ['SubsInited'], auto: true }
-  Ready: IState = {
+  SubsReady = { require: ['SubsInited'], auto: true }
+  Ready = {
     auto: true,
     require: ['ConfigSet', 'SubsReady'],
     drop: ['Initializing']
   }
   DBReady = { auto: true }
 
-  Reading: IState = {
+  Reading = {
     auto: true,
     drop: ['ReadingDone', 'Writing', 'WritingDone'],
     require: ['Enabled', 'Ready']

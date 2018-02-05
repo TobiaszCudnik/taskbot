@@ -5,14 +5,7 @@ import ManagerSync from "./root/sync"
 import { Logger, Network } from 'ami-logger/remote'
 import * as util from 'util'
 
-if (process.env['DEBUG']) {
-  settings = settings_debug
-}
-
-settings = {
-  ...settings,
-  gmail_max_results: 300
-}
+const app_settings = process.env['DEBUG'] ? settings_debug : settings
 
 if (process.env['DEBUG']) {
   // TODO make it less global
@@ -20,7 +13,7 @@ if (process.env['DEBUG']) {
   global.am_logger = new Logger(global.am_network)
 }
 
-const root = new ManagerSync(settings)
+const root = new ManagerSync(app_settings)
 root.state.add('Enabled')
 
 if (process.env['DEBUG']) {

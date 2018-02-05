@@ -5,3 +5,10 @@
 /// <reference path="manual/googleapis/googleapis/googleapis.d.ts" />
 /// <reference path="modules/async/index.d.ts" />
 /// <reference path="modules/uuid/index.d.ts" />
+
+declare namespace NodeJS {
+  export interface Global {
+    am_logger: any
+    am_network: any
+  }
+}

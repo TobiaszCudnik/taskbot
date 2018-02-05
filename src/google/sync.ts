@@ -10,9 +10,9 @@ import GTasksSync from "./tasks/sync";
 export class State extends SyncState {
   Authenticated: IState = {}
 
-  SubsInited: IState = { require: ['Authenticated', 'Enabled'], auto: true }
-  SubsReady: IState = { require: ['SubsInited'], auto: true }
-  Ready: IState = {
+  SubsInited = { require: ['Authenticated', 'Enabled'], auto: true }
+  SubsReady = { require: ['SubsInited'], auto: true }
+  Ready = {
     auto: true,
     require: ['ConfigSet', 'SubsReady'],
     drop: ['Initializing']

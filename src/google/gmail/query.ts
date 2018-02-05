@@ -87,7 +87,13 @@ export default class GmailQuery {
     let results: google.gmail.v1.Thread[] = []
     let prevRes: any
     while (true) {
-      let params = {
+      let params: {
+        pageToken?: string,
+        maxResults: number,
+        q: string,
+        userId: string,
+        fields: string
+      } = {
         // TODO this should be optional
         // labelIds: '',
         // pageToken: ''
