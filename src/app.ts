@@ -32,7 +32,8 @@ if (process.env['DEBUG']) {
     process.exit()
   })
   process.on('exit', function(err) {
-    global.am_logger.saveFile('snapshot.json')
+    // TODO get it back
+    // global.am_logger.saveFile('snapshot.json')
     console.log('Saved a snapshot to snapshot.json')
     console.log(util.inspect(root.data.data, {depth: 10}))
     console.log(global.am_network.toString())

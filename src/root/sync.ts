@@ -4,7 +4,7 @@ import {Semaphore} from 'await-semaphore'
 import Sync, {SyncState} from '../sync/sync'
 // import * as assert from 'assert/'
 import * as Loki from 'lokijs'
-import {promisify, promisifyArray} from "typed-promisify";
+import {promisify, promisifyArray} from "typed-promisify-tob";
 
 export class State extends SyncState {
   SubsInited: IState = {
@@ -50,6 +50,9 @@ export interface DBRecord {
   updated: number
   parent?: DBRecordID
   labels: { [index: string]: DBRecordLabel }
+  gmail_id?: string
+  // different task ids per list
+  tasks_ids?: {[list_id: string]: string}
 }
 
 export type DBRecordID = string

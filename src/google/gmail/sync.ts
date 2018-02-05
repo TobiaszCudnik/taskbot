@@ -1,10 +1,10 @@
-///<reference path="../../../node_modules/typed-promisify/index.ts"/>
+///<reference path="../../../node_modules/typed-promisify-tob/index.ts"/>
 import { IState, IBind, IEmit, TStates } from './sync-types'
 import Query, {Thread} from './query'
 import * as _ from 'underscore'
 import * as google from 'googleapis'
 import { IConfig, TRawEmail } from '../../types'
-import { map } from 'typed-promisify'
+import { map } from 'typed-promisify-tob'
 import Sync, { SyncState } from '../../sync/sync'
 import Auth from '../auth'
 import GmailTextLabelsSync from './sync-text-labels'
@@ -14,10 +14,6 @@ import RootSync from "../../root/sync";
 
 export class State extends SyncState {
   // -- overrides
-
-  Dirty: IState = {
-    drop: ['QueryLabelsSynced', 'SyncingQueryLabels']
-  }
 
   SubsInited: IState = { require: ['ConfigSet'], auto: true }
   SubsReady: IState = { require: ['SubsInited'], auto: true }
@@ -29,14 +25,14 @@ export class State extends SyncState {
 
   // -- own
 
-  SyncingQueryLabels: IState = {
-    auto: true,
-    require: ['Enabled', 'LabelsFetched'],
-    drop: ['QueryLabelsSynced']
-  }
-  QueryLabelsSynced: IState = {
-    drop: ['SyncingQueryLabels']
-  }
+  // SyncingQueryLabels: IState = {
+  //   auto: true,
+  //   require: ['Enabled', 'LabelsFetched'],
+  //   drop: ['QueryLabelsSynced']
+  // }
+  // QueryLabelsSynced: IState = {
+  //   drop: ['SyncingQueryLabels']
+  // }
 
   FetchingLabels: IState = {
     auto: true,
@@ -79,10 +75,10 @@ export default class GmailSync extends Sync {
   history_id: number | null
   last_sync_time: number
   queries: Query[] = []
-  query_labels = new Map<string, Query>()
-  query_labels_timer: number | null
   labels: google.gmail.v1.Label[]
   history_ids: {id: number, time: number}[] = []
+  sub_states_outbound = [['Reading', 'Reading']]
+  config: IConfig
 
   constructor(public root: RootSync, public auth: Auth) {
     super(root.config, root)
@@ -123,7 +119,7 @@ export default class GmailSync extends Sync {
       lists: [],
       query_labels: [],
     }
-    for (const config of this.config.gmail) {
+    for (const config of this.config.lists) {
       const sub = new GmailListSync(config, this.root, this)
       this.subs.lists.push(sub)
       sub.state.add('Enabled')
@@ -138,14 +134,19 @@ export default class GmailSync extends Sync {
     this.bindToSubs()
   }
 
-  initLabelFilters() {
-    let count = 0
-    for (let config of this.config.query_labels) {
-      this.subs.query_labels.push(
-        new GmailLabelFilterSync(this, this.api, config, `GQL ${++count}`)
-      )
-    }
+  Writing_state() {
+    console.warn('WRITE ME (GMAIL)')
+    // process.exit()
   }
+
+  // initLabelFilters() {
+  //   let count = 0
+  //   for (let config of this.config.query_labels) {
+  //     this.subs.query_labels.push(
+  //       new GmailLabelFilterSync(this, this.api, config, `GQL ${++count}`)
+  //     )
+  //   }
+  // }
 
   // TODO extract to a separate class
   async SyncingQueryLabels_state() {
@@ -183,11 +184,11 @@ export default class GmailSync extends Sync {
   }
 
   // TODO extract to a separate class
-  QueryLabelsSynced_state() {
-    this.last_sync_time = Date.now() - this.query_labels_timer
-    this.query_labels_timer = null
-    return console.log(`QueryLabels synced in: ${this.last_sync_time}ms`)
-  }
+  // QueryLabelsSynced_state() {
+  //   this.last_sync_time = Date.now() - this.query_labels_timer
+  //   this.query_labels_timer = null
+  //   return console.log(`QueryLabels synced in: ${this.last_sync_time}ms`)
+  // }
 
   async FetchingLabels_state() {
     let abort = this.state.getAbort('FetchingLabels')

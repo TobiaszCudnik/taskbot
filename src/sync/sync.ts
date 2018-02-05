@@ -14,6 +14,7 @@ export const Reading = {
 
 export class SyncState extends AsyncMachine<any, IBind, IEmit>
   implements ISyncState {
+
   Enabled: IState<any> = {}
 
   Initializing: IState<any> = { require: ['Enabled'] }
@@ -61,6 +62,7 @@ export default abstract class Sync {
   active_requests: number
   // config: IConfig | null
   config: any
+  // TODO rename
   sub_states_inbound = [['ReadingDone', 'ReadingDone'],
     ['WritingDone', 'WritingDone'], ['Ready', 'SubsReady']]
   sub_states_outbound = [['Reading', 'Reading'], ['Writing', 'Writing']]
@@ -116,8 +118,6 @@ export default abstract class Sync {
   // ----- -----
   // Methods
   // ----- -----
-
-  initSubs() {}
 
   get subs_flat(): Sync[] {
     let ret = []

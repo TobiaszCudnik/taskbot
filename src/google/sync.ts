@@ -2,10 +2,10 @@ import GmailSync from './gmail/sync'
 import Auth from './auth'
 import { IBind, IEmit, TStates } from './sync-types'
 import Sync, { SyncState } from '../sync/sync'
-// import GTasksSync from './tasks/sync'
 import { IState } from './gmail/sync-types'
 import { IConfig } from '../types'
-import {DBRecord, default as RootSync} from "../root/sync";
+import {DBRecord, default as RootSync} from "../root/sync"
+import GTasksSync from "./tasks/sync";
 
 export class State extends SyncState {
   Authenticated: IState = {}
@@ -27,6 +27,10 @@ export class State extends SyncState {
 export default class GoogleSync extends Sync {
   auth: Auth
   state: State
+  subs: {
+    gmail: GmailSync,
+    tasks: GTasksSync
+  }
 
   constructor(root: RootSync) {
     super(root.config, root)
@@ -42,11 +46,12 @@ export default class GoogleSync extends Sync {
 
   SubsInited_state() {
     // TODO use Map
-    this.subs = {}
-    this.subs.gmail = new GmailSync(this.root, this.auth)
-    // this.subs.tasks = new GTasksSync(this.data, this.config, this.auth)
+    this.subs = {
+      gmail: new GmailSync(this.root, this.auth),
+      tasks: new GTasksSync(this.root, this.auth)
+    }
     this.bindToSubs()
     this.subs.gmail.state.add('Enabled')
-    // this.subs.tasks.state.add('Enabled')
+    this.subs.tasks.state.add('Enabled')
   }
 }

@@ -6,7 +6,7 @@ import Sync, {SyncState, Reading} from '../../sync/sync'
 import * as _ from 'underscore'
 import RootSync, {DBRecord} from "../../root/sync";
 import GmailSync, {getTitleFromThread} from "./sync";
-import {IGmailQuery} from "../../types";
+import {IListConfig} from "../../types";
 
 export class State extends SyncState {
 
@@ -47,12 +47,12 @@ export default class GmailListSync extends Sync {
   // last_ids: string[] = []
 
   constructor(
-    public config: IGmailQuery,
+    public config: IListConfig,
     public root: RootSync,
     public gmail: GmailSync
   ) {
     super(config)
-    this.query = new GmailQuery(this.gmail, config.query, config.name,
+    this.query = new GmailQuery(this.gmail, config.gmail_query, config.name,
         true)
     this.query.state.add('Enabled')
   }
@@ -70,11 +70,6 @@ export default class GmailListSync extends Sync {
     await this.query.state.when('MsgsFetched')
     if (abort()) return
     this.state.add('ReadingDone')
-  }
-
-  Writing_state() {
-    console.warn('WRITE ME')
-    process.exit()
   }
 
   // read the current list and add to the DB
@@ -102,7 +97,7 @@ export default class GmailListSync extends Sync {
     // and apply the exit label changes
     // TODO use an index
     const find = (record: DBRecord) => {
-      return this.config.db(record) && !ids.includes(this.toLocalID(record))
+      return this.config.db_query(record) && !ids.includes(this.toLocalID(record))
         && record.updated < this.timeFromHistoryID(this.query.synced_history_id)
     }
     this.root.data.findAndUpdate(find, (record: DBRecord) => {
@@ -110,21 +105,6 @@ export default class GmailListSync extends Sync {
       this.applyLabels(record, this.config.exit)
     })
     return changed ? [changed] : []
-  }
-
-  applyLabels(record: DBRecord, labels: {add: string[], remove: string[]}) {
-    for (const label of labels.remove) {
-      record.labels[label] = {
-        active: false,
-        updated: Date.now()
-      }
-    }
-    for (const label of labels.add) {
-      record.labels[label] = {
-        active: true,
-        updated: Date.now()
-      }
-    }
   }
 
   toDB(thread: google.gmail.v1.Thread): DBRecord {
@@ -142,16 +122,6 @@ export default class GmailListSync extends Sync {
   toDBID(source: Thread | string) {
     // TODO tmp casts
     return (<any>source).id ? (<any>source).id : source
-  }
-
-  // TODO support thread object as a param a parseInt(r.historyId, 10)
-  timeFromHistoryID(history_id: number) {
-    // floor the guess (to the closest previous recorded history ID)
-    // or now
-    let index = _.sortedIndex(this.gmail.history_ids, {id: history_id}, 'id')
-    return index ? this.gmail.history_ids[index-1].time
-      // TODO initial guess to avoid a double merge
-      : this.gmail.history_ids[0].time
   }
 
   merge(thread: Thread, record: DBRecord): boolean {
@@ -180,6 +150,33 @@ export default class GmailListSync extends Sync {
   //
   toLocalID(record: DBRecord) {
     return record.id ? record.id : record
+  }
+
+  // gmail specific
+
+  // TODO support thread object as a param a parseInt(r.historyId, 10)
+  timeFromHistoryID(history_id: number) {
+    // floor the guess (to the closest previous recorded history ID)
+    // or now
+    let index = _.sortedIndex(this.gmail.history_ids, {id: history_id}, 'id')
+    return index ? this.gmail.history_ids[index-1].time
+      // TODO initial guess to avoid a double merge
+      : this.gmail.history_ids[0].time
+  }
+
+  applyLabels(record: DBRecord, labels: {add: string[], remove: string[]}) {
+    for (const label of labels.remove) {
+      record.labels[label] = {
+        active: false,
+        updated: Date.now()
+      }
+    }
+    for (const label of labels.add) {
+      record.labels[label] = {
+        active: true,
+        updated: Date.now()
+      }
+    }
   }
 
   // /**

@@ -1,104 +1,83 @@
 import { IState, IBind, IEmit, TStates } from './sync-list-states-types'
-import Sync, { SyncState } from '../../sync/sync'
+import { SyncState } from '../../sync/sync'
 
-export default class State extends SyncState<TStates, IBind, IEmit> {
-  Enabled: IState = {}
+export default class State extends SyncState {
 
-  Syncing: IState = {
-    auto: true,
-    require: ['Enabled'],
-    drop: ['Synced', 'Restart']
-  }
-  Synced: IState = {
-    drop: ['Syncing'],
-    require: [
-      'CompletedTasksSynced',
-      'ThreadsToTasksSynced',
-      'TasksToThreadsSynced',
-      'CompletedThreadsSynced'
-    ]
-  }
+  Cached: IState = {}
 
-  Restart: IState = {
-    drop: [
-      'TasksFetched',
-      'CompletedTasksSynced',
-      'ThreadsToTasksSynced',
-      'TasksToThreadsSynced',
-      'CompletedThreadsSynced',
-      'TasksCached'
-    ]
-  }
+  // Syncing: IState = {
+  //   auto: true,
+  //   require: ['Enabled'],
+  //   drop: ['Synced', 'Restart']
+  // }
+  // Synced: IState = {
+  //   drop: ['Syncing'],
+  //   require: [
+  //     'CompletedTasksSynced',
+  //     'ThreadsToTasksSynced',
+  //     'TasksToThreadsSynced',
+  //     'CompletedThreadsSynced'
+  //   ]
+  // }
 
-  // list
-  PreparingList: IState = {
-    auto: true,
-    require: ['Syncing'],
-    drop: ['ListReady']
-  }
-  ListReady: IState = {
-    drop: ['PreparingList']
-  }
+  // Restart: IState = {
+  //   drop: [
+  //     'TasksFetched',
+  //     'CompletedTasksSynced',
+  //     'ThreadsToTasksSynced',
+  //     'TasksToThreadsSynced',
+  //     'CompletedThreadsSynced',
+  //     'TasksCached'
+  //   ]
+  // }
 
-  // tasks
-  FetchingTasks: IState = {
-    auto: true,
-    require: ['Syncing', 'ListReady'],
-    drop: ['TasksFetched']
-  }
-  TasksFetched: IState = {
-    require: ['ListReady'],
-    drop: ['FetchingTasks']
-  }
-  TasksCached: IState = {}
-
-  // thread-to-tasks
-  SyncingThreadsToTasks: IState = {
-    auto: true,
-    require: ['Syncing', 'TasksFetched', 'MsgsFetched'],
-    drop: ['ThreadsToTasksSynced']
-  }
-  ThreadsToTasksSynced: IState = {
-    drop: ['SyncingThreadsToTasks']
-  }
-
-  // tasks-to-threads
-  SyncingTasksToThreads: IState = {
-    auto: true,
-    require: ['Syncing', 'TasksFetched', 'ThreadsFetched'],
-    drop: ['TasksToThreadsSynced']
-  }
-  TasksToThreadsSynced: IState = {
-    drop: ['SyncingTasksToThreads']
-  }
-
-  // complete threads
-  SyncingCompletedThreads: IState = {
-    auto: true,
-    require: ['Syncing', 'TasksFetched', 'ThreadsFetched'],
-    drop: ['CompletedThreadsSynced']
-  }
-  CompletedThreadsSynced: IState = {
-    drop: ['SyncingCompletedThreads']
-  }
-
-  // complete tasks
-  SyncingCompletedTasks: IState = {
-    auto: true,
-    require: ['Syncing', 'TasksFetched', 'ThreadsFetched'],
-    drop: ['CompletedTasksSynced']
-  }
-  CompletedTasksSynced: IState = {
-    drop: ['SyncingCompletedTasks']
-  }
+  // // thread-to-tasks
+  // SyncingThreadsToTasks: IState = {
+  //   auto: true,
+  //   require: ['Syncing', 'TasksFetched', 'MsgsFetched'],
+  //   drop: ['ThreadsToTasksSynced']
+  // }
+  // ThreadsToTasksSynced: IState = {
+  //   drop: ['SyncingThreadsToTasks']
+  // }
+  //
+  // // tasks-to-threads
+  // SyncingTasksToThreads: IState = {
+  //   auto: true,
+  //   require: ['Syncing', 'TasksFetched', 'ThreadsFetched'],
+  //   drop: ['TasksToThreadsSynced']
+  // }
+  // TasksToThreadsSynced: IState = {
+  //   drop: ['SyncingTasksToThreads']
+  // }
+  //
+  // // complete threads
+  // SyncingCompletedThreads: IState = {
+  //   auto: true,
+  //   require: ['Syncing', 'TasksFetched', 'ThreadsFetched'],
+  //   drop: ['CompletedThreadsSynced']
+  // }
+  // CompletedThreadsSynced: IState = {
+  //   drop: ['SyncingCompletedThreads']
+  // }
+  //
+  // // complete tasks
+  // SyncingCompletedTasks: IState = {
+  //   auto: true,
+  //   require: ['Syncing', 'TasksFetched', 'ThreadsFetched'],
+  //   drop: ['CompletedTasksSynced']
+  // }
+  // CompletedTasksSynced: IState = {
+  //   drop: ['SyncingCompletedTasks']
+  // }
 
   //	SyncingTaskNames: {}
 
   // ----- External States
 
-  ThreadsFetched: IState = {}
-
-  MsgsFetched: IState = {}
+  // ThreadsFetched: IState = {}
+  //
+  // MsgsFetched: IState = {}
 
   constructor(target) {
     super(target)

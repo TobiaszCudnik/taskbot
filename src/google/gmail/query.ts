@@ -4,7 +4,7 @@ import * as moment from 'moment'
 import GmailSync from './sync'
 import { Semaphore } from 'await-semaphore'
 import * as google from 'googleapis'
-import { map } from 'typed-promisify'
+import { map } from 'typed-promisify-tob'
 
 export type Thread = google.gmail.v1.Thread
 
@@ -54,7 +54,6 @@ export default class GmailQuery {
   threads: Thread[] = []
   completions = new Map<string, TThreadCompletion>()
   previous_threads: Thread[] | null = null
-  fetch_msgs: boolean
 
   constructor(
     public gmail: GmailSync,

@@ -1,23 +1,20 @@
-import States from './sync-list-states'
-// TODO loose
-import * as timestamp from 'internet-timestamp'
-// TODO loose
-import * as ago from 'ago'
+import State from './sync-list-states'
 import * as moment from 'moment'
-import { EventEmitter } from 'events'
 import Sync from '../../sync/sync'
-import { TThreadCompletion } from '../gmail/query'
-import { IGTasksList } from '../../types'
 import * as google from 'googleapis'
 import * as _ from 'underscore'
-import { map } from 'typed-promisify'
-import DataStore from '../../manager/datastore'
-import { State } from '../gmail/sync'
+import { map } from 'typed-promisify-tob'
+import RootSync, {DBRecord} from "../../root/sync"
+import GTasksSync from "./sync";
+import * as uuid from 'uuid/v4'
+import {IListConfig} from "../../types";
+
+export type Task = google.tasks.v1.Task
 
 // TODO check if needed
 export interface ITasks {
   etag: string
-  items: google.tasks.v1.Task[]
+  items: Task[]
   kind: string
   nextPageToken: string
 }
@@ -29,47 +26,61 @@ type TTaskCompletion = {
 }
 
 export default class GTasksListSync extends Sync {
-  data: IGTasksList
+  // data: IGTasksList
   name: string
-  list: google.tasks.v1.TaskList
-
-  api: google.tasks.v1.Tasks
-
-  states: States
-
-  tasks: ITasks | null
-  tasks_completed: google.tasks.v1.Tasks
-  // TODO set
-  tasks_completed_from: string
-  threads = null
-
-  push_dirty: boolean
-  last_sync_start: number
-  last_sync_end: number | null
-  last_sync_time: number | null
-
-  sync: Sync
+  state: State
+  entries: ITasks | null
   etags: {
     tasks: string | null
-    tasks_completed: string | null
+    // tasks_completed: string | null
   } = {
     tasks: null,
-    tasks_completed: null
+    // tasks_completed: null
   }
-  completions_tasks = new Map<string, TTaskCompletion>()
-  quota_exceeded = false
+  get list(): google.tasks.v1.TaskList | null {
+    if (!this.tasks.lists) {
+      throw Error('Lists not fetched')
+    }
+    for (const list of this.tasks.lists) {
+      if (list.title == this.config.name) {
+        return list
+      }
+    }
+  }
 
-  def_title: string
+  // get entries(): google.tasks.v1.Task[] {
+  //   if (!this.entries || !this.entries.items) return []
+  //   return this.entries.items.concat(
+  //     (this.tasks_completed && this.tasks_completed.items) || []
+  //   )
+  // }
+
+  // get tasks_completed_from(): number {
+  //   return moment().subtract(2, 'weeks').unix()
+  // }
+
+  // tasks_completed: google.tasks.v1.Tasks
+  // TODO set
+  // tasks_completed_from: string
+  // threads = null
+
+  // push_dirty: boolean
+  // last_sync_start: number
+  // last_sync_end: number | null
+  // last_sync_time: number | null
+
+  // completions_tasks = new Map<string, TTaskCompletion>()
+  // quota_exceeded = false
+
+  // def_title: string
   // tasks_in_threads;
 
   constructor(
-    public datastore: DataStore,
-    public api: google.tasks.v1.Tasks,
-    public name: string,
-    public config: IGTasksList,
-    defaults: IGTasksList
+    public config: IListConfig,
+    public root: RootSync,
+    public tasks: GTasksSync
   ) {
-    super()
+    super(config)
     // this.gmail_api = this.sync.gmail_api
     // this.gmail = this.sync.gmail
     // this.tasks_api = this.sync.tasks_api
@@ -82,18 +93,134 @@ export default class GTasksListSync extends Sync {
     // this.states.pipe('Enabled', this.query.states)
   }
 
-  getState() {
-    const state = new State(this)
-    state.id(this.name)
-    return state
+  getState(): State {
+    return new State(this).id('GTasks/list: '+this.config.name)
   }
 
+  async Reading_state() {
+    if (!this.list) {
+      console.log(`List '${this.config.name}' doesnt exist, skipping reading`)
+      return this.state.add('ReadingDone')
+    }
+    const abort = this.state.getAbort('Reading')
+    // let previous_ids = this.getAllTasks().map(task => task.id)
+
+    let [list, res] = await this.tasks.api.req(
+      this.tasks.api.tasks.list,
+      {
+        tasklist: this.list.id,
+        // fields: "etag,items(id,title,notes,updated,etag,status)",
+        maxResults: '1000',
+        showHidden: false,
+        etag: this.etags.tasks
+      },
+      abort,
+      true
+    )
+
+    // TODO handle !res
+    if ((abort && abort()) || !res) return
+
+    if (res.statusCode === 304) {
+      this.state.add('Cached')
+      console.log(`[CACHED] tasks for '${this.config.name}'`)
+    } else {
+      console.log(`[FETCH] tasks for '${this.config.name}'`)
+      if (!list.items) {
+        list.items = []
+      }
+      this.etags.tasks = res.headers['etag'] as string
+      this.entries = list
+    }
+
+    // this.processTasksDeletion(previous_ids)
+    this.state.add('ReadingDone')
+  }
+
+  sync() {
+    const ids = []
+    let changed = 0
+    // add / merge
+    for (const task of this.entries.items) {
+      const id = this.toDBID(task)
+      const record = id
+        ? this.root.data.findOne({id: this.toDBID(task)}) : null
+      if (!record) {
+        this.root.data.insert(this.toDB(task))
+        changed++
+      } else if (this.merge(task, record)) {
+        changed++
+      }
+    }
+    return changed ? [changed] : []
+  }
+
+  toDB(task: Task): DBRecord {
+    const record: DBRecord = {
+      id: this.toDBID(task) || uuid(),
+      title: task.title,
+      content: 'TODO content',
+      labels: {},
+      updated: moment(task.updated).unix(),
+      tasks_ids: {
+        [this.list.id]: task.id
+      }
+    }
+    const labels = task.completed ? this.config.enter : this.config.exit
+    this.applyLabels(record, labels)
+    return record
+  }
+
+  toDBID(task: Task): string | null {
+    const match = task.notes && task.notes.match(/\bemail:\w+\b/)
+    if (match) {
+      return match[1]
+    }
+  }
+
+  merge(task: Task, record: DBRecord): boolean {
+    // TODO support duplicating in case of a conflict ???
+    //   or send a new email in the thread?
+    const task_updated = moment(task.updated).unix()
+    if (task_updated < record.updated) {
+      // TODO check resolve conflict? since the last sync
+      return false
+    }
+    record.updated = task_updated
+    // TODO notes
+    const labels = task.completed ? this.config.enter : this.config.exit
+    this.applyLabels(record, labels)
+    return true
+  }
+
+  toLocalID(record: DBRecord) {
+    return record.tasks_ids && record.tasks_ids[this.list.id]
+  }
+
+  applyLabels(record: DBRecord, labels: {add: string[], remove: string[]}) {
+    for (const label of labels.remove) {
+      record.labels[label] = {
+        active: false,
+        updated: Date.now()
+      }
+    }
+    for (const label of labels.add) {
+      record.labels[label] = {
+        active: true,
+        updated: Date.now()
+      }
+    }
+  }
+}
+
+// TODO remove
+class Old {
   // ----- -----
   // Transitions
   // ----- -----
 
   Restart_state() {
-    return this.states.add('Syncing')
+    return this.state.add('Syncing')
   }
 
   Syncing_state() {
@@ -105,7 +232,7 @@ export default class GTasksListSync extends Sync {
   }
 
   Synced_state() {
-    if (this.push_dirty) this.states.add(this.sync.states, 'Dirty')
+    if (this.push_dirty) this.state.add(this.sync.states, 'Dirty')
     this.last_sync_end = Date.now()
     this.last_sync_time = this.last_sync_end - this.last_sync_start
     return console.log(
@@ -114,7 +241,7 @@ export default class GTasksListSync extends Sync {
   }
 
   async SyncingThreadsToTasks_state() {
-    let abort = this.states.getAbort('SyncingThreadsToTasks')
+    let abort = this.state.getAbort('SyncingThreadsToTasks')
     await Promise.all(
       this.query.threads.map(async thread => {
         let task = this.getTaskForThreadId(thread.id)
@@ -165,19 +292,19 @@ export default class GTasksListSync extends Sync {
 
     if (abort()) return
     // TODO merge?
-    this.states.add('ThreadsToTasksSynced')
-    this.states.add('Synced')
+    this.state.add('ThreadsToTasksSynced')
+    this.state.add('Synced')
   }
 
   async SyncingTasksToThreads_state() {
-    let abort = this.states.getAbort('SyncingTasksToThreads')
+    let abort = this.state.getAbort('SyncingTasksToThreads')
 
     // TODO assert?
-    if (!this.tasks) return
+    if (!this.entries) return
 
     // loop over non completed tasks
     await Promise.all(
-      this.tasks.items.map(async task => {
+      this.entries.items.map(async task => {
         // TODO support children tasks
         if (!task.title || task.parent) {
           return
@@ -204,12 +331,12 @@ export default class GTasksListSync extends Sync {
 
     if (abort()) return
 
-    this.states.add('TasksToThreadsSynced')
-    this.states.add('Synced')
+    this.state.add('TasksToThreadsSynced')
+    this.state.add('Synced')
   }
 
   async SyncingCompletedThreads_state() {
-    let abort = this.states.getAbort('SyncingCompletedThreads')
+    let abort = this.state.getAbort('SyncingCompletedThreads')
 
     await map(
       [...this.query.completions],
@@ -235,12 +362,12 @@ export default class GTasksListSync extends Sync {
 
     if (abort()) return
 
-    this.states.add('CompletedThreadsSynced')
-    this.states.add('Synced')
+    this.state.add('CompletedThreadsSynced')
+    this.state.add('Synced')
   }
 
   async SyncingCompletedTasks_state() {
-    let abort = this.states.getAbort('SyncingCompletedTasks')
+    let abort = this.state.getAbort('SyncingCompletedTasks')
 
     await map(
       [...this.completions_tasks],
@@ -260,15 +387,15 @@ export default class GTasksListSync extends Sync {
     )
 
     if (abort()) return
-    this.states.add('CompletedTasksSynced')
-    return this.states.add('Synced')
+    this.state.add('CompletedTasksSynced')
+    return this.state.add('Synced')
   }
 
   async PreparingList_state() {
-    let abort = this.states.getAbort('PreparingList')
+    let abort = this.state.getAbort('PreparingList')
     // create or retrive task list
     let list =
-      this.sync.task_lists.find(list => list.title == this.name) || null
+      this.sync.lists.find(list => list.title == this.name) || null
     // TODO? move?
     // this.def_title = this.data.labels_in_title || this.sync.config.labels_in_title;
     if (!list) {
@@ -278,13 +405,13 @@ export default class GTasksListSync extends Sync {
     }
     if (list) {
       this.list = list
-      this.states.add('ListReady')
+      this.state.add('ListReady')
     }
   }
 
   // TODO extract tasks fetching logic, reuse
   async FetchingTasks_state() {
-    let abort = this.states.getAbort('FetchingTasks')
+    let abort = this.state.getAbort('FetchingTasks')
     let previous_ids = this.getAllTasks().map(task => task.id)
     // fetch all non-completed and max 2-weeks old completed ones
     // TODO use moment module to date operations
@@ -297,14 +424,14 @@ export default class GTasksListSync extends Sync {
     await this.fetchNonCompletedTasks(abort)
     if (abort()) return
 
-    if (!this.etags.tasks_completed || !this.states.is('TasksCached')) {
+    if (!this.etags.tasks_completed || !this.state.is('TasksCached')) {
       await this.fetchCompletedTasks(abort)
       if (abort()) return
     }
 
     this.processTasksDeletion(previous_ids)
 
-    return this.states.add('TasksFetched')
+    return this.state.add('TasksFetched')
   }
 
   // ----- -----
@@ -346,7 +473,7 @@ export default class GTasksListSync extends Sync {
         tasklist: this.list.id,
         // fields: "etag,items(id,title,notes,updated,etag,status)",
         maxResults: '1000',
-        showCompleted: false
+        showHidden: false
         // etag: this.etags.tasks
       },
       abort,
@@ -356,7 +483,7 @@ export default class GTasksListSync extends Sync {
     if ((abort && abort()) || !res) return
 
     if (res.statusCode === 304) {
-      this.states.add('TasksCached')
+      this.state.add('TasksCached')
       console.log(`[CACHED] tasks for '${this.name}'`)
     } else {
       console.log(`[FETCH] tasks for '${this.name}'`)
@@ -370,7 +497,7 @@ export default class GTasksListSync extends Sync {
         }
       }
 
-      this.tasks = list
+      this.entries = list
     }
   }
 
@@ -547,8 +674,8 @@ export default class GTasksListSync extends Sync {
   }
 
   getAllTasks(): google.tasks.v1.Task[] {
-    if (!this.tasks || !this.tasks.items) return []
-    return this.tasks.items.concat(
+    if (!this.entries || !this.entries.items) return []
+    return this.entries.items.concat(
       (this.tasks_completed && this.tasks_completed.items) || []
     )
   }
