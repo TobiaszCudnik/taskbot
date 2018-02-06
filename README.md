@@ -1,0 +1,3 @@
+Gmail to Google Tasks sync with GTD semantics.
+
+Work in progress...
