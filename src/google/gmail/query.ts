@@ -100,7 +100,9 @@ export default class GmailQuery {
         maxResults: 1000,
         q: this.query,
         userId: 'me',
-        fields: 'nextPageToken,threads(historyId,id)'
+        // TODO is 'snippet' useful?
+        // fields: 'nextPageToken,threads(historyId,id)'
+        fields: 'nextPageToken,threads(historyId,id,snippet)'
       }
       if (prevRes && prevRes.nextPageToken) {
         console.log(`[FETCH] next page for threads' list for '${this.query}'`)

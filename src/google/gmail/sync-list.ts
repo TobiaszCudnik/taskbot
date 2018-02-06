@@ -112,7 +112,7 @@ export default class GmailListSync extends Sync {
     const record: DBRecord = {
       id: this.toDBID(thread.id),
       title: getTitleFromThread(thread),
-      content: 'TODO content',
+      content: thread.snippet || '',
       labels: {},
       updated: moment().unix()
     }
@@ -166,6 +166,7 @@ export default class GmailListSync extends Sync {
   }
 
   applyLabels(record: DBRecord, labels: {add: string[], remove: string[]}) {
+    record.labels = record.labels || {}
     for (const label of labels.remove) {
       record.labels[label] = {
         active: false,

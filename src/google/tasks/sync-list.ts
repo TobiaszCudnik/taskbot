@@ -171,7 +171,10 @@ export default class GTasksListSync extends Sync {
       const record = this.root.data.findOne({id})
       if (record) return record
     }
-    return this.root.data.findOne((r: DBRecord) => r.tasks_ids[task.id])
+    // return this.root.data.findOne({tasks_ids: { [task.id]: { $exists: true } }})
+    return this.root.data.chain().where((obj: DBRecord) => {
+      return Boolean(obj.tasks_ids && obj.tasks_ids[task.id])
+    }).limit(1).data()[0]
   }
 
   toDB(task: Task): DBRecord {
@@ -185,18 +188,18 @@ export default class GTasksListSync extends Sync {
         [task.id]: this.list.id
       }
     }
-    const labels = task.status == 'completed' ? this.config.enter
-      : this.config.exit
+    const labels = task.status == 'completed' ? this.config.exit
+      : this.config.enter
     this.applyLabels(record, labels)
     return record
   }
 
   getContent(task: Task): string {
-    return task.notes.replace(/\bemail:\w+\b/, '')
+    return task.notes.replace(/\bemail:\w+\b/, '') || ''
   }
 
   toDBID(task: Task): string | null {
-    const match = task.notes && task.notes.match(/\bemail:\w+\b/)
+    const match = task.notes && task.notes.match(/\bemail:(\w+)\b/)
     if (match) {
       return match[1]
     }
@@ -206,20 +209,20 @@ export default class GTasksListSync extends Sync {
     // TODO support duplicating in case of a conflict ???
     //   or send a new email in the thread?
     const task_updated = moment(task.updated).unix()
-    // TODO resolve conflicts
+    // TODO resolve conflicts on text fields
     record.title = task.title
     record.content = this.getContent(task)
+    record.tasks_ids = record.tasks_ids || {}
+    record.tasks_ids[task.id] = this.list.id
     if (task_updated < record.updated) {
-      record.updated = task_updated
+      // record.updated = task_updated
       // TODO check resolve conflict? since the last sync
       return false
     }
     record.updated = task_updated
-    record.tasks_ids = record.tasks_ids || {}
-    record.tasks_ids[task.id] = this.list.id
     // TODO notes
-    const labels = task.status == 'completed' ? this.config.enter
-      : this.config.exit
+    const labels = task.status == 'completed' ? this.config.exit
+      : this.config.enter
     this.applyLabels(record, labels)
     return true
   }
@@ -229,6 +232,7 @@ export default class GTasksListSync extends Sync {
   }
 
   applyLabels(record: DBRecord, labels: {add: string[], remove: string[]}) {
+    record.labels = record.labels || {}
     for (const label of labels.remove) {
       record.labels[label] = {
         active: false,
