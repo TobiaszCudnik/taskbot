@@ -1,5 +1,4 @@
 import AsyncMachine from 'asyncmachine'
-import { IState, IBind, IEmit, TStates } from './query-types'
 import * as moment from 'moment'
 import GmailSync from './sync'
 import * as google from 'googleapis'
@@ -7,28 +6,28 @@ import { map } from 'typed-promisify-tob'
 
 export type Thread = google.gmail.v1.Thread
 
-export class State extends AsyncMachine<TStates, IBind, IEmit> {
-  Enabled: IState = {}
-  Dirty: IState = {
+export class State extends AsyncMachine<any, any, any> {
+  Enabled = {}
+  Dirty = {
     drop: ['MsgsFetched', 'ThreadsFetched']
   }
 
-  FetchingThreads: IState = {
+  FetchingThreads = {
     auto: true,
     require: ['Enabled'],
     drop: ['ThreadsFetched']
   }
-  ThreadsFetched: IState = {
+  ThreadsFetched = {
     require: ['Enabled'],
     drop: ['FetchingThreads']
   }
 
-  FetchingMsgs: IState = {
+  FetchingMsgs = {
     require: ['Enabled', 'ThreadsFetched'],
     drop: ['MsgsFetched']
   }
   // TODO create a Ready state
-  MsgsFetched: IState = {
+  MsgsFetched = {
     require: ['Enabled'],
     drop: ['FetchingMsgs']
   }

@@ -1,5 +1,4 @@
 ///<reference path="../../../node_modules/typed-promisify-tob/index.ts"/>
-import { IState, IBind, IEmit, TStates } from './sync-types'
 import Query, {Thread} from './query'
 import * as _ from 'underscore'
 import * as google from 'googleapis'
@@ -16,9 +15,9 @@ import * as moment from 'moment'
 export class State extends SyncState {
   // -- overrides
 
-  SubsInited: IState = { require: ['ConfigSet'], auto: true }
-  SubsReady: IState = { require: ['SubsInited'], auto: true }
-  Ready: IState = {
+  SubsInited = { require: ['ConfigSet'], auto: true }
+  SubsReady = { require: ['SubsInited'], auto: true }
+  Ready = {
     auto: true,
     require: ['ConfigSet', 'SubsReady'],
     drop: ['Initializing']
@@ -35,21 +34,21 @@ export class State extends SyncState {
   //   drop: ['SyncingQueryLabels']
   // }
 
-  FetchingLabels: IState = {
+  FetchingLabels = {
     auto: true,
     require: ['Enabled'],
     drop: ['LabelsFetched']
   }
-  LabelsFetched: IState = {
+  LabelsFetched = {
     drop: ['FetchingLabels']
   }
 
-  FetchingHistoryId: IState = {
+  FetchingHistoryId = {
     auto: true,
     require: ['Enabled'],
     drop: ['HistoryIdFetched']
   }
-  HistoryIdFetched: IState = {
+  HistoryIdFetched = {
     drop: ['FetchingHistoryId']
   }
 
@@ -121,9 +120,7 @@ export default class GmailSync extends Sync {
       query_labels: [],
     }
     for (const config of this.config.lists) {
-      const sub = new GmailListSync(config, this.root, this)
-      this.subs.lists.push(sub)
-      sub.state.add('Enabled')
+      this.subs.lists.push(new GmailListSync(config, this.root, this))
     }
     // this.initLabelFilters()
     // this.subs.text_labels = new GmailTextLabelsSync(
@@ -133,6 +130,9 @@ export default class GmailSync extends Sync {
     // )
     // this.subs.text_labels.state.add('Enabled')
     this.bindToSubs()
+    for (const sub of this.subs_flat) {
+      sub.state.add('Enabled')
+    }
   }
 
   Writing_state() {

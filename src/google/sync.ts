@@ -1,17 +1,14 @@
 import GmailSync from './gmail/sync'
 import Auth from './auth'
-import { IBind, IEmit, TStates } from './sync-types'
 import Sync, { SyncState } from '../sync/sync'
-import { IState } from './gmail/sync-types'
-import { IConfig } from '../types'
-import {DBRecord, default as RootSync} from "../root/sync"
+import RootSync from "../root/sync"
 import GTasksSync from "./tasks/sync";
 
 export class State extends SyncState {
-  Authenticated: IState = {}
+  Authenticated = {}
 
-  SubsInited = { require: ['Authenticated', 'Enabled'], auto: true }
-  SubsReady = { require: ['SubsInited'], auto: true }
+  SubsInited = { require: ['Enabled'], auto: true }
+  SubsReady = { require: ['Authenticated', 'SubsInited'], auto: true }
   Ready = {
     auto: true,
     require: ['ConfigSet', 'SubsReady'],
@@ -35,7 +32,6 @@ export default class GoogleSync extends Sync {
   constructor(root: RootSync) {
     super(root.config, root)
     this.auth = new Auth(root.config)
-    this.auth.pipe('Ready', this.state, 'Authenticated')
   }
 
   getState() {
@@ -51,6 +47,7 @@ export default class GoogleSync extends Sync {
       tasks: new GTasksSync(this.root, this.auth)
     }
     this.bindToSubs()
+    this.auth.pipe('Ready', this.state, 'Authenticated')
     this.subs.gmail.state.add('Enabled')
     this.subs.tasks.state.add('Enabled')
   }
