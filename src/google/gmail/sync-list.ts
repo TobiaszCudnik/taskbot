@@ -55,7 +55,8 @@ export default class GmailListSync extends Sync {
     super(config)
     this.query = new GmailQuery(this.gmail, config.gmail_query, config.name,
         true)
-    this.query.state.add('Enabled')
+    // this.query.state.add('Enabled')
+    this.state.pipe('Enabled', this.query.state)
   }
 
   getState() {

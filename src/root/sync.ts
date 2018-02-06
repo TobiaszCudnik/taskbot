@@ -102,7 +102,7 @@ export default class RootSync extends Sync {
     this.subs = {}
     this.subs.google = new GoogleSync(this)
     this.bindToSubs()
-    this.subs.google.state.add('Enabled')
+    // this.subs.google.state.add('Enabled')
   }
 
   ReadingDone_state() {

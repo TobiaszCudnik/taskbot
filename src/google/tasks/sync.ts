@@ -48,7 +48,7 @@ export default class GTasksSync extends Sync {
     task_lists: null
   }
   api: TasksAPI
-  sub_states_outbound = [['Reading', 'Reading']]
+  sub_states_outbound = [['Reading', 'Reading'], ['Enabled', 'Enabled']]
   lists: google.tasks.v1.TaskList[]
   config: IConfig
   subs: {
@@ -80,10 +80,10 @@ export default class GTasksSync extends Sync {
       lists: this.config.lists.map( config =>
         new GTasksListSync(config, this.root, this))
     }
-    for (const list of this.subs.lists) {
-      list.state.add('Enabled')
-    }
     this.bindToSubs()
+    // for (const list of this.subs.lists) {
+    //   list.state.add('Enabled')
+    // }
   }
 
   async FetchingTaskLists_state() {

@@ -65,7 +65,8 @@ export default abstract class Sync {
   // TODO rename
   sub_states_inbound = [['ReadingDone', 'ReadingDone'],
     ['WritingDone', 'WritingDone'], ['Ready', 'SubsReady']]
-  sub_states_outbound = [['Reading', 'Reading'], ['Writing', 'Writing']]
+  sub_states_outbound = [['Reading', 'Reading'], ['Writing', 'Writing'],
+    ['Enabled', 'Enabled']]
   subs: { [index: string]: Sync | Sync[] } = {}
   root: RootSync
 

@@ -48,7 +48,7 @@ export default class GoogleSync extends Sync {
     }
     this.bindToSubs()
     this.auth.pipe('Ready', this.state, 'Authenticated')
-    this.subs.gmail.state.add('Enabled')
-    this.subs.tasks.state.add('Enabled')
+    // this.subs.gmail.state.add('Enabled')
+    // this.subs.tasks.state.add('Enabled')
   }
 }

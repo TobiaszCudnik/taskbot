@@ -77,7 +77,7 @@ export default class GmailSync extends Sync {
   queries: Query[] = []
   labels: google.gmail.v1.Label[]
   history_ids: {id: number, time: number}[] = []
-  sub_states_outbound = [['Reading', 'Reading']]
+  sub_states_outbound = [['Reading', 'Reading'], ['Enabled', 'Enabled']]
   config: IConfig
 
   constructor(public root: RootSync, public auth: Auth) {
@@ -130,9 +130,9 @@ export default class GmailSync extends Sync {
     // )
     // this.subs.text_labels.state.add('Enabled')
     this.bindToSubs()
-    for (const sub of this.subs_flat) {
-      sub.state.add('Enabled')
-    }
+    // for (const sub of this.subs_flat) {
+    //   sub.state.add('Enabled')
+    // }
   }
 
   Writing_state() {
