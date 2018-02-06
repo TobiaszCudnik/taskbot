@@ -214,7 +214,7 @@ export default class GTasksListSync extends Sync {
     record.content = this.getContent(task)
     record.tasks_ids = record.tasks_ids || {}
     record.tasks_ids[task.id] = this.list.id
-    if (task_updated < record.updated) {
+    if (task_updated <= record.updated) {
       // record.updated = task_updated
       // TODO check resolve conflict? since the last sync
       return false

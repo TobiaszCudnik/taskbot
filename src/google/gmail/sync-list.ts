@@ -111,6 +111,7 @@ export default class GmailListSync extends Sync {
   toDB(thread: google.gmail.v1.Thread): DBRecord {
     const record: DBRecord = {
       id: this.toDBID(thread.id),
+      gmail_id: this.toDBID(thread.id),
       title: getTitleFromThread(thread),
       content: thread.snippet || '',
       labels: {},
@@ -128,7 +129,7 @@ export default class GmailListSync extends Sync {
   merge(thread: Thread, record: DBRecord): boolean {
     // TODO support duplicating in case of a conflict ???
     //   or send a new email in the thread?
-    if (this.timeFromHistoryID(parseInt(thread.historyId, 10)) < record.updated) {
+    if (this.timeFromHistoryID(parseInt(thread.historyId, 10)) <= record.updated) {
       // TODO check resolve conflict? since the last sync
       return false
     }
