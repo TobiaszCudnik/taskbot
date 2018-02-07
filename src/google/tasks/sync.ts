@@ -4,8 +4,6 @@ import {IConfig} from '../../types'
 import Sync, {SyncState} from '../../sync/sync'
 import RootSync from "../../root/sync";
 import Auth from "../auth";
-import {GmailAPI} from "../gmail/sync";
-import {IState} from "../gmail/sync-types";
 
 // TODO tmp
 export interface TasksAPI extends google.tasks.v1.Tasks {

@@ -94,6 +94,19 @@ export default class RootSync extends Sync {
   DBReady_state() {
     this.db = new Loki('gtd-bot')
     this.data = this.db.getCollection('todos') || this.db.addCollection('todos')
+    this.data.toString = function() {
+      return this.data.map( (r: DBRecord) => {
+        let ret = '- ' + r.title
+        const snippet = r.content.replace(/\n/g, '')
+        ret += snippet ? ` (${snippet})\n  ` : '\n  '
+        ret += Object.entries(r.labels).filter(([name, data]) => {
+          return data.active
+        }).map( ([name, data]) => {
+          return name
+        }).join(', ')
+        return ret
+      }).join('\n')
+    }
   }
 
   SubsInited_state() {
@@ -107,6 +120,7 @@ export default class RootSync extends Sync {
 
   ReadingDone_state() {
     this.sync()
+    this.data.toString()
     this.state.add('Writing')
   }
 
