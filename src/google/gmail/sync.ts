@@ -1,5 +1,5 @@
 ///<reference path="../../../node_modules/typed-promisify-tob/index.ts"/>
-import Query, {Thread} from './query'
+import Query, { Thread } from './query'
 import * as _ from 'underscore'
 import * as google from 'googleapis'
 import { IConfig, TRawEmail } from '../../types'
@@ -9,7 +9,7 @@ import Auth from '../auth'
 import GmailTextLabelsSync from './sync-text-labels'
 import GmailListSync from './sync-list'
 import GmailLabelFilterSync from './sync-label-filter'
-import RootSync from "../../root/sync";
+import RootSync from '../../root/sync'
 import * as moment from 'moment'
 
 export class State extends SyncWriterState {
@@ -61,7 +61,7 @@ export class State extends SyncWriterState {
 
 // TODO tmp
 export interface GmailAPI extends google.gmail.v1.Gmail {
-  req(api, method, c, d): Promise<any>;
+  req(api, method, c, d): Promise<any>
 }
 
 export default class GmailSync extends SyncWriter {
@@ -77,7 +77,7 @@ export default class GmailSync extends SyncWriter {
   last_sync_time: number
   queries: Query[] = []
   labels: google.gmail.v1.Label[]
-  history_ids: {id: number, time: number}[] = []
+  history_ids: { id: number; time: number }[] = []
   sub_states_outbound = [['Reading', 'Reading'], ['Enabled', 'Enabled']]
   config: IConfig
 
@@ -111,14 +111,14 @@ export default class GmailSync extends SyncWriter {
 
   threads = new Map<string, Thread>()
   subs: {
-    query_labels: Sync[],
+    query_labels: Sync[]
     lists: Sync[]
   }
 
   SubsInited_state() {
     this.subs = {
       lists: [],
-      query_labels: [],
+      query_labels: []
     }
     for (const config of this.config.lists) {
       this.subs.lists.push(new GmailListSync(config, this.root, this))
@@ -225,7 +225,7 @@ export default class GmailSync extends SyncWriter {
     // TODO redo when no response?
     if (!response || (abort && abort())) return
     this.history_id = parseInt(response.historyId, 10)
-    this.history_ids.push({id: this.history_id, time: moment().unix()})
+    this.history_ids.push({ id: this.history_id, time: moment().unix() })
     this.last_sync_time = moment().unix()
     this.state.add('HistoryIdFetched')
   }
@@ -335,9 +335,7 @@ export default class GmailSync extends SyncWriter {
     let remove_label_ids = this.getLabelsIds(remove_labels)
     let thread = this.getThread(thread_id, true)
 
-    let label = thread
-      ? `"${getTitleFromThread(thread)}"`
-      : `ID: ${thread_id}`
+    let label = thread ? `"${getTitleFromThread(thread)}"` : `ID: ${thread_id}`
 
     let log_msg = `Modifing labels for thread ${label} `
     if (add_labels.length) log_msg += `+(${add_labels.join(' ')}) `
@@ -384,8 +382,8 @@ export default class GmailSync extends SyncWriter {
 
   // TODO check raw_email
   /**
-	 * @returns Thread ID or null
-	 */
+   * @returns Thread ID or null
+   */
   async createThread(
     raw_email: string,
     labels: string[],
@@ -412,8 +410,7 @@ export default class GmailSync extends SyncWriter {
 
   createEmail(subject: string): TRawEmail {
     let email = [
-      `From: ${this.config.gmail_username} <${this.config
-        .gmail_username}>s`,
+      `From: ${this.config.gmail_username} <${this.config.gmail_username}>s`,
       `To: ${this.config.gmail_username}`,
       'Content-type: text/html;charset=utf-8',
       'MIME-Version: 1.0',

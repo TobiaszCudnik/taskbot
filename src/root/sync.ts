@@ -1,9 +1,9 @@
 import GoogleSync from '../google/sync'
-import {Semaphore} from 'await-semaphore'
+import { Semaphore } from 'await-semaphore'
 import { Sync, SyncWriterState, SyncWriter } from '../sync/sync'
 // import * as assert from 'assert/'
 import * as Loki from 'lokijs'
-import {promisify, promisifyArray} from "typed-promisify-tob"
+import { promisify, promisifyArray } from 'typed-promisify-tob'
 import * as moment from 'moment'
 
 export class State extends SyncWriterState {
@@ -52,7 +52,7 @@ export interface DBRecord {
   labels: { [index: string]: DBRecordLabel }
   gmail_id?: string
   // different task ids per list
-  tasks_ids?: {[list_id: string]: string}
+  tasks_ids?: { [list_id: string]: string }
 }
 
 export type DBRecordID = string
@@ -104,17 +104,22 @@ export default class RootSync extends SyncWriter {
     this.db = new Loki('gtd-bot')
     this.data = this.db.getCollection('todos') || this.db.addCollection('todos')
     this.data.toString = function() {
-      return this.data.map( (r: DBRecord) => {
-        let ret = '- ' + r.title
-        const snippet = r.content.replace(/\n/g, '')
-        ret += snippet ? ` (${snippet})\n  ` : '\n  '
-        ret += Object.entries(r.labels).filter(([name, data]) => {
-          return data.active
-        }).map( ([name, data]) => {
-          return name
-        }).join(', ')
-        return ret
-      }).join('\n')
+      return this.data
+        .map((r: DBRecord) => {
+          let ret = '- ' + r.title
+          const snippet = r.content.replace(/\n/g, '')
+          ret += snippet ? ` (${snippet})\n  ` : '\n  '
+          ret += Object.entries(r.labels)
+            .filter(([name, data]) => {
+              return data.active
+            })
+            .map(([name, data]) => {
+              return name
+            })
+            .join(', ')
+          return ret
+        })
+        .join('\n')
     }
   }
 
@@ -133,12 +138,12 @@ export default class RootSync extends SyncWriter {
 
   ReadingDone_state() {
     this.last_read_end = moment()
-    this.last_read_time = moment.duration(this.last_read_end.diff(
-      this.last_read_start))
+    this.last_read_time = moment.duration(
+      this.last_read_end.diff(this.last_read_start)
+    )
     this.sync()
     const db = this.data.toString()
-    if (db != this.last_db)
-      console.log(db)
+    if (db != this.last_db) console.log(db)
     this.last_db = db
     this.state.add('Writing')
   }
@@ -149,12 +154,17 @@ export default class RootSync extends SyncWriter {
 
   WritingDone_state() {
     this.last_write_end = moment()
-    this.last_write_time = moment.duration(this.last_write_end.diff(
-      this.last_write_start))
-    console.log(`WRITING DONE:\nRead: ${this.last_read_time.asSeconds()}sec\n`
-      +`Write: ${this.last_write_time.asSeconds()}sec\n`)
-    setTimeout(this.state.addByListener('Reading'),
-      this.config.sync_frequency * 1000)
+    this.last_write_time = moment.duration(
+      this.last_write_end.diff(this.last_write_start)
+    )
+    console.log(
+      `WRITING DONE:\nRead: ${this.last_read_time.asSeconds()}sec\n` +
+        `Write: ${this.last_write_time.asSeconds()}sec\n`
+    )
+    setTimeout(
+      this.state.addByListener('Reading'),
+      this.config.sync_frequency * 1000
+    )
   }
 
   // ----- -----
@@ -166,13 +176,15 @@ export default class RootSync extends SyncWriter {
     method: (arg: A, cb: (err: any, res: T, res2: T2) => void) => void,
     params: A,
     abort: (() => boolean) | null | undefined,
-    returnArray: true
+    returnArray: true,
+    options?: object
   ): Promise<[T, T2] | null>
   async req<A, T>(
     method: (arg: A, cb: (err: any, res: T) => void) => void,
     params: A,
     abort: (() => boolean) | null | undefined,
-    returnArray: false
+    returnArray: false,
+    options?: object
   ): Promise<T | null>
   async req<A, T>(
     method: (arg: A, cb: (err: any, res: T) => void) => void,
@@ -218,7 +230,8 @@ export default class RootSync extends SyncWriter {
   }
 
   sync() {
-    let changes, c = 0
+    let changes,
+      c = 0
     const MAX = 10
     do {
       changes = Object.values(this.subs).reduce((a, r) => {

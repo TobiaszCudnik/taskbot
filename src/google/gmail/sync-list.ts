@@ -1,16 +1,15 @@
 // import { IBind, IEmit, IState, TStates } from './sync-query-types'
 // import AsyncMachine from 'asyncmachine'
-import GmailQuery, {Thread} from './query'
+import GmailQuery, { Thread } from './query'
 import * as google from 'googleapis'
-import { Sync, SyncState, Reading} from '../../sync/sync'
+import { Sync, SyncState, Reading } from '../../sync/sync'
 import * as _ from 'underscore'
 import * as moment from 'moment'
-import RootSync, {DBRecord} from "../../root/sync";
-import GmailSync, {getTitleFromThread} from "./sync";
-import {IListConfig} from "../../types";
+import RootSync, { DBRecord } from '../../root/sync'
+import GmailSync, { getTitleFromThread } from './sync'
+import { IListConfig } from '../../types'
 
 export class State extends SyncState {
-
   Ready = { auto: true, drop: ['Initializing'] }
   // Reading = {
   //   ...Reading,
@@ -53,8 +52,12 @@ export default class GmailListSync extends Sync {
     public gmail: GmailSync
   ) {
     super(config)
-    this.query = new GmailQuery(this.gmail, config.gmail_query, config.name,
-        true)
+    this.query = new GmailQuery(
+      this.gmail,
+      config.gmail_query,
+      config.name,
+      true
+    )
     // this.query.state.add('Enabled')
     this.state.pipe('Enabled', this.query.state)
   }
@@ -83,7 +86,7 @@ export default class GmailListSync extends Sync {
     let changed = 0
     // add / merge
     for (const thread of this.query.threads) {
-      const record = this.root.data.findOne({id: this.toDBID(thread.id)})
+      const record = this.root.data.findOne({ id: this.toDBID(thread.id) })
       if (!record) {
         this.root.data.insert(this.toDB(thread))
         changed++
@@ -99,8 +102,11 @@ export default class GmailListSync extends Sync {
     // and apply the exit label changes
     // TODO use an index
     const find = (record: DBRecord) => {
-      return this.config.db_query(record) && !ids.includes(this.toLocalID(record))
-        && record.updated < this.timeFromHistoryID(this.query.synced_history_id)
+      return (
+        this.config.db_query(record) &&
+        !ids.includes(this.toLocalID(record)) &&
+        record.updated < this.timeFromHistoryID(this.query.synced_history_id)
+      )
     }
     this.root.data.findAndUpdate(find, (record: DBRecord) => {
       changed++
@@ -130,7 +136,9 @@ export default class GmailListSync extends Sync {
   merge(thread: Thread, record: DBRecord): boolean {
     // TODO support duplicating in case of a conflict ???
     //   or send a new email in the thread?
-    if (this.timeFromHistoryID(parseInt(thread.historyId, 10)) <= record.updated) {
+    if (
+      this.timeFromHistoryID(parseInt(thread.historyId, 10)) <= record.updated
+    ) {
       // TODO check resolve conflict? since the last sync
       return false
     }
@@ -161,13 +169,14 @@ export default class GmailListSync extends Sync {
   timeFromHistoryID(history_id: number) {
     // floor the guess (to the closest previous recorded history ID)
     // or now
-    let index = _.sortedIndex(this.gmail.history_ids, {id: history_id}, 'id')
-    return index ? this.gmail.history_ids[index-1].time
-      // TODO initial guess to avoid a double merge
-      : this.gmail.history_ids[0].time
+    let index = _.sortedIndex(this.gmail.history_ids, { id: history_id }, 'id')
+    return index
+      ? this.gmail.history_ids[index - 1].time
+      : // TODO initial guess to avoid a double merge
+        this.gmail.history_ids[0].time
   }
 
-  applyLabels(record: DBRecord, labels: {add: string[], remove: string[]}) {
+  applyLabels(record: DBRecord, labels: { add: string[]; remove: string[] }) {
     record.labels = record.labels || {}
     for (const label of labels.remove) {
       record.labels[label] = {

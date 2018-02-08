@@ -1,13 +1,13 @@
 import * as google from 'googleapis'
 import GTasksListSync from './sync-list'
-import {IConfig} from '../../types'
+import { IConfig } from '../../types'
 import { Sync, SyncWriter, SyncWriterState } from '../../sync/sync'
-import RootSync from "../../root/sync";
-import Auth from "../auth";
+import RootSync from '../../root/sync'
+import Auth from '../auth'
 
 // TODO tmp
 export interface TasksAPI extends google.tasks.v1.Tasks {
-  req(api, method, c, d): Promise<any>;
+  req(api, method, c, d): Promise<any>
 }
 
 export class State extends SyncWriterState {
@@ -15,7 +15,7 @@ export class State extends SyncWriterState {
 
   SubsInited = {
     auto: true,
-    require: ['ConfigSet', 'TaskListsFetched'],
+    require: ['ConfigSet', 'TaskListsFetched']
   }
   SubsReady = { require: ['SubsInited'], auto: true }
   Ready = {
@@ -82,8 +82,9 @@ export default class GTasksSync extends SyncWriter {
 
   SubsInited_state() {
     this.subs = {
-      lists: this.config.lists.map( config =>
-        new GTasksListSync(config, this.root, this))
+      lists: this.config.lists.map(
+        config => new GTasksListSync(config, this.root, this)
+      )
     }
     this.bindToSubs()
     // for (const list of this.subs.lists) {

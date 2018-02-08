@@ -3,10 +3,10 @@ import { Sync, SyncState } from '../../sync/sync'
 import * as google from 'googleapis'
 import * as _ from 'underscore'
 import { map } from 'typed-promisify-tob'
-import RootSync, {DBRecord} from "../../root/sync"
-import GTasksSync from "./sync";
+import RootSync, { DBRecord } from '../../root/sync'
+import GTasksSync from './sync'
 import * as uuid from 'uuid/v4'
-import {IListConfig} from "../../types";
+import { IListConfig } from '../../types'
 
 export type Task = google.tasks.v1.Task
 
@@ -25,7 +25,6 @@ type TTaskCompletion = {
 }
 
 export class State extends SyncState {
-
   Cached = {}
 
   constructor(target) {
@@ -43,7 +42,7 @@ export default class GTasksListSync extends Sync {
     tasks: string | null
     // tasks_completed: string | null
   } = {
-    tasks: null,
+    tasks: null
     // tasks_completed: null
   }
   get list(): google.tasks.v1.TaskList | null {
@@ -103,7 +102,7 @@ export default class GTasksListSync extends Sync {
   }
 
   getState(): State {
-    return new State(this).id('GTasks/list: '+this.config.name)
+    return new State(this).id('GTasks/list: ' + this.config.name)
   }
 
   async Reading_state() {
@@ -118,10 +117,10 @@ export default class GTasksListSync extends Sync {
       this.tasks.api.tasks.list,
       {
         tasklist: this.list.id,
-        fields: "etag,items(id,title,notes,updated,etag,status)",
+        fields: 'etag,items(id,title,notes,updated,etag,status)',
         maxResults: '1000',
         showHidden: false,
-        headers: {'If-None-Match': this.etags.tasks}
+        headers: { 'If-None-Match': this.etags.tasks }
         // etag: this.etags.tasks && this.etags.tasks.replace(/"/g, '')
       },
       abort,
@@ -169,13 +168,17 @@ export default class GTasksListSync extends Sync {
   getFromDB(task) {
     const id = this.toDBID(task)
     if (id) {
-      const record = this.root.data.findOne({id})
+      const record = this.root.data.findOne({ id })
       if (record) return record
     }
     // return this.root.data.findOne({tasks_ids: { [task.id]: { $exists: true } }})
-    return this.root.data.chain().where((obj: DBRecord) => {
-      return Boolean(obj.tasks_ids && obj.tasks_ids[task.id])
-    }).limit(1).data()[0]
+    return this.root.data
+      .chain()
+      .where((obj: DBRecord) => {
+        return Boolean(obj.tasks_ids && obj.tasks_ids[task.id])
+      })
+      .limit(1)
+      .data()[0]
   }
 
   toDB(task: Task): DBRecord {
@@ -189,8 +192,8 @@ export default class GTasksListSync extends Sync {
         [task.id]: this.list.id
       }
     }
-    const labels = task.status == 'completed' ? this.config.exit
-      : this.config.enter
+    const labels =
+      task.status == 'completed' ? this.config.exit : this.config.enter
     this.applyLabels(record, labels)
     return record
   }
@@ -222,8 +225,8 @@ export default class GTasksListSync extends Sync {
     }
     record.updated = task_updated
     // TODO notes
-    const labels = task.status == 'completed' ? this.config.exit
-      : this.config.enter
+    const labels =
+      task.status == 'completed' ? this.config.exit : this.config.enter
     this.applyLabels(record, labels)
     return true
   }
@@ -232,7 +235,7 @@ export default class GTasksListSync extends Sync {
     return record.tasks_ids && record.tasks_ids[this.list.id]
   }
 
-  applyLabels(record: DBRecord, labels: {add: string[], remove: string[]}) {
+  applyLabels(record: DBRecord, labels: { add: string[]; remove: string[] }) {
     record.labels = record.labels || {}
     for (const label of labels.remove) {
       record.labels[label] = {

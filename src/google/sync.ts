@@ -1,8 +1,8 @@
 import GmailSync from './gmail/sync'
 import Auth from './auth'
 import { Sync, SyncWriter, SyncWriterState } from '../sync/sync'
-import RootSync from "../root/sync"
-import GTasksSync from "./tasks/sync";
+import RootSync from '../root/sync'
+import GTasksSync from './tasks/sync'
 
 export class State extends SyncWriterState {
   Authenticated = {}
@@ -25,7 +25,7 @@ export default class GoogleSync extends SyncWriter {
   auth: Auth
   state: State
   subs: {
-    gmail: Sync,
+    gmail: Sync
     tasks: Sync
   }
 
@@ -43,7 +43,7 @@ export default class GoogleSync extends SyncWriter {
   SubsInited_state() {
     this.subs = {
       tasks: new GTasksSync(this.root, this.auth),
-      gmail: new GmailSync(this.root, this.auth),
+      gmail: new GmailSync(this.root, this.auth)
     }
     this.bindToSubs()
     this.auth.pipe('Ready', this.state, 'Authenticated')

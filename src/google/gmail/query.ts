@@ -85,10 +85,10 @@ export default class GmailQuery {
     let prevRes: any
     while (true) {
       let params: {
-        pageToken?: string,
-        maxResults: number,
-        q: string,
-        userId: string,
+        pageToken?: string
+        maxResults: number
+        q: string
+        userId: string
         fields: string
       } = {
         // TODO this should be optional

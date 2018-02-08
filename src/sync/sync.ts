@@ -3,7 +3,7 @@ import { IBind, IEmit, IState } from 'asyncmachine/build/types'
 import AsyncMachine from 'asyncmachine'
 import { State } from '../google/gmail/sync-list'
 import { IConfig } from '../types'
-import RootSync from "../root/sync";
+import RootSync from '../root/sync'
 
 // TODO define SyncState as a JSON
 export const Reading = {
@@ -13,7 +13,6 @@ export const Reading = {
 
 // TODO JSON
 export class SyncState extends AsyncMachine<any, IBind, IEmit> {
-
   Enabled: IState<any> = {}
 
   Initializing: IState<any> = { require: ['Enabled'] }
@@ -38,7 +37,6 @@ export class SyncState extends AsyncMachine<any, IBind, IEmit> {
 
 // TODO JSON
 export class SyncWriterState extends SyncState {
-
   Writing: IState<any> = {
     drop: ['WritingDone', 'Reading', 'ReadingDone'],
     require: ['Enabled', 'Ready']
@@ -177,7 +175,7 @@ export class SyncWriter extends Sync {
   // subs: { [index: string]: Sync | Sync[] | SyncWriter | SyncWriter[] } = {}
 
   get subs_flat_writers() {
-    return this.subs_flat.filter( sync => sync instanceof SyncWriter )
+    return this.subs_flat.filter(sync => sync instanceof SyncWriter)
   }
 
   WritingDone_enter() {
