@@ -57,10 +57,10 @@ export default class GTasksSync extends SyncWriter {
     super(root.config)
     this.api = <TasksAPI>google.tasks('v1')
     this.api = Object.create(this.api)
-    this.api.req = async (a, params, c, d) => {
+    this.api.req = async (a, params, c, d, options = {}) => {
       params.auth = this.auth.client
       // params.options = { forever: true }
-      return await this.root.req(a, params, c, d, { forever: true })
+      return await this.root.req(a, params, c, d, { forever: true, ...options })
     }
   }
 

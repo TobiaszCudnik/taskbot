@@ -121,7 +121,8 @@ export default class GTasksListSync extends Sync {
         fields: "etag,items(id,title,notes,updated,etag,status)",
         maxResults: '1000',
         showHidden: false,
-        etag: this.etags.tasks && this.etags.tasks.replace(/"/g, '')
+        headers: {'If-None-Match': this.etags.tasks}
+        // etag: this.etags.tasks && this.etags.tasks.replace(/"/g, '')
       },
       abort,
       true
