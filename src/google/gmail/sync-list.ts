@@ -2,7 +2,7 @@
 // import AsyncMachine from 'asyncmachine'
 import GmailQuery, {Thread} from './query'
 import * as google from 'googleapis'
-import Sync, {SyncState, Reading} from '../../sync/sync'
+import { Sync, SyncState, Reading} from '../../sync/sync'
 import * as _ from 'underscore'
 import * as moment from 'moment'
 import RootSync, {DBRecord} from "../../root/sync";

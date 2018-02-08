@@ -1,12 +1,12 @@
 import GoogleSync from '../google/sync'
-import {IState} from './sync-types'
 import {Semaphore} from 'await-semaphore'
-import Sync, {SyncState} from '../sync/sync'
+import { Sync, SyncWriterState, SyncWriter } from '../sync/sync'
 // import * as assert from 'assert/'
 import * as Loki from 'lokijs'
-import {promisify, promisifyArray} from "typed-promisify-tob";
+import {promisify, promisifyArray} from "typed-promisify-tob"
+import * as moment from 'moment'
 
-export class State extends SyncState {
+export class State extends SyncWriterState {
   SubsInited = {
     require: ['ConfigSet', 'DBReady'],
     auto: true,
@@ -32,7 +32,7 @@ export class State extends SyncState {
   //   require: ['Enabled', 'Ready']
   // }
 
-  constructor(target: Sync) {
+  constructor(target: RootSync) {
     super(target)
     this.registerAll()
   }
@@ -64,15 +64,22 @@ export interface DBRecordLabel {
   active: boolean
 }
 
-export default class RootSync extends Sync {
+export default class RootSync extends SyncWriter {
   state: State
-  // TODO use map
   subs: { [index: string]: Sync }
 
   max_active_requests = 5
   semaphore: Semaphore = new Semaphore(this.max_active_requests)
   active_requests = 0
   executed_requests: number
+
+  // seconds
+  last_read_end: moment.Moment
+  last_read_start: moment.Moment
+  last_read_time: moment.Duration
+  last_write_end: moment.Moment
+  last_write_start: moment.Moment
+  last_write_time: moment.Duration
 
   // last_sync_start: number | null
   // last_sync_end: number | null
@@ -81,6 +88,8 @@ export default class RootSync extends Sync {
 
   db: Loki
   data: DB
+  // TODO tmp
+  last_db: string
 
   // set history_id(history_id: number) {
   //   this.historyId = Math.max(this.history_id, history_id)
@@ -118,49 +127,35 @@ export default class RootSync extends Sync {
     // this.subs.google.state.add('Enabled')
   }
 
+  Reading_state() {
+    this.last_read_start = moment()
+  }
+
   ReadingDone_state() {
+    this.last_read_end = moment()
+    this.last_read_time = moment.duration(this.last_read_end.diff(
+      this.last_read_start))
     this.sync()
-    this.data.toString()
+    const db = this.data.toString()
+    if (db != this.last_db)
+      console.log(db)
+    this.last_db = db
     this.state.add('Writing')
   }
 
-  // // Schedule the next sync
-  // // TODO measure the time taken
-  // Synced_state() {
-  //   console.log('!!! SYNCED !!!')
-  //   console.log(`Requests: ${this.executed_requests}`)
-  //   this.last_sync_end = Date.now()
-  //   this.last_sync_time = this.last_sync_end - this.last_sync_start
-  //   console.log(`Time: ${this.last_sync_time}ms`)
-  //   if (this.next_sync_timeout) {
-  //     clearTimeout(this.next_sync_timeout)
-  //   }
-  //   this.next_sync_timeout = setTimeout(
-  //     this.state.addByListener('Syncing'),
-  //     this.config.sync_frequency
-  //   )
-  // }
+  Writing_state() {
+    this.last_write_start = moment()
+  }
 
-  // Syncing_state() {
-  //   console.log('--- SYNCING ---')
-  //   this.executed_requests = 0
-  //   // TODO define in the prototype
-  //   this.last_sync_start = Date.now()
-  //   this.last_sync_end = null
-  //   this.last_sync_time = null
-  //   if (this.state.is('Dirty')) {
-  //     // Add after the transition
-  //     this.state.add(this.gmail.states, 'Dirty')
-  //     this.state.drop('Dirty')
-  //   } else {
-  //     // Reset synced states in children
-  //     //			@states.drop @gmail.states, 'QueryLabelsSynced'
-  //     this.gmail.states.drop('QueryLabelsSynced')
-  //   }
-  //   return this.task_lists_sync.map(list =>
-  //     this.state.add(list.states, 'Restart')
-  //   )
-  // }
+  WritingDone_state() {
+    this.last_write_end = moment()
+    this.last_write_time = moment.duration(this.last_write_end.diff(
+      this.last_write_start))
+    console.log(`WRITING DONE:\nRead: ${this.last_read_time.asSeconds()}sec\n`
+      +`Write: ${this.last_write_time.asSeconds()}sec\n`)
+    setTimeout(this.state.addByListener('Reading'),
+      this.config.sync_frequency * 1000)
+  }
 
   // ----- -----
   // Methods
@@ -205,7 +200,7 @@ export default class RootSync extends Sync {
     //		console.log "@active_requests--"
     this.active_requests--
     // this.emit('request-finished')
-    console.log('emit: request-finished')
+    // console.log('emit: request-finished')
     this.executed_requests++
 
     //		delete params.auth

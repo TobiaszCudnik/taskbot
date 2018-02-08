@@ -7,13 +7,12 @@ import RootSync from "../root/sync";
 
 // TODO define SyncState as a JSON
 export const Reading = {
-  drop: ['ReadingDone', 'Writing', 'WritingDone'],
+  drop: ['ReadingDone'],
   require: ['Enabled', 'Ready']
 }
 
-
-export class SyncState extends AsyncMachine<any, IBind, IEmit>
-  implements ISyncState {
+// TODO JSON
+export class SyncState extends AsyncMachine<any, IBind, IEmit> {
 
   Enabled: IState<any> = {}
 
@@ -24,6 +23,22 @@ export class SyncState extends AsyncMachine<any, IBind, IEmit>
   SubsReady = {}
   SubsInited = {}
 
+  Reading: IState<any> = Reading
+  ReadingDone: IState<any> = {
+    drop: ['Reading']
+  }
+
+  Dirty: IState<any> = {}
+
+  constructor(target: Sync) {
+    super(target)
+    this.registerAll()
+  }
+}
+
+// TODO JSON
+export class SyncWriterState extends SyncState {
+
   Writing: IState<any> = {
     drop: ['WritingDone', 'Reading', 'ReadingDone'],
     require: ['Enabled', 'Ready']
@@ -32,12 +47,14 @@ export class SyncState extends AsyncMachine<any, IBind, IEmit>
     drop: ['Writing', 'Reading', 'ReadingDone']
   }
 
-  Reading: IState<any> = Reading
+  Reading: IState<any> = {
+    drop: ['ReadingDone', 'Writing', 'WritingDone'],
+    require: ['Enabled', 'Ready']
+  }
+
   ReadingDone: IState<any> = {
     drop: ['Reading', 'Writing', 'WritingDone']
   }
-
-  Dirty: IState<any> = {}
 
   constructor(target: Sync) {
     super(target)
@@ -57,16 +74,13 @@ export interface ISyncState {
   ReadingDone: IState<any>
 }
 
-export default abstract class Sync {
+export abstract class Sync {
   state: AsyncMachine<any, any, any>
   active_requests: number
   // config: IConfig | null
   config: any
-  // TODO rename
-  sub_states_inbound = [['ReadingDone', 'ReadingDone'],
-    ['WritingDone', 'WritingDone'], ['Ready', 'SubsReady']]
-  sub_states_outbound = [['Reading', 'Reading'], ['Writing', 'Writing'],
-    ['Enabled', 'Enabled']]
+  sub_states_inbound = [['ReadingDone', 'ReadingDone'], ['Ready', 'SubsReady']]
+  sub_states_outbound = [['Reading', 'Reading'], ['Enabled', 'Enabled']]
   subs: { [index: string]: Sync | Sync[] } = {}
   root: RootSync
 
@@ -104,10 +118,6 @@ export default abstract class Sync {
     this.config = config
   }
 
-  WritingDone_enter() {
-    return this.subs_flat.every(sync => sync.state.is('WritingDone'))
-  }
-
   ReadingDone_enter() {
     return this.subs_flat.every(sync => sync.state.is('ReadingDone'))
   }
@@ -141,25 +151,12 @@ export default abstract class Sync {
   }
 
   bindToSubs() {
-    // TODO support arrays, Maps
-    for (const sync of Object.values(this.subs)) {
+    for (const sync of this.subs_flat) {
       for (const [source, target] of this.sub_states_inbound) {
-        if (sync instanceof Sync) {
-          sync.state.pipe(source, this.state, target)
-        } else {
-          for (const sync2 of sync) {
-            sync2.state.pipe(source, this.state, target)
-          }
-        }
+        sync.state.pipe(source, this.state, target)
       }
       for (const [source, target] of this.sub_states_outbound) {
-        if (sync instanceof Sync) {
-          this.state.pipe(source, sync.state, target)
-        } else {
-          for (const sync2 of sync) {
-            this.state.pipe(source, sync2.state, target)
-          }
-        }
+        this.state.pipe(source, sync.state, target)
       }
     }
   }
@@ -173,5 +170,29 @@ export default abstract class Sync {
       msgs = [msgs]
     }
     return console.log.apply(console, msgs)
+  }
+}
+
+export class SyncWriter extends Sync {
+  // subs: { [index: string]: Sync | Sync[] | SyncWriter | SyncWriter[] } = {}
+
+  get subs_flat_writers() {
+    return this.subs_flat.filter( sync => sync instanceof SyncWriter )
+  }
+
+  WritingDone_enter() {
+    return this.subs_flat_writers.every(sync => sync.state.is('WritingDone'))
+  }
+
+  getState(): SyncState {
+    return new SyncWriterState(this).id('SyncWriter')
+  }
+
+  bindToSubs() {
+    super.bindToSubs()
+    for (const sync of this.subs_flat_writers) {
+      sync.state.pipe('WritingDone', this.state, 'WritingDone')
+      this.state.pipe('Writing', sync.state, 'Writing')
+    }
   }
 }

@@ -1,7 +1,7 @@
 import * as google from 'googleapis'
 import GTasksListSync from './sync-list'
 import {IConfig} from '../../types'
-import Sync, {SyncState} from '../../sync/sync'
+import { Sync, SyncWriter, SyncWriterState } from '../../sync/sync'
 import RootSync from "../../root/sync";
 import Auth from "../auth";
 
@@ -10,7 +10,7 @@ export interface TasksAPI extends google.tasks.v1.Tasks {
   req(api, method, c, d): Promise<any>;
 }
 
-export class State extends SyncState {
+export class State extends SyncWriterState {
   // -- overrides
 
   SubsInited = {
@@ -39,7 +39,7 @@ export class State extends SyncState {
   }
 }
 
-export default class GTasksSync extends Sync {
+export default class GTasksSync extends SyncWriter {
   etags: {
     task_lists: string | null
   } = {
@@ -67,8 +67,14 @@ export default class GTasksSync extends Sync {
     return new State(this).id('GTasks')
   }
 
-  Writing_state() {
+  // TODO tmp, use SyncWriter
+  WritingDone_enter() {
+    return true
+  }
+
+  async Writing_state() {
     console.warn('WRITE ME (TASKS)')
+    this.state.add('WritingDone')
     // TODO if any of the db records is missing a record.id, pipe a dependency
     //   on this.root.subs.gmail.WritingDone (and unpipe on local WritingDone_exit)
   }

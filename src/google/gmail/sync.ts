@@ -4,7 +4,7 @@ import * as _ from 'underscore'
 import * as google from 'googleapis'
 import { IConfig, TRawEmail } from '../../types'
 import { map } from 'typed-promisify-tob'
-import Sync, { SyncState } from '../../sync/sync'
+import { Sync, SyncWriter, SyncWriterState } from '../../sync/sync'
 import Auth from '../auth'
 import GmailTextLabelsSync from './sync-text-labels'
 import GmailListSync from './sync-list'
@@ -12,14 +12,14 @@ import GmailLabelFilterSync from './sync-label-filter'
 import RootSync from "../../root/sync";
 import * as moment from 'moment'
 
-export class State extends SyncState {
+export class State extends SyncWriterState {
   // -- overrides
 
   SubsInited = { require: ['ConfigSet'], auto: true }
   SubsReady = { require: ['SubsInited'], auto: true }
   Ready = {
     auto: true,
-    require: ['ConfigSet', 'SubsReady'],
+    require: ['ConfigSet', 'SubsReady', 'HistoryIdFetched', 'LabelsFetched'],
     drop: ['Initializing']
   }
 
@@ -39,6 +39,7 @@ export class State extends SyncState {
     require: ['Enabled'],
     drop: ['LabelsFetched']
   }
+  // TODO required only for Writing
   LabelsFetched = {
     drop: ['FetchingLabels']
   }
@@ -63,7 +64,7 @@ export interface GmailAPI extends google.gmail.v1.Gmail {
   req(api, method, c, d): Promise<any>;
 }
 
-export default class GmailSync extends Sync {
+export default class GmailSync extends SyncWriter {
   state: State
   api: GmailAPI
   // sync: GoogleSync
@@ -114,7 +115,6 @@ export default class GmailSync extends Sync {
   }
 
   SubsInited_state() {
-    // TODO Map
     this.subs = {
       lists: [],
       query_labels: [],
@@ -135,8 +135,14 @@ export default class GmailSync extends Sync {
     // }
   }
 
-  Writing_state() {
+  // TODO tmp, use SyncWriter
+  WritingDone_enter() {
+    return true
+  }
+
+  async Writing_state() {
     console.warn('WRITE ME (GMAIL)')
+    this.state.add('WritingDone')
     // process.exit()
   }
 
@@ -204,18 +210,6 @@ export default class GmailSync extends Sync {
     this.state.add('LabelsFetched')
   }
 
-  Dirty_state() {
-    this.history_id = null
-    for (let i = 0; i < this.queries.length; i++) {
-      let query = this.queries[i]
-      // Add the Dirty states to all child queries
-      // TODO could be easily narrowed down
-      this.state.add(query.state, 'Dirty')
-    }
-
-    return this.state.drop('Dirty')
-  }
-
   async FetchingHistoryId_state(abort?: () => boolean) {
     console.log('[FETCH] history ID')
     let response = await this.api.req(
@@ -276,14 +270,8 @@ export default class GmailSync extends Sync {
     return thread
   }
 
-  createQuery(query: string, name: string = '', fetch_msgs = false): Query {
-    let gmail_query = new Query(this, query, name, fetch_msgs)
-    this.queries.push(gmail_query)
-
-    return gmail_query
-  }
-
   // Searches all present gmail queries for the thread with the given ID.
+  // TODO use this.threads
   getThread(id: string, with_content = false): google.gmail.v1.Thread | null {
     for (let query of this.queries) {
       for (let thread of query.threads) {
@@ -320,10 +308,6 @@ export default class GmailSync extends Sync {
 
     return this.history_id <= history_id
   }
-
-  initAutoLabels() {}
-  //		for query, labels of @config.query_labels
-  //			query = new GmailQuery this, query, no
 
   getLabelsIds(labels: string[] | string): string[] {
     if (!Array.isArray(labels)) {

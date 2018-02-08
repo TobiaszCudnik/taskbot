@@ -1,5 +1,5 @@
 import * as moment from 'moment'
-import Sync, {SyncState} from '../../sync/sync'
+import { Sync, SyncState } from '../../sync/sync'
 import * as google from 'googleapis'
 import * as _ from 'underscore'
 import { map } from 'typed-promisify-tob'

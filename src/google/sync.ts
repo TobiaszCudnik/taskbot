@@ -1,10 +1,10 @@
 import GmailSync from './gmail/sync'
 import Auth from './auth'
-import Sync, { SyncState } from '../sync/sync'
+import { Sync, SyncWriter, SyncWriterState } from '../sync/sync'
 import RootSync from "../root/sync"
 import GTasksSync from "./tasks/sync";
 
-export class State extends SyncState {
+export class State extends SyncWriterState {
   Authenticated = {}
 
   SubsInited = { require: ['Enabled'], auto: true }
@@ -15,18 +15,18 @@ export class State extends SyncState {
     drop: ['Initializing']
   }
 
-  constructor(target: Sync) {
+  constructor(target: GoogleSync) {
     super(target)
     this.registerAll()
   }
 }
 
-export default class GoogleSync extends Sync {
+export default class GoogleSync extends SyncWriter {
   auth: Auth
   state: State
   subs: {
-    gmail: GmailSync,
-    tasks: GTasksSync
+    gmail: Sync,
+    tasks: Sync
   }
 
   constructor(root: RootSync) {
@@ -41,10 +41,9 @@ export default class GoogleSync extends Sync {
   }
 
   SubsInited_state() {
-    // TODO use Map
     this.subs = {
+      tasks: new GTasksSync(this.root, this.auth),
       gmail: new GmailSync(this.root, this.auth),
-      tasks: new GTasksSync(this.root, this.auth)
     }
     this.bindToSubs()
     this.auth.pipe('Ready', this.state, 'Authenticated')

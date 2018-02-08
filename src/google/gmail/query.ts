@@ -13,7 +13,6 @@ export class State extends AsyncMachine<any, any, any> {
   }
 
   FetchingThreads = {
-    auto: true,
     require: ['Enabled'],
     drop: ['ThreadsFetched']
   }
