@@ -5,7 +5,8 @@ import ManagerSync from "./root/sync"
 import { Logger, Network } from 'ami-logger/remote'
 import * as util from 'util'
 
-const app_settings = process.env['DEBUG'] ? settings_debug : settings
+// const app_settings = process.env['DEBUG'] ? settings_debug : settings
+const app_settings = settings_debug
 
 if (process.env['DEBUG']) {
   // TODO make it less global

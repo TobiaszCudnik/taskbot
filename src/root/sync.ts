@@ -178,7 +178,8 @@ export default class RootSync extends SyncWriter {
     method: (arg: A, cb: (err: any, res: T) => void) => void,
     params: A,
     abort: (() => boolean) | null | undefined,
-    returnArray: boolean
+    returnArray: boolean,
+    options?: object
   ): Promise<any> {
     let release = await this.semaphore.acquire()
     if (abort && abort()) {
@@ -195,7 +196,8 @@ export default class RootSync extends SyncWriter {
     let promise_method = returnArray
       ? promisifyArray(method)
       : promisify(method)
-    let ret = await promise_method(params)
+    // TODO googleapis specific code should be in google/sync.ts
+    let ret = await promise_method(params, options)
     release()
     //		console.log "@active_requests--"
     this.active_requests--

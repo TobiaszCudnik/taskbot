@@ -1,7 +1,5 @@
 Bugs:
-- the Reading state from gmail sometimes gets kicked out
-  [Gmail/list: !Waiting] [abort] Reading; reason - the tick changed
-  	  Reading, Enabled, Ready, ConfigSet
+- check if keepalive is used in googleapis
 
 TODO:
 - ID mapper (sync, async)
