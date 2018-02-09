@@ -1,5 +1,5 @@
 // import { IBind, IEmit, IState, TStates } from '../google/gmail/gmail-types'
-import { IBind, IEmit, IState } from 'asyncmachine/build/types'
+// import { IBind, IEmit, IState } from 'asyncmachine/build/types'
 import AsyncMachine from 'asyncmachine'
 import { State } from '../google/gmail/sync-list'
 import { IConfig } from '../types'
@@ -13,22 +13,20 @@ export const Reading = {
 }
 
 // TODO JSON
-export class SyncState extends AsyncMachine<any, IBind, IEmit> {
-  Enabled: IState<any> = {}
+export class SyncState extends AsyncMachine<any, any, any> {
+  Enabled = {}
 
-  Initializing: IState<any> = { require: ['Enabled'] }
-  Ready: IState<any> = { auto: true, drop: ['Initializing'] }
+  Initializing = { require: ['Enabled'] }
+  Ready = { auto: true, drop: ['Initializing'] }
   // optional
   ConfigSet = {}
   SubsReady = {}
   SubsInited = {}
 
-  Reading: IState<any> = Reading
-  ReadingDone: IState<any> = {
+  Reading = Reading
+  ReadingDone = {
     drop: ['Reading']
   }
-
-  Dirty: IState<any> = {}
 
   constructor(target: Sync) {
     super(target)
@@ -38,20 +36,20 @@ export class SyncState extends AsyncMachine<any, IBind, IEmit> {
 
 // TODO JSON
 export class SyncWriterState extends SyncState {
-  Writing: IState<any> = {
+  Writing = {
     drop: ['WritingDone', 'Reading', 'ReadingDone'],
     require: ['Enabled', 'Ready']
   }
-  WritingDone: IState<any> = {
+  WritingDone = {
     drop: ['Writing', 'Reading', 'ReadingDone']
   }
 
-  Reading: IState<any> = {
+  Reading = {
     drop: ['ReadingDone', 'Writing', 'WritingDone'],
     require: ['Enabled', 'Ready']
   }
 
-  ReadingDone: IState<any> = {
+  ReadingDone = {
     drop: ['Reading', 'Writing', 'WritingDone']
   }
 
@@ -63,14 +61,14 @@ export class SyncWriterState extends SyncState {
 
 // TODO match SyncState
 export interface ISyncState {
-  Enabled: IState<any>
-  Initializing: IState<any>
-  Ready: IState<any>
+  Enabled
+  Initializing
+  Ready
 
-  Writing: IState<any>
-  WritingDone: IState<any>
-  Reading: IState<any>
-  ReadingDone: IState<any>
+  Writing
+  WritingDone
+  Reading
+  ReadingDone
 }
 
 export abstract class Sync {
@@ -141,10 +139,10 @@ export abstract class Sync {
     return ret
   }
 
-  sync(): any[] {
+  merge(): any[] {
     let ret = []
     for (const sub of this.subs_flat) {
-      ret.push(...sub.sync())
+      ret.push(...sub.merge())
     }
     return ret
   }

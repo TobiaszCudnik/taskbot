@@ -90,7 +90,6 @@ export default class GmailSync extends SyncWriter {
 
   constructor(root: RootSync, public auth: Auth) {
     super(root.config, root)
-    // this.api = google.gmail('v1', { auth: this.auth.client })
     this.api = <GmailAPI>google.gmail('v1')
     this.api = Object.create(this.api)
     this.api.req = async (a, params, c, d) => {

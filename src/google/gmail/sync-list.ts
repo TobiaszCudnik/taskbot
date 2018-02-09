@@ -68,7 +68,7 @@ export default class GmailListSync extends Sync {
   // query the DB and, compare list read time with records update time
   //   and remove labels from
   //   records in the DB but not on the list
-  sync() {
+  merge() {
     const ids = []
     let changed = 0
     // add / merge
@@ -77,7 +77,7 @@ export default class GmailListSync extends Sync {
       if (!record) {
         this.root.data.insert(this.toDB(thread))
         changed++
-      } else if (this.merge(thread, record)) {
+      } else if (this.mergeRecord(thread, record)) {
         changed++
       }
       // TODO should be done in the query class
@@ -121,7 +121,7 @@ export default class GmailListSync extends Sync {
     return (<any>source).id ? (<any>source).id : source
   }
 
-  merge(thread: Thread, record: DBRecord): boolean {
+  mergeRecord(thread: Thread, record: DBRecord): boolean {
     // TODO support duplicating in case of a conflict ???
     //   or send a new email in the thread?
     if (

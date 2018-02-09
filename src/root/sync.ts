@@ -130,9 +130,12 @@ export default class RootSync extends SyncWriter {
     this.last_read_time = moment.duration(
       this.last_read_end.diff(this.last_read_start)
     )
-    this.sync()
+    this.merge()
     const db = this.data.toString()
-    if (db != this.last_db) console.log(db)
+    // TODO tmp
+    if (db != this.last_db) {
+      console.log(db)
+    }
     this.last_db = db
     this.state.add('Writing')
   }
@@ -218,7 +221,7 @@ export default class RootSync extends SyncWriter {
     return state
   }
 
-  sync() {
+  merge() {
     let changes,
       c = 0
     const MAX = 10

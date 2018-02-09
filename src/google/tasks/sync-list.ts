@@ -106,7 +106,7 @@ export default class GTasksListSync extends Sync {
     this.state.add('ReadingDone')
   }
 
-  sync() {
+  merge() {
     let changed = 0
     // add / merge
     for (const task of this.entries.items) {
@@ -116,7 +116,7 @@ export default class GTasksListSync extends Sync {
       if (!record) {
         this.root.data.insert(this.toDB(task))
         changed++
-      } else if (this.merge(task, record)) {
+      } else if (this.mergeRecord(task, record)) {
         changed++
       }
     }
@@ -168,7 +168,7 @@ export default class GTasksListSync extends Sync {
     }
   }
 
-  merge(task: Task, record: DBRecord): boolean {
+  mergeRecord(task: Task, record: DBRecord): boolean {
     // TODO support duplicating in case of a conflict ???
     //   or send a new email in the thread?
     const task_updated = moment(task.updated).unix()
