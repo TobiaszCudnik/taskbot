@@ -3,7 +3,8 @@ import { IBind, IEmit, IState } from 'asyncmachine/build/types'
 import AsyncMachine from 'asyncmachine'
 import { State } from '../google/gmail/sync-list'
 import { IConfig } from '../types'
-import RootSync from '../root/sync'
+import RootSync, { DBRecord } from '../root/sync'
+import * as moment from 'moment'
 
 // TODO define SyncState as a JSON
 export const Reading = {
@@ -168,6 +169,22 @@ export abstract class Sync {
       msgs = [msgs]
     }
     return console.log.apply(console, msgs)
+  }
+
+  applyLabels(record: DBRecord, labels: { add: string[]; remove: string[] }) {
+    record.labels = record.labels || {}
+    for (const label of labels.remove) {
+      record.labels[label] = {
+        active: false,
+        updated: moment().unix()
+      }
+    }
+    for (const label of labels.add) {
+      record.labels[label] = {
+        active: true,
+        updated: moment().unix()
+      }
+    }
   }
 }
 

@@ -15,22 +15,11 @@ export class State extends SyncWriterState {
   SubsReady = { require: ['SubsInited'], auto: true }
   Ready = {
     auto: true,
-    require: ['ConfigSet', 'SubsReady'],
-    drop: ['Initializing']
+    require: ['ConfigSet', 'SubsReady', 'Enabled'],
+    drop: ['Initializing'],
+    add: ['Reading']
   }
   DBReady = { auto: true }
-
-  Reading = {
-    auto: true,
-    drop: ['ReadingDone', 'Writing', 'WritingDone'],
-    require: ['Enabled', 'Ready']
-  }
-
-  // Reading = {
-  //   auto: true,
-  //   drop: ['ReadingDone', 'Writing', 'WritingDone'],
-  //   require: ['Enabled', 'Ready']
-  // }
 
   constructor(target: RootSync) {
     super(target)

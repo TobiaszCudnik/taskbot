@@ -19,7 +19,12 @@ export class State extends SyncWriterState {
   SubsReady = { require: ['SubsInited'], auto: true }
   Ready = {
     auto: true,
-    require: ['ConfigSet', 'SubsReady', 'HistoryIdFetched', 'LabelsFetched'],
+    require: [
+      'ConfigSet',
+      'SubsReady',
+      'InitialHistoryIdFetched',
+      'LabelsFetched'
+    ],
     drop: ['Initializing']
   }
 
@@ -50,8 +55,10 @@ export class State extends SyncWriterState {
     drop: ['HistoryIdFetched']
   }
   HistoryIdFetched = {
-    drop: ['FetchingHistoryId']
+    drop: ['FetchingHistoryId'],
+    add: ['InitialHistoryIdFetched']
   }
+  InitialHistoryIdFetched = {}
 
   constructor(target: GmailSync) {
     super(target)
@@ -67,28 +74,27 @@ export interface GmailAPI extends google.gmail.v1.Gmail {
 export default class GmailSync extends SyncWriter {
   state: State
   api: GmailAPI
-  // sync: GoogleSync
-  // completions = new Map<string, {
-  // 	completed: boolean,
-  // 	time: number
-  // }>();
-  history_id_timeout = 3000
-  history_id: number | null
+  history_id_timeout = 1
+  history_id_latest: number | null
   last_sync_time: number
   queries: Query[] = []
   labels: google.gmail.v1.Label[]
   history_ids: { id: number; time: number }[] = []
   sub_states_outbound = [['Reading', 'Reading'], ['Enabled', 'Enabled']]
   config: IConfig
+  threads = new Map<string, Thread>()
+  subs: {
+    query_labels: Sync[]
+    lists: Sync[]
+  }
 
-  constructor(public root: RootSync, public auth: Auth) {
+  constructor(root: RootSync, public auth: Auth) {
     super(root.config, root)
     // this.api = google.gmail('v1', { auth: this.auth.client })
     this.api = <GmailAPI>google.gmail('v1')
     this.api = Object.create(this.api)
     this.api.req = async (a, params, c, d) => {
       params.auth = this.auth.client
-      // params.options = { forever: true }
       return await this.root.req(a, params, c, d, { forever: true })
     }
   }
@@ -99,21 +105,9 @@ export default class GmailSync extends SyncWriter {
     return state
   }
 
-  // bindToSubs() {
-  //   super.bindToSubs()
-  //
-  //   // this.state.pipe('QueryLabelsSynced', this.sync.state)
-  // }
-
   // ----- -----
   // Transitions
   // ----- -----
-
-  threads = new Map<string, Thread>()
-  subs: {
-    query_labels: Sync[]
-    lists: Sync[]
-  }
 
   SubsInited_state() {
     this.subs = {
@@ -222,10 +216,10 @@ export default class GmailSync extends SyncWriter {
       abort,
       false
     )
-    // TODO redo when no response?
+    // TODO redo when no response
     if (!response || (abort && abort())) return
-    this.history_id = parseInt(response.historyId, 10)
-    this.history_ids.push({ id: this.history_id, time: moment().unix() })
+    this.history_id_latest = parseInt(response.historyId, 10)
+    this.history_ids.push({ id: this.history_id_latest, time: moment().unix() })
     this.last_sync_time = moment().unix()
     this.state.add('HistoryIdFetched')
   }
@@ -266,6 +260,9 @@ export default class GmailSync extends SyncWriter {
       null,
       false
     )
+    thread.fetched = moment().unix()
+    this.threads.set(thread.id, thread)
+
     if (abort && abort()) return null
 
     return thread
@@ -287,7 +284,7 @@ export default class GmailSync extends SyncWriter {
 
   isHistoryIdValid() {
     return (
-      this.history_id &&
+      this.history_id_latest &&
       moment().unix() < this.last_sync_time + this.history_id_timeout
     )
   }
@@ -307,7 +304,17 @@ export default class GmailSync extends SyncWriter {
       if (abort && abort()) return null
     }
 
-    return this.history_id <= history_id
+    return this.history_id_latest <= history_id
+  }
+  // TODO support thread object as a param a parseInt(r.historyId, 10)
+  timeFromHistoryID(history_id: number) {
+    // floor the guess (to the closest previous recorded history ID)
+    // or now
+    let index = _.sortedIndex(this.history_ids, { id: history_id }, 'id')
+    return index
+      ? this.history_ids[index - 1].time
+      : // TODO initial guess to avoid a double merge
+        this.history_ids[0].time
   }
 
   getLabelsIds(labels: string[] | string): string[] {
@@ -372,12 +379,12 @@ export default class GmailSync extends SyncWriter {
   //      msg.labelIds.push add_label_ids
 
   async getHistoryId(abort?: () => boolean): Promise<number | null> {
-    if (!this.history_id) {
+    if (!this.history_id_latest) {
       this.state.add('FetchingHistoryId', abort)
       await this.state.when('HistoryIdFetched')
     }
 
-    return this.history_id
+    return this.history_id_latest
   }
 
   // TODO check raw_email

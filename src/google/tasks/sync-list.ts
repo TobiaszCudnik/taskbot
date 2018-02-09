@@ -56,49 +56,8 @@ export default class GTasksListSync extends Sync {
     }
   }
 
-  // get entries(): google.tasks.v1.Task[] {
-  //   if (!this.entries || !this.entries.items) return []
-  //   return this.entries.items.concat(
-  //     (this.tasks_completed && this.tasks_completed.items) || []
-  //   )
-  // }
-
-  // get tasks_completed_from(): number {
-  //   return moment().subtract(2, 'weeks').unix()
-  // }
-
-  // tasks_completed: google.tasks.v1.Tasks
-  // TODO set
-  // tasks_completed_from: string
-  // threads = null
-
-  // push_dirty: boolean
-  // last_sync_start: number
-  // last_sync_end: number | null
-  // last_sync_time: number | null
-
-  // completions_tasks = new Map<string, TTaskCompletion>()
-  // quota_exceeded = false
-
-  // def_title: string
-  // tasks_in_threads;
-
-  constructor(
-    public config: IListConfig,
-    public root: RootSync,
-    public tasks: GTasksSync
-  ) {
-    super(config)
-    // this.gmail_api = this.sync.gmail_api
-    // this.gmail = this.sync.gmail
-    // this.tasks_api = this.sync.tasks_api
-    // // this.tasks_in_threads = [];
-    // this.last_sync_time = null
-    // this.query = this.sync.gmail.createQuery(this.data.query, name, true)
-    // // bind to query states
-    // this.query.states.pipe('ThreadsFetched', this.states)
-    // this.query.states.pipe('MsgsFetched', this.states)
-    // this.states.pipe('Enabled', this.query.states)
+  constructor(config: IListConfig, root: RootSync, public tasks: GTasksSync) {
+    super(config, root)
   }
 
   getState(): State {
@@ -111,9 +70,8 @@ export default class GTasksListSync extends Sync {
       return this.state.add('ReadingDone')
     }
     const abort = this.state.getAbort('Reading')
-    // let previous_ids = this.getAllTasks().map(task => task.id)
 
-    let [list, res] = await this.tasks.api.req(
+    const api_res = await this.tasks.api.req(
       this.tasks.api.tasks.list,
       {
         tasklist: this.list.id,
@@ -121,11 +79,13 @@ export default class GTasksListSync extends Sync {
         maxResults: '1000',
         showHidden: false,
         headers: { 'If-None-Match': this.etags.tasks }
-        // etag: this.etags.tasks && this.etags.tasks.replace(/"/g, '')
       },
       abort,
       true
     )
+
+    if (abort()) return
+    let [list, res] = api_res
 
     // TODO handle !res
     if ((abort && abort()) || !res) return
@@ -147,7 +107,6 @@ export default class GTasksListSync extends Sync {
   }
 
   sync() {
-    const ids = []
     let changed = 0
     // add / merge
     for (const task of this.entries.items) {
@@ -233,22 +192,6 @@ export default class GTasksListSync extends Sync {
 
   toLocalID(record: DBRecord) {
     return record.tasks_ids && record.tasks_ids[this.list.id]
-  }
-
-  applyLabels(record: DBRecord, labels: { add: string[]; remove: string[] }) {
-    record.labels = record.labels || {}
-    for (const label of labels.remove) {
-      record.labels[label] = {
-        active: false,
-        updated: moment().unix()
-      }
-    }
-    for (const label of labels.add) {
-      record.labels[label] = {
-        active: true,
-        updated: moment().unix()
-      }
-    }
   }
 }
 

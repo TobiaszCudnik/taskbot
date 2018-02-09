@@ -8,6 +8,7 @@ export type Thread = google.gmail.v1.Thread
 
 export class State extends AsyncMachine<any, any, any> {
   Enabled = {}
+  // TODO implement based on history list and label matching
   Dirty = {
     drop: ['MsgsFetched', 'ThreadsFetched']
   }
@@ -46,8 +47,7 @@ export default class GmailQuery {
   // api: google.gmail.v1.Gmail
   state: State
   // history ID from the moment of reading
-  synced_history_id: number | null
-
+  history_id_synced: number | null
   threads: Thread[] = []
   completions = new Map<string, TThreadCompletion>()
   previous_threads: Thread[] | null = null
@@ -91,15 +91,10 @@ export default class GmailQuery {
         userId: string
         fields: string
       } = {
-        // TODO this should be optional
-        // labelIds: '',
-        // pageToken: ''
-        // includeSpamTrash: false,
         maxResults: 1000,
         q: this.query,
         userId: 'me',
         // TODO is 'snippet' useful?
-        // fields: 'nextPageToken,threads(historyId,id)'
         fields: 'nextPageToken,threads(historyId,id,snippet)'
       }
       if (prevRes && prevRes.nextPageToken) {
@@ -116,7 +111,9 @@ export default class GmailQuery {
       if (!list) break
       if (abort()) return
 
-      if (list.threads) results.push(...list.threads)
+      if (list.threads) {
+        results.push(...list.threads)
+      }
 
       if (!list.nextPageToken) break
 
@@ -128,12 +125,10 @@ export default class GmailQuery {
     if (abort()) return
 
     // TODO keep in GmailSync
-    this.previous_threads = this.threads
     this.threads = results
 
-    //    console.log "Found #{@result.threads.length} threads"
     if (!this.fetch_msgs) {
-      this.synced_history_id = history_id
+      this.history_id_synced = history_id
     }
 
     this.state.add('ThreadsFetched')
@@ -141,57 +136,43 @@ export default class GmailQuery {
     if (this.fetch_msgs) {
       abort = this.state.getAbort('ThreadsFetched')
       this.state.add('FetchingMsgs', history_id, abort)
-    } else {
-      this.previous_threads = null
     }
   }
 
   async FetchingMsgs_state(history_id: number, abort?: () => boolean) {
     abort = this.state.getAbort('FetchingMsgs', abort)
 
-    let threads = await map(
-      this.threads,
-      async (thread: google.gmail.v1.Thread) => {
-        // check if the thread has been previously downloaded and if
-        // the history ID has changed
-        // TODO compare against shared this.gmail.threads
-        let previous =
-          this.previous_threads &&
-          this.previous_threads.find(
-            item => item.id === thread.id && item.historyId === thread.historyId
-          )
-
-        if (previous) return previous
-        else
-          return await this.gmail.fetchThread(
-            thread.id,
-            parseInt(thread.historyId, 10),
-            abort
-          )
+    let threads = await map(this.threads, async (thread: Thread) => {
+      // check if the thread has been previously downloaded and if
+      // the history ID has changed
+      // TODO compare against shared this.gmail.threads
+      let previous = this.gmail.threads.get(thread.id)
+      if (!previous || previous.historyId != thread.historyId) {
+        return await this.gmail.fetchThread(
+          thread.id,
+          parseInt(thread.historyId, 10),
+          abort
+        )
       }
-    )
+      return previous
+    })
 
     if (abort()) return
 
     // ensure all the requested threads were downloaded
     // TODO retry the missing ones?
     if (threads && threads.every(thread => Boolean(thread))) {
-      this.synced_history_id = history_id
-      this.threads = threads as google.gmail.v1.Thread[]
-      this.previous_threads = null
+      this.history_id_synced = history_id
+      this.threads = threads as Thread[]
       this.state.add('MsgsFetched')
     } else {
       console.log('[FetchingMsgs] no results or some missing')
     }
   }
 
-  Dirty_state() {
-    this.state.drop('Dirty')
-  }
-
   async isCached(abort: () => boolean): Promise<boolean | null> {
-    return this.synced_history_id
-      ? await this.gmail.isCached(this.synced_history_id, abort)
+    return this.history_id_synced
+      ? await this.gmail.isCached(this.history_id_synced, abort)
       : false
   }
 }
