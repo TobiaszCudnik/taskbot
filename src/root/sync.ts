@@ -81,6 +81,7 @@ export default class RootSync extends SyncWriter {
   // TODO tmp
   last_db: string
   log = debug('root')
+  log_db = debug('db')
   verbose = debug('root-verbose')
 
   constructor(config: IConfig) {
@@ -141,7 +142,7 @@ export default class RootSync extends SyncWriter {
     const db = this.data.toString()
     // TODO tmp
     if (db != this.last_db) {
-      this.log(db)
+      this.log_db('DB:\n'+db)
     }
     this.last_db = db
     this.state.add('Writing')
@@ -236,7 +237,9 @@ export default class RootSync extends SyncWriter {
         }
         return a
       }, [])
-      this.log('changes: %o', changes)
+      if (changes.length) {
+        this.log('changes: %o', changes)
+      }
     } while (changes.length && ++c < MAX)
     this.log(`SYNCED after ${c} rounds`)
     return []

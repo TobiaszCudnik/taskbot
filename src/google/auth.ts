@@ -3,6 +3,7 @@ import AsyncMachine from '../../../asyncmachine/build/asyncmachine'
 import { IState, IBind, IEmit, TStates } from './auth-types'
 import { IConfig } from '../types'
 import * as _ from 'underscore'
+import {machineLogToDebug} from "../utils";
 
 export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
   CredentialsSet: IState = {}
@@ -42,9 +43,7 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
       'TokenRefreshed'
     )
     if (process.env['DEBUG']) {
-      // TODO redir to debug
-      const level = _.isNumber(process.env['DEBUG']) ? process.env['DEBUG'] : 1
-      this.id('Auth').logLevel(level)
+      machineLogToDebug(this)
       global.am_network.addMachine(this)
     }
     // TODO missing type

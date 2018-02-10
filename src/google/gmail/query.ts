@@ -5,6 +5,7 @@ import * as google from 'googleapis'
 import { map } from 'typed-promisify-tob'
 import { debug } from 'debug'
 import * as _ from 'underscore'
+import {machineLogToDebug} from "../../utils";
 
 export type Thread = google.gmail.v1.Thread
 
@@ -64,9 +65,7 @@ export default class GmailQuery {
     this.state = new State(this)
     this.state.id('Gmail/query: ' + this.name)
     if (process.env['DEBUG']) {
-      // TODO redir to debug
-      const level = _.isNumber(process.env['DEBUG']) ? process.env['DEBUG'] : 1
-      this.state.logLevel(level)
+      machineLogToDebug(this.state)
       global.am_network.addMachine(this.state)
     }
   }

@@ -5,6 +5,7 @@ import { IConfig } from '../types'
 import RootSync, { DBRecord } from '../root/sync'
 import * as moment from 'moment'
 import * as _ from 'underscore'
+import {machineLogToDebug} from "../utils";
 
 // TODO define SyncState as a JSON
 export const Reading = {
@@ -89,9 +90,7 @@ export abstract class Sync {
     this.state = this.getState()
     this.state.add('Initializing')
     if (process.env['DEBUG'] && global.am_network) {
-      // TODO redir the machine log to debug handlers
-      const level = _.isNumber(process.env['DEBUG']) ? process.env['DEBUG'] : 1
-      this.state.logLevel(level)
+      machineLogToDebug(this.state)
       global.am_network.addMachine(this.state)
     }
     if (config) {
