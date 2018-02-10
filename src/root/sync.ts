@@ -141,7 +141,8 @@ export default class RootSync extends SyncWriter {
       this.last_read_end.diff(this.last_read_start)
     )
     this.merge()
-    const db = 'DB:\n' + this.data.toString() + '\n'
+    console.log(`DB read in ${this.last_read_time.asSeconds()}sec`)
+    const db = this.data.toString() + '\n'
     // TODO tmp
     if (!this.last_db) {
       process.stderr.write(db)
@@ -165,7 +166,7 @@ export default class RootSync extends SyncWriter {
       this.last_write_end.diff(this.last_write_start)
     )
     this.log(
-      `WRITING DONE:\nRead: ${this.last_read_time.asSeconds()}sec\n` +
+      `SYNC DONE:\nRead: ${this.last_read_time.asSeconds()}sec\n` +
         `Write: ${this.last_write_time.asSeconds()}sec`
     )
     setTimeout(
