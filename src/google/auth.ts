@@ -2,6 +2,7 @@ import * as google from 'googleapis'
 import AsyncMachine from '../../../asyncmachine/build/asyncmachine'
 import { IState, IBind, IEmit, TStates } from './auth-types'
 import { IConfig } from '../types'
+import * as _ from 'underscore'
 
 export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
   CredentialsSet: IState = {}
@@ -41,7 +42,9 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
       'TokenRefreshed'
     )
     if (process.env['DEBUG']) {
-      this.id('Auth').logLevel(process.env['DEBUG'])
+      // TODO redir to debug
+      const level = _.isNumber(process.env['DEBUG']) ? process.env['DEBUG'] : 1
+      this.id('Auth').logLevel(level)
       global.am_network.addMachine(this)
     }
     // TODO missing type

@@ -3,6 +3,8 @@ import * as moment from 'moment'
 import GmailSync from './sync'
 import * as google from 'googleapis'
 import { map } from 'typed-promisify-tob'
+import { debug } from 'debug'
+import * as _ from 'underscore'
 
 export type Thread = google.gmail.v1.Thread
 
@@ -51,6 +53,7 @@ export default class GmailQuery {
   threads: Thread[] = []
   completions = new Map<string, TThreadCompletion>()
   previous_threads: Thread[] | null = null
+  log = debug('gmail-query')
 
   constructor(
     public gmail: GmailSync,
@@ -61,7 +64,9 @@ export default class GmailQuery {
     this.state = new State(this)
     this.state.id('Gmail/query: ' + this.name)
     if (process.env['DEBUG']) {
-      this.state.logLevel(process.env['DEBUG'])
+      // TODO redir to debug
+      const level = _.isNumber(process.env['DEBUG']) ? process.env['DEBUG'] : 1
+      this.state.logLevel(level)
       global.am_network.addMachine(this.state)
     }
   }
@@ -71,7 +76,7 @@ export default class GmailQuery {
     let abort = this.state.getAbort('FetchingThreads')
     if (await this.isCached(abort)) {
       if (abort()) return
-      console.log(`[CACHED] threads for '${this.query}'`)
+      this.log(`[CACHED] threads for '${this.query}'`)
       this.state.add('ThreadsFetched')
       if (this.fetch_msgs) {
         this.state.add('MsgsFetched')
@@ -80,7 +85,7 @@ export default class GmailQuery {
     }
     if (abort()) return
 
-    console.log(`[FETCH] threads' list for '${this.query}'`)
+    this.log(`[FETCH] threads' list for '${this.query}'`)
     let results: google.gmail.v1.Thread[] = []
     let prevRes: any
     while (true) {
@@ -98,7 +103,7 @@ export default class GmailQuery {
         fields: 'nextPageToken,threads(historyId,id,snippet)'
       }
       if (prevRes && prevRes.nextPageToken) {
-        console.log(`[FETCH] next page for threads' list for '${this.query}'`)
+        this.log(`[FETCH] next page for threads' list for '${this.query}'`)
         params.pageToken = prevRes.nextPageToken
       }
 
@@ -166,7 +171,7 @@ export default class GmailQuery {
       this.threads = threads as Thread[]
       this.state.add('MsgsFetched')
     } else {
-      console.log('[FetchingMsgs] no results or some missing')
+      this.log('[FetchingMsgs] no results or some missing')
     }
   }
 

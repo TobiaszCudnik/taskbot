@@ -19,6 +19,7 @@ debug:
 	DEBUG=3 node src/app.js
 
 format:
+	prettier --single-quote --no-semi --write src/*.ts
 	prettier --single-quote --no-semi --write src/**/*.ts
 	prettier --single-quote --no-semi --write src/**/**/*.ts
 
@@ -28,5 +29,10 @@ state-types:
 	node $(STATES_TYPES_BIN) src/sync/sync.js -s
 	node $(STATES_TYPES_BIN) src/sync/gmail.js -s
 	node $(STATES_TYPES_BIN) src/auth.js -s
+
+npm-i:
+	npm i
+	npm link asyncmachine
+	npm link ami-logger
 
 .PHONY: test break build

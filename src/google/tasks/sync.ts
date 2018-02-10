@@ -4,6 +4,7 @@ import { IConfig } from '../../types'
 import { Sync, SyncWriter, SyncWriterState } from '../../sync/sync'
 import RootSync from '../../root/sync'
 import Auth from '../auth'
+import * as debug from 'debug'
 
 // TODO tmp
 export interface TasksAPI extends google.tasks.v1.Tasks {
@@ -52,6 +53,7 @@ export default class GTasksSync extends SyncWriter {
   subs: {
     lists: GTasksListSync[]
   }
+  log = debug('gtasks')
 
   constructor(public root: RootSync, public auth: Auth) {
     super(root.config)
@@ -73,7 +75,7 @@ export default class GTasksSync extends SyncWriter {
   }
 
   async Writing_state() {
-    console.warn('WRITE ME (TASKS)')
+    this.log('WRITE ME (TASKS)')
     this.state.add('WritingDone')
     // TODO if any of the db records is missing a record.id, pipe a dependency
     //   on this.root.subs.gmail.WritingDone (and unpipe on local WritingDone_exit)
@@ -102,15 +104,15 @@ export default class GTasksSync extends SyncWriter {
       true
     )
     if (abort()) {
-      console.log('abort', abort)
+      this.log('abort', abort)
       return
     }
     if (res.statusCode !== 304) {
-      console.log('[FETCHED] tasks lists')
+      this.log('[FETCHED] tasks lists')
       this.etags.task_lists = res.headers.etag
       this.lists = list.items
     } else {
-      console.log('[CACHED] tasks lists')
+      this.log('[CACHED] tasks lists')
     }
     return this.state.add('TaskListsFetched')
   }

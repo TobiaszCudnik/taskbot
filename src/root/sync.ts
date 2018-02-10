@@ -5,6 +5,8 @@ import { Sync, SyncWriterState, SyncWriter } from '../sync/sync'
 import * as Loki from 'lokijs'
 import { promisify, promisifyArray } from 'typed-promisify-tob'
 import * as moment from 'moment'
+import { IConfig } from '../types'
+import * as debug from 'debug'
 
 export class State extends SyncWriterState {
   SubsInited = {
@@ -62,7 +64,6 @@ export default class RootSync extends SyncWriter {
   active_requests = 0
   executed_requests: number
 
-  // seconds
   last_read_end: moment.Moment
   last_read_start: moment.Moment
   last_read_time: moment.Duration
@@ -79,6 +80,12 @@ export default class RootSync extends SyncWriter {
   data: DB
   // TODO tmp
   last_db: string
+  log = debug('root')
+  verbose = debug('root-verbose')
+
+  constructor(config: IConfig) {
+    super(config)
+  }
 
   // set history_id(history_id: number) {
   //   this.historyId = Math.max(this.history_id, history_id)
@@ -134,7 +141,7 @@ export default class RootSync extends SyncWriter {
     const db = this.data.toString()
     // TODO tmp
     if (db != this.last_db) {
-      console.log(db)
+      this.log(db)
     }
     this.last_db = db
     this.state.add('Writing')
@@ -149,9 +156,9 @@ export default class RootSync extends SyncWriter {
     this.last_write_time = moment.duration(
       this.last_write_end.diff(this.last_write_start)
     )
-    console.log(
+    this.log(
       `WRITING DONE:\nRead: ${this.last_read_time.asSeconds()}sec\n` +
-        `Write: ${this.last_write_time.asSeconds()}sec\n`
+        `Write: ${this.last_write_time.asSeconds()}sec`
     )
     setTimeout(
       this.state.addByListener('Reading'),
@@ -191,27 +198,23 @@ export default class RootSync extends SyncWriter {
       return null
     }
     this.active_requests++
-    //		console.log "@active_requests++"
 
-    if (!params) params = {} as A
-    this.log(['REQUEST', params], 3)
+    if (!params) {
+      params = {} as A
+    }
+    this.verbose(`REQUEST (${this.active_requests} active): %O`, params)
     // TODO catch errors
-    // TODO loose promisify
+    // TODO try util.promisify, type the return array manually
     let promise_method = returnArray
       ? promisifyArray(method)
       : promisify(method)
     // TODO googleapis specific code should be in google/sync.ts
     let ret = await promise_method(params, options)
     release()
-    //		console.log "@active_requests--"
     this.active_requests--
-    // this.emit('request-finished')
-    // console.log('emit: request-finished')
+    this.verbose('emit: request-finished')
     this.executed_requests++
 
-    //		delete params.auth
-    //		console.log params
-    //		console.log ret[0]
     return ret
   }
 
@@ -226,16 +229,16 @@ export default class RootSync extends SyncWriter {
       c = 0
     const MAX = 10
     do {
-      changes = Object.values(this.subs).reduce((a, r) => {
-        const changes = r.sync()
+      changes = this.subs_flat_writers.reduce((a, r) => {
+        const changes = r.merge()
         if (changes) {
           a.push(...changes)
         }
         return a
       }, [])
-      console.log('changes', changes)
+      this.log('changes: %o', changes)
     } while (changes.length && ++c < MAX)
-    console.log(`SYNCED after ${c} rounds`)
+    this.log(`SYNCED after ${c} rounds`)
     return []
   }
 }

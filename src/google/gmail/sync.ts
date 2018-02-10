@@ -11,6 +11,7 @@ import GmailListSync from './sync-list'
 import GmailLabelFilterSync from './sync-label-filter'
 import RootSync from '../../root/sync'
 import * as moment from 'moment'
+import * as debug from 'debug'
 
 export class State extends SyncWriterState {
   // -- overrides
@@ -87,6 +88,7 @@ export default class GmailSync extends SyncWriter {
     query_labels: Sync[]
     lists: Sync[]
   }
+  log = debug('gmail')
 
   constructor(root: RootSync, public auth: Auth) {
     super(root.config, root)
@@ -135,7 +137,7 @@ export default class GmailSync extends SyncWriter {
   }
 
   async Writing_state() {
-    console.warn('WRITE ME (GMAIL)')
+    this.log('WRITE ME (GMAIL)')
     this.state.add('WritingDone')
     // process.exit()
   }
@@ -188,7 +190,7 @@ export default class GmailSync extends SyncWriter {
   // QueryLabelsSynced_state() {
   //   this.last_sync_time = moment().unix() - this.query_labels_timer
   //   this.query_labels_timer = null
-  //   return console.log(`QueryLabels synced in: ${this.last_sync_time}ms`)
+  //   return this.log(`QueryLabels synced in: ${this.last_sync_time}ms`)
   // }
 
   async FetchingLabels_state() {
@@ -205,7 +207,7 @@ export default class GmailSync extends SyncWriter {
   }
 
   async FetchingHistoryId_state(abort?: () => boolean) {
-    console.log('[FETCH] history ID')
+    this.log('[FETCH] history ID')
     let response = await this.api.req(
       this.api.users.getProfile,
       {
@@ -348,7 +350,7 @@ export default class GmailSync extends SyncWriter {
 
     if (remove_labels.length) log_msg += `-(${remove_labels.join(' ')})`
 
-    console.log(log_msg)
+    this.log(log_msg)
 
     let ret = await this.api.req(
       this.api.users.threads.modify,
@@ -395,7 +397,7 @@ export default class GmailSync extends SyncWriter {
     labels: string[],
     abort?: () => boolean
   ): Promise<string | null> {
-    console.log(`Creating thread (${labels.join(' ')})`)
+    this.log(`Creating thread (${labels.join(' ')})`)
     let message = await this.api.req(
       this.api.users.messages.insert,
       {

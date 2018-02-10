@@ -1,10 +1,10 @@
 // import { IBind, IEmit, IState, TStates } from '../google/gmail/gmail-types'
 // import { IBind, IEmit, IState } from 'asyncmachine/build/types'
 import AsyncMachine from 'asyncmachine'
-import { State } from '../google/gmail/sync-list'
 import { IConfig } from '../types'
 import RootSync, { DBRecord } from '../root/sync'
 import * as moment from 'moment'
+import * as _ from 'underscore'
 
 // TODO define SyncState as a JSON
 export const Reading = {
@@ -89,7 +89,9 @@ export abstract class Sync {
     this.state = this.getState()
     this.state.add('Initializing')
     if (process.env['DEBUG'] && global.am_network) {
-      this.state.logLevel(process.env['DEBUG'])
+      // TODO redir the machine log to debug handlers
+      const level = _.isNumber(process.env['DEBUG']) ? process.env['DEBUG'] : 1
+      this.state.logLevel(level)
       global.am_network.addMachine(this.state)
     }
     if (config) {
@@ -158,17 +160,6 @@ export abstract class Sync {
     }
   }
 
-  log(msgs: string | any[], level: number) {
-    if (!process.env['DEBUG']) {
-      return
-    }
-    if (level && level > parseInt(process.env['DEBUG'], 10)) return
-    if (!(msgs instanceof Array)) {
-      msgs = [msgs]
-    }
-    return console.log.apply(console, msgs)
-  }
-
   applyLabels(record: DBRecord, labels: { add: string[]; remove: string[] }) {
     record.labels = record.labels || {}
     for (const label of labels.remove) {
@@ -189,8 +180,9 @@ export abstract class Sync {
 export class SyncWriter extends Sync {
   // subs: { [index: string]: Sync | Sync[] | SyncWriter | SyncWriter[] } = {}
 
-  get subs_flat_writers() {
-    return this.subs_flat.filter(sync => sync instanceof SyncWriter)
+  get subs_flat_writers(): SyncWriter[] {
+    // TODO cast
+    return <any>this.subs_flat.filter(sync => sync instanceof SyncWriter)
   }
 
   WritingDone_enter() {

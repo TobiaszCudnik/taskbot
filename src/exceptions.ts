@@ -1,7 +1,7 @@
 class ApiError {
   constructor(response) {
-    this.response = response;
+    this.response = response
   }
 }
 
-export { ApiError };
+export { ApiError }

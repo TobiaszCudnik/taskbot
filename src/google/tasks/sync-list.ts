@@ -7,6 +7,7 @@ import RootSync, { DBRecord } from '../../root/sync'
 import GTasksSync from './sync'
 import * as uuid from 'uuid/v4'
 import { IListConfig } from '../../types'
+import * as debug from 'debug'
 
 export type Task = google.tasks.v1.Task
 
@@ -55,6 +56,7 @@ export default class GTasksListSync extends Sync {
       }
     }
   }
+  log = debug('gtasks-list')
 
   constructor(config: IListConfig, root: RootSync, public tasks: GTasksSync) {
     super(config, root)
@@ -66,7 +68,7 @@ export default class GTasksListSync extends Sync {
 
   async Reading_state() {
     if (!this.list) {
-      console.log(`List '${this.config.name}' doesnt exist, skipping reading`)
+      this.log(`List '${this.config.name}' doesnt exist, skipping reading`)
       return this.state.add('ReadingDone')
     }
     const abort = this.state.getAbort('Reading')
@@ -92,9 +94,9 @@ export default class GTasksListSync extends Sync {
 
     if (res.statusCode === 304) {
       this.state.add('Cached')
-      console.log(`[CACHED] tasks for '${this.config.name}'`)
+      this.log(`[CACHED] tasks for '${this.config.name}'`)
     } else {
-      console.log(`[FETCH] tasks for '${this.config.name}'`)
+      this.log(`[FETCH] tasks for '${this.config.name}'`)
       if (!list.items) {
         list.items = []
       }
