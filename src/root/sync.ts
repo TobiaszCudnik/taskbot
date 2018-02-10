@@ -7,6 +7,8 @@ import { promisify, promisifyArray } from 'typed-promisify-tob'
 import * as moment from 'moment'
 import { IConfig } from '../types'
 import * as debug from 'debug'
+import 'colors'
+import * as diff from 'diff'
 
 export class State extends SyncWriterState {
   SubsInited = {
@@ -78,11 +80,11 @@ export default class RootSync extends SyncWriter {
 
   db: Loki
   data: DB
+  log = debug('root')
+  log_requests = debug('requests')
+
   // TODO tmp
   last_db: string
-  log = debug('root')
-  log_db = debug('db')
-  verbose = debug('root-verbose')
 
   constructor(config: IConfig) {
     super(config)
@@ -139,10 +141,15 @@ export default class RootSync extends SyncWriter {
       this.last_read_end.diff(this.last_read_start)
     )
     this.merge()
-    const db = this.data.toString()
+    const db = 'DB:\n' + this.data.toString() + '\n'
     // TODO tmp
-    if (db != this.last_db) {
-      this.log_db('DB:\n'+db)
+    if (!this.last_db) {
+      process.stderr.write(db)
+    } else if (this.last_db && db != this.last_db) {
+      for (const chunk of diff.diffChars(this.last_db, db)) {
+        const color = chunk.added ? 'green' : chunk.removed ? 'red' : 'white'
+        process.stderr.write(chunk.value[color])
+      }
     }
     this.last_db = db
     this.state.add('Writing')
@@ -203,7 +210,7 @@ export default class RootSync extends SyncWriter {
     if (!params) {
       params = {} as A
     }
-    this.verbose(`REQUEST (${this.active_requests} active): %O`, params)
+    this.log_requests(`REQUEST (${this.active_requests} active): %O`, params)
     // TODO catch errors
     // TODO try util.promisify, type the return array manually
     let promise_method = returnArray
@@ -213,7 +220,7 @@ export default class RootSync extends SyncWriter {
     let ret = await promise_method(params, options)
     release()
     this.active_requests--
-    this.verbose('emit: request-finished')
+    this.log_requests('emit: request-finished')
     this.executed_requests++
 
     return ret

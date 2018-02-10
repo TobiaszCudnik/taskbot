@@ -3,7 +3,7 @@ import AsyncMachine from '../../../asyncmachine/build/asyncmachine'
 import { IState, IBind, IEmit, TStates } from './auth-types'
 import { IConfig } from '../types'
 import * as _ from 'underscore'
-import {machineLogToDebug} from "../utils";
+import { machineLogToDebug } from '../utils'
 
 export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
   CredentialsSet: IState = {}
@@ -42,6 +42,7 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
       'RefreshingToken',
       'TokenRefreshed'
     )
+    this.id('Auth')
     if (process.env['DEBUG']) {
       machineLogToDebug(this)
       global.am_network.addMachine(this)

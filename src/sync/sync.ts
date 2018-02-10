@@ -5,7 +5,7 @@ import { IConfig } from '../types'
 import RootSync, { DBRecord } from '../root/sync'
 import * as moment from 'moment'
 import * as _ from 'underscore'
-import {machineLogToDebug} from "../utils";
+import { machineLogToDebug } from '../utils'
 
 // TODO define SyncState as a JSON
 export const Reading = {

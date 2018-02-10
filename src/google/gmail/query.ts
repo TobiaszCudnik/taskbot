@@ -5,7 +5,7 @@ import * as google from 'googleapis'
 import { map } from 'typed-promisify-tob'
 import { debug } from 'debug'
 import * as _ from 'underscore'
-import {machineLogToDebug} from "../../utils";
+import { machineLogToDebug } from '../../utils'
 
 export type Thread = google.gmail.v1.Thread
 
