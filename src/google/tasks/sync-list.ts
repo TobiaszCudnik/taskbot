@@ -90,10 +90,8 @@ export default class GTasksListSync extends Sync {
     )
 
     if (abort()) return
-    let [list, res] = api_res
-
     // TODO handle !res
-    if ((abort && abort()) || !res) return
+    let [list, res] = api_res
 
     if (res.statusCode === 304) {
       this.state.add('Cached')
@@ -104,10 +102,11 @@ export default class GTasksListSync extends Sync {
         list.items = []
       }
       this.etags.tasks = res.headers['etag'] as string
+      // TODO wait for gmail to ReadingDone, then fetch all the missing threads
+      // referenced by the tasks
       this.tasks = list
     }
 
-    // this.processTasksDeletion(previous_ids)
     this.state.add('ReadingDone')
   }
 
@@ -134,29 +133,32 @@ export default class GTasksListSync extends Sync {
   getFromDB(task) {
     const id = this.gtasks.toDBID(task)
     if (id) {
-      const record = this.root.data.findOne({ id })
+      const record = this.root.data.findOne({ gmail_id: id })
       if (record) return record
     }
     // return this.root.data.findOne({tasks_ids: { [task.id]: { $exists: true } }})
     return this.root.data
       .chain()
       .where((obj: DBRecord) => {
-        return Boolean(obj.tasks_ids && obj.tasks_ids[task.id])
+        return Boolean(obj.gtasks_ids && obj.gtasks_ids[task.id])
       })
       .limit(1)
       .data()[0]
   }
 
   toDB(task: Task): DBRecord {
+    const id = this.gtasks.toDBID(task)
     const record: DBRecord = {
-      id: this.gtasks.toDBID(task) || uuid(),
       title: task.title,
       content: this.getContent(task),
       labels: {},
       updated: moment(task.updated).unix(),
-      tasks_ids: {
+      gtasks_ids: {
         [task.id]: this.list.id
       }
+    }
+    if (id) {
+      record.gmail_id = id
     }
     const labels =
       task.status == 'completed' ? this.config.exit : this.config.enter
@@ -176,8 +178,8 @@ export default class GTasksListSync extends Sync {
     // TODO resolve conflicts on text fields
     record.title = task.title
     record.content = this.getContent(task)
-    record.tasks_ids = record.tasks_ids || {}
-    record.tasks_ids[task.id] = this.list.id
+    record.gtasks_ids = record.gtasks_ids || {}
+    record.gtasks_ids[task.id] = this.list.id
     if (task_updated <= record.updated) {
       // record.updated = task_updated
       // TODO check resolve conflict? since the last sync
@@ -193,7 +195,7 @@ export default class GTasksListSync extends Sync {
   }
 
   toLocalID(record: DBRecord) {
-    return record.tasks_ids && record.tasks_ids[this.list.id]
+    return record.gtasks_ids && record.gtasks_ids[this.list.id]
   }
 }
 

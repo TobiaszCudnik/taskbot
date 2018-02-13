@@ -77,6 +77,7 @@ export default class GmailSync extends SyncWriter {
     lists: GmailListSync[]
   }
   log = debug('gmail')
+  verbose = debug('gmail-verbose')
 
   constructor(root: RootSync, public auth: Auth) {
     super(root.config, root)
@@ -121,7 +122,6 @@ export default class GmailSync extends SyncWriter {
     }
     const abort = this.state.getAbort('Writing')
     await Promise.all([this.getThreadsToAdd(abort), this.getThreadsToModify])
-    // TODO add new thread from all records without gmail_id
     this.state.add('WritingDone')
   }
 
@@ -233,7 +233,6 @@ export default class GmailSync extends SyncWriter {
         .map(([name]) => name)
       const id = await this.createThread(record.title, labels, abort)
       record.gmail_id = id
-      record.id = id
       this.root.data.update(record)
     })
   }
@@ -242,7 +241,7 @@ export default class GmailSync extends SyncWriter {
     const diff_threads = this.threads
       .values()
       .map(thread => {
-        const record = this.root.data.findOne({ id: thread.id })
+        const record = this.root.data.findOne({ gmail_id: thread.id })
         // TODO time of write (and latter reading) should not update
         //   record.updated?
         const add = Object.entries(record.labels)
@@ -374,6 +373,7 @@ export default class GmailSync extends SyncWriter {
       this.api.users.messages.insert,
       {
         userId: 'me',
+        fields: 'threadId',
         resource: {
           raw: this.createEmail(subject),
           labelIds: labels.map(l => this.getLabelId(l))
@@ -383,6 +383,7 @@ export default class GmailSync extends SyncWriter {
       false
     )
     // TODO handle no message
+    this.verbose(`New thread ID - '${message.threadId}'`)
     return message.threadId
   }
 

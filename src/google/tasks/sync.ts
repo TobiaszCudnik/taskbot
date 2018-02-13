@@ -84,6 +84,7 @@ export default class GTasksSync extends SyncWriter {
     return new State(this).id('GTasks')
   }
 
+  // TODO rename to toGmailID
   toDBID(task: Task): string | null {
     const match = (task.notes || '').match(/\bemail:([\w-]+)\b/)
     if (match) {
@@ -117,19 +118,26 @@ export default class GTasksSync extends SyncWriter {
         const db_res = <DBRecord>(<any>this.root.data
           .chain()
           .where((record: DBRecord) => {
-            return Boolean(record.tasks_ids && record.tasks_ids[task.id])
+            return Boolean(record.gtasks_ids && record.gtasks_ids[task.id])
           })
           .limit(1)
           .data())
-        const record = db_res[0]
+        const record: DBRecord = db_res[0]
         // TODO type
         const patch: any = {}
-        if (this.toDBID(task) != record.id) {
+        // TODO this should wait for gmail to write
+        if (record.gmail_id && this.toDBID(task) != record.gmail_id) {
+          // Link to email
           // TODO extract
-          patch.notes = record.content + '\nemail:' + record.id
+          patch.notes = record.content + '\nemail:' + record.gmail_id
         }
         if (sync.config.db_query(record) && this.isCompleted(task)) {
+          // Uncomplete
           patch.status = 'needsAction'
+          patch.completed = null
+        } else if (!sync.config.db_query(record) && !this.isCompleted(task)) {
+          // Complete
+          patch.status = 'completed'
         }
         if (!Object.keys(patch).length) {
           return
@@ -137,7 +145,9 @@ export default class GTasksSync extends SyncWriter {
         const params = {
           tasklist: sync.list.id,
           task: task.id,
-          resource: patch
+          resource: patch,
+          // TODO test
+          fields: ''
         }
         this.log(
           `Updating task '${task.title}' in '${sync.list.title}'\n%O`,
@@ -154,16 +164,16 @@ export default class GTasksSync extends SyncWriter {
         sync.config.db_query
       ))
       await records.map(async record => {
-        const task_id = _.findKey(record.tasks_ids, id => id == sync.list.id)
+        const task_id = _.findKey(record.gtasks_ids, id => id == sync.list.id)
         // omit tasks who are already on the list
         if (task_id) return
         const params = {
           tasklist: sync.list.id,
           resource: {
             title: record.title,
-            // fields: 'id',
+            fields: 'id',
             // TODO extract
-            notes: record.content + '\nemail:' + record.id
+            notes: record.content + '\nemail:' + record.gmail_id
           }
         }
         this.log(`Adding a new task to '${sync.list.title}'\n%O`, params)
@@ -173,8 +183,8 @@ export default class GTasksSync extends SyncWriter {
           abort,
           false
         )
-        record.tasks_ids = record.tasks_ids || {}
-        record.tasks_ids[res.id] = sync.list.id
+        record.gtasks_ids = record.gtasks_ids || {}
+        record.gtasks_ids[res.id] = sync.list.id
         this.root.data.update(record)
       })
     })

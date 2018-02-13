@@ -99,7 +99,7 @@ export default class GmailQuery {
         q: this.query,
         userId: 'me',
         // TODO is 'snippet' useful?
-        fields: 'nextPageToken,threads(historyId,id,snippet)'
+        fields: 'nextPageToken,threads(historyId,id)'
       }
       if (prevRes && prevRes.nextPageToken) {
         this.log(`[FETCH] next page for threads' list for '${this.query}'`)
@@ -128,7 +128,6 @@ export default class GmailQuery {
     let history_id = await this.gmail.getHistoryId(abort)
     if (abort()) return
 
-    // TODO keep in GmailSync
     this.threads = results
 
     if (!this.fetch_msgs) {
@@ -149,7 +148,6 @@ export default class GmailQuery {
     let threads = await map(this.threads, async (thread: Thread) => {
       // check if the thread has been previously downloaded and if
       // the history ID has changed
-      // TODO compare against shared this.gmail.threads
       let previous = this.gmail.threads.get(thread.id)
       if (!previous || previous.historyId != thread.historyId) {
         return await this.gmail.fetchThread(

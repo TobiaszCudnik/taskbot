@@ -77,7 +77,7 @@ export default class GmailListSync extends Sync {
     let changed = 0
     // add / merge
     for (const thread of this.query.threads) {
-      const record = this.root.data.findOne({ id: this.toDBID(thread.id) })
+      const record = this.root.data.findOne({ gmail_id: this.toDBID(thread.id) })
       if (!record) {
         const new_record = this.toDB(thread)
         this.verbose('new record:\n %O', new_record)
@@ -96,7 +96,7 @@ export default class GmailListSync extends Sync {
     // TODO use an index
     const find = (record: DBRecord) => {
       return (
-        // only records from gmail
+        // only records with a gmail id
         record.gmail_id &&
         // only from this list
         this.config.db_query(record) &&
@@ -119,7 +119,6 @@ export default class GmailListSync extends Sync {
 
   toDB(thread: google.gmail.v1.Thread): DBRecord {
     const record: DBRecord = {
-      id: this.toDBID(thread.id),
       gmail_id: this.toDBID(thread.id),
       title: getTitleFromThread(thread),
       content: thread.snippet || '',
@@ -137,7 +136,6 @@ export default class GmailListSync extends Sync {
 
   mergeRecord(thread: Thread, record: DBRecord): boolean {
     const before = clone(record)
-    record.gmail_id = record.id
     // TODO support duplicating in case of a conflict ???
     //   or send a new email in the thread?
     if (
@@ -156,6 +154,6 @@ export default class GmailListSync extends Sync {
   }
 
   toLocalID(record: DBRecord) {
-    return record.id ? record.id : record
+    return record.gmail_id ? record.gmail_id : record
   }
 }

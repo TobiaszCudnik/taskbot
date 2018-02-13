@@ -37,15 +37,14 @@ export type DB = LokiCollection<DBRecord>
  * Local DB record format.
  */
 export interface DBRecord {
-  id: DBRecordID
+  gmail_id?: DBRecordID
   title: string
   content: string
   updated: number
   parent?: DBRecordID
   labels: { [index: string]: DBRecordLabel }
-  gmail_id?: string
   // different task ids per list
-  tasks_ids?: { [list_id: string]: string }
+  gtasks_ids?: { [list_id: string]: string }
 }
 
 export type DBRecordID = string
