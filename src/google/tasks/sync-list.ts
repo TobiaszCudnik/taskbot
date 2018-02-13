@@ -39,7 +39,7 @@ export default class GTasksListSync extends Sync {
   // data: IGTasksList
   name: string
   state: State
-  entries: ITasks | null
+  tasks: ITasks | null
   etags: {
     tasks: string | null
     // tasks_completed: string | null
@@ -48,10 +48,10 @@ export default class GTasksListSync extends Sync {
     // tasks_completed: null
   }
   get list(): google.tasks.v1.TaskList | null {
-    if (!this.tasks.lists) {
+    if (!this.gtasks.lists) {
       throw Error('Lists not fetched')
     }
-    for (const list of this.tasks.lists) {
+    for (const list of this.gtasks.lists) {
       if (list.title == this.config.name) {
         return list
       }
@@ -59,8 +59,9 @@ export default class GTasksListSync extends Sync {
   }
   log = debug('gtasks-list')
   verbose = debug('gtasks-list-verbose')
+  config: IListConfig
 
-  constructor(config: IListConfig, root: RootSync, public tasks: GTasksSync) {
+  constructor(config: IListConfig, root: RootSync, public gtasks: GTasksSync) {
     super(config, root)
   }
 
@@ -75,8 +76,8 @@ export default class GTasksListSync extends Sync {
     }
     const abort = this.state.getAbort('Reading')
 
-    const api_res = await this.tasks.api.req(
-      this.tasks.api.tasks.list,
+    const api_res = await this.gtasks.api.req(
+      this.gtasks.api.tasks.list,
       {
         tasklist: this.list.id,
         fields: 'etag,items(id,title,notes,updated,etag,status)',
@@ -103,7 +104,7 @@ export default class GTasksListSync extends Sync {
         list.items = []
       }
       this.etags.tasks = res.headers['etag'] as string
-      this.entries = list
+      this.tasks = list
     }
 
     // this.processTasksDeletion(previous_ids)
@@ -113,7 +114,7 @@ export default class GTasksListSync extends Sync {
   merge() {
     let changed = 0
     // add / merge
-    for (const task of this.entries.items) {
+    for (const task of this.tasks.items) {
       // empty task placeholder
       if (!task.title) continue
       const record = this.getFromDB(task)
@@ -131,7 +132,7 @@ export default class GTasksListSync extends Sync {
 
   // TODO try to make it in one query, indexes
   getFromDB(task) {
-    const id = this.toDBID(task)
+    const id = this.gtasks.toDBID(task)
     if (id) {
       const record = this.root.data.findOne({ id })
       if (record) return record
@@ -148,7 +149,7 @@ export default class GTasksListSync extends Sync {
 
   toDB(task: Task): DBRecord {
     const record: DBRecord = {
-      id: this.toDBID(task) || uuid(),
+      id: this.gtasks.toDBID(task) || uuid(),
       title: task.title,
       content: this.getContent(task),
       labels: {},
@@ -164,14 +165,7 @@ export default class GTasksListSync extends Sync {
   }
 
   getContent(task: Task): string {
-    return (task.notes || '').replace(/\bemail:\w+\b/, '') || ''
-  }
-
-  toDBID(task: Task): string | null {
-    const match = task.notes && task.notes.match(/\bemail:(\w+)\b/)
-    if (match) {
-      return match[1]
-    }
+    return (task.notes || '').replace(/\n?\bemail:\w+\b/, '') || ''
   }
 
   mergeRecord(task: Task, record: DBRecord): boolean {

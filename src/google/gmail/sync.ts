@@ -113,11 +113,6 @@ export default class GmailSync extends SyncWriter {
     // }
   }
 
-  // TODO tmp, use SyncWriter
-  WritingDone_enter() {
-    return true
-  }
-
   async Writing_state() {
     if (process.env['DRY']) {
       // TODO list expected changes
@@ -130,59 +125,6 @@ export default class GmailSync extends SyncWriter {
     this.state.add('WritingDone')
   }
 
-  async getThreadsToAdd(abort: () => boolean): Promise<void[]> {
-    // TODO fake cast, wrong d.ts, missing lokijs fields
-    const new_threads = <DBRecord[]>(<any>this.root.data.find({
-      gmail_id: undefined
-    }))
-    // TODO mark as Dirty only queries related by labels
-    if (new_threads.length) {
-      this.subs.lists.forEach(sub => sub.query.state.add('Dirty'))
-      this.log(`Creating ${new_threads.length} new threads`)
-    }
-    return await map(new_threads, async (record: DBRecord) => {
-      const labels = Object.entries(record.labels)
-        .filter(([name, data]) => data.active)
-        .map(([name]) => name)
-      const id = await this.createThread(record.title, labels, abort)
-      record.gmail_id = id
-      record.id = id
-      this.root.data.update(record)
-    })
-  }
-
-  async getThreadsToModify(abort: () => boolean): Promise<void[]> {
-    const diff_threads = this.threads
-      .values()
-      .map(thread => {
-        const record = this.root.data.findOne({ id: thread.id })
-        // TODO time of write (and latter reading) should not update
-        //   record.updated?
-        const add = Object.entries(record.labels)
-          .filter(([name, data]) => {
-            return data.active ? this.threadHasLabel(thread, name) : false
-          })
-          .map(([name, data]) => name)
-        const remove = Object.entries(record.labels)
-          .filter(([name, data]) => {
-            return !data.active ? this.threadHasLabel(thread, name) : false
-          })
-          .map(([name, data]) => name)
-        // TODO changed content -> new email in the thread
-        return [thread.id, add, remove]
-      })
-      .filter(([id, add, remove]) => add.length || remove.length)
-
-    // TODO mark as Dirty only queries related by labels
-    if (diff_threads.length) {
-      this.log(`Modifying ${diff_threads.length} new threads`)
-      this.subs.lists.forEach(sub => sub.query.state.add('Dirty'))
-    }
-    return await map(diff_threads, async ([id, add, remove]) => {
-      await this.modifyLabels(id, add, remove, abort)
-    })
-  }
-
   // initLabelFilters() {
   //   let count = 0
   //   for (let config of this.config.query_labels) {
@@ -191,41 +133,6 @@ export default class GmailSync extends SyncWriter {
   //     )
   //   }
   // }
-
-  // TODO extract to a separate class
-  async SyncingQueryLabels_state() {
-    // this.query_labels_timer = moment().unix()
-    // let abort = this.state.getAbort('SyncingQueryLabels')
-    //
-    // let dirty = false
-    // await map(
-    //   [...this.query_labels],
-    //   async ([name, query]: [string, Query]) => {
-    //     query.states.add('Enabled')
-    //     // TODO timeout?
-    //     debugger
-    //     await query.states.when('MsgsFetched')
-    //     if (abort()) return
-    //     // TODO this probably resets the download states, while still
-    //     // keeping the cache
-    //     query.states.drop('Enabled')
-    //
-    //     let labels = this.config.query_labels[name]
-    //     await Promise.all(
-    //       query.threads.map(async thread => {
-    //         await this.modifyLabels(thread.id, labels[0], labels[1], abort)
-    //         dirty = true
-    //       })
-    //     )
-    //   }
-    // )
-    //
-    // if (dirty) this.state.add('Dirty')
-    //
-    // if (abort()) return
-    //
-    // if (!dirty) this.state.add('QueryLabelsSynced')
-  }
 
   // TODO extract to a separate class
   // QueryLabelsSynced_state() {
@@ -308,6 +215,59 @@ export default class GmailSync extends SyncWriter {
       return null
     }
     return thread || null
+  }
+
+  async getThreadsToAdd(abort: () => boolean): Promise<void[]> {
+    // TODO fake cast, wrong d.ts, missing lokijs fields
+    const new_threads = <DBRecord[]>(<any>this.root.data.find({
+      gmail_id: undefined
+    }))
+    // TODO mark as Dirty only queries related by labels
+    if (new_threads.length) {
+      this.subs.lists.forEach(sub => sub.query.state.add('Dirty'))
+      this.log(`Creating ${new_threads.length} new threads`)
+    }
+    return await map(new_threads, async (record: DBRecord) => {
+      const labels = Object.entries(record.labels)
+        .filter(([name, data]) => data.active)
+        .map(([name]) => name)
+      const id = await this.createThread(record.title, labels, abort)
+      record.gmail_id = id
+      record.id = id
+      this.root.data.update(record)
+    })
+  }
+
+  async getThreadsToModify(abort: () => boolean): Promise<void[]> {
+    const diff_threads = this.threads
+      .values()
+      .map(thread => {
+        const record = this.root.data.findOne({ id: thread.id })
+        // TODO time of write (and latter reading) should not update
+        //   record.updated?
+        const add = Object.entries(record.labels)
+          .filter(([name, data]) => {
+            return data.active ? this.threadHasLabel(thread, name) : false
+          })
+          .map(([name, data]) => name)
+        const remove = Object.entries(record.labels)
+          .filter(([name, data]) => {
+            return !data.active ? this.threadHasLabel(thread, name) : false
+          })
+          .map(([name, data]) => name)
+        // TODO changed content -> new email in the thread
+        return [thread.id, add, remove]
+      })
+      .filter(([id, add, remove]) => add.length || remove.length)
+
+    // TODO mark as Dirty only queries related by labels
+    if (diff_threads.length) {
+      this.log(`Modifying ${diff_threads.length} new threads`)
+      this.subs.lists.forEach(sub => sub.query.state.add('Dirty'))
+    }
+    return await map(diff_threads, async ([id, add, remove]) => {
+      await this.modifyLabels(id, add, remove, abort)
+    })
   }
 
   isHistoryIdValid() {
@@ -409,8 +369,8 @@ export default class GmailSync extends SyncWriter {
     labels: string[],
     abort?: () => boolean
   ): Promise<string | null> {
-    this.log(`Creating thread (${labels.join(' ')})`)
-    let message = await this.api.req(
+    this.log(`Creating thread '${subject}' (${labels.join(', ')})`)
+    const message = await this.api.req(
       this.api.users.messages.insert,
       {
         userId: 'me',
@@ -422,7 +382,7 @@ export default class GmailSync extends SyncWriter {
       abort,
       false
     )
-    if (!message || (abort && abort())) return null
+    // TODO handle no message
     return message.threadId
   }
 

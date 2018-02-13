@@ -2,6 +2,7 @@ Bugs:
 - check if keepalive is used in googleapis
 
 TODO:
+- refactor gmail_id to id and tmp_id
 - exceeded quota
   - should add the Exception state in the specific sync instance
   - should slow down the refresh

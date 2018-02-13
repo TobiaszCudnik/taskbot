@@ -189,8 +189,7 @@ export abstract class Sync {
     const after = clone(record)
     delete after.$loki
     delete after.meta
-
-    console.log('Diff - ' + (title || ''))
+    console.log(title ? `DB diff '${title}'` : 'DB diff')
     for (const chunk of diff.diffChars(inspect(before), inspect(after))) {
       const color = chunk.added ? 'green' : chunk.removed ? 'red' : 'white'
       process.stderr.write(chunk.value[color])
