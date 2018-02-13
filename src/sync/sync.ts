@@ -2,10 +2,14 @@
 // import { IBind, IEmit, IState } from 'asyncmachine/build/types'
 import AsyncMachine from 'asyncmachine'
 import { IConfig } from '../types'
-import RootSync, { DBRecord } from '../root/sync'
+import RootSync, { DBRecord } from './root'
 import * as moment from 'moment'
 import * as _ from 'underscore'
 import { machineLogToDebug } from '../utils'
+import * as clone from 'deepcopy'
+import * as diff from 'diff'
+import {inspect} from 'util'
+import debug from 'debug'
 
 // TODO define SyncState as a JSON
 export const Reading = {
@@ -18,6 +22,7 @@ export class SyncState extends AsyncMachine<any, any, any> {
   Enabled = {}
 
   Initializing = { require: ['Enabled'] }
+  // TODO split to ReadyForReading, ReadyForWriting
   Ready = { auto: true, drop: ['Initializing'] }
   // optional
   ConfigSet = {}
@@ -173,6 +178,24 @@ export abstract class Sync {
         updated: moment().unix()
       }
     }
+  }
+
+  compareRecord(before, record, title = '') {
+    if (!debug.enabled('record-diffs')) {
+      return
+    }
+    delete before.$loki
+    delete before.meta
+    const after = clone(record)
+    delete after.$loki
+    delete after.meta
+
+    console.log('Diff - ' + (title || ''))
+    for (const chunk of diff.diffChars(inspect(before), inspect(after))) {
+      const color = chunk.added ? 'green' : chunk.removed ? 'red' : 'white'
+      process.stderr.write(chunk.value[color])
+    }
+    process.stderr.write('\n')
   }
 }
 

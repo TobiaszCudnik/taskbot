@@ -53,7 +53,7 @@ export default class GmailQuery {
   history_id_synced: number | null
   threads: Thread[] = []
   completions = new Map<string, TThreadCompletion>()
-  previous_threads: Thread[] | null = null
+  protected previous_threads: Thread[] | null = null
   log = debug('gmail-query')
 
   constructor(
@@ -64,7 +64,7 @@ export default class GmailQuery {
   ) {
     this.state = new State(this)
     this.state.id('Gmail/query: ' + this.name)
-    if (process.env['DEBUG']) {
+    if (process.env['DEBUG'] && global.am_network) {
       machineLogToDebug(this.state)
       global.am_network.addMachine(this.state)
     }
@@ -178,5 +178,9 @@ export default class GmailQuery {
     return this.history_id_synced
       ? await this.gmail.isCached(this.history_id_synced, abort)
       : false
+  }
+
+  Dirty_state() {
+    this.state.drop('Dirty')
   }
 }

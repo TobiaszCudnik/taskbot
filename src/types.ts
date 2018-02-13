@@ -1,4 +1,4 @@
-import { DBRecord } from './root/sync'
+import { DBRecord } from './sync/root'
 
 export interface ILabelDefaults {
   email_unmatched?: string[]

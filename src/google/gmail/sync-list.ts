@@ -5,9 +5,11 @@ import * as google from 'googleapis'
 import { Sync, SyncState, Reading } from '../../sync/sync'
 import * as _ from 'underscore'
 import * as moment from 'moment'
-import RootSync, { DBRecord } from '../../root/sync'
+import RootSync, { DBRecord } from '../../sync/root'
 import GmailSync, { getTitleFromThread } from './sync'
 import { IListConfig } from '../../types'
+import * as clone from 'deepcopy'
+import {debug} from "debug";
 
 export class State extends SyncState {
   Ready = { auto: true, drop: ['Initializing'] }
@@ -32,6 +34,8 @@ type GmailAPI = google.gmail.v1.Gmail
 type DBCollection = LokiCollection<DBRecord>
 export default class GmailListSync extends Sync {
   query: GmailQuery
+  log = debug('gmail-list')
+  verbose = debug('gmail-list-verbose')
 
   constructor(
     public config: IListConfig,
@@ -75,7 +79,9 @@ export default class GmailListSync extends Sync {
     for (const thread of this.query.threads) {
       const record = this.root.data.findOne({ id: this.toDBID(thread.id) })
       if (!record) {
-        this.root.data.insert(this.toDB(thread))
+        const new_record = this.toDB(thread)
+        this.verbose('new record:\n %O', new_record)
+        this.root.data.insert(new_record)
         changed++
       } else if (this.mergeRecord(thread, record)) {
         changed++
@@ -90,15 +96,23 @@ export default class GmailListSync extends Sync {
     // TODO use an index
     const find = (record: DBRecord) => {
       return (
+        // only records from gmail
+        record.gmail_id &&
+        // only from this list
         this.config.db_query(record) &&
+        // only not seen in this sync so far
         !ids.includes(this.toLocalID(record)) &&
+        // only ones updated later than this query
         record.updated <
           this.gmail.timeFromHistoryID(this.query.history_id_synced)
       )
     }
     this.root.data.findAndUpdate(find, (record: DBRecord) => {
       changed++
+      const before = clone(record)
       this.applyLabels(record, this.config.exit)
+      this.compareRecord(before, record, 'threads to close')
+      return record
     })
     return changed ? [changed] : []
   }
@@ -122,6 +136,8 @@ export default class GmailListSync extends Sync {
   }
 
   mergeRecord(thread: Thread, record: DBRecord): boolean {
+    const before = clone(record)
+    record.gmail_id = record.id
     // TODO support duplicating in case of a conflict ???
     //   or send a new email in the thread?
     if (
@@ -135,6 +151,7 @@ export default class GmailListSync extends Sync {
     record.updated = moment().unix()
     // TODO content from emails
     this.applyLabels(record, this.config.enter)
+    this.compareRecord(before, record)
     return true
   }
 

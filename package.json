@@ -33,6 +33,7 @@
     "colors": "^1.1.2",
     "dateformat": "^1.0.8",
     "debug": "^3.1.0",
+    "deepcopy": "^0.6.3",
     "diff": "^3.4.0",
     "googleapis": "^23.0.0",
     "internet-timestamp": "0.0.1",

@@ -3,11 +3,12 @@ import { Sync, SyncState } from '../../sync/sync'
 import * as google from 'googleapis'
 import * as _ from 'underscore'
 import { map } from 'typed-promisify-tob'
-import RootSync, { DBRecord } from '../../root/sync'
+import RootSync, { DBRecord } from '../../sync/root'
 import GTasksSync from './sync'
 import * as uuid from 'uuid/v4'
 import { IListConfig } from '../../types'
 import * as debug from 'debug'
+import * as clone from 'deepcopy'
 
 export type Task = google.tasks.v1.Task
 
@@ -57,6 +58,7 @@ export default class GTasksListSync extends Sync {
     }
   }
   log = debug('gtasks-list')
+  verbose = debug('gtasks-list-verbose')
 
   constructor(config: IListConfig, root: RootSync, public tasks: GTasksSync) {
     super(config, root)
@@ -116,7 +118,9 @@ export default class GTasksListSync extends Sync {
       if (!task.title) continue
       const record = this.getFromDB(task)
       if (!record) {
-        this.root.data.insert(this.toDB(task))
+        const new_record = this.toDB(task)
+        this.verbose('new record:\n %O', new_record)
+        this.root.data.insert(new_record)
         changed++
       } else if (this.mergeRecord(task, record)) {
         changed++
@@ -160,7 +164,7 @@ export default class GTasksListSync extends Sync {
   }
 
   getContent(task: Task): string {
-    return task.notes.replace(/\bemail:\w+\b/, '') || ''
+    return (task.notes || '').replace(/\bemail:\w+\b/, '') || ''
   }
 
   toDBID(task: Task): string | null {
@@ -171,6 +175,7 @@ export default class GTasksListSync extends Sync {
   }
 
   mergeRecord(task: Task, record: DBRecord): boolean {
+    const before = clone(record)
     // TODO support duplicating in case of a conflict ???
     //   or send a new email in the thread?
     const task_updated = moment(task.updated).unix()
@@ -189,6 +194,7 @@ export default class GTasksListSync extends Sync {
     const labels =
       task.status == 'completed' ? this.config.exit : this.config.enter
     this.applyLabels(record, labels)
+    this.compareRecord(before, record)
     return true
   }
 

@@ -1,7 +1,7 @@
 import GmailSync from './gmail/sync'
 import Auth from './auth'
 import { Sync, SyncWriter, SyncWriterState } from '../sync/sync'
-import RootSync from '../root/sync'
+import RootSync from '../sync/root'
 import GTasksSync from './tasks/sync'
 
 export class State extends SyncWriterState {

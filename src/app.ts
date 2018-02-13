@@ -2,7 +2,7 @@ import 'source-map-support/register'
 import * as debug from 'debug'
 // import settings from '../settings'
 import settings_debug from '../settings-debug'
-import RootSync from './root/sync'
+import RootSync from './sync/root'
 import { Logger, Network } from 'ami-logger/remote'
 import { IConfig } from './types'
 
@@ -10,7 +10,7 @@ import { IConfig } from './types'
 
 let root
 
-if (process.env['DEBUG']) {
+if (process.env['DEBUG_AM']) {
   // TODO make it less global
   global.am_network = new Network()
   global.am_logger = new Logger(global.am_network)

@@ -1,6 +1,6 @@
 import GoogleSync from '../google/sync'
 import { Semaphore } from 'await-semaphore'
-import { Sync, SyncWriterState, SyncWriter } from '../sync/sync'
+import { Sync, SyncWriterState, SyncWriter } from './sync'
 // import * as assert from 'assert/'
 import * as Loki from 'lokijs'
 import { promisify, promisifyArray } from 'typed-promisify-tob'

@@ -2,9 +2,10 @@ import * as google from 'googleapis'
 import GTasksListSync from './sync-list'
 import { IConfig } from '../../types'
 import { Sync, SyncWriter, SyncWriterState } from '../../sync/sync'
-import RootSync from '../../root/sync'
+import RootSync from '../../sync/root'
 import Auth from '../auth'
 import * as debug from 'debug'
+import * as moment from 'moment'
 
 // TODO tmp
 export interface TasksAPI extends google.tasks.v1.Tasks {
@@ -54,14 +55,25 @@ export default class GTasksSync extends SyncWriter {
     lists: GTasksListSync[]
   }
   log = debug('gtasks')
+  queries = []
 
   constructor(public root: RootSync, public auth: Auth) {
     super(root.config)
     this.api = <TasksAPI>google.tasks('v1')
     this.api = Object.create(this.api)
     this.api.req = async (a, params, c, d, options = {}) => {
+      this.queries.push(moment().unix())
+      // TODO handle quota exceeded
       params.auth = this.auth.client
-      return await this.root.req(a, params, c, d, { forever: true, ...options })
+      try {
+        return await this.root.req(a, params, c, d, {
+          forever: true,
+          ...options
+        })
+      } catch (e) {
+        console.dir(e)
+        debugger
+      }
     }
   }
 
@@ -77,6 +89,7 @@ export default class GTasksSync extends SyncWriter {
   async Writing_state() {
     this.log('WRITE ME (TASKS)')
     this.state.add('WritingDone')
+    // TODO check if notes have the fresh gmail_id
     // TODO if any of the db records is missing a record.id, pipe a dependency
     //   on this.root.subs.gmail.WritingDone (and unpipe on local WritingDone_exit)
   }

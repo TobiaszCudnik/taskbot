@@ -43,7 +43,7 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
       'TokenRefreshed'
     )
     this.id('Auth')
-    if (process.env['DEBUG']) {
+    if (process.env['DEBUG'] && global.am_network) {
       machineLogToDebug(this)
       global.am_network.addMachine(this)
     }
