@@ -1,8 +1,13 @@
 Bugs:
-- check if keepalive is used in googleapis
+...
 
 TODO:
-- refactor gmail_id to id and tmp_id
+- check if keepalive is used in googleapis
+- implement deleting
+  - currently the record is re-added from the other source
+- mark gmail queries as Dirty based on related labels
+- check if all the requests use the 'fields' limits
+- print diffs using the logger
 - exceeded quota
   - should add the Exception state in the specific sync instance
   - should slow down the refresh
