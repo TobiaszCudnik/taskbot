@@ -8,7 +8,7 @@ import * as _ from 'underscore'
 import { machineLogToDebug } from '../utils'
 import * as clone from 'deepcopy'
 import * as diff from 'diff'
-import {inspect} from 'util'
+import { inspect } from 'util'
 import debug from 'debug'
 
 // TODO define SyncState as a JSON

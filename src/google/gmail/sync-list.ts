@@ -9,7 +9,7 @@ import RootSync, { DBRecord } from '../../sync/root'
 import GmailSync, { getTitleFromThread } from './sync'
 import { IListConfig } from '../../types'
 import * as clone from 'deepcopy'
-import {debug} from "debug";
+import { debug } from 'debug'
 
 export class State extends SyncState {
   Ready = { auto: true, drop: ['Initializing'] }

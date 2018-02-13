@@ -137,7 +137,7 @@ export default class GmailSync extends SyncWriter {
     }))
     // TODO mark as Dirty only queries related by labels
     if (new_threads.length) {
-      this.subs.lists.forEach( sub => sub.query.state.add('Dirty') )
+      this.subs.lists.forEach(sub => sub.query.state.add('Dirty'))
       this.log(`Creating ${new_threads.length} new threads`)
     }
     return await map(new_threads, async (record: DBRecord) => {
@@ -176,7 +176,7 @@ export default class GmailSync extends SyncWriter {
     // TODO mark as Dirty only queries related by labels
     if (diff_threads.length) {
       this.log(`Modifying ${diff_threads.length} new threads`)
-      this.subs.lists.forEach( sub => sub.query.state.add('Dirty') )
+      this.subs.lists.forEach(sub => sub.query.state.add('Dirty'))
     }
     return await map(diff_threads, async ([id, add, remove]) => {
       await this.modifyLabels(id, add, remove, abort)
