@@ -53,11 +53,9 @@ export default class GmailListSync extends Sync {
     this.state.pipe('Enabled', this.query.state)
   }
 
-  getState() {
-    const state = new State(this)
-    state.id('Gmail/list: ' + this.config.name)
-    return state
-  }
+  // ----- -----
+  // Transitions
+  // ----- -----
 
   async Reading_state() {
     const abort = this.state.getAbort('Reading')
@@ -66,6 +64,16 @@ export default class GmailListSync extends Sync {
     await this.query.state.when('MsgsFetched')
     if (abort()) return
     this.state.add('ReadingDone')
+  }
+
+  // ----- -----
+  // Methods
+  // ----- -----
+
+  getState() {
+    const state = new State(this)
+    state.id('Gmail/list: ' + this.config.name)
+    return state
   }
 
   // read the current list and add to the DB
@@ -77,7 +85,9 @@ export default class GmailListSync extends Sync {
     let changed = 0
     // add / merge
     for (const thread of this.query.threads) {
-      const record = this.root.data.findOne({ gmail_id: this.toDBID(thread.id) })
+      const record = this.root.data.findOne({
+        gmail_id: this.toDBID(thread.id)
+      })
       if (!record) {
         const new_record = this.toDB(thread)
         this.verbose('new record:\n %O', new_record)
@@ -98,6 +108,8 @@ export default class GmailListSync extends Sync {
       return (
         // only records with a gmail id
         record.gmail_id &&
+        // only already synced
+        this.gmail.threads.get(record.gmail_id) &&
         // only from this list
         this.config.db_query(record) &&
         // only not seen in this sync so far

@@ -121,7 +121,11 @@ export default class GmailSync extends SyncWriter {
       return
     }
     const abort = this.state.getAbort('Writing')
-    await Promise.all([this.getThreadsToAdd(abort), this.getThreadsToModify])
+    await this.markThreadsToFix(abort)
+    await Promise.all([
+      this.getThreadsToAdd(abort),
+      this.getThreadsToModify(abort)
+    ])
     this.state.add('WritingDone')
   }
 
@@ -183,40 +187,6 @@ export default class GmailSync extends SyncWriter {
     return state
   }
 
-  async fetchThread(
-    id: string,
-    historyId: number | null,
-    abort?: () => boolean
-  ): Promise<google.gmail.v1.Thread | null> {
-    // TODO limit the max msgs amount
-    let thread = await this.api.req(
-      this.api.users.threads.get,
-      {
-        id,
-        userId: 'me',
-        metadataHeaders: 'SUBJECT',
-        format: 'metadata',
-        fields: 'id,historyId,messages(id,labelIds,payload(headers))'
-      },
-      null,
-      false
-    )
-    thread.fetched = moment().unix()
-    this.threads.set(thread.id, thread)
-
-    if (abort && abort()) return null
-
-    return thread
-  }
-
-  getThread(id: string, with_content = false): google.gmail.v1.Thread | null {
-    const thread = this.threads.get(id)
-    if (with_content && !(thread.messages && thread.messages.length)) {
-      return null
-    }
-    return thread || null
-  }
-
   async getThreadsToAdd(abort: () => boolean): Promise<void[]> {
     // TODO fake cast, wrong d.ts, missing lokijs fields
     const new_threads = <DBRecord[]>(<any>this.root.data.find({
@@ -234,19 +204,19 @@ export default class GmailSync extends SyncWriter {
       const id = await this.createThread(record.title, labels, abort)
       record.gmail_id = id
       this.root.data.update(record)
+      await this.fetchThread(id, null, abort)
     })
   }
 
   async getThreadsToModify(abort: () => boolean): Promise<void[]> {
-    const diff_threads = this.threads
-      .values()
+    const diff_threads = [...this.threads.values()]
       .map(thread => {
         const record = this.root.data.findOne({ gmail_id: thread.id })
         // TODO time of write (and latter reading) should not update
         //   record.updated?
         const add = Object.entries(record.labels)
           .filter(([name, data]) => {
-            return data.active ? this.threadHasLabel(thread, name) : false
+            return data.active ? !this.threadHasLabel(thread, name) : false
           })
           .map(([name, data]) => name)
         const remove = Object.entries(record.labels)
@@ -266,6 +236,28 @@ export default class GmailSync extends SyncWriter {
     }
     return await map(diff_threads, async ([id, add, remove]) => {
       await this.modifyLabels(id, add, remove, abort)
+    })
+  }
+
+  // Checks if the referenced thread ID is:
+  // - downloaded
+  // - existing
+  // If not, delete the bogus ID and let Writing handle adding
+  async markThreadsToFix(abort: () => boolean): Promise<void[]> {
+    // TODO fake cast, wrong d.ts, missing lokijs fields
+    const records_without_threads = <DBRecord[]>(<any>this.root.data.where(
+      (r: DBRecord) => {
+        return r.gmail_id && !this.threads.get(r.gmail_id)
+      }
+    ))
+    return await map(records_without_threads, async (record: DBRecord) => {
+      try {
+        await this.fetchThread(record.gmail_id, null, abort)
+      } catch {
+        // thread doesnt exist
+        delete record.gmail_id
+        this.root.data.update(record)
+      }
     })
   }
 
@@ -293,6 +285,7 @@ export default class GmailSync extends SyncWriter {
 
     return this.history_id_latest <= history_id
   }
+
   // TODO support thread object as a param a parseInt(r.historyId, 10)
   timeFromHistoryID(history_id: number) {
     // floor the guess (to the closest previous recorded history ID)
@@ -358,6 +351,45 @@ export default class GmailSync extends SyncWriter {
     }
 
     return this.history_id_latest
+  }
+
+  // TODO remove historyId
+  async fetchThread(
+    id: string,
+    historyId: number | null,
+    abort?: () => boolean
+  ): Promise<google.gmail.v1.Thread | null> {
+    // TODO limit the max msgs amount
+    let thread = await this.api.req(
+      this.api.users.threads.get,
+      {
+        id,
+        userId: 'me',
+        metadataHeaders: 'SUBJECT',
+        format: 'metadata',
+        fields: 'id,historyId,messages(id,labelIds,payload(headers))'
+      },
+      abort,
+      false
+    )
+    if (!thread) {
+      return null
+    }
+    thread.fetched = moment().unix()
+    this.threads.set(thread.id, thread)
+
+    if (abort && abort()) return null
+
+    return thread
+  }
+
+  // TODO make it async and download if msgs missing
+  getThread(id: string, with_content = false): google.gmail.v1.Thread | null {
+    const thread = this.threads.get(id)
+    if (with_content && !(thread.messages && thread.messages.length)) {
+      return null
+    }
+    return thread || null
   }
 
   /**

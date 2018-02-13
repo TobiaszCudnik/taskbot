@@ -205,9 +205,9 @@ export default class GTasksSync extends SyncWriter {
   getTasksToAdd(abort: () => boolean) {
     return map(this.subs.lists, async (sync: GTasksListSync) => {
       // TODO loose the cast
-      const records = <DBRecord[]><any>this.root.data.where(
+      const records = <DBRecord[]>(<any>this.root.data.where(
         sync.config.db_query
-      )
+      ))
       await map(records, async record => {
         const task_id = _.findKey(record.gtasks_ids, id => id == sync.list.id)
         // omit tasks who are already on the list
