@@ -80,6 +80,63 @@ export default class GTasksSync extends SyncWriter {
     }
   }
 
+  // ----- -----
+  // Transitions
+  // ----- -----
+
+  async Writing_state() {
+    // TODO check if temporary IDs work
+    if (process.env['DRY']) {
+      // TODO list expected changes
+      this.state.add('WritingDone')
+      return
+    }
+    const abort = this.state.getAbort('Writing')
+    const ids = []
+    await Promise.all([this.getTasksToModify(abort), this.getTasksToAdd(abort)])
+    this.state.add('WritingDone')
+  }
+
+  SubsInited_state() {
+    this.subs = {
+      lists: this.config.lists.map(
+        config => new GTasksListSync(config, this.root, this)
+      )
+    }
+    this.bindToSubs()
+    // for (const list of this.subs.lists) {
+    //   list.state.add('Enabled')
+    // }
+  }
+
+  async FetchingTaskLists_state() {
+    let abort = this.state.getAbort('FetchingTaskLists')
+    let [list, res] = await this.api.req(
+      this.api.tasklists.list,
+      {
+        etag: this.etags.task_lists
+      },
+      abort,
+      true
+    )
+    if (abort()) {
+      this.log('abort', abort)
+      return
+    }
+    if (res.statusCode !== 304) {
+      this.log('[FETCHED] tasks lists')
+      this.etags.task_lists = res.headers.etag
+      this.lists = list.items
+    } else {
+      this.log('[CACHED] tasks lists')
+    }
+    return this.state.add('TaskListsFetched')
+  }
+
+  // ----- -----
+  // Methods
+  // ----- -----
+
   getState(): State {
     return new State(this).id('GTasks')
   }
@@ -94,19 +151,6 @@ export default class GTasksSync extends SyncWriter {
 
   isCompleted(task: Task) {
     return task.status == 'completed'
-  }
-
-  async Writing_state() {
-    // TODO check if temporary IDs work
-    if (process.env['DRY']) {
-      // TODO list expected changes
-      this.state.add('WritingDone')
-      return
-    }
-    const abort = this.state.getAbort('Writing')
-    const ids = []
-    await Promise.all([this.getTasksToModify(abort), this.getTasksToAdd(abort)])
-    this.state.add('WritingDone')
   }
 
   getTasksToModify(abort: () => boolean) {
@@ -160,10 +204,11 @@ export default class GTasksSync extends SyncWriter {
 
   getTasksToAdd(abort: () => boolean) {
     return map(this.subs.lists, async (sync: GTasksListSync) => {
-      const records = <DBRecord[]>(<any>this.root.data.where(
+      // TODO loose the cast
+      const records = <DBRecord[]><any>this.root.data.where(
         sync.config.db_query
-      ))
-      await records.map(async record => {
+      )
+      await map(records, async record => {
         const task_id = _.findKey(record.gtasks_ids, id => id == sync.list.id)
         // omit tasks who are already on the list
         if (task_id) return
@@ -188,41 +233,5 @@ export default class GTasksSync extends SyncWriter {
         this.root.data.update(record)
       })
     })
-  }
-
-  SubsInited_state() {
-    this.subs = {
-      lists: this.config.lists.map(
-        config => new GTasksListSync(config, this.root, this)
-      )
-    }
-    this.bindToSubs()
-    // for (const list of this.subs.lists) {
-    //   list.state.add('Enabled')
-    // }
-  }
-
-  async FetchingTaskLists_state() {
-    let abort = this.state.getAbort('FetchingTaskLists')
-    let [list, res] = await this.api.req(
-      this.api.tasklists.list,
-      {
-        etag: this.etags.task_lists
-      },
-      abort,
-      true
-    )
-    if (abort()) {
-      this.log('abort', abort)
-      return
-    }
-    if (res.statusCode !== 304) {
-      this.log('[FETCHED] tasks lists')
-      this.etags.task_lists = res.headers.etag
-      this.lists = list.items
-    } else {
-      this.log('[CACHED] tasks lists')
-    }
-    return this.state.add('TaskListsFetched')
   }
 }
