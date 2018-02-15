@@ -168,4 +168,24 @@ export default class GmailListSync extends Sync {
   toLocalID(record: DBRecord) {
     return record.gmail_id ? record.gmail_id : record
   }
+
+  toString() {
+    return (
+      'Gmail - '+this.config.name +
+      '\n' +
+      this.query.threads
+        .map((t: Thread) => {
+          let ret = '- ' + getTitleFromThread(t) + '\n  '
+          ret += t.messages
+            .map(msg => {
+              return msg.labelIds
+                .map(id => this.gmail.getLabelName(id))
+                .join(', ')
+            })
+            .join(', ')
+          return ret
+        })
+        .join('\n')
+    )
+  }
 }
