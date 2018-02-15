@@ -164,15 +164,15 @@ export abstract class Sync {
     }
   }
 
-  applyLabels(record: DBRecord, labels: { add: string[]; remove: string[] }) {
+  applyLabels(record: DBRecord, labels: { add?: string[]; remove?: string[] }) {
     record.labels = record.labels || {}
-    for (const label of labels.remove) {
+    for (const label of labels.remove || []) {
       record.labels[label] = {
         active: false,
         updated: moment().unix()
       }
     }
-    for (const label of labels.add) {
+    for (const label of labels.add || []) {
       record.labels[label] = {
         active: true,
         updated: moment().unix()

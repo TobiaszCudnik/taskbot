@@ -1,12 +1,19 @@
 import { DBRecord } from './sync/root'
 
-export interface ILabelDefaults {
-  email_unmatched?: string[]
-  labels_new_task?: string[]
-  task_completed?: {
-    add?: string[]
-    remove?: string[]
-  }
+// export interface ILabelDefaults {
+//   email_unmatched?: string[]
+//   labels_new_task?: string[]
+//   task_completed?: {
+//     add?: string[]
+//     remove?: string[]
+//   }
+// }
+
+export interface ILabelFilter {
+  name: string,
+  db_query: (r: DBRecord) => boolean
+  add: string[]
+  remove: string[]
 }
 
 export interface IListConfig {
@@ -43,6 +50,7 @@ export type IConfig = {
     prefix?: string
     create?: boolean
   }[]
+  label_filters: ILabelFilter[]
   status_labels: string[]
   sync_frequency: number
   lists: IListConfig[]

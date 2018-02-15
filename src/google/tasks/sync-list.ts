@@ -14,18 +14,12 @@ import { getTitleFromThread } from '../gmail/sync'
 
 export type Task = google.tasks.v1.Task
 
-// TODO check if needed
+// TODO use from googleapis
 export interface ITasks {
   etag: string
   items: Task[]
   kind: string
   nextPageToken: string
-}
-
-type TTaskCompletion = {
-  completed: boolean
-  time: moment.Moment
-  thread_id: string | null
 }
 
 export class State extends SyncState {
@@ -41,6 +35,7 @@ export default class GTasksListSync extends Sync {
   // data: IGTasksList
   state: State
   tasks: ITasks | null
+  // TODO theres no other etags?
   etags: {
     tasks: string | null
     tasks_reqs: number
