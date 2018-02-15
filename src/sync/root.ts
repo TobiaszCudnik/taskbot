@@ -58,7 +58,7 @@ export interface DBRecordLabel {
 
 export default class RootSync extends SyncWriter {
   state: State
-  subs: { [index: string]: Sync }
+  subs: { google: GoogleSync }
 
   max_active_requests = 5
   semaphore: Semaphore = new Semaphore(this.max_active_requests)
@@ -82,8 +82,9 @@ export default class RootSync extends SyncWriter {
   log = debug('root')
   log_requests = debug('requests')
 
-  // TODO tmp
+  // TODO debug only
   last_db: string
+  last_gmail: string
 
   constructor(config: IConfig) {
     super(config)
@@ -124,8 +125,9 @@ export default class RootSync extends SyncWriter {
   SubsInited_state() {
     // assert(this.config, this.datastore)
     // TODO map
-    this.subs = {}
-    this.subs.google = new GoogleSync(this)
+    this.subs = {
+      google: new GoogleSync(this)
+    }
     this.bindToSubs()
     // this.subs.google.state.add('Enabled')
   }
@@ -142,16 +144,27 @@ export default class RootSync extends SyncWriter {
     this.merge()
     console.log(`DB read in ${this.last_read_time.asSeconds()}sec`)
     const db = this.data.toString() + '\n'
-    // TODO tmp
+    const gmail_sync = this.subs.google.subs.gmail
+    const gmail = gmail_sync.subs.lists.map(l => l.toString()).join('\n') +
+      '\n'
     if (!this.last_db) {
       process.stderr.write(db)
-    } else if (this.last_db && db != this.last_db) {
+      process.stderr.write(gmail)
+    }
+    if (this.last_db && db != this.last_db) {
       for (const chunk of diff.diffChars(this.last_db, db)) {
         const color = chunk.added ? 'green' : chunk.removed ? 'red' : 'white'
         process.stderr.write(chunk.value[color])
       }
     }
+    if (this.last_gmail && gmail != this.last_gmail) {
+      for (const chunk of diff.diffChars(this.last_gmail, gmail)) {
+        const color = chunk.added ? 'green' : chunk.removed ? 'red' : 'white'
+        process.stderr.write(chunk.value[color])
+      }
+    }
     this.last_db = db
+    this.last_gmail = gmail
     this.state.add('Writing')
   }
 
