@@ -9,6 +9,8 @@ import * as uuid from 'uuid/v4'
 import { IListConfig } from '../../types'
 import * as debug from 'debug'
 import * as clone from 'deepcopy'
+import {Thread} from "../gmail/query";
+import {getTitleFromThread} from "../gmail/sync";
 
 export type Task = google.tasks.v1.Task
 
@@ -37,7 +39,6 @@ export class State extends SyncState {
 
 export default class GTasksListSync extends Sync {
   // data: IGTasksList
-  name: string
   state: State
   tasks: ITasks | null
   etags: {
@@ -194,8 +195,15 @@ export default class GTasksListSync extends Sync {
     return true
   }
 
-  toLocalID(record: DBRecord) {
-    return record.gtasks_ids && record.gtasks_ids[this.list.id]
+  toString() {
+    return (
+      'GTasks - ' + this.config.name +
+      '\n' +
+      this.tasks.items
+        .filter( t => t.title)
+        .map((t: Task) => (t.status == 'completed' ? 'c ' : '- ') + t.title)
+        .join('\n')
+    )
   }
 }
 

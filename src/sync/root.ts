@@ -85,6 +85,7 @@ export default class RootSync extends SyncWriter {
   // TODO debug only
   last_db: string
   last_gmail: string
+  last_gtasks: string
 
   constructor(config: IConfig) {
     super(config)
@@ -143,14 +144,20 @@ export default class RootSync extends SyncWriter {
     )
     this.merge()
     console.log(`DB read in ${this.last_read_time.asSeconds()}sec`)
+    // TODO extract, unify, only in debug
     const db = this.data.toString() + '\n'
     const gmail_sync = this.subs.google.subs.gmail
     const gmail = gmail_sync.subs.lists.map(l => l.toString()).join('\n') +
       '\n'
+    const gtasks_sync = this.subs.google.subs.tasks
+    const gtasks = gtasks_sync.subs.lists.map(l => l.toString()).join('\n') +
+      '\n'
     if (!this.last_db) {
       process.stderr.write(db)
       process.stderr.write(gmail)
+      process.stderr.write(gtasks)
     }
+    // TODO extract, unify, only in debug
     if (this.last_db && db != this.last_db) {
       for (const chunk of diff.diffChars(this.last_db, db)) {
         const color = chunk.added ? 'green' : chunk.removed ? 'red' : 'white'
@@ -163,8 +170,15 @@ export default class RootSync extends SyncWriter {
         process.stderr.write(chunk.value[color])
       }
     }
+    if (this.last_gtasks && gtasks != this.last_gtasks) {
+      for (const chunk of diff.diffChars(this.last_gtasks, gtasks)) {
+        const color = chunk.added ? 'green' : chunk.removed ? 'red' : 'white'
+        process.stderr.write(chunk.value[color])
+      }
+    }
     this.last_db = db
     this.last_gmail = gmail
+    this.last_gtasks = gtasks
     this.state.add('Writing')
   }
 
