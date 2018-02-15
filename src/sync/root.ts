@@ -147,11 +147,10 @@ export default class RootSync extends SyncWriter {
     // TODO extract, unify, only in debug
     const db = this.data.toString() + '\n'
     const gmail_sync = this.subs.google.subs.gmail
-    const gmail = gmail_sync.subs.lists.map(l => l.toString()).join('\n') +
-      '\n'
+    const gmail = gmail_sync.subs.lists.map(l => l.toString()).join('\n') + '\n'
     const gtasks_sync = this.subs.google.subs.tasks
-    const gtasks = gtasks_sync.subs.lists.map(l => l.toString()).join('\n') +
-      '\n'
+    const gtasks =
+      gtasks_sync.subs.lists.map(l => l.toString()).join('\n') + '\n'
     if (!this.last_db) {
       process.stderr.write(db)
       process.stderr.write(gmail)

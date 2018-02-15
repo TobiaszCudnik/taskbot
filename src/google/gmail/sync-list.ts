@@ -171,7 +171,8 @@ export default class GmailListSync extends Sync {
 
   toString() {
     return (
-      'Gmail - '+this.config.name +
+      'Gmail - ' +
+      this.config.name +
       '\n' +
       this.query.threads
         .map((t: Thread) => {
