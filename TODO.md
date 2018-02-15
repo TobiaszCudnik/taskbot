@@ -1,7 +1,10 @@
 Bugs:
-...
+- changes made DURING syncing in gtasks confuse gmail
 
 TODO:
+- list all available debug namespaces on exit
+- threads out-of-queries arent observed for changes
+  - is that a real problem?
 - check if keepalive is used in googleapis
 - implement deleting
   - currently the record is re-added from the other source
