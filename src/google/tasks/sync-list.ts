@@ -43,9 +43,11 @@ export default class GTasksListSync extends Sync {
   tasks: ITasks | null
   etags: {
     tasks: string | null
+    tasks_reqs: number
     // tasks_completed: string | null
   } = {
-    tasks: null
+    tasks: null,
+    tasks_reqs: 0
     // tasks_completed: null
   }
   get list(): google.tasks.v1.TaskList | null {
@@ -84,7 +86,12 @@ export default class GTasksListSync extends Sync {
         fields: 'etag,items(id,title,notes,updated,etag,status)',
         maxResults: '1000',
         showHidden: false,
-        headers: { 'If-None-Match': this.etags.tasks }
+        // request a cached version after an etag is confirmed twice
+        // its a gtasks' api bug, where same etag can be attached to 2 different
+        // responses
+        headers: this.etags.tasks_reqs++
+          ? { 'If-None-Match': this.etags.tasks }
+          : {}
       },
       abort,
       true
@@ -102,9 +109,11 @@ export default class GTasksListSync extends Sync {
       if (!list.items) {
         list.items = []
       }
-      this.etags.tasks = res.headers['etag'] as string
-      // TODO wait for gmail to ReadingDone, then fetch all the missing threads
-      // referenced by the tasks
+      // preserve the request counter per etag
+      if (this.etags.tasks != res.headers['etag']) {
+        this.etags.tasks = res.headers['etag']
+        this.etags.tasks_reqs = 0
+      }
       this.tasks = list
     }
 
