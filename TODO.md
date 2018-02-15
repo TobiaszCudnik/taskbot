@@ -3,8 +3,11 @@ Bugs:
   - periodically perform a full refresh
 
 TODO:
+- put a limit on initial gmail inbox size
+- paging support in gtasks
 - text to labels
 - label filters
+  - map labesl from gmail to the DB (an inclusive list)
 - list all available debug namespaces on exit
 - threads out-of-queries arent observed for changes
   - is that a real problem?
@@ -13,7 +16,7 @@ TODO:
   - currently the record is re-added from the other source
 - implement moving google tasks between lists
   - using copies
-  - maybe its already working by design?
+  - download hidden tasks on initial sync (from 1 month back?)
 - mark gmail queries as Dirty based on related labels
 - check if all the requests use the 'fields' limits
 - print diffs using the logger
