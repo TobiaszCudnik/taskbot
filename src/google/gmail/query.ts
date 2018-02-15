@@ -1,6 +1,6 @@
 import AsyncMachine from 'asyncmachine'
 import * as moment from 'moment'
-import GmailSync from './sync'
+import GmailSync, { getTitleFromThread } from './sync'
 import * as google from 'googleapis'
 import { map } from 'typed-promisify-tob'
 import { debug } from 'debug'
@@ -13,12 +13,12 @@ export class State extends AsyncMachine<any, any, any> {
   Enabled = {}
   // TODO implement based on history list and label matching
   Dirty = {
-    drop: ['MsgsFetched', 'ThreadsFetched']
+    drop: ['MsgsFetched', 'ThreadsFetched', 'FetchingThreads', 'FetchingMsgs']
   }
 
   FetchingThreads = {
     require: ['Enabled'],
-    drop: ['ThreadsFetched']
+    drop: ['ThreadsFetched', 'MsgsFetched']
   }
   ThreadsFetched = {
     require: ['Enabled'],
@@ -84,7 +84,7 @@ export default class GmailQuery {
     }
     if (abort()) return
 
-    this.log(`[FETCH] threads' list for '${this.query}'`)
+    this.log(`[FETCH] threads list for '${this.query}'`)
     let results: google.gmail.v1.Thread[] = []
     let prevRes: any
     while (true) {
@@ -102,7 +102,7 @@ export default class GmailQuery {
         fields: 'nextPageToken,threads(historyId,id)'
       }
       if (prevRes && prevRes.nextPageToken) {
-        this.log(`[FETCH] next page for threads' list for '${this.query}'`)
+        this.log(`[FETCH] next page for threads list for '${this.query}'`)
         params.pageToken = prevRes.nextPageToken
       }
 
@@ -142,19 +142,22 @@ export default class GmailQuery {
     }
   }
 
+  // TODO history_id is redundant
   async FetchingMsgs_state(history_id: number, abort?: () => boolean) {
     abort = this.state.getAbort('FetchingMsgs', abort)
 
     let threads = await map(this.threads, async (thread: Thread) => {
       // check if the thread has been previously downloaded and if
       // the history ID has changed
-      let previous = this.gmail.threads.get(thread.id)
+      const previous = this.gmail.threads.get(thread.id)
       if (!previous || previous.historyId != thread.historyId) {
-        return await this.gmail.fetchThread(
-          thread.id,
-          parseInt(thread.historyId, 10),
-          abort
+        const refreshed = await this.gmail.fetchThread(thread.id, abort)
+        this.log(
+          `History ID for changed for '${getTitleFromThread(
+            refreshed
+          )}', re-fetching`
         )
+        return refreshed
       }
       return previous
     })
@@ -165,7 +168,7 @@ export default class GmailQuery {
     // TODO retry the missing ones?
     if (threads && threads.every(thread => Boolean(thread))) {
       this.history_id_synced = history_id
-      this.threads = threads as Thread[]
+      this.threads = threads
       this.state.add('MsgsFetched')
     } else {
       this.log('[FetchingMsgs] no results or some missing')
@@ -179,6 +182,7 @@ export default class GmailQuery {
   }
 
   Dirty_state() {
+    this.history_id_synced = null
     this.state.drop('Dirty')
   }
 }

@@ -25,8 +25,8 @@ export default class GoogleSync extends SyncWriter {
   auth: Auth
   state: State
   subs: {
-    gmail: Sync
-    tasks: Sync
+    gmail: GmailSync
+    tasks: GTasksSync
   }
 
   constructor(root: RootSync) {

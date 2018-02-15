@@ -204,7 +204,7 @@ export default class GmailSync extends SyncWriter {
       const id = await this.createThread(record.title, labels, abort)
       record.gmail_id = id
       this.root.data.update(record)
-      await this.fetchThread(id, null, abort)
+      await this.fetchThread(id, abort)
     })
   }
 
@@ -252,7 +252,7 @@ export default class GmailSync extends SyncWriter {
     ))
     return await map(records_without_threads, async (record: DBRecord) => {
       try {
-        await this.fetchThread(record.gmail_id, null, abort)
+        await this.fetchThread(record.gmail_id, abort)
       } catch {
         // thread doesnt exist
         delete record.gmail_id
@@ -304,6 +304,11 @@ export default class GmailSync extends SyncWriter {
     return gmail_label && gmail_label.id
   }
 
+  getLabelName(id: string): string {
+    const gmail_label = this.labels.find(gmail_label => gmail_label.id == id)
+    return gmail_label && gmail_label.name
+  }
+
   async modifyLabels(
     thread_id: string,
     add_labels: string[] = [],
@@ -314,9 +319,9 @@ export default class GmailSync extends SyncWriter {
     let remove_label_ids = remove_labels.map(l => this.getLabelId(l))
     let thread = this.getThread(thread_id, true)
 
-    let label = thread ? `"${getTitleFromThread(thread)}"` : `ID: ${thread_id}`
+    let title = thread ? `"${getTitleFromThread(thread)}"` : `ID: ${thread_id}`
 
-    let log_msg = `Modifing labels for thread ${label} `
+    let log_msg = `Modifying labels for thread '${title}' `
     if (add_labels.length) {
       log_msg += `+(${add_labels.join(' ')}) `
     }
@@ -341,6 +346,9 @@ export default class GmailSync extends SyncWriter {
       abort,
       false
     )
+    // re-fetch the thread immediately, so its refreshed even if not a part of
+    // any query any more
+    await this.fetchThread(thread_id, abort)
     return Boolean(ret)
   }
 
@@ -356,7 +364,6 @@ export default class GmailSync extends SyncWriter {
   // TODO remove historyId
   async fetchThread(
     id: string,
-    historyId: number | null,
     abort?: () => boolean
   ): Promise<google.gmail.v1.Thread | null> {
     // TODO limit the max msgs amount
@@ -373,7 +380,7 @@ export default class GmailSync extends SyncWriter {
       false
     )
     if (!thread) {
-      return null
+      throw Error('Missing thread')
     }
     thread.fetched = moment().unix()
     this.threads.set(thread.id, thread)
