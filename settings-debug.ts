@@ -5,7 +5,7 @@ function hasLabel(r, label) {
 }
 
 // let config: IConfig = {
-let config = {
+let config: IConfig = {
   debug: false,
   google: {
     scopes: [
@@ -34,17 +34,19 @@ let config = {
       add: [],
       remove: ['S/Finished', 'S/Pending']
     },
-    {
-      name: '(i|na)-f-e-p-vnow=vnow',
-      db_query: r =>
-        (hasLabel(r, 'INBOX') || hasLabel(r, 'S/Next Action')) &&
-        !hasLabel(r, 'S/Finished') &&
-        !hasLabel(r, 'S/Expired') &&
-        !hasLabel(r, 'S/Pending') &&
-        !hasLabel(r, 'V/now'),
-      add: ['V/now'],
-      remove: []
-    },
+    // {
+    //   name: '(i|na)-f-e-p-vnow=vnow',
+    //   db_query: r =>
+    //     (hasLabel(r, 'INBOX') || hasLabel(r, 'S/Next Action')) &&
+    //     !(
+    //       hasLabel(r, 'S/Finished') ||
+    //       hasLabel(r, 'S/Expired') ||
+    //       hasLabel(r, 'S/Pending') ||
+    //       hasLabel(r, 'V/now')
+    //     ),
+    //   add: ['V/now'],
+    //   remove: []
+    // },
     {
       name: '(f|e)&a&na&p=-a-na-p',
       db_query: r =>
@@ -76,12 +78,13 @@ let config = {
       remove: ['S/Next Action']
     },
     {
-      name: '(na|a|e)&i=-i',
+      name: '(na|a|e|f)&i=-i',
       db_query: r =>
         (hasLabel(r, 'S/Action') ||
           hasLabel(r, 'S/Next Action') ||
-          hasLabel(r, 'S/Expired')) &&
-        !hasLabel(r, 'INBOX'),
+          hasLabel(r, 'S/Expired') ||
+          hasLabel(r, 'S/Finished')) &&
+        hasLabel(r, 'INBOX'),
       add: [],
       remove: ['INBOX']
     }
@@ -89,14 +92,6 @@ let config = {
   status_map: {
     na: 'S/Next action'
   },
-  lists_labels_in_title: 3,
-  // lists_defaults: {
-  //   email_unmatched: ['S/Finished'],
-  //   labels_new_task: ['R/Task'],
-  //   task_completed: {
-  //     add: ['S/Finished']
-  //   }
-  // },
   lists: [
     {
       name: '!Next',

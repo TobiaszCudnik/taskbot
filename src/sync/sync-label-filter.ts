@@ -1,8 +1,9 @@
 import { Sync, SyncState } from './sync'
 import { ILabelFilter } from '../types'
 import * as debug from 'debug'
-import RootSync from './root'
+import RootSync, { DBRecord } from './root'
 import * as clone from 'deepcopy'
+import * as moment from 'moment'
 
 export class State extends SyncState {
   constructor(target: Sync) {
@@ -28,10 +29,13 @@ export default class LabelFilterSync extends Sync {
 
   merge(): number[] {
     let count = 0
-    for (const r of this.root.data.where(this.config.db_query).data()) {
+    for (const r of <DBRecord[]>(<any>this.root.data.where(
+      this.config.db_query
+    ))) {
       const before = clone(r)
       const { add, remove } = this.config
       this.applyLabels(r, { add, remove })
+      r.updated = moment().unix()
       this.compareRecord(before, r)
       count++
     }

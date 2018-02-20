@@ -247,6 +247,8 @@ export default class RootSync extends SyncWriter {
       ? promisifyArray(method)
       : promisify(method)
     // TODO googleapis specific code should be in google/sync.ts
+    // TODO @ts-ignore for > 1 param to the promise
+    // @ts-ignore
     let ret = await promise_method(params, options)
     release()
     this.active_requests--
@@ -268,7 +270,7 @@ export default class RootSync extends SyncWriter {
       c = 0
     const MAX = 10
     do {
-      changes = this.subs_flat_writers.reduce((a, r) => {
+      changes = this.subs_flat.reduce((a, r) => {
         const changes = r.merge()
         if (changes) {
           a.push(...changes)

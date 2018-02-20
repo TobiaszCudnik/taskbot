@@ -12,8 +12,8 @@ import { DBRecord } from './sync/root'
 export interface ILabelFilter {
   name: string
   db_query: (r: DBRecord) => boolean
-  add: string[]
-  remove: string[]
+  add?: string[]
+  remove?: string[]
 }
 
 export interface IListConfig {
@@ -21,12 +21,12 @@ export interface IListConfig {
   gmail_query: string
   db_query: (record: DBRecord) => boolean
   enter: {
-    add: string[]
-    remove: string[]
+    add?: string[]
+    remove?: string[]
   }
   exit: {
-    add: string[]
-    remove: string[]
+    add?: string[]
+    remove?: string[]
   }
 }
 
@@ -35,14 +35,16 @@ export type IConfig = {
   google: {
     scopes: string[]
   }
-  client_id: string
-  client_secret: string
-  access_token: string
-  refresh_token: string
-  gmail_username: string
-  gmail_password: string
+  client_id?: string
+  client_secret?: string
+  access_token?: string
+  refresh_token?: string
+  gmail_username?: string
+  gmail_password?: string
   gmail_host: string
-  redirect_url: string
+  // TODO
+  gmail_max_results: number
+  // redirect_url: string
   text_labels: {
     symbol: string
     shortcut?: string
