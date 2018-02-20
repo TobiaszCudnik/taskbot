@@ -5,7 +5,21 @@ Bugs:
 
 TODO:
 
-* exclude filter for gmail labels (eg CATEGORY\_\*, IMPORTANT, UNREAD)
+* auto setup all the required labels on the startup
+* handle deleted task IDs
+* ignore tasks with parents
+* implement moving google tasks between lists
+  * using copies
+  * download hidden tasks on initial sync
+    * with a min date limit (1 month back?)
+  * GTasks hide tasks which are available in another (monitored) one
+    * merge gtasks_hidden_ids and gtasks_ids
+* rename settings to config
+* labels masks eg S/\* matches S/Action and S/Finished
+  * settings
+  * lists - gmail, gtasks
+  * others?
+* exclude filter for gmail labels (eg CATEGORY\_\*, IMPORTANT, UNREAD, SENT)
 * use lucene query parse to get condition checking from gmail queries
 * variadic resync times
   * per list/gmail/google and all combined
@@ -22,10 +36,6 @@ TODO:
 * check if keepalive is used in googleapis
 * implement deleting
   * currently the record is re-added from the other source
-* implement moving google tasks between lists
-  * using copies
-  * download hidden tasks on initial sync
-    * with a min date limit (1 month back?)
 * mark gmail queries as Dirty based on related labels
 * check if all the requests use the 'fields' limits
 * print diffs using the logger
