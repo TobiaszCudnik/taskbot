@@ -117,7 +117,7 @@ export default class GmailListSync extends Sync {
         this.config.db_query(record) &&
         // only not seen in this sync so far
         !ids.includes(this.toLocalID(record)) &&
-        // only ones updated later than this query
+        // only ones updated earlier than this query
         record.updated <
           this.gmail.timeFromHistoryID(this.query.history_id_synced)
       )
@@ -168,6 +168,7 @@ export default class GmailListSync extends Sync {
     record.updated = moment().unix()
     // TODO content from emails
     // apply labels from gmail
+    // TODO filter out unrelated labels
     this.applyLabels(record, { add: this.gmail.getLabelsFromThread(thread) })
     // apply labels from the list's definition
     this.applyLabels(record, this.config.enter)

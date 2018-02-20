@@ -8,10 +8,12 @@ import Auth from '../auth'
 import * as debug from 'debug'
 import * as moment from 'moment'
 import * as _ from 'underscore'
+import * as http from 'http'
+import { TAbortFunction } from 'asyncmachine/build/types'
 
 // TODO tmp
 export interface TasksAPI extends google.tasks.v1.Tasks {
-  req(api, method, c, d): Promise<any>
+  req(method, params, abort, ret_array): Promise<any>
 }
 
 export class State extends SyncWriterState {
@@ -105,33 +107,34 @@ export default class GTasksSync extends SyncWriter {
       )
     }
     this.bindToSubs()
-    // for (const list of this.subs.lists) {
-    //   list.state.add('Enabled')
-    // }
   }
 
   async FetchingTaskLists_state() {
     let abort = this.state.getAbort('FetchingTaskLists')
-    let [list, res] = await this.api.req(
-      this.api.tasklists.list,
-      {
-        etag: this.etags.task_lists
-      },
-      abort,
-      true
-    )
-    if (abort()) {
-      this.log('abort', abort)
-      return
-    }
+    let params = { headers: { 'If-None-Match': this.etags.task_lists } }
+    let [list, res]: [
+      google.tasks.v1.TaskLists,
+      http.IncomingMessage
+    ] = await this.api.req(this.api.tasklists.list, params, abort, true)
+    if (abort()) return
     if (res.statusCode !== 304) {
       this.log('[FETCHED] tasks lists')
-      this.etags.task_lists = res.headers.etag
+      this.etags.task_lists = <string>res.headers.etag
       this.lists = list.items
     } else {
       this.log('[CACHED] tasks lists')
     }
-    return this.state.add('TaskListsFetched')
+    const missing = this.config.lists
+      .filter(config => !this.lists.find(list => list.title == config.name))
+      .map(config => config.name)
+    if (missing.length) {
+      delete this.etags.task_lists
+      await this.createTaskLists(missing, abort)
+      this.state.drop('FetchingTaskLists')
+      this.state.add('FetchingTaskLists')
+    } else {
+      this.state.add('TaskListsFetched')
+    }
   }
 
   // ----- -----
@@ -140,6 +143,18 @@ export default class GTasksSync extends SyncWriter {
 
   getState(): State {
     return new State(this).id('GTasks')
+  }
+
+  async createTaskLists(names, abort: TAbortFunction) {
+    await map(names, async name => {
+      this.log(`Creating a new list tasklist '${name}'`)
+      await this.api.req(
+        this.api.tasklists.insert,
+        { resource: { title: name } },
+        abort,
+        true
+      )
+    })
   }
 
   // TODO rename to toGmailID

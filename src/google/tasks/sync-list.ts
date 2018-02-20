@@ -1,16 +1,11 @@
 import * as moment from 'moment'
 import { Sync, SyncState } from '../../sync/sync'
 import * as google from 'googleapis'
-import * as _ from 'underscore'
-import { map } from 'typed-promisify-tob'
 import RootSync, { DBRecord } from '../../sync/root'
 import GTasksSync from './sync'
-import * as uuid from 'uuid/v4'
 import { IListConfig } from '../../types'
 import * as debug from 'debug'
 import * as clone from 'deepcopy'
-import { Thread } from '../gmail/query'
-import { getTitleFromThread } from '../gmail/sync'
 
 export type Task = google.tasks.v1.Task
 export type TaskList = google.tasks.v1.TaskList
@@ -64,14 +59,9 @@ export default class GTasksListSync extends Sync {
     super(config, root)
   }
 
-  getState(): State {
-    return new State(this).id('GTasks/list: ' + this.config.name)
-  }
-
-  // return a filtered list of tasks
-  getTasks(): Task[] {
-    return this.tasks.items.filter(t => !t.parent && t.title)
-  }
+  // ----- -----
+  // Transitions
+  // ----- -----
 
   async Reading_state() {
     if (!this.list) {
@@ -119,6 +109,19 @@ export default class GTasksListSync extends Sync {
     }
 
     this.state.add('ReadingDone')
+  }
+
+  // ----- -----
+  // Methods
+  // ----- -----
+
+  getState(): State {
+    return new State(this).id('GTasks/list: ' + this.config.name)
+  }
+
+  // return a filtered list of tasks
+  getTasks(): Task[] {
+    return this.tasks ? this.tasks.items.filter(t => !t.parent && t.title) : []
   }
 
   merge() {
