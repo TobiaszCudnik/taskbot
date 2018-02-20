@@ -2,6 +2,7 @@ import 'source-map-support/register'
 import * as debug from 'debug'
 // import settings from '../settings'
 import settings_debug from '../settings-debug'
+import settings_credentials from '../settings.credentials'
 import RootSync from './sync/root'
 import { Logger, Network } from 'ami-logger/remote'
 import { IConfig } from './types'
@@ -9,6 +10,7 @@ import { IConfig } from './types'
 // const app_settings = process.env['DEBUG'] ? settings_debug : settings
 
 let root
+const settings = { ...settings_debug, ...settings_credentials }
 
 if (process.env['DEBUG_AM']) {
   // TODO make it less global
@@ -29,5 +31,5 @@ if (process.env['DEBUG_AM']) {
   process.on('SIGINT', exit)
 }
 
-root = new RootSync((<any>settings_debug) as IConfig)
+root = new RootSync((<any>settings) as IConfig)
 root.state.add('Enabled')

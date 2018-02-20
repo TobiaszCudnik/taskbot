@@ -153,7 +153,7 @@ export default class GmailQuery {
       if (!previous || previous.historyId != thread.historyId) {
         const refreshed = await this.gmail.fetchThread(thread.id, abort)
         this.log(
-          `History ID for changed for '${getTitleFromThread(
+          `History ID changed for thread '${getTitleFromThread(
             refreshed
           )}', re-fetching`
         )

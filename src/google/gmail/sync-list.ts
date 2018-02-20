@@ -88,12 +88,15 @@ export default class GmailListSync extends Sync {
       const record = this.root.data.findOne({
         gmail_id: this.toDBID(thread.id)
       })
+      // TODO clone only in debug
+      const before = clone(record)
       if (!record) {
         const new_record = this.toDB(thread)
         this.verbose('new record:\n %O', new_record)
         this.root.data.insert(new_record)
         changed++
       } else if (this.mergeRecord(thread, record)) {
+        this.compareRecord(before, record, 'merged from a query')
         changed++
       }
       // TODO should be done in the query class
@@ -121,6 +124,7 @@ export default class GmailListSync extends Sync {
     }
     this.root.data.findAndUpdate(find, (record: DBRecord) => {
       changed++
+      // TODO clone only in debug
       const before = clone(record)
       this.applyLabels(record, this.config.exit)
       this.compareRecord(before, record, 'threads to close')
@@ -137,6 +141,9 @@ export default class GmailListSync extends Sync {
       labels: {},
       updated: moment().unix()
     }
+    // apply labels from gmail
+    this.applyLabels(record, { add: this.gmail.getLabelsFromThread(thread) })
+    // apply labels from the list's definition
     this.applyLabels(record, this.config.enter)
     return record
   }
@@ -160,6 +167,9 @@ export default class GmailListSync extends Sync {
     // TODO compare the date via history_id
     record.updated = moment().unix()
     // TODO content from emails
+    // apply labels from gmail
+    this.applyLabels(record, { add: this.gmail.getLabelsFromThread(thread) })
+    // apply labels from the list's definition
     this.applyLabels(record, this.config.enter)
     this.compareRecord(before, record)
     return true
@@ -177,13 +187,7 @@ export default class GmailListSync extends Sync {
       this.query.threads
         .map((t: Thread) => {
           let ret = '- ' + getTitleFromThread(t) + '\n  '
-          ret += t.messages
-            .map(msg => {
-              return msg.labelIds
-                .map(id => this.gmail.getLabelName(id))
-                .join(', ')
-            })
-            .join(', ')
+          ret += this.gmail.getLabelsFromThread(t).join(', ')
           return ret
         })
         .join('\n')

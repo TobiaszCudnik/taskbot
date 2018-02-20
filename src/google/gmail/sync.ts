@@ -451,6 +451,16 @@ export default class GmailSync extends SyncWriter {
     }
     return thread.messages.some(msg => msg.labelIds.includes(id))
   }
+
+  getLabelsFromThread(thread: Thread): string[] {
+    const labels = new Set<string>()
+    for (const msg of thread.messages) {
+      for (const id of msg.labelIds) {
+        labels.add(this.getLabelName(id))
+      }
+    }
+    return [...labels]
+  }
 }
 
 export function getTitleFromThread(thread: google.gmail.v1.Thread) {

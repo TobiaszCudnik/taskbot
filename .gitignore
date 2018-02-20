@@ -4,7 +4,6 @@
 /.idea
 /node_modules/
 /.codio
-/build/settings.js
 /.vscode
 /.DS_Store
 /src/**.js
@@ -19,4 +18,4 @@
 /test/**/*.js.map
 /build/
 .DS_Store
-/settings-debug.ts
+/settings.credentials.ts
