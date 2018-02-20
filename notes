@@ -1,6 +1,3 @@
-auto_labels = add labels based on text
-query_labels = ...
-
 debug:
 DEBUG=*,-requests
 DEBUG_AM=3

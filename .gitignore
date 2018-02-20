@@ -18,4 +18,8 @@
 /test/**/*.js.map
 /build/
 .DS_Store
-/settings.credentials.ts
+/settings.credentials.*
+/error.log
+/combined.log
+/snapshot-exception.json
+/snapshot.json
