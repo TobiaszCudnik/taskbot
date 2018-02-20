@@ -19,9 +19,10 @@ debug:
 	DEBUG=3 node src/app.js
 
 format:
-	prettier --single-quote --no-semi --write src/*.ts
-	prettier --single-quote --no-semi --write src/**/*.ts
-	prettier --single-quote --no-semi --write src/**/**/*.ts
+	prettier --config package.json --write *.ts
+	prettier --config package.json --write src/*.ts
+	prettier --config package.json --write src/**/*.ts
+	prettier --config package.json --write src/**/**/*.ts
 
 state-types:
 	node $(STATES_TYPES_BIN) src/sync/task-list-sync-states.js -s
@@ -30,7 +31,7 @@ state-types:
 	node $(STATES_TYPES_BIN) src/sync/gmail.js -s
 	node $(STATES_TYPES_BIN) src/auth.js -s
 
-npm-i:
+npmi:
 	npm i
 	npm link asyncmachine
 	npm link ami-logger
