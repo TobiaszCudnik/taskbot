@@ -34,19 +34,19 @@ let config: IConfig = {
       add: [],
       remove: ['S/Finished', 'S/Pending']
     },
-    // {
-    //   name: '(i|na)-f-e-p-vnow=vnow',
-    //   db_query: r =>
-    //     (hasLabel(r, 'INBOX') || hasLabel(r, 'S/Next Action')) &&
-    //     !(
-    //       hasLabel(r, 'S/Finished') ||
-    //       hasLabel(r, 'S/Expired') ||
-    //       hasLabel(r, 'S/Pending') ||
-    //       hasLabel(r, 'V/now')
-    //     ),
-    //   add: ['V/now'],
-    //   remove: []
-    // },
+    {
+      name: '(i|na)-f-e-p-vnow=vnow',
+      db_query: r =>
+        (hasLabel(r, 'INBOX') || hasLabel(r, 'S/Next Action')) &&
+        !(
+          hasLabel(r, 'S/Finished') ||
+          hasLabel(r, 'S/Expired') ||
+          hasLabel(r, 'S/Pending') ||
+          hasLabel(r, 'V/now')
+        ),
+      add: ['V/now'],
+      remove: []
+    },
     {
       name: '(f|e)&a&na&p=-a-na-p',
       db_query: r =>
@@ -124,7 +124,14 @@ let config: IConfig = {
       gmail_query: 'in:inbox',
       db_query: r => hasLabel(r, 'INBOX'),
       enter: {
-        add: ['INBOX']
+        add: ['INBOX'],
+        remove: [
+          'S/Next Action',
+          'S/Finished',
+          'S/Expired',
+          'S/Pending',
+          'S/Action'
+        ]
       },
       exit: {
         remove: ['INBOX']
