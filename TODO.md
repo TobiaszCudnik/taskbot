@@ -7,15 +7,8 @@ TODO:
 
 * auto setup all the required labels on the startup
 * handle deleted task IDs
-* ignore tasks with parents
-* implement moving google tasks between lists
-  * using copies
-  * download hidden tasks on initial sync
-    * with a min date limit (1 month back?)
-  * GTasks hide tasks which are available in another (monitored) one
-    * merge gtasks_hidden_ids and gtasks_ids
 * rename settings to config
-* labels masks eg S/\* matches S/Action and S/Finished
+* label masks eg S/\* matches S/Action and S/Finished
   * settings
   * lists - gmail, gtasks
   * others?
