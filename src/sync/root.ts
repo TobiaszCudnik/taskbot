@@ -47,7 +47,7 @@ export interface DBRecord {
   parent?: DBRecordID
   labels: { [index: string]: DBRecordLabel }
   // different task ids per list
-  gtasks_ids?: { [list_id: string]: string }
+  gtasks_ids?: { [task_id: string]: string }
 }
 
 export type DBRecordID = string

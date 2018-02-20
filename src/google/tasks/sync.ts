@@ -1,5 +1,5 @@
 import * as google from 'googleapis'
-import GTasksListSync, { Task } from './sync-list'
+import GTasksListSync, { Task, TaskList } from './sync-list'
 import { IConfig } from '../../types'
 import { Sync, SyncWriter, SyncWriterState } from '../../sync/sync'
 import RootSync, { DBRecord } from '../../sync/root'
@@ -56,6 +56,7 @@ export default class GTasksSync extends SyncWriter {
   subs: {
     lists: GTasksListSync[]
   }
+  subs_flat: GTasksListSync[]
   log = debug('gtasks')
   verbose = debug('gtasks-verbose')
   requests = []
@@ -156,12 +157,13 @@ export default class GTasksSync extends SyncWriter {
   getTasksToModify(abort: () => boolean) {
     return map(this.subs.lists, async (sync: GTasksListSync) => {
       // TODO fake cast, wrong d.ts
-      await map(sync.tasks.items, async task => {
-        // TODO extract
+      await map(sync.getTasks(), async task => {
+        // TODO extract skipping of empty tasks (placeholders)
         if (!task.title) return
         const db_res = <DBRecord>(<any>this.root.data
           .chain()
           .where((record: DBRecord) => {
+            // TODO implement gtasks_hidden_ids
             return Boolean(record.gtasks_ids && record.gtasks_ids[task.id])
           })
           .limit(1)
@@ -175,31 +177,66 @@ export default class GTasksSync extends SyncWriter {
           // TODO extract
           patch.notes = record.content + '\nemail:' + record.gmail_id
         }
+        let delete_task = false
         if (sync.config.db_query(record) && this.isCompleted(task)) {
-          // Uncomplete
+          // Un-complete
           patch.status = 'needsAction'
           patch.completed = null
-        } else if (!sync.config.db_query(record) && !this.isCompleted(task)) {
+        } else if (!sync.config.db_query(record)) {
+          // Delete
+          delete_task = this.taskIsUncompletedElsewhere(
+            record,
+            sync.config.name
+          )
           // Complete
-          patch.status = 'completed'
+          if (!delete_task && !this.isCompleted(task)) {
+            patch.status = 'completed'
+          }
         }
-        if (!Object.keys(patch).length) {
-          return
+        if (delete_task) {
+          delete record.gtasks_ids[task.id]
+          await this.deleteTask(task, sync.list, abort)
+        } else if (Object.keys(patch).length) {
+          await this.modifyTask(task, sync.list, patch, abort)
         }
-        const params = {
-          tasklist: sync.list.id,
-          task: task.id,
-          resource: patch,
-          // TODO test
-          fields: ''
-        }
-        this.log(
-          `Updating task '${task.title}' in '${sync.list.title}'\n%O`,
-          patch
-        )
-        await this.api.req(this.api.tasks.patch, params, abort, true)
       })
     })
+  }
+
+  async modifyTask(
+    task: Task,
+    list: TaskList,
+    patch: object,
+    abort: () => boolean
+  ) {
+    const params = {
+      tasklist: list.id,
+      task: task.id,
+      resource: patch,
+      // TODO test
+      fields: ''
+    }
+    this.log(`Updating task '${task.title}' in '${list.title}'\n%O`, patch)
+    await this.api.req(this.api.tasks.patch, params, abort, true)
+  }
+
+  async deleteTask(task: Task, list: TaskList, abort: () => boolean) {
+    this.log(`Deleting task '${task.title}' in '${list.title}'`)
+    const params = {
+      tasklist: list.id,
+      task: task.id
+    }
+    return await this.api.req(this.api.tasks.delete, params, abort, true)
+  }
+
+  getListByID(id: string): GTasksListSync {
+    return this.subs_flat.find(sync => sync.list.id == id)
+  }
+
+  taskIsUncompletedElsewhere(record: DBRecord, name: string) {
+    return this.subs_flat
+      .filter(sync => sync.config.name != name)
+      .some(sync => sync.config.db_query(record))
   }
 
   getTasksToAdd(abort: () => boolean) {

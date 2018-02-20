@@ -13,6 +13,7 @@ import { Thread } from '../gmail/query'
 import { getTitleFromThread } from '../gmail/sync'
 
 export type Task = google.tasks.v1.Task
+export type TaskList = google.tasks.v1.TaskList
 
 // TODO use from googleapis
 export interface ITasks {
@@ -67,6 +68,11 @@ export default class GTasksListSync extends Sync {
     return new State(this).id('GTasks/list: ' + this.config.name)
   }
 
+  // return a filtered list of tasks
+  getTasks(): Task[] {
+    return this.tasks.items.filter(t => !t.parent && t.title)
+  }
+
   async Reading_state() {
     if (!this.list) {
       this.log(`List '${this.config.name}' doesnt exist, skipping reading`)
@@ -118,9 +124,7 @@ export default class GTasksListSync extends Sync {
   merge() {
     let changed = 0
     // add / merge
-    for (const task of this.tasks.items) {
-      // empty task placeholder
-      if (!task.title) continue
+    for (const task of this.getTasks()) {
       const record = this.getFromDB(task)
       if (!record) {
         const new_record = this.toDB(task)
@@ -131,6 +135,8 @@ export default class GTasksListSync extends Sync {
         changed++
       }
     }
+    // remove
+    // TODO mark record to be hidden using gtasks_hidden_ids
     return changed ? [changed] : []
   }
 
@@ -179,10 +185,13 @@ export default class GTasksListSync extends Sync {
     const before = clone(record)
     // TODO support duplicating in case of a conflict ???
     //   or send a new email in the thread?
+    //   if sending a new thread, resolve conflicts properly with other sources
+    //   introduce a universal conflict resolution pattern?
     const task_updated = moment(task.updated).unix()
     // TODO resolve conflicts on text fields
     record.title = task.title
     record.content = this.getContent(task)
+    // add to the gtasks id map
     record.gtasks_ids = record.gtasks_ids || {}
     record.gtasks_ids[task.id] = this.list.id
     if (task_updated <= record.updated) {
@@ -204,8 +213,7 @@ export default class GTasksListSync extends Sync {
       'GTasks - ' +
       this.config.name +
       '\n' +
-      this.tasks.items
-        .filter(t => t.title)
+      this.getTasks()
         .map((t: Task) => (t.status == 'completed' ? 'c ' : '- ') + t.title)
         .join('\n')
     )
