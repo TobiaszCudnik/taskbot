@@ -136,6 +136,32 @@ let config: IConfig = {
       exit: {
         remove: ['INBOX']
       }
+    },
+    {
+      name: '!Actions',
+      gmail_query: 'label:s-action',
+      db_query: r => hasLabel(r, 'S/Action'),
+      enter: {
+        remove: ['S/Finished'],
+        add: ['S/Action']
+      },
+      exit: {
+        add: ['S/Finished'],
+        remove: ['S/Action']
+      }
+    },
+    {
+      name: '!Someday',
+      gmail_query: 'label:s-some-day',
+      db_query: r => hasLabel(r, 'S/Action'),
+      enter: {
+        remove: ['S/Finished'],
+        add: ['S/Some day']
+      },
+      exit: {
+        add: ['S/Finished'],
+        remove: ['S/Some day']
+      }
     }
   ]
 }
