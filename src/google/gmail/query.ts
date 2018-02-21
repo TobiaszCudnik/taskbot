@@ -64,7 +64,7 @@ export default class GmailQuery {
   ) {
     this.state = new State(this)
     this.state.id('Gmail/query: ' + this.name)
-    if (process.env['DEBUG']) {
+    if (process.env['DEBUG_AM'] || global.am_network) {
       machineLogToDebug(this.state)
       if (global.am_network) {
         global.am_network.addMachine(this.state)
