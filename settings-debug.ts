@@ -14,7 +14,14 @@ let config: IConfig = {
     ]
   },
   gmail_host: 'gmail.com',
+  // TODO implement
   gmail_max_results: 300,
+  gtasks: {
+    request_quota_100: 500,
+    request_quota_day: 50000,
+    quota_exceeded_delay: 50,
+    sync_frequency: 50
+  },
   text_labels: [
     {
       symbol: '!',

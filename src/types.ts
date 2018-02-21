@@ -28,6 +28,8 @@ export interface IListConfig {
     add?: string[]
     remove?: string[]
   }
+  // seconds
+  sync_frequency?: number
 }
 
 export type IConfig = {
@@ -44,6 +46,13 @@ export type IConfig = {
   gmail_host: string
   // TODO
   gmail_max_results: number
+  gtasks: {
+    request_quota_100: number
+    request_quota_day: number
+    quota_exceeded_delay: number
+    // seconds
+    sync_frequency: number
+  }
   // redirect_url: string
   text_labels: {
     symbol: string

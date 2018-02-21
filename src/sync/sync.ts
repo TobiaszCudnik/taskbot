@@ -87,6 +87,10 @@ export abstract class Sync {
   subs: { [index: string]: Sync | Sync[] } = {}
   root: RootSync
 
+  last_read_end: moment.Moment
+  last_read_start: moment.Moment
+  last_read_time: moment.Duration
+
   constructor(config?, root?) {
     this.config = config
     if (root) {
@@ -94,9 +98,11 @@ export abstract class Sync {
     }
     this.state = this.getState()
     this.state.add('Initializing')
-    if (process.env['DEBUG'] && global.am_network) {
+    if (process.env['DEBUG']) {
       machineLogToDebug(this.state)
-      global.am_network.addMachine(this.state)
+      if (global.am_network) {
+        global.am_network.addMachine(this.state)
+      }
     }
     if (config) {
       this.state.add('ConfigSet', config)
@@ -121,12 +127,23 @@ export abstract class Sync {
     this.config = config
   }
 
+  SubsReady_enter() {
+    return this.subs_flat.every(sync => sync.state.is('Ready'))
+  }
+
+  Reading_state() {
+    this.last_read_start = moment()
+  }
+
   ReadingDone_enter() {
     return this.subs_flat.every(sync => sync.state.is('ReadingDone'))
   }
 
-  SubsReady_enter() {
-    return this.subs_flat.every(sync => sync.state.is('Ready'))
+  ReadingDone_state() {
+    this.last_read_end = moment()
+    this.last_read_time = moment.duration(
+      this.last_read_end.diff(this.last_read_start)
+    )
   }
 
   // ----- -----
@@ -204,17 +221,44 @@ export abstract class Sync {
   }
 }
 
-export class SyncWriter extends Sync {
-  // subs: { [index: string]: Sync | Sync[] | SyncWriter | SyncWriter[] } = {}
+export abstract class SyncWriter extends Sync {
+  last_write_end: moment.Moment
+  last_write_start: moment.Moment
+  last_write_time: moment.Duration
 
   get subs_flat_writers(): SyncWriter[] {
     // TODO cast
     return <any>this.subs_flat.filter(sync => sync instanceof SyncWriter)
   }
 
+  // ----- -----
+  // Transitions
+  // ----- -----
+
+  Writing_enter() {
+    if (!this.last_read_end) {
+      return false
+    }
+  }
+
+  Writing_state() {
+    this.last_write_start = moment()
+  }
+
   WritingDone_enter() {
     return this.subs_flat_writers.every(sync => sync.state.is('WritingDone'))
   }
+
+  WritingDone_state() {
+    this.last_write_end = moment()
+    this.last_write_time = moment.duration(
+      this.last_write_end.diff(this.last_write_start)
+    )
+  }
+
+  // ----- -----
+  // Methods
+  // ----- -----
 
   getState(): SyncState {
     return new SyncWriterState(this).id('SyncWriter')

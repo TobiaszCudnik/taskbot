@@ -69,18 +69,6 @@ export default class RootSync extends SyncWriter {
   active_requests = 0
   executed_requests: number
 
-  last_read_end: moment.Moment
-  last_read_start: moment.Moment
-  last_read_time: moment.Duration
-  last_write_end: moment.Moment
-  last_write_start: moment.Moment
-  last_write_time: moment.Duration
-
-  // last_sync_start: number | null
-  // last_sync_end: number | null
-  // last_sync_time: number | null
-  // next_sync_timeout: NodeJS.Timer | null
-
   db: Loki
   data: DB
   log = debug('root')
@@ -137,15 +125,8 @@ export default class RootSync extends SyncWriter {
     this.bindToSubs()
   }
 
-  Reading_state() {
-    this.last_read_start = moment()
-  }
-
   ReadingDone_state() {
-    this.last_read_end = moment()
-    this.last_read_time = moment.duration(
-      this.last_read_end.diff(this.last_read_start)
-    )
+    super.ReadingDone_state()
     this.merge()
     console.log(`DB read in ${this.last_read_time.asSeconds()}sec`)
     // TODO extract, unify, only in debug
@@ -185,15 +166,8 @@ export default class RootSync extends SyncWriter {
     this.state.add('Writing')
   }
 
-  Writing_state() {
-    this.last_write_start = moment()
-  }
-
   WritingDone_state() {
-    this.last_write_end = moment()
-    this.last_write_time = moment.duration(
-      this.last_write_end.diff(this.last_write_start)
-    )
+    super.WritingDone_state()
     this.log(
       `SYNC DONE:\nRead: ${this.last_read_time.asSeconds()}sec\n` +
         `Write: ${this.last_write_time.asSeconds()}sec`

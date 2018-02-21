@@ -58,6 +58,7 @@ export default class GmailListSync extends Sync {
   // ----- -----
 
   async Reading_state() {
+    super.Reading_state()
     const abort = this.state.getAbort('Reading')
     this.query.state.add('FetchingThreads')
     // TODO pipe?

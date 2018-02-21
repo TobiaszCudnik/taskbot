@@ -101,20 +101,16 @@ export default class GmailSync extends SyncWriter {
     for (const config of this.config.lists) {
       this.subs.lists.push(new GmailListSync(config, this.root, this))
     }
-    // this.initLabelFilters()
     // this.subs.text_labels = new GmailTextLabelsSync(
     //   this.data,
     //   this.api,
     //   this.config.text_labels
     // )
-    // this.subs.text_labels.state.add('Enabled')
     this.bindToSubs()
-    // for (const sub of this.subs_flat) {
-    //   sub.state.add('Enabled')
-    // }
   }
 
   async Writing_state() {
+    super.Writing_state()
     if (process.env['DRY']) {
       // TODO list expected changes
       this.state.add('WritingDone')
@@ -128,22 +124,6 @@ export default class GmailSync extends SyncWriter {
     ])
     this.state.add('WritingDone')
   }
-
-  // initLabelFilters() {
-  //   let count = 0
-  //   for (let config of this.config.query_labels) {
-  //     this.subs.query_labels.push(
-  //       new GmailLabelFilterSync(this, this.api, config, `GQL ${++count}`)
-  //     )
-  //   }
-  // }
-
-  // TODO extract to a separate class
-  // QueryLabelsSynced_state() {
-  //   this.last_sync_time = moment().unix() - this.query_labels_timer
-  //   this.query_labels_timer = null
-  //   return this.log(`QueryLabels synced in: ${this.last_sync_time}ms`)
-  // }
 
   async FetchingLabels_state() {
     let abort = this.state.getAbort('FetchingLabels')

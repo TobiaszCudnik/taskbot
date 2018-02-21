@@ -6,6 +6,7 @@ import GTasksSync from './sync'
 import { IListConfig } from '../../types'
 import * as debug from 'debug'
 import * as clone from 'deepcopy'
+import * as delay from 'delay'
 
 export type Task = google.tasks.v1.Task
 export type TaskList = google.tasks.v1.TaskList
@@ -20,6 +21,9 @@ export interface ITasks {
 
 export class State extends SyncState {
   Cached = {}
+  Dirty = { drop: ['Cached'] }
+
+  QuotaExceeded = { drop: ['Reading'] }
 
   constructor(target) {
     super(target)
@@ -51,8 +55,8 @@ export default class GTasksListSync extends Sync {
       }
     }
   }
-  log = debug('gtasks-list')
-  verbose = debug('gtasks-list-verbose')
+  log = debug(this.state.id(true))
+  verbose = debug(this.state.id(true))
   config: IListConfig
 
   constructor(config: IListConfig, root: RootSync, public gtasks: GTasksSync) {
@@ -63,14 +67,50 @@ export default class GTasksListSync extends Sync {
   // Transitions
   // ----- -----
 
-  async Reading_state() {
-    if (!this.list) {
-      this.log(`List '${this.config.name}' doesnt exist, skipping reading`)
-      return this.state.add('ReadingDone')
-    }
-    const abort = this.state.getAbort('Reading')
+  async QuotaExceeded_state() {
+    const SEC = 1000
+    await delay(this.gtasks.config.gtasks.quota_exceeded_delay * SEC)
+    this.state.drop('QuotaExceeded')
+  }
 
-    const api_res = await this.gtasks.api.req(
+  Reading_enter() {
+    const cancel = () => {
+      // ReadingDone need to be dropped manually, as we cancel the transition
+      this.state.drop('ReadingDone')
+      this.state.add('ReadingDone')
+      return false
+    }
+    if (!this.list) {
+      this.log(`List doesn't exist, skipping reading`)
+      return cancel()
+    }
+    if (this.state.is('Dirty') || !this.last_read_end) {
+      this.verbose(`Forced read - Dirty`)
+      return true
+    }
+    // Reuse the previous version if running out of quota and data is expected
+    // to be the same
+    // TODO move to the config
+    if (this.gtasks.short_quota_usage >= 0.25) {
+      this.verbose(
+        `Reading skipped - short quota is ${this.gtasks.short_quota_usage}`
+      )
+      return cancel()
+    }
+    const since_last_read = moment.duration(moment().diff(this.last_read_start))
+    const sync_frequency =
+      this.config.sync_frequency || this.gtasks.config.gtasks.sync_frequency
+    if (sync_frequency && since_last_read.asSeconds() < sync_frequency) {
+      this.verbose(`Reading skipped - max frequency exceeded`)
+      return cancel()
+    }
+  }
+
+  async Reading_state() {
+    super.Reading_state()
+    const quota = this.gtasks.short_quota_usage
+    const abort = this.state.getAbort('Reading')
+    let api_res = await this.gtasks.api.req(
       this.gtasks.api.tasks.list,
       {
         tasklist: this.list.id,
@@ -89,14 +129,16 @@ export default class GTasksListSync extends Sync {
     )
 
     if (abort()) return
-    // TODO handle !res
+
     let [list, res] = api_res
 
+    this.state.drop('Dirty')
     if (res.statusCode === 304) {
       this.state.add('Cached')
-      this.log(`[CACHED] tasks for '${this.config.name}'`)
+      this.log(`[CACHED:${quota}] tasks for '${this.config.name}'`)
     } else {
-      this.log(`[FETCH] tasks for '${this.config.name}'`)
+      this.state.drop('Cached')
+      this.log(`[FETCH:${quota}] tasks for '${this.config.name}'`)
       if (!list.items) {
         list.items = []
       }

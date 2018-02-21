@@ -12,7 +12,7 @@ import { IConfig } from './types'
 let root
 const settings = { ...settings_debug, ...settings_credentials }
 
-if (process.env['DEBUG_AM']) {
+if (process.env['DEBUG_AMI']) {
   // TODO make it less global
   global.am_network = new Network()
   global.am_logger = new Logger(global.am_network)
@@ -29,6 +29,7 @@ if (process.env['DEBUG_AM']) {
     exit(err)
   })
   process.on('SIGINT', exit)
+  process.on('exit', exit)
 }
 
 root = new RootSync((<any>settings) as IConfig)

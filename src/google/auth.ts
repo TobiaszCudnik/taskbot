@@ -43,9 +43,11 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
       'TokenRefreshed'
     )
     this.id('Auth')
-    if (process.env['DEBUG'] && global.am_network) {
+    if (process.env['DEBUG']) {
       machineLogToDebug(this)
-      global.am_network.addMachine(this)
+      if (global.am_network) {
+        global.am_network.addMachine(this)
+      }
     }
     // TODO missing type
     this.client = new (<any>google).auth.OAuth2(

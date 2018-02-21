@@ -9,6 +9,7 @@ import * as debug from 'debug'
 import * as moment from 'moment'
 import * as _ from 'underscore'
 import * as http from 'http'
+import * as roundTo from 'round-to'
 import { TAbortFunction } from 'asyncmachine/build/types'
 
 // TODO tmp
@@ -39,6 +40,8 @@ export class State extends SyncWriterState {
     drop: ['FetchingTaskLists']
   }
 
+  QuotaExceeded = { drop: ['Reading', 'Writing'] }
+
   constructor(target: Sync) {
     super(target)
     this.registerAll()
@@ -52,7 +55,11 @@ export default class GTasksSync extends SyncWriter {
     task_lists: null
   }
   api: TasksAPI
-  sub_states_outbound = [['Reading', 'Reading'], ['Enabled', 'Enabled']]
+  sub_states_outbound = [
+    ['Reading', 'Reading'],
+    ['Enabled', 'Enabled'],
+    ['QuotaExceeded', 'QuotaExceeded']
+  ]
   lists: google.tasks.v1.TaskList[]
   config: IConfig
   subs: {
@@ -61,24 +68,40 @@ export default class GTasksSync extends SyncWriter {
   subs_flat: GTasksListSync[]
   log = debug('gtasks')
   verbose = debug('gtasks-verbose')
-  requests = []
+  // TODO archive & combine the request history
+  requests: number[] = []
+  // remaining quota, range between 0 (full limit) to 1 (none left)
+  get short_quota_usage(): number {
+    const i = _.sortedIndex(
+      this.requests,
+      moment()
+        .subtract(100, 'seconds')
+        .unix()
+    )
+    return roundTo(
+      (this.requests.length - i) / this.config.gtasks.request_quota_100,
+      2
+    )
+  }
 
   constructor(public root: RootSync, public auth: Auth) {
     super(root.config)
     this.api = <TasksAPI>google.tasks('v1')
     this.api = Object.create(this.api)
-    this.api.req = async (a, params, c, d, options = {}) => {
+    this.api.req = async (method, params, abort, ret_array, options = {}) => {
       this.requests.push(moment().unix())
-      // TODO handle quota exceeded
       params.auth = this.auth.client
       try {
-        return await this.root.req(a, params, c, d, {
+        return await this.root.req(method, params, abort, ret_array, {
           forever: true,
           ...options
         })
       } catch (e) {
-        console.dir(e)
-        debugger
+        if (e.message == 'Quota Exceeded') {
+          this.state.add('QuotaExceeded')
+        } else {
+          throw e
+        }
       }
     }
   }
@@ -88,6 +111,7 @@ export default class GTasksSync extends SyncWriter {
   // ----- -----
 
   async Writing_state() {
+    super.Writing_state()
     // TODO check if temporary IDs work
     if (process.env['DRY']) {
       // TODO list expected changes
@@ -211,8 +235,10 @@ export default class GTasksSync extends SyncWriter {
         if (delete_task) {
           delete record.gtasks_ids[task.id]
           await this.deleteTask(task, sync.list, abort)
+          sync.state.add('Dirty')
         } else if (Object.keys(patch).length) {
           await this.modifyTask(task, sync.list, patch, abort)
+          sync.state.add('Dirty')
         }
       })
     })
@@ -282,7 +308,9 @@ export default class GTasksSync extends SyncWriter {
         )
         record.gtasks_ids = record.gtasks_ids || {}
         record.gtasks_ids[res.id] = sync.list.id
+        // TODO batch
         this.root.data.update(record)
+        sync.state.add('Dirty')
       })
     })
   }
