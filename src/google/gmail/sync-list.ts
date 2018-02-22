@@ -3,7 +3,6 @@
 import GmailQuery, { Thread } from './query'
 import * as google from 'googleapis'
 import { Sync, SyncState, Reading } from '../../sync/sync'
-import * as _ from 'underscore'
 import * as moment from 'moment'
 import RootSync, { DBRecord } from '../../sync/root'
 import GmailSync, { getTitleFromThread } from './sync'
@@ -34,8 +33,8 @@ type GmailAPI = google.gmail.v1.Gmail
 type DBCollection = LokiCollection<DBRecord>
 export default class GmailListSync extends Sync {
   query: GmailQuery
-  log = debug('gmail-list')
-  verbose = debug('gmail-list-verbose')
+  log = debug(this.state.id(true))
+  verbose = debug(this.state.id(true) + '-verbose')
 
   constructor(
     public config: IListConfig,
@@ -89,15 +88,12 @@ export default class GmailListSync extends Sync {
       const record = this.root.data.findOne({
         gmail_id: this.toDBID(thread.id)
       })
-      // TODO clone only in debug
-      const before = clone(record)
       if (!record) {
         const new_record = this.toDB(thread)
         this.verbose('new record:\n %O', new_record)
         this.root.data.insert(new_record)
         changed++
       } else if (this.mergeRecord(thread, record)) {
-        this.compareRecord(before, record, 'merged from a query')
         changed++
       }
       // TODO should be done in the query class
@@ -127,7 +123,8 @@ export default class GmailListSync extends Sync {
       changed++
       // TODO clone only in debug
       const before = clone(record)
-      this.applyLabels(record, this.config.exit)
+      // TODO confirm if unnecessary
+      // this.applyLabels(record, this.config.exit)
       this.compareRecord(before, record, 'threads to close')
       return record
     })
@@ -143,9 +140,14 @@ export default class GmailListSync extends Sync {
       updated: moment().unix()
     }
     // apply labels from gmail
-    this.applyLabels(record, { add: this.gmail.getLabelsFromThread(thread) })
-    // apply labels from the list's definition
-    this.applyLabels(record, this.config.enter)
+    const labels_from_thread = this.gmail.getLabelsFromThread(thread)
+    this.applyLabels(record, { add: labels_from_thread })
+    if (labels_from_thread.includes('INBOX')) {
+      // apply labels from text, only when in inbox
+      this.applyLabels(record, {
+        add: this.root.getLabelsFromText(record.title)
+      })
+    }
     return record
   }
 
@@ -155,6 +157,7 @@ export default class GmailListSync extends Sync {
   }
 
   mergeRecord(thread: Thread, record: DBRecord): boolean {
+    // TODO clone only in debug
     const before = clone(record)
     // TODO support duplicating in case of a conflict ???
     //   or send a new email in the thread?
@@ -169,10 +172,9 @@ export default class GmailListSync extends Sync {
     record.updated = moment().unix()
     // TODO content from emails
     // apply labels from gmail
-    // TODO filter out unrelated labels
     this.applyLabels(record, { add: this.gmail.getLabelsFromThread(thread) })
-    // apply labels from the list's definition
-    this.applyLabels(record, this.config.enter)
+    // TODO confirm if unnecessary
+    // this.applyLabels(record, this.config.enter)
     this.compareRecord(before, record)
     return true
   }

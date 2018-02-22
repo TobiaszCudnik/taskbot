@@ -4,7 +4,6 @@ import GmailSync, { getTitleFromThread } from './sync'
 import * as google from 'googleapis'
 import { map } from 'typed-promisify-tob'
 import { debug } from 'debug'
-import * as _ from 'underscore'
 import { machineLogToDebug } from '../../utils'
 
 export type Thread = google.gmail.v1.Thread
@@ -154,11 +153,13 @@ export default class GmailQuery {
       const previous = this.gmail.threads.get(thread.id)
       if (!previous || previous.historyId != thread.historyId) {
         const refreshed = await this.gmail.fetchThread(thread.id, abort)
-        this.log(
-          `History ID changed for thread '${getTitleFromThread(
-            refreshed
-          )}', re-fetching`
-        )
+        if (!previous) {
+          this.log(
+            `History ID changed for thread '${getTitleFromThread(
+              refreshed
+            )}', re-fetching`
+          )
+        }
         return refreshed
       }
       return previous

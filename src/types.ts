@@ -57,25 +57,17 @@ export type IConfig = {
   text_labels: {
     symbol: string
     shortcut?: string
-    label?: string
+    name?: string
     prefix?: string
     create?: boolean
   }[]
   label_filters: ILabelFilter[]
-  status_labels: string[]
   sync_frequency: number
   lists: IListConfig[]
   // TODO this could be dynamic?
   status_map: { [shortcut: string]: string }
   // lists_labels_in_title: LabelsInTitles
   // lists_defaults: ILabelDefaults,
-}
-
-// TODO
-export enum LabelsInTitles {
-  A,
-  B,
-  C
 }
 
 export type TRawEmail = string

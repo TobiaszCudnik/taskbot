@@ -4,7 +4,6 @@ import AsyncMachine from 'asyncmachine'
 import { IConfig } from '../types'
 import RootSync, { DBRecord } from './root'
 import * as moment from 'moment'
-import * as _ from 'underscore'
 import { machineLogToDebug } from '../utils'
 import * as clone from 'deepcopy'
 import * as diff from 'diff'
@@ -186,13 +185,13 @@ export abstract class Sync {
     for (const label of labels.remove || []) {
       record.labels[label] = {
         active: false,
-        updated: moment().unix()
+        updated: record.updated
       }
     }
     for (const label of labels.add || []) {
       record.labels[label] = {
         active: true,
-        updated: moment().unix()
+        updated: record.updated
       }
     }
   }

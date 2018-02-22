@@ -29,11 +29,13 @@ export default class LabelFilterSync extends Sync {
 
   merge(): number[] {
     let count = 0
-    for (const r of <DBRecord[]>(<any>this.root.data.where(
+    const records = <DBRecord[]>(<any>this.root.data.where(
       this.config.db_query
-    ))) {
+    ))
+    for (const r of records) {
       const before = clone(r)
       const { add, remove } = this.config
+      this.log(`Changing labels for '${r.title}'`)
       this.applyLabels(r, { add, remove })
       r.updated = moment().unix()
       this.compareRecord(before, r)

@@ -1,14 +1,12 @@
 ///<reference path="../../../node_modules/typed-promisify-tob/index.ts"/>
 import Query, { Thread } from './query'
-import * as _ from 'underscore'
+import * as _ from 'lodash'
 import * as google from 'googleapis'
 import { IConfig, TRawEmail } from '../../types'
 import { map } from 'typed-promisify-tob'
 import { Sync, SyncWriter, SyncWriterState } from '../../sync/sync'
 import Auth from '../auth'
-import GmailTextLabelsSync from './sync-text-labels'
 import GmailListSync from './sync-list'
-import GmailLabelFilterSync from '../../sync/sync-label-filter'
 import RootSync, { DBRecord } from '../../sync/root'
 import * as moment from 'moment'
 import * as debug from 'debug'
@@ -78,6 +76,12 @@ export default class GmailSync extends SyncWriter {
   }
   log = debug('gmail')
   verbose = debug('gmail-verbose')
+  thread_label_filters = [
+    /^S\/[\w\s-]+$/,
+    /^V\/[\w\s-]+$/,
+    /^P\/[\w\s-]+$/,
+    /^INBOX$/
+  ]
 
   constructor(root: RootSync, public auth: Auth) {
     super(root.config, root)
@@ -270,7 +274,7 @@ export default class GmailSync extends SyncWriter {
   timeFromHistoryID(history_id: number) {
     // floor the guess (to the closest previous recorded history ID)
     // or now
-    let index = _.sortedIndex(this.history_ids, { id: history_id }, 'id')
+    let index = _.sortedIndexBy(this.history_ids, { id: history_id }, 'id')
     return index
       ? this.history_ids[index - 1].time
       : // TODO initial guess to avoid a double merge
@@ -295,13 +299,14 @@ export default class GmailSync extends SyncWriter {
     remove_labels: string[] = [],
     abort?: () => boolean
   ): Promise<boolean> {
+    await this.createMissingLabels(add_labels, abort)
     let add_label_ids = add_labels.map(l => this.getLabelId(l))
     let remove_label_ids = remove_labels.map(l => this.getLabelId(l))
     let thread = this.getThread(thread_id, true)
 
-    let title = thread ? `"${getTitleFromThread(thread)}"` : `ID: ${thread_id}`
+    let title = thread ? `'${getTitleFromThread(thread)}'` : `ID: ${thread_id}`
 
-    let log_msg = `Modifying labels for thread '${title}' `
+    let log_msg = `Modifying labels for thread ${title} `
     if (add_labels.length) {
       log_msg += `+(${add_labels.join(' ')}) `
     }
@@ -341,7 +346,7 @@ export default class GmailSync extends SyncWriter {
     return this.history_id_latest
   }
 
-  // TODO remove historyId
+  // TODO avoid duplicate concurrent re-fetching
   async fetchThread(
     id: string,
     abort?: () => boolean
@@ -387,6 +392,7 @@ export default class GmailSync extends SyncWriter {
     labels: string[],
     abort?: () => boolean
   ): Promise<string | null> {
+    await this.createMissingLabels(labels, abort)
     this.log(`Creating thread '${subject}' (${labels.join(', ')})`)
     const message = await this.api.req(
       this.api.users.messages.insert,
@@ -426,20 +432,44 @@ export default class GmailSync extends SyncWriter {
       throw new Error('Labels not fetched')
     }
     const id = this.getLabelId(label_name)
-    if (!id) {
-      throw new Error(`Label ${label_name} doesn't exist`)
-    }
+    // if (!id) {
+    //   throw new Error(`Label ${label_name} doesn't exist`)
+    // }
     return thread.messages.some(msg => msg.labelIds.includes(id))
   }
 
-  getLabelsFromThread(thread: Thread): string[] {
+  getLabelsFromThread(thread: Thread, filter = true): string[] {
     const labels = new Set<string>()
     for (const msg of thread.messages) {
       for (const id of msg.labelIds) {
-        labels.add(this.getLabelName(id))
+        const name = this.getLabelName(id)
+        if (!filter || this.thread_label_filters.some(f => !!f.exec(name))) {
+          labels.add(this.getLabelName(id))
+        }
       }
     }
     return [...labels]
+  }
+
+  async createMissingLabels(labels: string[], abort) {
+    const no_id = labels.filter(l => !this.getLabelId(l))
+    return map(no_id, async name => {
+      const res = await this.api.req(
+        this.api.users.labels.create,
+        {
+          userId: 'me',
+          resource: {
+            labelListVisibility: 'labelShow',
+            messageListVisibility: 'show',
+            name
+          }
+        },
+        abort,
+        false
+      )
+      this.log(`Added a new label '${name}'`)
+      this.labels.push(res)
+    })
   }
 }
 

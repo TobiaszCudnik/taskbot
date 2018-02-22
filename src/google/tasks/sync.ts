@@ -7,7 +7,7 @@ import { map } from 'typed-promisify-tob'
 import Auth from '../auth'
 import * as debug from 'debug'
 import * as moment from 'moment'
-import * as _ from 'underscore'
+import * as _ from 'lodash'
 import * as http from 'http'
 import * as roundTo from 'round-to'
 import { TAbortFunction } from 'asyncmachine/build/types'
@@ -197,8 +197,6 @@ export default class GTasksSync extends SyncWriter {
     return map(this.subs.lists, async (sync: GTasksListSync) => {
       // TODO fake cast, wrong d.ts
       await map(sync.getTasks(), async task => {
-        // TODO extract skipping of empty tasks (placeholders)
-        if (!task.title) return
         const db_res = <DBRecord>(<any>this.root.data
           .chain()
           .where((record: DBRecord) => {
@@ -215,6 +213,11 @@ export default class GTasksSync extends SyncWriter {
           // Link to email
           // TODO extract
           patch.notes = record.content + '\nemail:' + record.gmail_id
+        }
+        const title =
+          record.title + this.root.getLabelsAsText(record, sync.config)
+        if (task.title != title) {
+          patch.title = title
         }
         let delete_task = false
         if (sync.config.db_query(record) && this.isCompleted(task)) {
@@ -293,13 +296,14 @@ export default class GTasksSync extends SyncWriter {
         const params = {
           tasklist: sync.list.id,
           resource: {
-            title: record.title,
+            title:
+              record.title + this.root.getLabelsAsText(record, sync.config),
             fields: 'id',
             // TODO extract
             notes: record.content + '\nemail:' + record.gmail_id
           }
         }
-        this.log(`Adding a new task to '${sync.list.title}'\n%O`, params)
+        this.log(`Adding a new task '${record.title}' to '${sync.list.title}'`)
         const res = await this.api.req(
           this.api.tasks.insert,
           params,

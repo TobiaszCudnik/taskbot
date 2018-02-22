@@ -56,7 +56,7 @@ export default class GTasksListSync extends Sync {
     }
   }
   log = debug(this.state.id(true))
-  verbose = debug(this.state.id(true))
+  verbose = debug(this.state.id(true) + '-verbose')
   config: IListConfig
 
   constructor(config: IListConfig, root: RootSync, public gtasks: GTasksSync) {
@@ -204,8 +204,9 @@ export default class GTasksListSync extends Sync {
 
   toDB(task: Task): DBRecord {
     const id = this.gtasks.toDBID(task)
+    const text_labels = this.root.getLabelsFromText(task.title)
     const record: DBRecord = {
-      title: task.title,
+      title: text_labels.text,
       content: this.getContent(task),
       labels: {},
       updated: moment(task.updated).unix(),
@@ -216,9 +217,12 @@ export default class GTasksListSync extends Sync {
     if (id) {
       record.gmail_id = id
     }
+    // apply labels from the list definition
     const labels =
       task.status == 'completed' ? this.config.exit : this.config.enter
     this.applyLabels(record, labels)
+    // apply labels from text
+    this.applyLabels(record, { add: text_labels.labels })
     return record
   }
 
@@ -233,8 +237,13 @@ export default class GTasksListSync extends Sync {
     //   if sending a new thread, resolve conflicts properly with other sources
     //   introduce a universal conflict resolution pattern?
     const task_updated = moment(task.updated).unix()
-    // TODO resolve conflicts on text fields
-    record.title = task.title
+    const text_labels = this.root.getLabelsFromText(task.title)
+    if (record.title != text_labels.text) {
+      record.title = text_labels.text
+      // apply title label on the initial record's sync
+      if (!record.gtasks_ids[task.id])
+        this.applyLabels(record, { add: text_labels.labels })
+    }
     record.content = this.getContent(task)
     // add to the gtasks id map
     record.gtasks_ids = record.gtasks_ids || {}
@@ -245,7 +254,8 @@ export default class GTasksListSync extends Sync {
       return false
     }
     record.updated = task_updated
-    // TODO notes
+    // apply text labels only after a change
+    this.applyLabels(record, { add: text_labels.labels })
     const labels =
       task.status == 'completed' ? this.config.exit : this.config.enter
     this.applyLabels(record, labels)

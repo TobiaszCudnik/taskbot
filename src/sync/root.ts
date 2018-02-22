@@ -4,14 +4,14 @@ import { Sync, SyncWriterState, SyncWriter } from './sync'
 // import * as assert from 'assert/'
 import * as Loki from 'lokijs'
 import { promisify, promisifyArray } from 'typed-promisify-tob'
-import * as moment from 'moment'
-import { IConfig } from '../types'
+import { IConfig, IListConfig } from '../types'
 import * as debug from 'debug'
 import 'colors'
 import * as diff from 'diff'
+import * as regexEscape from 'escape-string-regexp'
 import GmailLabelFilterSync, {
   default as LabelFilterSync
-} from './sync-label-filter'
+} from './label-filter'
 
 export class State extends SyncWriterState {
   SubsInited = {
@@ -238,7 +238,67 @@ export default class RootSync extends SyncWriter {
     return state
   }
 
+  // Extracts labels from text
+  getLabelsFromText(text: string): { text: string; labels: string[] } {
+    const labels = new Set<string>()
+    for (const label of this.config.text_labels) {
+      const { symbol, name, prefix } = label
+      const query = label.shortcut || '[\\w-\\d]+'
+      let matched
+      // TODO lack of look behinds, use some magic...
+      do {
+        matched = false
+        text = text.replace(
+          new RegExp(`(?:\\s|^)${regexEscape(symbol)}(${query})(?:\\s|$)`, 'g'),
+          (m, found) => {
+            labels.add(prefix + (name || found))
+            matched = true
+            return ' '
+          }
+        )
+      } while (matched)
+    }
+    text = text.trim()
+    return { text: text, labels: [...labels] }
+  }
+
+  // Shortcuts record's labels as text, omitting the ones defined in the list's
+  // config
+  getLabelsAsText(record: DBRecord, list_config: IListConfig): string {
+    const skip = [
+      ...(list_config.enter.add || []),
+      ...(list_config.enter.remove || []),
+      ...(list_config.exit.add || []),
+      ...(list_config.exit.remove || [])
+    ]
+    let labels = []
+    for (const [label, data] of Object.entries(record.labels)) {
+      if (!data.active) continue
+      if (skip.includes(label)) continue
+      const short = this.labelToShortcut(label)
+      if (short) {
+        labels.push(short)
+      }
+    }
+    return labels.length ? ' ' + labels.join(' ') : ''
+  }
+
+  labelToShortcut(label: string): string | null {
+    for (const data of this.config.text_labels) {
+      if (data.prefix + data.name == label) {
+        return data.symbol + data.shortcut
+      } else if (!data.name && label.startsWith(data.prefix)) {
+        return (
+          data.symbol +
+          label.replace(new RegExp('^' + regexEscape(data.prefix)), '')
+        )
+      }
+    }
+    return null
+  }
+
   // TODO call.update() on all the changed records (to rebuild the indexes?)
+  //   do it in batch and only here
   merge() {
     let changes,
       c = 0
