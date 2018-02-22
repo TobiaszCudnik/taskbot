@@ -1,18 +1,37 @@
 Bugs:
 
-* gtasks can send 2 different responses with the same etag
-  * periodically perform a full refresh
+* dont delete tasks with children
+  * mark as deleted?
+* removing hashtag labels on tasks doesnt remove the label in the DB
 
 TODO:
 
+* text to labels
+  * read from new entries
+    * gmail - INBOX
+    * gtasks - changed OR no email link
+  * labels to text
+    * skip the ones from the list query
+  * trim titles
+  * create missing labels
+* label colors
+* handle exceptions
+  * network errors eg EHOSTUNREACH
+* periodic cache save
+  * resume on start
+* label filters - add labels based on a stream of changes
+  * instead of query=add|remove
+  * get the latest label changeset from time on labels
+* timeouts for requests
+* use etags in patch requests in gtasks
+  * reuse the answer
+  * avoid the Dirty state
 * auto setup all the required labels on the startup
 * handle deleted task IDs
 * rename settings to config
 * label masks eg S/\* matches S/Action and S/Finished
-  * settings
-  * lists - gmail, gtasks
-  * others?
-* exclude filter for gmail labels (eg CATEGORY\_\*, IMPORTANT, UNREAD, SENT)
+  * settings - label filters
+  * settings - lists
 * use lucene query parse to get condition checking from gmail queries
 * variadic resync times
   * per list/gmail/google and all combined
@@ -22,7 +41,6 @@ TODO:
   * max limit of results per query/gtask list (for archived lists)
 * put a limit on initial gmail inbox size
 * paging support in gtasks
-* text to labels
 * list all available debug namespaces on exit
 * threads out-of-queries arent observed for changes
   * is that a real problem?
