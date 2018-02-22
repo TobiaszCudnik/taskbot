@@ -20,17 +20,55 @@ let config: IConfig = {
     request_quota_100: 500,
     request_quota_day: 50000,
     quota_exceeded_delay: 50,
-    sync_frequency: 50
+    sync_frequency: 5
   },
   text_labels: [
     {
       symbol: '!',
       shortcut: 'na',
-      label: 'Next Action',
+      name: 'Next Action',
       prefix: 'S/'
+    },
+    {
+      symbol: '!',
+      shortcut: 'a',
+      name: 'Action',
+      prefix: 'S/'
+    },
+    {
+      symbol: '!',
+      shortcut: 'p',
+      name: 'Pending',
+      prefix: 'S/'
+    },
+    {
+      symbol: '!',
+      shortcut: 'sd',
+      name: 'Some day',
+      prefix: 'S/'
+    },
+    {
+      symbol: '!',
+      shortcut: 'e',
+      name: 'Expired',
+      prefix: 'S/'
+    },
+    {
+      symbol: '#',
+      prefix: 'P/',
+      create: true
+    },
+    {
+      symbol: '^',
+      prefix: 'R/',
+      create: true
+    },
+    {
+      symbol: '*',
+      prefix: 'L/',
+      create: true
     }
   ],
-  status_labels: ['S/Next action'],
   sync_frequency: 1,
   label_filters: [
     {
@@ -55,14 +93,14 @@ let config: IConfig = {
       remove: []
     },
     {
-      name: '(f|e)&a&na&p=-a-na-p',
+      name: '(f|e)&(a|na|p|vnow)=-a-na-p-vnow',
       db_query: r =>
         (hasLabel(r, 'S/Finished') || hasLabel(r, 'S/Expired')) &&
         (hasLabel(r, 'S/Next Action') ||
           hasLabel(r, 'S/Action') ||
           hasLabel(r, 'S/Pending')),
       add: [],
-      remove: ['S/Next Action', 'S/Action', 'S/Pending']
+      remove: ['S/Next Action', 'S/Action', 'S/Pending', 'V/now']
     },
     {
       name: 's&(na|a)=-na-a',
@@ -132,15 +170,10 @@ let config: IConfig = {
       db_query: r => hasLabel(r, 'INBOX'),
       enter: {
         add: ['INBOX'],
-        remove: [
-          'S/Next Action',
-          'S/Finished',
-          'S/Expired',
-          'S/Pending',
-          'S/Action'
-        ]
+        remove: ['S/Finished']
       },
       exit: {
+        add: ['S/Finished'],
         remove: ['INBOX']
       }
     },
