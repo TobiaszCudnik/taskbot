@@ -241,8 +241,9 @@ export default class RootSync extends SyncWriter {
   // Extracts labels from text
   getLabelsFromText(text: string): { text: string; labels: string[] } {
     const labels = new Set<string>()
-    for (const label of this.config.text_labels) {
+    for (const label of this.config.labels) {
       const { symbol, name, prefix } = label
+      if (!symbol) continue
       const query = label.shortcut || '[\\w-\\d]+'
       let matched
       // TODO lack of look behinds, use some magic...
@@ -284,7 +285,8 @@ export default class RootSync extends SyncWriter {
   }
 
   labelToShortcut(label: string): string | null {
-    for (const data of this.config.text_labels) {
+    for (const data of this.config.labels) {
+      if (!data.symbol) continue
       if (data.prefix + data.name == label) {
         return data.symbol + data.shortcut
       } else if (!data.name && label.startsWith(data.prefix)) {

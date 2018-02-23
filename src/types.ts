@@ -54,12 +54,12 @@ export type IConfig = {
     sync_frequency: number
   }
   // redirect_url: string
-  text_labels: {
+  labels: {
     symbol: string
     shortcut?: string
     name?: string
     prefix?: string
-    create?: boolean
+    colors?: { bg: string; fg: string }
   }[]
   label_filters: ILabelFilter[]
   sync_frequency: number

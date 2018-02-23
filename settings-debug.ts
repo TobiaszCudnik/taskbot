@@ -22,51 +22,98 @@ let config: IConfig = {
     quota_exceeded_delay: 50,
     sync_frequency: 5
   },
-  text_labels: [
+  labels: [
     {
       symbol: '!',
       shortcut: 'na',
       name: 'Next Action',
-      prefix: 'S/'
+      prefix: 'S/',
+      colors: {
+        bg: '#fb4c2f',
+        fg: '#ffffff'
+      }
     },
     {
       symbol: '!',
       shortcut: 'a',
       name: 'Action',
-      prefix: 'S/'
+      prefix: 'S/',
+      colors: {
+        bg: '#ffad47',
+        fg: '#ffffff'
+      }
     },
     {
       symbol: '!',
       shortcut: 'p',
       name: 'Pending',
-      prefix: 'S/'
+      prefix: 'S/',
+      colors: {
+        bg: '#efa093',
+        fg: '#000000'
+      }
     },
     {
       symbol: '!',
       shortcut: 'sd',
       name: 'Some day',
-      prefix: 'S/'
+      prefix: 'S/',
+      colors: {
+        bg: '#c9daf8',
+        fg: '#000000'
+      }
     },
     {
       symbol: '!',
       shortcut: 'e',
       name: 'Expired',
-      prefix: 'S/'
+      prefix: 'S/',
+      colors: {
+        bg: '#cccccc',
+        fg: '#ffffff'
+      }
+    },
+    {
+      symbol: '!',
+      shortcut: 'f',
+      name: 'Finished',
+      prefix: 'S/',
+      colors: {
+        bg: '#e07798',
+        fg: '#ffffff'
+      }
+    },
+    {
+      name: 'now',
+      prefix: 'V/',
+      colors: {
+        bg: '#fcdee8',
+        fg: '#000000'
+      }
     },
     {
       symbol: '#',
       prefix: 'P/',
-      create: true
+      colors: {
+        bg: '#a4c2f4',
+        fg: '#000000'
+      }
     },
     {
       symbol: '^',
       prefix: 'R/',
-      create: true
+      colors: {
+        bg: '#ffd6a2',
+        fg: '#000000'
+      }
     },
     {
       symbol: '*',
       prefix: 'L/',
-      create: true
+      colors: {
+        bg: '#b9e4d0',
+        fg: '#000000'
+      }
     }
   ],
   sync_frequency: 1,

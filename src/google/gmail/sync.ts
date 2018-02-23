@@ -56,16 +56,18 @@ export class State extends SyncWriterState {
 
 // TODO tmp
 export interface GmailAPI extends google.gmail.v1.Gmail {
-  req(api, method, c, d): Promise<any>
+  req(method, params, abort, ret_array): Promise<any>
 }
 
+export type Label = google.gmail.v1.Label
 export default class GmailSync extends SyncWriter {
   state: State
+
   api: GmailAPI
   history_id_timeout = 1
   history_id_latest: number | null
   last_sync_time: number
-  labels: google.gmail.v1.Label[]
+  labels: Label[]
   history_ids: { id: number; time: number }[] = []
   sub_states_outbound = [['Reading', 'Reading'], ['Enabled', 'Enabled']]
   config: IConfig
@@ -82,7 +84,6 @@ export default class GmailSync extends SyncWriter {
     /^P\/[\w\s-]+$/,
     /^INBOX$/
   ]
-
   constructor(root: RootSync, public auth: Auth) {
     super(root.config, root)
     this.api = <GmailAPI>google.gmail('v1')
@@ -133,13 +134,51 @@ export default class GmailSync extends SyncWriter {
     let abort = this.state.getAbort('FetchingLabels')
     let res = await this.api.req(
       this.api.users.labels.list,
-      { userId: 'me' },
-      null,
+      { userId: 'me', fields: 'labels(id,name,color)' },
+      abort,
       false
     )
-    if (abort() || !res) return
+    if (abort()) return
     this.labels = res.labels
+    await this.assertLabelsColors(abort)
     this.state.add('LabelsFetched')
+  }
+
+  async assertLabelsColors(abort) {
+    await map(this.labels, async (label: Label) => {
+      for (const match of this.config.labels) {
+        if (
+          !(match.name && match.prefix + match.name == label.name) &&
+          !(!match.name && label.name.startsWith(match.prefix))
+        ) {
+          continue
+        }
+        if (
+          !label.color ||
+          label.color.textColor != match.colors.fg ||
+          label.color.backgroundColor != match.colors.bg
+        ) {
+          this.log(`Setting colors for label '${label.name}'`)
+          const resource = {
+            color: {
+              backgroundColor: match.colors.bg,
+              textColor: match.colors.fg
+            }
+          }
+          let res = await this.api.req(
+            this.api.users.labels.patch,
+            {
+              userId: 'me',
+              id: label.id,
+              resource
+            },
+            abort,
+            false
+          )
+          Object.assign(label, resource)
+        }
+      }
+    })
   }
 
   async FetchingHistoryId_state(abort?: () => boolean) {
