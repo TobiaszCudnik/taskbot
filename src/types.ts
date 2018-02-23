@@ -1,14 +1,5 @@
 import { DBRecord } from './sync/root'
 
-// export interface ILabelDefaults {
-//   email_unmatched?: string[]
-//   labels_new_task?: string[]
-//   task_completed?: {
-//     add?: string[]
-//     remove?: string[]
-//   }
-// }
-
 export interface ILabelFilter {
   name: string
   db_query: (r: DBRecord) => boolean
@@ -30,6 +21,31 @@ export interface IListConfig {
   }
   // seconds
   sync_frequency?: number
+}
+
+export type ILabelDefinition =
+  | ILabelDefinition1
+  | ILabelDefinition2
+  | ILabelDefinition3
+
+export interface ILabelDefinition1 {
+  symbol: string
+  shortcut: string
+  name: string
+  prefix: string
+  colors?: { bg: string; fg: string }
+}
+
+export interface ILabelDefinition2 {
+  name: string
+  prefix: string
+  colors?: { bg: string; fg: string }
+}
+
+export interface ILabelDefinition3 {
+  symbol: string
+  prefix: string
+  colors?: { bg: string; fg: string }
 }
 
 export type IConfig = {
@@ -54,13 +70,7 @@ export type IConfig = {
     sync_frequency: number
   }
   // redirect_url: string
-  labels: {
-    symbol: string
-    shortcut?: string
-    name?: string
-    prefix?: string
-    colors?: { bg: string; fg: string }
-  }[]
+  labels: ILabelDefinition[]
   label_filters: ILabelFilter[]
   sync_frequency: number
   lists: IListConfig[]

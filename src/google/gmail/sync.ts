@@ -2,7 +2,7 @@
 import Query, { Thread } from './query'
 import * as _ from 'lodash'
 import * as google from 'googleapis'
-import { IConfig, TRawEmail } from '../../types'
+import { IConfig, ILabelDefinition, TRawEmail } from '../../types'
 import { map } from 'typed-promisify-tob'
 import { Sync, SyncWriter, SyncWriterState } from '../../sync/sync'
 import Auth from '../auth'
@@ -146,37 +146,23 @@ export default class GmailSync extends SyncWriter {
 
   async assertLabelsColors(abort) {
     await map(this.labels, async (label: Label) => {
-      for (const match of this.config.labels) {
-        if (
-          !(match.name && match.prefix + match.name == label.name) &&
-          !(!match.name && label.name.startsWith(match.prefix))
-        ) {
-          continue
-        }
-        if (
-          !label.color ||
-          label.color.textColor != match.colors.fg ||
-          label.color.backgroundColor != match.colors.bg
-        ) {
-          this.log(`Setting colors for label '${label.name}'`)
-          const resource = {
-            color: {
-              backgroundColor: match.colors.bg,
-              textColor: match.colors.fg
-            }
-          }
-          let res = await this.api.req(
-            this.api.users.labels.patch,
-            {
-              userId: 'me',
-              id: label.id,
-              resource
-            },
-            abort,
-            false
-          )
-          Object.assign(label, resource)
-        }
+      const def = this.root.getLabelDefinition(label.name)
+      if (!def || !def.colors) return
+      // TODO regenerate googleapis typings
+      if (
+        !label.color ||
+        label.color.textColor != def.colors.fg ||
+        label.color.backgroundColor != def.colors.bg
+      ) {
+        this.log(`Setting colors for label '${label.name}'`)
+        const resource = this.labelDefToGmailDef(def)
+        let res = await this.api.req(
+          this.api.users.labels.patch,
+          { userId: 'me', id: label.id, resource },
+          abort,
+          false
+        )
+        Object.assign(label, resource)
       }
     })
   }
@@ -338,7 +324,7 @@ export default class GmailSync extends SyncWriter {
     remove_labels: string[] = [],
     abort?: () => boolean
   ): Promise<boolean> {
-    await this.createMissingLabels(add_labels, abort)
+    await this.createLabelsIfMissing(add_labels, abort)
     let add_label_ids = add_labels.map(l => this.getLabelId(l))
     let remove_label_ids = remove_labels.map(l => this.getLabelId(l))
     let thread = this.getThread(thread_id, true)
@@ -431,7 +417,7 @@ export default class GmailSync extends SyncWriter {
     labels: string[],
     abort?: () => boolean
   ): Promise<string | null> {
-    await this.createMissingLabels(labels, abort)
+    await this.createLabelsIfMissing(labels, abort)
     this.log(`Creating thread '${subject}' (${labels.join(', ')})`)
     const message = await this.api.req(
       this.api.users.messages.insert,
@@ -490,9 +476,11 @@ export default class GmailSync extends SyncWriter {
     return [...labels]
   }
 
-  async createMissingLabels(labels: string[], abort) {
+  async createLabelsIfMissing(labels: string[], abort) {
     const no_id = labels.filter(l => !this.getLabelId(l))
     return map(no_id, async name => {
+      const def = this.root.getLabelDefinition(name)
+      const gmail_def = def ? this.labelDefToGmailDef(def) : null
       const res = await this.api.req(
         this.api.users.labels.create,
         {
@@ -500,7 +488,8 @@ export default class GmailSync extends SyncWriter {
           resource: {
             labelListVisibility: 'labelShow',
             messageListVisibility: 'show',
-            name
+            name,
+            ...gmail_def
           }
         },
         abort,
@@ -509,6 +498,20 @@ export default class GmailSync extends SyncWriter {
       this.log(`Added a new label '${name}'`)
       this.labels.push(res)
     })
+  }
+
+  labelDefToGmailDef(
+    def: ILabelDefinition
+  ): { color?: { backgroundColor: string; textColor: string } } | null {
+    if (def.colors) {
+      return {
+        color: {
+          backgroundColor: def.colors.bg,
+          textColor: def.colors.fg
+        }
+      }
+    }
+    return null
   }
 }
 

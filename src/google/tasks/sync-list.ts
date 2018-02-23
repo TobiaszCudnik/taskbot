@@ -234,7 +234,7 @@ export default class GTasksListSync extends Sync {
   updateTextLabels(record: DBRecord, new_title: string) {
     const text_labels = this.root.getLabelsFromText(new_title)
     const old_title =
-      record.title + this.root.getLabelsAsText(record, this.config)
+      record.title + this.root.getRecordLabelsAsText(record, this.config)
     const text_labels_old = this.root.getLabelsFromText(old_title)
     if (old_title != new_title) {
       record.title = text_labels.text

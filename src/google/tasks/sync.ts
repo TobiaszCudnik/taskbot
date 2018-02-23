@@ -215,7 +215,7 @@ export default class GTasksSync extends SyncWriter {
           patch.notes = record.content + '\nemail:' + record.gmail_id
         }
         const title =
-          record.title + this.root.getLabelsAsText(record, sync.config)
+          record.title + this.root.getRecordLabelsAsText(record, sync.config)
         if (task.title != title) {
           patch.title = title
         }
@@ -297,7 +297,8 @@ export default class GTasksSync extends SyncWriter {
           tasklist: sync.list.id,
           resource: {
             title:
-              record.title + this.root.getLabelsAsText(record, sync.config),
+              record.title +
+              this.root.getRecordLabelsAsText(record, sync.config),
             fields: 'id',
             // TODO extract
             notes: record.content + '\nemail:' + record.gmail_id

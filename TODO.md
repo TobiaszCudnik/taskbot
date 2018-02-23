@@ -2,15 +2,18 @@ Bugs:
 
 * dont delete tasks with children
   * mark as deleted?
-* removing hashtag labels on tasks doesnt remove the label in the DB
+* cant add !p to V/now
 
 TODO:
 
+* missing extended GTD labels
+  * S/Started or S/Current
+  * RP/ - reference project, eg 'buy stuff #js-conf ##store'
 * order for labels
   * always the same, defined in the settings
-* label colors
 * handle exceptions
-  * network errors eg EHOSTUNREACH
+  * should add the Exception state
+  * network errors eg EHOSTUNREACH, ECONNRESET
   * API errors res.statusCode == 500
   * simulate in node_modules/googleapis/node_modules/google-auth-library/lib/transporters.js:34
 * periodic cache save

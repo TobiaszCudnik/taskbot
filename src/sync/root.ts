@@ -4,7 +4,7 @@ import { Sync, SyncWriterState, SyncWriter } from './sync'
 // import * as assert from 'assert/'
 import * as Loki from 'lokijs'
 import { promisify, promisifyArray } from 'typed-promisify-tob'
-import { IConfig, IListConfig } from '../types'
+import { IConfig, ILabelDefinition, IListConfig } from '../types'
 import * as debug from 'debug'
 import 'colors'
 import * as diff from 'diff'
@@ -265,7 +265,7 @@ export default class RootSync extends SyncWriter {
 
   // Shortcuts record's labels as text, omitting the ones defined in the list's
   // config
-  getLabelsAsText(record: DBRecord, list_config: IListConfig): string {
+  getRecordLabelsAsText(record: DBRecord, list_config: IListConfig): string {
     const skip = [
       ...(list_config.enter.add || []),
       ...(list_config.enter.remove || []),
@@ -286,6 +286,7 @@ export default class RootSync extends SyncWriter {
 
   labelToShortcut(label: string): string | null {
     for (const data of this.config.labels) {
+      // TODO type guards
       if (!data.symbol) continue
       if (data.prefix + data.name == label) {
         return data.symbol + data.shortcut
@@ -297,6 +298,18 @@ export default class RootSync extends SyncWriter {
       }
     }
     return null
+  }
+
+  getLabelDefinition(label: string): ILabelDefinition {
+    for (const def of this.config.labels) {
+      if (
+        // TODO type guards
+        (def.name && def.prefix + def.name == label) ||
+        (!def.name && label.startsWith(def.prefix))
+      ) {
+        return def
+      }
+    }
   }
 
   // TODO call.update() on all the changed records (to rebuild the indexes?)
