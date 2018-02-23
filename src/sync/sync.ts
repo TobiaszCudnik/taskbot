@@ -201,6 +201,9 @@ export abstract class Sync {
     if (!debug.enabled('record-diffs')) {
       return
     }
+    if (JSON.stringify(before) == JSON.stringify(record)) {
+      return
+    }
     delete before.$loki
     delete before.meta
     const after = clone(record)
