@@ -6,17 +6,13 @@ Bugs:
 
 TODO:
 
-* text to labels
-  * read from new entries
-    * gmail - INBOX
-    * gtasks - changed OR no email link
-  * labels to text
-    * skip the ones from the list query
-  * trim titles
-  * create missing labels
+* order for labels
+  * always the same, defined in the settings
 * label colors
 * handle exceptions
   * network errors eg EHOSTUNREACH
+  * API errors res.statusCode == 500
+  * simulate in node_modules/googleapis/node_modules/google-auth-library/lib/transporters.js:34
 * periodic cache save
   * resume on start
 * label filters - add labels based on a stream of changes
