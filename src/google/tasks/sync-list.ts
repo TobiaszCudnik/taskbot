@@ -7,6 +7,7 @@ import { IListConfig } from '../../types'
 import * as debug from 'debug'
 import * as clone from 'deepcopy'
 import * as delay from 'delay'
+import * as _ from 'lodash'
 
 export type Task = google.tasks.v1.Task
 export type TaskList = google.tasks.v1.TaskList
@@ -230,6 +231,20 @@ export default class GTasksListSync extends Sync {
     return (task.notes || '').replace(/\n?\bemail:\w+\b/, '') || ''
   }
 
+  updateTextLabels(record: DBRecord, new_title: string) {
+    const text_labels = this.root.getLabelsFromText(new_title)
+    const old_title =
+      record.title + this.root.getLabelsAsText(record, this.config)
+    const text_labels_old = this.root.getLabelsFromText(old_title)
+    if (old_title != new_title) {
+      record.title = text_labels.text
+      this.applyLabels(record, {
+        add: text_labels.labels,
+        remove: _.difference(text_labels_old.labels, text_labels.labels)
+      })
+    }
+  }
+
   mergeRecord(task: Task, record: DBRecord): boolean {
     const before = clone(record)
     // TODO support duplicating in case of a conflict ???
@@ -237,25 +252,26 @@ export default class GTasksListSync extends Sync {
     //   if sending a new thread, resolve conflicts properly with other sources
     //   introduce a universal conflict resolution pattern?
     const task_updated = moment(task.updated).unix()
-    const text_labels = this.root.getLabelsFromText(task.title)
-    if (record.title != text_labels.text) {
-      record.title = text_labels.text
-      // apply title label on the initial record's sync
-      if (!record.gtasks_ids[task.id])
-        this.applyLabels(record, { add: text_labels.labels })
+    // apply title labels on the initial record's sync
+    let text_labels_updated = false
+    if (!record.gtasks_ids[task.id]) {
+      this.updateTextLabels(record, task.title)
+      text_labels_updated = true
     }
     record.content = this.getContent(task)
     // add to the gtasks id map
     record.gtasks_ids = record.gtasks_ids || {}
     record.gtasks_ids[task.id] = this.list.id
     if (task_updated <= record.updated) {
-      // record.updated = task_updated
       // TODO check resolve conflict? since the last sync
+      this.compareRecord(before, record)
       return false
     }
+    // update the record with changes from gtasks
     record.updated = task_updated
-    // apply text labels only after a change
-    this.applyLabels(record, { add: text_labels.labels })
+    if (!text_labels_updated) {
+      this.updateTextLabels(record, task.title)
+    }
     const labels =
       task.status == 'completed' ? this.config.exit : this.config.enter
     this.applyLabels(record, labels)

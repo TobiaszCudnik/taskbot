@@ -142,10 +142,10 @@ export default class GmailListSync extends Sync {
     // apply labels from gmail
     const labels_from_thread = this.gmail.getLabelsFromThread(thread)
     this.applyLabels(record, { add: labels_from_thread })
+    // apply labels from text, only when in inbox AND created in gmail
     if (labels_from_thread.includes('INBOX')) {
-      // apply labels from text, only when in inbox
       this.applyLabels(record, {
-        add: this.root.getLabelsFromText(record.title)
+        add: this.root.getLabelsFromText(record.title).labels
       })
     }
     return record
