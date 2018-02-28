@@ -6,6 +6,10 @@ Bugs:
 
 TODO:
 
+* global keep-alive timeout, checking on the root machine
+* dump all machines on process.exit() even without using the ami-logger
+* label matching should be case-insensitive
+* only emails send by yourself should be parsed for tags while in inbox
 * missing extended GTD labels
   * S/Started or S/Current
   * RP/ - reference project, eg 'buy stuff #js-conf ##store'
@@ -16,6 +20,7 @@ TODO:
   * network errors eg EHOSTUNREACH, ECONNRESET
   * API errors res.statusCode == 500
   * simulate in node_modules/googleapis/node_modules/google-auth-library/lib/transporters.js:34
+  * redo Ready as a special case
 * periodic cache save
   * resume on start
 * label filters - add labels based on a stream of changes
