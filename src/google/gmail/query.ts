@@ -34,6 +34,10 @@ export class State extends AsyncMachine<any, any, any> {
     drop: ['FetchingMsgs']
   }
 
+  Exception = {
+    drop: ['FetchingThreads', 'FetchingMsgs']
+  }
+
   constructor(target: GmailQuery) {
     super(target)
     this.registerAll()
@@ -69,6 +73,12 @@ export default class GmailQuery {
         global.am_network.addMachine(this.state)
       }
     }
+  }
+
+  Exception_state(...params) {
+    // forward the exception to the gmail class and effectively the root
+    this.state.drop('Exception')
+    this.gmail.state.add('Exception', ...params)
   }
 
   // TODO should download messages in parallel with next threads list pages
@@ -178,14 +188,14 @@ export default class GmailQuery {
     }
   }
 
+  Dirty_state() {
+    this.history_id_synced = null
+    this.state.drop('Dirty')
+  }
+
   async isCached(abort: () => boolean): Promise<boolean | null> {
     return this.history_id_synced
       ? await this.gmail.isCached(this.history_id_synced, abort)
       : false
-  }
-
-  Dirty_state() {
-    this.history_id_synced = null
-    this.state.drop('Dirty')
   }
 }

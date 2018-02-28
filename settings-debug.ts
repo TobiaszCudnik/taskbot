@@ -16,6 +16,7 @@ let config: IConfig = {
   gmail_host: 'gmail.com',
   // TODO implement
   gmail_max_results: 300,
+  exception_delay: 5,
   gtasks: {
     request_quota_100: 500,
     request_quota_day: 50000,

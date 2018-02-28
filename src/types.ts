@@ -62,6 +62,7 @@ export type IConfig = {
   gmail_host: string
   // TODO
   gmail_max_results: number
+  exception_delay: number
   gtasks: {
     request_quota_100: number
     request_quota_day: number

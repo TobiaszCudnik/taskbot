@@ -8,6 +8,8 @@ import { IConfig, ILabelDefinition, IListConfig } from '../types'
 import * as debug from 'debug'
 import 'colors'
 import * as diff from 'diff'
+import * as delay from 'delay'
+import * as moment from 'moment'
 import * as regexEscape from 'escape-string-regexp'
 import GmailLabelFilterSync, {
   default as LabelFilterSync
@@ -27,6 +29,7 @@ export class State extends SyncWriterState {
     add: ['Reading']
   }
   DBReady = { auto: true }
+  Exception = { drop: ['Reading', 'Writing'] }
 
   constructor(target: RootSync) {
     super(target)
@@ -71,8 +74,10 @@ export default class RootSync extends SyncWriter {
 
   db: Loki
   data: DB
-  log = debug('root')
   log_requests = debug('requests')
+
+  last_exception_time: number
+  exceptions_count = 0
 
   // TODO debug only
   last_db: string
@@ -83,14 +88,43 @@ export default class RootSync extends SyncWriter {
     super(config)
   }
 
-  // set history_id(history_id: number) {
-  //   this.historyId = Math.max(this.history_id, history_id)
-  //   this.addListener()
-  // }
-
   // ----- -----
   // Transitions
   // ----- -----
+
+  Exception_enter() {
+    return true
+  }
+
+  Exception_Exception() {
+    this.exceptions_count++
+    this.last_exception_time = moment().unix()
+    // quit after more than 100 exceptions
+    if (this.exceptions_count > 100) {
+      process.exit()
+    }
+  }
+
+  // TODO react on specific exception types
+  async Exception_state(err: Error) {
+    this.Exception_Exception()
+    // quit after more than 100 exceptions
+    if (this.exceptions_count > 100) {
+      process.exit()
+    }
+    const SEC = 1000
+    // TODO exponential
+    let err_delay = this.config.exception_delay
+    while (this.last_exception_time + err_delay > moment().unix()) {
+      const wait = this.last_exception_time + err_delay - moment().unix()
+      this.log(`Waiting for ${wait}sec...`)
+      // TODO decide when to break
+      await delay(wait * SEC)
+    }
+    // start syncing
+    this.state.drop('Exception')
+    this.state.add('Reading')
+  }
 
   DBReady_state() {
     this.db = new Loki('gtd-bot')
@@ -222,12 +256,16 @@ export default class RootSync extends SyncWriter {
       : promisify(method)
     // TODO googleapis specific code should be in google/sync.ts
     // TODO @ts-ignore for > 1 param to the promise
-    // @ts-ignore
-    let ret = await promise_method(params, options)
-    release()
-    this.active_requests--
+    let ret
+    try {
+      // @ts-ignore
+      ret = await promise_method(params, options)
+    } finally {
+      release()
+      this.active_requests--
+      this.executed_requests++
+    }
     this.log_requests('emit: request-finished')
-    this.executed_requests++
 
     return ret
   }
@@ -242,6 +280,7 @@ export default class RootSync extends SyncWriter {
   getLabelsFromText(text: string): { text: string; labels: string[] } {
     const labels = new Set<string>()
     for (const label of this.config.labels) {
+      // TODO type guards
       const { symbol, name, prefix } = label
       if (!symbol) continue
       const query = label.shortcut || '[\\w-\\d]+'

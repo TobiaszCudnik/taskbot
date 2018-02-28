@@ -33,7 +33,6 @@ type GmailAPI = google.gmail.v1.Gmail
 type DBCollection = LokiCollection<DBRecord>
 export default class GmailListSync extends Sync {
   query: GmailQuery
-  log = debug(this.state.id(true))
   verbose = debug(this.state.id(true) + '-verbose')
 
   constructor(

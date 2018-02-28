@@ -56,7 +56,6 @@ export default class GTasksListSync extends Sync {
       }
     }
   }
-  log = debug(this.state.id(true))
   verbose = debug(this.state.id(true) + '-verbose')
   config: IListConfig
 

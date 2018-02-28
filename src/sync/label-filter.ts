@@ -13,8 +13,6 @@ export class State extends SyncState {
 }
 
 export default class LabelFilterSync extends Sync {
-  log = debug(this.state.id(true))
-
   constructor(public config: ILabelFilter, public root: RootSync) {
     super(config)
   }

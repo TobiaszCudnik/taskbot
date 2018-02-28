@@ -66,7 +66,6 @@ export default class GTasksSync extends SyncWriter {
     lists: GTasksListSync[]
   }
   subs_flat: GTasksListSync[]
-  log = debug('gtasks')
   verbose = debug('gtasks-verbose')
   // TODO archive & combine the request history
   requests: number[] = []
@@ -91,24 +90,24 @@ export default class GTasksSync extends SyncWriter {
     this.api.req = async (method, params, abort, ret_array, options = {}) => {
       this.requests.push(moment().unix())
       params.auth = this.auth.client
-      try {
-        return await this.root.req(method, params, abort, ret_array, {
-          forever: true,
-          ...options
-        })
-      } catch (e) {
-        if (e.message == 'Quota Exceeded') {
-          this.state.add('QuotaExceeded')
-        } else {
-          throw e
-        }
-      }
+      return await this.root.req(method, params, abort, ret_array, {
+        forever: true,
+        ...options
+      })
     }
   }
 
   // ----- -----
   // Transitions
   // ----- -----
+
+  Exception_enter(err: Error, ...rest) {
+    if (err.message == 'Quota Exceeded') {
+      this.state.add('QuotaExceeded')
+      return false
+    }
+    return super.Exception_enter(err, ...rest)
+  }
 
   async Writing_state() {
     super.Writing_state()

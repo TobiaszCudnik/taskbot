@@ -76,7 +76,6 @@ export default class GmailSync extends SyncWriter {
     query_labels: Sync[]
     lists: GmailListSync[]
   }
-  log = debug('gmail')
   verbose = debug('gmail-verbose')
   thread_label_filters = [
     /^S\/[\w\s-]+$/,
@@ -84,6 +83,7 @@ export default class GmailSync extends SyncWriter {
     /^P\/[\w\s-]+$/,
     /^INBOX$/
   ]
+
   constructor(root: RootSync, public auth: Auth) {
     super(root.config, root)
     this.api = <GmailAPI>google.gmail('v1')

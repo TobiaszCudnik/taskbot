@@ -9,6 +9,7 @@ import * as clone from 'deepcopy'
 import * as diff from 'diff'
 import { inspect } from 'util'
 import debug from 'debug'
+import BaseMachine from './machine'
 
 // TODO define SyncState as a JSON
 export const Reading = {
@@ -17,7 +18,7 @@ export const Reading = {
 }
 
 // TODO JSON
-export class SyncState extends AsyncMachine<any, any, any> {
+export class SyncState extends BaseMachine {
   Enabled = {}
 
   Initializing = { require: ['Enabled'] }
@@ -85,6 +86,13 @@ export abstract class Sync {
   sub_states_outbound = [['Reading', 'Reading'], ['Enabled', 'Enabled']]
   subs: { [index: string]: Sync | Sync[] } = {}
   root: RootSync
+  private log_: debug
+  get log() {
+    if (!this.log_) {
+      this.log_ = debug(this.state.id(true))
+    }
+    return this.log_
+  }
 
   last_read_end: moment.Moment
   last_read_start: moment.Moment
