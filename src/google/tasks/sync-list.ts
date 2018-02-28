@@ -1,5 +1,5 @@
 import * as moment from 'moment'
-import { Sync, SyncState } from '../../sync/sync'
+import { Sync, sync_state as base_state } from '../../sync/sync'
 import * as google from 'googleapis'
 import RootSync, { DBRecord } from '../../sync/root'
 import GTasksSync from './sync'
@@ -8,6 +8,7 @@ import * as debug from 'debug'
 import * as clone from 'deepcopy'
 import * as delay from 'delay'
 import * as _ from 'lodash'
+import { factory } from 'asyncmachine'
 
 export type Task = google.tasks.v1.Task
 export type TaskList = google.tasks.v1.TaskList
@@ -20,21 +21,16 @@ export interface ITasks {
   nextPageToken: string
 }
 
-export class State extends SyncState {
-  Cached = {}
-  Dirty = { drop: ['Cached'] }
+export const sync_state = {
+  ...base_state,
 
-  QuotaExceeded = { drop: ['Reading'] }
+  Cached: {},
+  Dirty: { drop: ['Cached'] },
 
-  constructor(target) {
-    super(target)
-    this.registerAll()
-  }
+  QuotaExceeded: { drop: ['Reading'] }
 }
 
 export default class GTasksListSync extends Sync {
-  // data: IGTasksList
-  state: State
   tasks: ITasks | null
   // TODO theres no other etags?
   etags: {
@@ -157,8 +153,8 @@ export default class GTasksListSync extends Sync {
   // Methods
   // ----- -----
 
-  getState(): State {
-    return new State(this).id('GTasks/list: ' + this.config.name)
+  getState() {
+    return factory(sync_state).id('GTasks/list: ' + this.config.name)
   }
 
   // return a filtered list of tasks

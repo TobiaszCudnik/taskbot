@@ -1,6 +1,7 @@
+import { factory } from 'asyncmachine'
 import GoogleSync from '../google/sync'
 import { Semaphore } from 'await-semaphore'
-import { Sync, SyncWriterState, SyncWriter } from './sync'
+import { sync_writer_state as base_state, SyncWriter } from './sync'
 // import * as assert from 'assert/'
 import * as Loki from 'lokijs'
 import { promisify, promisifyArray } from 'typed-promisify-tob'
@@ -15,26 +16,23 @@ import GmailLabelFilterSync, {
   default as LabelFilterSync
 } from './label-filter'
 
-export class State extends SyncWriterState {
-  SubsInited = {
+export const sync_state = {
+  ...base_state,
+
+  SubsInited: {
     require: ['ConfigSet', 'DBReady'],
     auto: true,
     after: ['DBReady']
-  }
-  SubsReady = { require: ['SubsInited'], auto: true }
-  Ready = {
+  },
+  SubsReady: { require: ['SubsInited'], auto: true },
+  Ready: {
     auto: true,
     require: ['ConfigSet', 'SubsReady', 'Enabled'],
     drop: ['Initializing'],
     add: ['Reading']
-  }
-  DBReady = { auto: true }
-  Exception = { drop: ['Reading', 'Writing'] }
-
-  constructor(target: RootSync) {
-    super(target)
-    this.registerAll()
-  }
+  },
+  DBReady: { auto: true },
+  Exception: { drop: ['Reading', 'Writing'] }
 }
 
 export type DB = LokiCollection<DBRecord>
@@ -64,7 +62,7 @@ export interface DBRecordLabel {
 
 export default class RootSync extends SyncWriter {
   config: IConfig
-  state: State
+  // state: State
   subs: { google: GoogleSync; label_filters: GmailLabelFilterSync[] }
 
   max_active_requests = 5
@@ -216,6 +214,10 @@ export default class RootSync extends SyncWriter {
   // Methods
   // ----- -----
 
+  getState() {
+    return factory(sync_state).id('root')
+  }
+
   // TODO take abort() as the second param
   async req<A, T, T2>(
     method: (arg: A, cb: (err: any, res: T, res2: T2) => void) => void,
@@ -268,12 +270,6 @@ export default class RootSync extends SyncWriter {
     this.log_requests('emit: request-finished')
 
     return ret
-  }
-
-  getState() {
-    const state = new State(this)
-    state.id('root')
-    return state
   }
 
   // Extracts labels from text

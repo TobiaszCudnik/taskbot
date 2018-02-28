@@ -1,16 +1,8 @@
-import { Sync, SyncState } from './sync'
+import { Sync } from './sync'
 import { ILabelFilter } from '../types'
-import * as debug from 'debug'
 import RootSync, { DBRecord } from './root'
 import * as clone from 'deepcopy'
 import * as moment from 'moment'
-
-export class State extends SyncState {
-  constructor(target: Sync) {
-    super(target)
-    this.registerAll()
-  }
-}
 
 export default class LabelFilterSync extends Sync {
   constructor(public config: ILabelFilter, public root: RootSync) {
@@ -22,7 +14,7 @@ export default class LabelFilterSync extends Sync {
   }
 
   getState() {
-    return new State(this).id('label-filter: ' + this.config.name)
+    return super.getState().id('label-filter: ' + this.config.name)
   }
 
   merge(): number[] {

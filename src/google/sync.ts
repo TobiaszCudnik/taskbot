@@ -1,29 +1,26 @@
 import GmailSync from './gmail/sync'
 import Auth from './auth'
-import { Sync, SyncWriter, SyncWriterState } from '../sync/sync'
+import { SyncWriter, sync_writer_state } from '../sync/sync'
 import RootSync from '../sync/root'
 import GTasksSync from './tasks/sync'
+import { factory } from 'asyncmachine'
 
-export class State extends SyncWriterState {
-  Authenticated = {}
+export const sync_state = {
+  ...sync_writer_state,
 
-  SubsInited = { require: ['Enabled'], auto: true }
-  SubsReady = { require: ['Authenticated', 'SubsInited'], auto: true }
-  Ready = {
+  Authenticated: {},
+
+  SubsInited: { require: ['Enabled'], auto: true },
+  SubsReady: { require: ['Authenticated', 'SubsInited'], auto: true },
+  Ready: {
     auto: true,
     require: ['ConfigSet', 'SubsReady'],
     drop: ['Initializing']
-  }
-
-  constructor(target: GoogleSync) {
-    super(target)
-    this.registerAll()
   }
 }
 
 export default class GoogleSync extends SyncWriter {
   auth: Auth
-  state: State
   subs: {
     gmail: GmailSync
     tasks: GTasksSync
@@ -35,9 +32,7 @@ export default class GoogleSync extends SyncWriter {
   }
 
   getState() {
-    const state = new State(this)
-    state.id('Google')
-    return state
+    return factory(sync_state).id('Google')
   }
 
   SubsInited_state() {

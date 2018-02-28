@@ -1,6 +1,6 @@
 // import { IBind, IEmit, IState, TStates } from '../google/gmail/gmail-types'
 // import { IBind, IEmit, IState } from 'asyncmachine/build/types'
-import AsyncMachine from 'asyncmachine'
+import AsyncMachine, { factory } from 'asyncmachine'
 import { IConfig } from '../types'
 import RootSync, { DBRecord } from './root'
 import * as moment from 'moment'
@@ -9,59 +9,47 @@ import * as clone from 'deepcopy'
 import * as diff from 'diff'
 import { inspect } from 'util'
 import debug from 'debug'
-import BaseMachine from './machine'
 
-// TODO define SyncState as a JSON
-export const Reading = {
-  drop: ['ReadingDone'],
-  require: ['Enabled', 'Ready']
-}
+export const sync_state = {
+  Enabled: {},
 
-// TODO JSON
-export class SyncState extends BaseMachine {
-  Enabled = {}
-
-  Initializing = { require: ['Enabled'] }
+  Initializing: { require: ['Enabled'] },
   // TODO split to ReadyForReading, ReadyForWriting
-  Ready = { auto: true, drop: ['Initializing'] }
+  Ready: { auto: true, drop: ['Initializing'] },
   // optional
-  ConfigSet = {}
-  SubsReady = {}
-  SubsInited = {}
+  ConfigSet: {},
+  SubsReady: {},
+  SubsInited: {},
 
-  Reading = Reading
-  ReadingDone = {
+  Reading: {
+    drop: ['ReadingDone'],
+    require: ['Enabled', 'Ready']
+  },
+
+  ReadingDone: {
     drop: ['Reading']
   }
-
-  constructor(target: Sync) {
-    super(target)
-    this.registerAll()
-  }
 }
 
-// TODO JSON
-export class SyncWriterState extends SyncState {
-  Writing = {
+export const sync_writer_state = {
+  // inherit the SyncState
+  ...sync_state,
+
+  Writing: {
     drop: ['WritingDone', 'Reading', 'ReadingDone'],
     require: ['Enabled', 'Ready']
-  }
-  WritingDone = {
+  },
+  WritingDone: {
     drop: ['Writing', 'Reading', 'ReadingDone']
-  }
+  },
 
-  Reading = {
+  Reading: {
     drop: ['ReadingDone', 'Writing', 'WritingDone'],
     require: ['Enabled', 'Ready']
-  }
+  },
 
-  ReadingDone = {
+  ReadingDone: {
     drop: ['Reading', 'Writing', 'WritingDone']
-  }
-
-  constructor(target: Sync) {
-    super(target)
-    this.registerAll()
   }
 }
 
@@ -98,6 +86,18 @@ export abstract class Sync {
   last_read_start: moment.Moment
   last_read_time: moment.Duration
 
+  get subs_flat(): Sync[] {
+    let ret = []
+    for (const sub of Object.values(this.subs)) {
+      if (Array.isArray(sub)) {
+        ret.push(...sub)
+      } else {
+        ret.push(sub)
+      }
+    }
+    return ret
+  }
+
   constructor(config?, root?) {
     this.config = config
     if (root) {
@@ -116,13 +116,17 @@ export abstract class Sync {
     }
   }
 
-  getState(): SyncState {
-    return new SyncState(this).id('Sync')
-  }
-
   // ----- -----
   // Transitions
   // ----- -----
+
+  Exception_enter(err, ...rest): boolean {
+    this.log('Error: %O', err)
+    if (this.root) {
+      this.root.state.add('Exception', err, ...rest)
+      return false
+    }
+  }
 
   Enabled_state() {
     if (!this.state.is('Ready')) {
@@ -157,16 +161,8 @@ export abstract class Sync {
   // Methods
   // ----- -----
 
-  get subs_flat(): Sync[] {
-    let ret = []
-    for (const sub of Object.values(this.subs)) {
-      if (Array.isArray(sub)) {
-        ret.push(...sub)
-      } else {
-        ret.push(sub)
-      }
-    }
-    return ret
+  getState() {
+    return factory(sync_state).id('Sync')
   }
 
   merge(): any[] {
@@ -270,8 +266,8 @@ export abstract class SyncWriter extends Sync {
   // Methods
   // ----- -----
 
-  getState(): SyncState {
-    return new SyncWriterState(this).id('SyncWriter')
+  getState() {
+    return factory(sync_writer_state).id('SyncWriter')
   }
 
   bindToSubs() {

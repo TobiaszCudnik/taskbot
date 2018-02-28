@@ -4,19 +4,22 @@ import * as _ from 'lodash'
 import * as google from 'googleapis'
 import { IConfig, ILabelDefinition, TRawEmail } from '../../types'
 import { map } from 'typed-promisify-tob'
-import { Sync, SyncWriter, SyncWriterState } from '../../sync/sync'
+import { Sync, SyncWriter, sync_writer_state } from '../../sync/sync'
 import Auth from '../auth'
 import GmailListSync from './sync-list'
 import RootSync, { DBRecord } from '../../sync/root'
 import * as moment from 'moment'
 import * as debug from 'debug'
+import { factory } from 'asyncmachine'
 
-export class State extends SyncWriterState {
+export const sync_state = {
+  ...sync_writer_state,
+
   // -- overrides
 
-  SubsInited = { require: ['ConfigSet'], auto: true }
-  SubsReady = { require: ['SubsInited'], auto: true }
-  Ready = {
+  SubsInited: { require: ['ConfigSet'], auto: true },
+  SubsReady: { require: ['SubsInited'], auto: true },
+  Ready: {
     auto: true,
     require: [
       'ConfigSet',
@@ -25,33 +28,28 @@ export class State extends SyncWriterState {
       'LabelsFetched'
     ],
     drop: ['Initializing']
-  }
+  },
 
-  FetchingLabels = {
+  FetchingLabels: {
     auto: true,
     require: ['Enabled'],
     drop: ['LabelsFetched']
-  }
+  },
   // TODO required only for Writing
-  LabelsFetched = {
+  LabelsFetched: {
     drop: ['FetchingLabels']
-  }
+  },
 
-  FetchingHistoryId = {
+  FetchingHistoryId: {
     auto: true,
     require: ['Enabled'],
     drop: ['HistoryIdFetched']
-  }
-  HistoryIdFetched = {
+  },
+  HistoryIdFetched: {
     drop: ['FetchingHistoryId'],
     add: ['InitialHistoryIdFetched']
-  }
-  InitialHistoryIdFetched = {}
-
-  constructor(target: GmailSync) {
-    super(target)
-    this.registerAll()
-  }
+  },
+  InitialHistoryIdFetched: {}
 }
 
 // TODO tmp
@@ -61,8 +59,6 @@ export interface GmailAPI extends google.gmail.v1.Gmail {
 
 export type Label = google.gmail.v1.Label
 export default class GmailSync extends SyncWriter {
-  state: State
-
   api: GmailAPI
   history_id_timeout = 1
   history_id_latest: number | null
@@ -191,9 +187,7 @@ export default class GmailSync extends SyncWriter {
   // ----- -----
 
   getState() {
-    const state = new State(this)
-    state.id('Gmail')
-    return state
+    return factory(sync_state).id('Gmail')
   }
 
   async getThreadsToAdd(abort: () => boolean): Promise<void[]> {

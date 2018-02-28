@@ -1,7 +1,7 @@
 import * as google from 'googleapis'
 import GTasksListSync, { Task, TaskList } from './sync-list'
 import { IConfig } from '../../types'
-import { Sync, SyncWriter, SyncWriterState } from '../../sync/sync'
+import { SyncWriter, sync_writer_state } from '../../sync/sync'
 import RootSync, { DBRecord } from '../../sync/root'
 import { map } from 'typed-promisify-tob'
 import Auth from '../auth'
@@ -11,41 +11,39 @@ import * as _ from 'lodash'
 import * as http from 'http'
 import * as roundTo from 'round-to'
 import { TAbortFunction } from 'asyncmachine/build/types'
+import { factory } from 'asyncmachine'
 
 // TODO tmp
 export interface TasksAPI extends google.tasks.v1.Tasks {
   req(method, params, abort, ret_array): Promise<any>
 }
 
-export class State extends SyncWriterState {
+export const sync_state = {
+  ...sync_writer_state,
+
   // -- overrides
 
-  SubsInited = {
+  SubsInited: {
     auto: true,
     require: ['ConfigSet', 'TaskListsFetched']
-  }
-  SubsReady = { require: ['SubsInited'], auto: true }
-  Ready = {
+  },
+  SubsReady: { require: ['SubsInited'], auto: true },
+  Ready: {
     auto: true,
     require: ['ConfigSet', 'SubsReady', 'TaskListsFetched'],
     drop: ['Initializing']
-  }
+  },
 
-  FetchingTaskLists = {
+  FetchingTaskLists: {
     auto: true,
     require: ['Enabled'],
     drop: ['TaskListsFetched']
-  }
-  TaskListsFetched = {
+  },
+  TaskListsFetched: {
     drop: ['FetchingTaskLists']
-  }
+  },
 
-  QuotaExceeded = { drop: ['Reading', 'Writing'] }
-
-  constructor(target: Sync) {
-    super(target)
-    this.registerAll()
-  }
+  QuotaExceeded: { drop: ['Reading', 'Writing'] }
 }
 
 export default class GTasksSync extends SyncWriter {
@@ -164,8 +162,8 @@ export default class GTasksSync extends SyncWriter {
   // Methods
   // ----- -----
 
-  getState(): State {
-    return new State(this).id('GTasks')
+  getState() {
+    return factory(sync_state).id('GTasks')
   }
 
   async createTaskLists(names, abort: TAbortFunction) {

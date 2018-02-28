@@ -1,4 +1,4 @@
-import AsyncMachine from 'asyncmachine'
+import AsyncMachine, { factory } from 'asyncmachine'
 import * as moment from 'moment'
 import GmailSync, { getTitleFromThread } from './sync'
 import * as google from 'googleapis'
@@ -8,39 +8,34 @@ import { machineLogToDebug } from '../../utils'
 
 export type Thread = google.gmail.v1.Thread
 
-export class State extends AsyncMachine<any, any, any> {
-  Enabled = {}
+export const sync_state = {
+  Enabled: {},
   // TODO implement based on history list and label matching
-  Dirty = {
+  Dirty: {
     drop: ['MsgsFetched', 'ThreadsFetched', 'FetchingThreads', 'FetchingMsgs']
-  }
+  },
 
-  FetchingThreads = {
+  FetchingThreads: {
     require: ['Enabled'],
     drop: ['ThreadsFetched', 'MsgsFetched']
-  }
-  ThreadsFetched = {
+  },
+  ThreadsFetched: {
     require: ['Enabled'],
     drop: ['FetchingThreads']
-  }
+  },
 
-  FetchingMsgs = {
+  FetchingMsgs: {
     require: ['Enabled', 'ThreadsFetched'],
     drop: ['MsgsFetched']
-  }
+  },
   // TODO create a Ready state
-  MsgsFetched = {
+  MsgsFetched: {
     require: ['Enabled'],
     drop: ['FetchingMsgs']
-  }
+  },
 
-  Exception = {
+  Exception: {
     drop: ['FetchingThreads', 'FetchingMsgs']
-  }
-
-  constructor(target: GmailQuery) {
-    super(target)
-    this.registerAll()
   }
 }
 
@@ -51,7 +46,7 @@ export type TThreadCompletion = {
 
 export default class GmailQuery {
   // api: google.gmail.v1.Gmail
-  state: State
+  state: AsyncMachine<any, any, any>
   // history ID from the moment of reading
   history_id_synced: number | null
   threads: Thread[] = []
@@ -65,8 +60,7 @@ export default class GmailQuery {
     public name = '',
     public fetch_msgs = false
   ) {
-    this.state = new State(this)
-    this.state.id('Gmail/query: ' + this.name)
+    this.state = factory(sync_state).id('Gmail/query: ' + this.name)
     if (process.env['DEBUG_AM'] || global.am_network) {
       machineLogToDebug(this.state)
       if (global.am_network) {
@@ -75,11 +69,19 @@ export default class GmailQuery {
     }
   }
 
+  // ----- -----
+  // Transitions
+  // ----- -----
+
   Exception_state(...params) {
     // forward the exception to the gmail class and effectively the root
     this.state.drop('Exception')
     this.gmail.state.add('Exception', ...params)
   }
+
+  // ----- -----
+  // Methods
+  // ----- -----
 
   // TODO should download messages in parallel with next threads list pages
   async FetchingThreads_state() {
