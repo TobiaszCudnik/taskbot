@@ -1,5 +1,3 @@
-// import { IBind, IEmit, IState, TStates } from './sync-query-types'
-// import AsyncMachine from 'asyncmachine'
 import GmailQuery, { Thread } from './query'
 import * as google from 'googleapis'
 import { Sync, sync_state as base_state } from '../../sync/sync'
@@ -9,7 +7,7 @@ import GmailSync, { getTitleFromThread } from './sync'
 import { IListConfig } from '../../types'
 import * as clone from 'deepcopy'
 import { debug } from 'debug'
-import AsyncMachine, { factory } from 'asyncmachine'
+import { machine } from 'asyncmachine'
 // Machine types
 import {
   IBind,
@@ -18,7 +16,8 @@ import {
   IState,
   TStates,
   IEmitBase,
-  IBindBase
+  IBindBase,
+  AsyncMachine
 } from '../../../typings/machines/google/gmail/sync-list'
 
 export const sync_state: IJSONStates = {
@@ -74,7 +73,7 @@ export default class GmailListSync extends Sync<
   // ----- -----
 
   getState() {
-    return factory(sync_state).id('Gmail/list: ' + this.config.name)
+    return machine(sync_state).id('Gmail/list: ' + this.config.name)
   }
 
   // read the current list and add to the DB

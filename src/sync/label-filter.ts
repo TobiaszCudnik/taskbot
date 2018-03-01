@@ -1,4 +1,3 @@
-import AsyncMachine from 'asyncmachine'
 import { Sync } from './sync'
 import { ILabelFilter } from '../types'
 import RootSync, { DBRecord } from './root'
@@ -12,7 +11,8 @@ import {
   IState,
   TStates,
   IEmitBase,
-  IBindBase
+  IBindBase,
+  AsyncMachine
 } from '../../typings/machines/sync/sync'
 
 export default class LabelFilterSync extends Sync<

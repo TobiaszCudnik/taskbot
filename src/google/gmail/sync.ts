@@ -10,7 +10,7 @@ import GmailListSync from './sync-list'
 import RootSync, { DBRecord } from '../../sync/root'
 import * as moment from 'moment'
 import * as debug from 'debug'
-import AsyncMachine, { factory } from 'asyncmachine'
+import { machine } from 'asyncmachine'
 // Machine types
 import {
   IBind,
@@ -19,7 +19,8 @@ import {
   IState,
   TStates,
   IEmitBase,
-  IBindBase
+  IBindBase,
+  AsyncMachine
 } from '../../../typings/machines/google/gmail/sync'
 
 export const sync_state: IJSONStates = {
@@ -200,7 +201,7 @@ export default class GmailSync extends SyncWriter<
   // ----- -----
 
   getState() {
-    return factory(sync_state).id('Gmail')
+    return machine(sync_state).id('Gmail')
   }
 
   async getThreadsToAdd(abort: () => boolean): Promise<void[]> {

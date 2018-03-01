@@ -1,5 +1,5 @@
 import AsyncMachine, {
-  factory,
+  machine,
   IEmit,
   IBind,
   TAsyncMachine
@@ -191,7 +191,7 @@ export abstract class Sync<TConfig, TStates, IBind, IEmit> {
   // ----- -----
 
   getState() {
-    return factory(sync_state).id('Sync')
+    return machine(sync_state).id('Sync')
   }
 
   merge(): any[] {
@@ -308,7 +308,7 @@ export abstract class SyncWriter<TConfig, TStates, IBind, IEmit> extends Sync<
   // ----- -----
 
   getState(): AsyncMachine<any, any, any> {
-    return factory(sync_writer_state).id('SyncWriter')
+    return machine(sync_writer_state).id('SyncWriter')
   }
 
   bindToSubs() {

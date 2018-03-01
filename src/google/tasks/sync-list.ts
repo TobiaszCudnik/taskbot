@@ -8,7 +8,7 @@ import * as debug from 'debug'
 import * as clone from 'deepcopy'
 import * as delay from 'delay'
 import * as _ from 'lodash'
-import AsyncMachine, { factory } from 'asyncmachine'
+import { machine } from 'asyncmachine'
 // Machine types
 import {
   IBind,
@@ -17,7 +17,8 @@ import {
   IState,
   TStates,
   IEmitBase,
-  IBindBase
+  IBindBase,
+  AsyncMachine
 } from '../../../typings/machines/google/tasks/sync-list'
 
 export type Task = google.tasks.v1.Task
@@ -168,8 +169,10 @@ export default class GTasksListSync extends Sync<
   // Methods
   // ----- -----
 
+  // TODO fix types
+  // @ts-ignore
   getState() {
-    return factory(sync_state).id('GTasks/list: ' + this.config.name)
+    return machine(sync_state).id('GTasks/list: ' + this.config.name)
   }
 
   // return a filtered list of tasks

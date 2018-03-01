@@ -1,4 +1,4 @@
-import AsyncMachine, { factory } from 'asyncmachine'
+import { machine } from 'asyncmachine'
 import * as moment from 'moment'
 import GmailSync, { getTitleFromThread } from './sync'
 import * as google from 'googleapis'
@@ -13,7 +13,8 @@ import {
   IState,
   TStates,
   IEmitBase,
-  IBindBase
+  IBindBase,
+  AsyncMachine
 } from '../../../typings/machines/google/gmail/query'
 
 export type Thread = google.gmail.v1.Thread
@@ -70,7 +71,7 @@ export default class GmailQuery {
     public fetch_msgs = false
   ) {
     // TODO loose the cast
-    this.state = <AsyncMachine<TStates, IBind, IEmit>>(<any>factory(
+    this.state = <AsyncMachine<TStates, IBind, IEmit>>(<any>machine(
       sync_state
     ).id('Gmail/query: ' + this.name))
     if (process.env['DEBUG_AM'] || global.am_network) {

@@ -1,4 +1,4 @@
-import AsyncMachine, { factory } from 'asyncmachine'
+import { machine } from 'asyncmachine'
 import GoogleSync from '../google/sync'
 import { Semaphore } from 'await-semaphore'
 import {
@@ -26,7 +26,8 @@ import {
   IState,
   TStates,
   IEmitBase,
-  IBindBase
+  IBindBase,
+  AsyncMachine
 } from '../../typings/machines/sync/root'
 
 export const sync_state: IJSONStates = {
@@ -232,7 +233,7 @@ export default class RootSync extends SyncWriter<
   // ----- -----
 
   getState() {
-    return factory(sync_state).id('root')
+    return machine(sync_state).id('root')
   }
 
   // TODO take abort() as the second param

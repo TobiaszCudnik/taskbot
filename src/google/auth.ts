@@ -1,5 +1,5 @@
 import * as google from 'googleapis'
-import AsyncMachine from '../../../asyncmachine/build/asyncmachine'
+import AsyncMachine from 'asyncmachine'
 import { IConfig } from '../types'
 import { machineLogToDebug } from '../utils'
 // Machine types

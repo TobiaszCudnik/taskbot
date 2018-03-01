@@ -1,4 +1,4 @@
-import AsyncMachine, { factory } from 'asyncmachine'
+import { machine } from 'asyncmachine'
 import GmailSync from './gmail/sync'
 import Auth from './auth'
 import { SyncWriter, sync_writer_state } from '../sync/sync'
@@ -13,7 +13,8 @@ import {
   IState,
   TStates,
   IEmitBase,
-  IBindBase
+  IBindBase,
+  AsyncMachine
 } from '../../typings/machines/google/sync'
 
 export const sync_state: IJSONStates = {
@@ -49,7 +50,7 @@ export default class GoogleSync extends SyncWriter<
   }
 
   getState() {
-    return factory(sync_state).id('Google')
+    return machine(sync_state).id('Google')
   }
 
   SubsInited_state() {

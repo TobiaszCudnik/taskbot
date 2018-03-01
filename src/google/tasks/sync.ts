@@ -11,7 +11,7 @@ import * as _ from 'lodash'
 import * as http from 'http'
 import * as roundTo from 'round-to'
 import { TAbortFunction } from 'asyncmachine/build/types'
-import AsyncMachine, { factory } from 'asyncmachine'
+import { machine } from 'asyncmachine'
 // Machine types
 import {
   IBind,
@@ -20,7 +20,8 @@ import {
   IState,
   TStates,
   IEmitBase,
-  IBindBase
+  IBindBase,
+  AsyncMachine
 } from '../../../typings/machines/google/tasks/sync'
 
 // TODO tmp
@@ -178,7 +179,7 @@ export default class GTasksSync extends SyncWriter<
   // ----- -----
 
   getState() {
-    return factory(sync_state).id('GTasks')
+    return machine(sync_state).id('GTasks')
   }
 
   async createTaskLists(names, abort: TAbortFunction) {
