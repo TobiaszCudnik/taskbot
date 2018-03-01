@@ -23,3 +23,6 @@
 /combined.log
 /snapshot-exception.json
 /snapshot.json
+/typings/machines/**/**.js
+/typings/machines/**/**.js.map
+/typings/machines/**/**.d.ts
