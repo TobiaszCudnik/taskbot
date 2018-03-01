@@ -5,10 +5,20 @@ import * as google from 'googleapis'
 import { map } from 'typed-promisify-tob'
 import { debug } from 'debug'
 import { machineLogToDebug } from '../../utils'
+// Machine types
+import {
+  IBind,
+  IEmit,
+  IJSONStates,
+  IState,
+  TStates,
+  IEmitBase,
+  IBindBase
+} from '../../../typings/machines/google/gmail/query'
 
 export type Thread = google.gmail.v1.Thread
 
-export const sync_state = {
+export const sync_state: IJSONStates = {
   Enabled: {},
   // TODO implement based on history list and label matching
   Dirty: {
@@ -45,8 +55,7 @@ export type TThreadCompletion = {
 }
 
 export default class GmailQuery {
-  // api: google.gmail.v1.Gmail
-  state: AsyncMachine<any, any, any>
+  state: AsyncMachine<TStates, IBind, IEmit>
   // history ID from the moment of reading
   history_id_synced: number | null
   threads: Thread[] = []
@@ -60,7 +69,10 @@ export default class GmailQuery {
     public name = '',
     public fetch_msgs = false
   ) {
-    this.state = factory(sync_state).id('Gmail/query: ' + this.name)
+    // TODO loose the cast
+    this.state = <AsyncMachine<TStates, IBind, IEmit>>(<any>factory(
+      sync_state
+    ).id('Gmail/query: ' + this.name))
     if (process.env['DEBUG_AM'] || global.am_network) {
       machineLogToDebug(this.state)
       if (global.am_network) {

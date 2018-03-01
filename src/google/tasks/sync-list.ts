@@ -8,7 +8,17 @@ import * as debug from 'debug'
 import * as clone from 'deepcopy'
 import * as delay from 'delay'
 import * as _ from 'lodash'
-import { factory } from 'asyncmachine'
+import AsyncMachine, { factory } from 'asyncmachine'
+// Machine types
+import {
+  IBind,
+  IEmit,
+  IJSONStates,
+  IState,
+  TStates,
+  IEmitBase,
+  IBindBase
+} from '../../../typings/machines/google/tasks/sync-list'
 
 export type Task = google.tasks.v1.Task
 export type TaskList = google.tasks.v1.TaskList
@@ -21,7 +31,7 @@ export interface ITasks {
   nextPageToken: string
 }
 
-export const sync_state = {
+export const sync_state: IJSONStates = {
   ...base_state,
 
   Cached: {},
@@ -30,7 +40,13 @@ export const sync_state = {
   QuotaExceeded: { drop: ['Reading'] }
 }
 
-export default class GTasksListSync extends Sync {
+export default class GTasksListSync extends Sync<
+  IListConfig,
+  TStates,
+  IBind,
+  IEmit
+> {
+  state: AsyncMachine<TStates, IBind, IEmit>
   tasks: ITasks | null
   // TODO theres no other etags?
   etags: {
@@ -53,7 +69,6 @@ export default class GTasksListSync extends Sync {
     }
   }
   verbose = debug(this.state.id(true) + '-verbose')
-  config: IListConfig
 
   constructor(config: IListConfig, root: RootSync, public gtasks: GTasksSync) {
     super(config, root)

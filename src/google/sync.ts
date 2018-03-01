@@ -1,11 +1,22 @@
+import AsyncMachine, { factory } from 'asyncmachine'
 import GmailSync from './gmail/sync'
 import Auth from './auth'
 import { SyncWriter, sync_writer_state } from '../sync/sync'
 import RootSync from '../sync/root'
 import GTasksSync from './tasks/sync'
-import { factory } from 'asyncmachine'
+import { IConfig } from '../types'
+// Machine types
+import {
+  IBind,
+  IEmit,
+  IJSONStates,
+  IState,
+  TStates,
+  IEmitBase,
+  IBindBase
+} from '../../typings/machines/google/sync'
 
-export const sync_state = {
+export const sync_state: IJSONStates = {
   ...sync_writer_state,
 
   Authenticated: {},
@@ -19,7 +30,13 @@ export const sync_state = {
   }
 }
 
-export default class GoogleSync extends SyncWriter {
+export default class GoogleSync extends SyncWriter<
+  IConfig,
+  TStates,
+  IBind,
+  IEmit
+> {
+  state: AsyncMachine<TStates, IBind, IEmit>
   auth: Auth
   subs: {
     gmail: GmailSync
@@ -42,7 +59,5 @@ export default class GoogleSync extends SyncWriter {
     }
     this.bindToSubs()
     this.auth.pipe('Ready', this.state, 'Authenticated')
-    // this.subs.gmail.state.add('Enabled')
-    // this.subs.tasks.state.add('Enabled')
   }
 }

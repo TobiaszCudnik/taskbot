@@ -1,11 +1,29 @@
+import AsyncMachine from 'asyncmachine'
 import { Sync } from './sync'
 import { ILabelFilter } from '../types'
 import RootSync, { DBRecord } from './root'
 import * as clone from 'deepcopy'
 import * as moment from 'moment'
+// Machine types
+import {
+  IBind,
+  IEmit,
+  IJSONStates,
+  IState,
+  TStates,
+  IEmitBase,
+  IBindBase
+} from '../../typings/machines/sync/sync'
 
-export default class LabelFilterSync extends Sync {
-  constructor(public config: ILabelFilter, public root: RootSync) {
+export default class LabelFilterSync extends Sync<
+  ILabelFilter,
+  TStates,
+  IBind,
+  IEmit
+> {
+  state: AsyncMachine<TStates, IBind, IEmit>
+
+  constructor(config: ILabelFilter, public root: RootSync) {
     super(config)
   }
 

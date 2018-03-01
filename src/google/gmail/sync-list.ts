@@ -9,9 +9,19 @@ import GmailSync, { getTitleFromThread } from './sync'
 import { IListConfig } from '../../types'
 import * as clone from 'deepcopy'
 import { debug } from 'debug'
-import { factory } from 'asyncmachine'
+import AsyncMachine, { factory } from 'asyncmachine'
+// Machine types
+import {
+  IBind,
+  IEmit,
+  IJSONStates,
+  IState,
+  TStates,
+  IEmitBase,
+  IBindBase
+} from '../../../typings/machines/google/gmail/sync-list'
 
-export const sync_state = {
+export const sync_state: IJSONStates = {
   ...base_state,
 
   Ready: { auto: true, drop: ['Initializing'] }
@@ -19,12 +29,18 @@ export const sync_state = {
 
 type GmailAPI = google.gmail.v1.Gmail
 type DBCollection = LokiCollection<DBRecord>
-export default class GmailListSync extends Sync {
+export default class GmailListSync extends Sync<
+  IListConfig,
+  TStates,
+  IBind,
+  IEmit
+> {
+  state: AsyncMachine<TStates, IBind, IEmit>
   query: GmailQuery
   verbose = debug(this.state.id(true) + '-verbose')
 
   constructor(
-    public config: IListConfig,
+    config: IListConfig,
     public root: RootSync,
     public gmail: GmailSync
   ) {

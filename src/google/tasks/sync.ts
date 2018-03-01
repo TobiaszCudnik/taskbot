@@ -11,14 +11,24 @@ import * as _ from 'lodash'
 import * as http from 'http'
 import * as roundTo from 'round-to'
 import { TAbortFunction } from 'asyncmachine/build/types'
-import { factory } from 'asyncmachine'
+import AsyncMachine, { factory } from 'asyncmachine'
+// Machine types
+import {
+  IBind,
+  IEmit,
+  IJSONStates,
+  IState,
+  TStates,
+  IEmitBase,
+  IBindBase
+} from '../../../typings/machines/google/tasks/sync'
 
 // TODO tmp
 export interface TasksAPI extends google.tasks.v1.Tasks {
   req(method, params, abort, ret_array): Promise<any>
 }
 
-export const sync_state = {
+export const sync_state: IJSONStates = {
   ...sync_writer_state,
 
   // -- overrides
@@ -46,7 +56,13 @@ export const sync_state = {
   QuotaExceeded: { drop: ['Reading', 'Writing'] }
 }
 
-export default class GTasksSync extends SyncWriter {
+export default class GTasksSync extends SyncWriter<
+  IConfig,
+  TStates,
+  IBind,
+  IEmit
+> {
+  state: AsyncMachine<TStates, IBind, IEmit>
   etags: {
     task_lists: string | null
   } = {
@@ -59,7 +75,6 @@ export default class GTasksSync extends SyncWriter {
     ['QuotaExceeded', 'QuotaExceeded']
   ]
   lists: google.tasks.v1.TaskList[]
-  config: IConfig
   subs: {
     lists: GTasksListSync[]
   }

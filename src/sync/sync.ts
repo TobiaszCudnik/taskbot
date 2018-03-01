@@ -1,7 +1,9 @@
-// import { IBind, IEmit, IState, TStates } from '../google/gmail/gmail-types'
-// import { IBind, IEmit, IState } from 'asyncmachine/build/types'
-import AsyncMachine, { factory } from 'asyncmachine'
-import { IConfig } from '../types'
+import AsyncMachine, {
+  factory,
+  IEmit,
+  IBind,
+  TAsyncMachine
+} from 'asyncmachine'
 import RootSync, { DBRecord } from './root'
 import * as moment from 'moment'
 import { machineLogToDebug } from '../utils'
@@ -9,8 +11,25 @@ import * as clone from 'deepcopy'
 import * as diff from 'diff'
 import { inspect } from 'util'
 import debug from 'debug'
+// Machine types
+import {
+  IBind as IBindSync,
+  IEmit as IEmitSync,
+  IJSONStates as IJSONStatesSync,
+  IState as IStateSync,
+  TStates as TStatesSync
+} from '../../typings/machines/sync/sync'
+import {
+  IBind as IBindWriter,
+  IEmit as IEmitWriter,
+  IJSONStates as IJSONStatesWriter,
+  IState as IStateWriter,
+  TStates as TStatesWriter
+} from '../../typings/machines/sync/sync-writer'
 
-export const sync_state = {
+export { IStateSync, IStateWriter }
+
+export const sync_state: IJSONStatesSync = {
   Enabled: {},
 
   Initializing: { require: ['Enabled'] },
@@ -31,7 +50,7 @@ export const sync_state = {
   }
 }
 
-export const sync_writer_state = {
+export const sync_writer_state: IJSONStatesWriter = {
   // inherit the SyncState
   ...sync_state,
 
@@ -53,26 +72,36 @@ export const sync_writer_state = {
   }
 }
 
-// TODO match SyncState
-export interface ISyncState {
-  Enabled
-  Initializing
-  Ready
+export type TSyncState = AsyncMachine<TStatesSync, IBindSync, IBindSync>
+export type TSyncStateWriter = AsyncMachine<
+  TStatesWriter,
+  IBindWriter,
+  IBindWriter
+>
 
-  Writing
-  WritingDone
-  Reading
-  ReadingDone
-}
-
-export abstract class Sync {
-  state: AsyncMachine<any, any, any>
+export abstract class Sync<TConfig, TStates, IBind, IEmit> {
+  state: TAsyncMachine
+  get state_reader(): TSyncState {
+    return this.state
+  }
   active_requests: number
   // config: IConfig | null
-  config: any
-  sub_states_inbound = [['ReadingDone', 'ReadingDone'], ['Ready', 'SubsReady']]
-  sub_states_outbound = [['Reading', 'Reading'], ['Enabled', 'Enabled']]
-  subs: { [index: string]: Sync | Sync[] } = {}
+  config: TConfig
+  // TODO types?
+  sub_states_inbound: [TStates | TStatesSync, TStates | TStatesSync][] = [
+    ['ReadingDone', 'ReadingDone'],
+    ['Ready', 'SubsReady']
+  ]
+  // TODO types?
+  sub_states_outbound: [TStates | TStatesSync, TStates | TStatesSync][] = [
+    ['Reading', 'Reading'],
+    ['Enabled', 'Enabled']
+  ]
+  subs: {
+    [index: string]: any
+    // | Sync<any, TStates, IBind, IEmit>
+    // | Sync<any, TStates, IBind, IEmit>[]
+  } = {}
   root: RootSync
   private log_: debug
   get log() {
@@ -86,7 +115,7 @@ export abstract class Sync {
   last_read_start: moment.Moment
   last_read_time: moment.Duration
 
-  get subs_flat(): Sync[] {
+  get subs_flat(): Sync<TConfig, TStates, IBind, IEmit>[] {
     let ret = []
     for (const sub of Object.values(this.subs)) {
       if (Array.isArray(sub)) {
@@ -104,15 +133,15 @@ export abstract class Sync {
       this.root = root
     }
     this.state = this.getState()
-    this.state.add('Initializing')
+    this.state_reader.add('Initializing')
     if (process.env['DEBUG_AM'] || global.am_network) {
-      machineLogToDebug(this.state)
+      machineLogToDebug(this.state_reader)
       if (global.am_network) {
-        global.am_network.addMachine(this.state)
+        global.am_network.addMachine(this.state_reader)
       }
     }
     if (config) {
-      this.state.add('ConfigSet', config)
+      this.state_reader.add('ConfigSet', config)
     }
   }
 
@@ -134,7 +163,7 @@ export abstract class Sync {
     }
   }
 
-  ConfigSet_state(config: IConfig) {
+  ConfigSet_state(config: TConfig) {
     this.config = config
   }
 
@@ -227,12 +256,24 @@ export abstract class Sync {
   }
 }
 
-export abstract class SyncWriter extends Sync {
+// TODO consider moving to a separate file?
+export abstract class SyncWriter<TConfig, TStates, IBind, IEmit> extends Sync<
+  TConfig,
+  TStates,
+  IBind,
+  IEmit
+> {
+  get state_writer(): TSyncStateWriter {
+    return this.state
+  }
+  // sub_states_inbound: [TStatesWriter, TStatesWriter][]
+  // sub_states_outbound: [TStatesWriter, TStatesWriter][]
+
   last_write_end: moment.Moment
   last_write_start: moment.Moment
   last_write_time: moment.Duration
 
-  get subs_flat_writers(): SyncWriter[] {
+  get subs_flat_writers(): SyncWriter<any, any, any, any>[] {
     // TODO cast
     return <any>this.subs_flat.filter(sync => sync instanceof SyncWriter)
   }
@@ -266,15 +307,15 @@ export abstract class SyncWriter extends Sync {
   // Methods
   // ----- -----
 
-  getState() {
+  getState(): AsyncMachine<any, any, any> {
     return factory(sync_writer_state).id('SyncWriter')
   }
 
   bindToSubs() {
     super.bindToSubs()
     for (const sync of this.subs_flat_writers) {
-      sync.state.pipe('WritingDone', this.state, 'WritingDone')
-      this.state.pipe('Writing', sync.state, 'Writing')
+      sync.state.pipe('WritingDone', this.state_writer, 'WritingDone')
+      this.state_writer.pipe('Writing', sync.state, 'Writing')
     }
   }
 }

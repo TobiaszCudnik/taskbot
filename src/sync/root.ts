@@ -1,8 +1,11 @@
-import { factory } from 'asyncmachine'
+import AsyncMachine, { factory } from 'asyncmachine'
 import GoogleSync from '../google/sync'
 import { Semaphore } from 'await-semaphore'
-import { sync_writer_state as base_state, SyncWriter } from './sync'
-// import * as assert from 'assert/'
+import {
+  sync_writer_state as base_state,
+  SyncWriter,
+  IStateWriter
+} from './sync'
 import * as Loki from 'lokijs'
 import { promisify, promisifyArray } from 'typed-promisify-tob'
 import { IConfig, ILabelDefinition, IListConfig } from '../types'
@@ -15,8 +18,18 @@ import * as regexEscape from 'escape-string-regexp'
 import GmailLabelFilterSync, {
   default as LabelFilterSync
 } from './label-filter'
+// Machine types
+import {
+  IBind,
+  IEmit,
+  IJSONStates,
+  IState,
+  TStates,
+  IEmitBase,
+  IBindBase
+} from '../../typings/machines/sync/root'
 
-export const sync_state = {
+export const sync_state: IJSONStates = {
   ...base_state,
 
   SubsInited: {
@@ -60,9 +73,13 @@ export interface DBRecordLabel {
   active: boolean
 }
 
-export default class RootSync extends SyncWriter {
-  config: IConfig
-  // state: State
+export default class RootSync extends SyncWriter<
+  IConfig,
+  TStates,
+  IBind,
+  IEmit
+> {
+  state: AsyncMachine<TStates, IBind, IEmit>
   subs: { google: GoogleSync; label_filters: GmailLabelFilterSync[] }
 
   max_active_requests = 5

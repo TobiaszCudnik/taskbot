@@ -1,5 +1,5 @@
 ///<reference path="../../../node_modules/typed-promisify-tob/index.ts"/>
-import Query, { Thread } from './query'
+import { Thread } from './query'
 import * as _ from 'lodash'
 import * as google from 'googleapis'
 import { IConfig, ILabelDefinition, TRawEmail } from '../../types'
@@ -10,9 +10,19 @@ import GmailListSync from './sync-list'
 import RootSync, { DBRecord } from '../../sync/root'
 import * as moment from 'moment'
 import * as debug from 'debug'
-import { factory } from 'asyncmachine'
+import AsyncMachine, { factory } from 'asyncmachine'
+// Machine types
+import {
+  IBind,
+  IEmit,
+  IJSONStates,
+  IState,
+  TStates,
+  IEmitBase,
+  IBindBase
+} from '../../../typings/machines/google/gmail/sync'
 
-export const sync_state = {
+export const sync_state: IJSONStates = {
   ...sync_writer_state,
 
   // -- overrides
@@ -58,7 +68,13 @@ export interface GmailAPI extends google.gmail.v1.Gmail {
 }
 
 export type Label = google.gmail.v1.Label
-export default class GmailSync extends SyncWriter {
+export default class GmailSync extends SyncWriter<
+  IConfig,
+  TStates,
+  IBind,
+  IEmit
+> {
+  state: AsyncMachine<TStates, IBind, IEmit>
   api: GmailAPI
   history_id_timeout = 1
   history_id_latest: number | null
@@ -66,10 +82,8 @@ export default class GmailSync extends SyncWriter {
   labels: Label[]
   history_ids: { id: number; time: number }[] = []
   sub_states_outbound = [['Reading', 'Reading'], ['Enabled', 'Enabled']]
-  config: IConfig
   threads = new Map<string, Thread>()
   subs: {
-    query_labels: Sync[]
     lists: GmailListSync[]
   }
   verbose = debug('gmail-verbose')
@@ -96,8 +110,7 @@ export default class GmailSync extends SyncWriter {
 
   SubsInited_state() {
     this.subs = {
-      lists: [],
-      query_labels: []
+      lists: []
     }
     for (const config of this.config.lists) {
       this.subs.lists.push(new GmailListSync(config, this.root, this))
