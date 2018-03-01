@@ -1,4 +1,4 @@
-STATES_TYPES_BIN = node_modules/asyncmachine/tools/states-to-types.js
+STATES_TYPES_BIN = node_modules/asyncmachine/bin/am-types.js
 
 compile:
 	node_modules/.bin/tsc --pretty --noEmit
@@ -24,12 +24,34 @@ format:
 	prettier --config package.json --write src/**/*.ts
 	prettier --config package.json --write src/**/**/*.ts
 
-state-types:
-	node $(STATES_TYPES_BIN) src/sync/task-list-sync-states.js -s
-	node $(STATES_TYPES_BIN) src/sync/gmail-query.js -s
-	node $(STATES_TYPES_BIN) src/sync/sync.js -s
-	node $(STATES_TYPES_BIN) src/sync/gmail.js -s
-	node $(STATES_TYPES_BIN) src/auth.js -s
+am-types:
+	mkdir -p typings/machines/sync
+	mkdir -p typings/machines/google/gmail
+	mkdir -p typings/machines/google/tasks
+
+	$(STATES_TYPES_BIN) src/sync/sync.js -e sync_state \
+		-o typings/machines/sync/sync.ts
+	$(STATES_TYPES_BIN) src/sync/sync.js -e sync_writer_state \
+		-o typings/machines/sync/sync-writer.ts
+	$(STATES_TYPES_BIN) src/sync/root.js -e sync_state \
+		-o typings/machines/sync/root.ts
+
+	$(STATES_TYPES_BIN) src/google/sync.js -e sync_state \
+		-o typings/machines/google/sync.ts
+	$(STATES_TYPES_BIN) src/google/auth.json \
+		-o typings/machines/google/auth.ts
+
+	$(STATES_TYPES_BIN) src/google/tasks/sync.js -e sync_state \
+		-o typings/machines/google/tasks/sync.ts
+	$(STATES_TYPES_BIN) src/google/tasks/sync-list.js -e sync_state \
+		-o typings/machines/google/tasks/sync-list.ts
+
+	$(STATES_TYPES_BIN) src/google/gmail/sync-list.js -e sync_state \
+		-o typings/machines/google/gmail/sync-list.ts
+	$(STATES_TYPES_BIN) src/google/gmail/sync.js -e sync_state \
+		-o typings/machines/google/gmail/sync.ts
+	$(STATES_TYPES_BIN) src/google/gmail/query.js -e sync_state \
+		-o typings/machines/google/gmail/query.ts
 
 npmi:
 	npm i
