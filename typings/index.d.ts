@@ -6,3 +6,4 @@
 /// <reference path="modules/async/index.d.ts" />
 /// <reference path="modules/lodash/index.d.ts" />
 /// <reference path="modules/uuid/index.d.ts" />
+/// <reference path="modules/winston/index.d.ts" />

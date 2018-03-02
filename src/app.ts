@@ -9,7 +9,7 @@ import { IConfig } from './types'
 
 // const app_settings = process.env['DEBUG'] ? settings_debug : settings
 
-let root
+let root: RootSync
 const settings = { ...settings_debug, ...settings_credentials }
 
 if (process.env['DEBUG_AMI']) {
@@ -18,15 +18,19 @@ if (process.env['DEBUG_AMI']) {
   global.am_logger = new Logger(global.am_network)
 }
 
+let exit_printed = false
 function exit(err?) {
+  if (exit_printed) return
   if (global.am_network) {
-    global.am_logger.saveFile(err ? 'snapshot-exception.json' : 'snapshot.json')
-    console.log(global.am_network.toString())
-    console.log('Saved a snapshot to snapshot.json')
+    const filename = err ? 'logs/snapshot-exception.json' : 'logs/snapshot.json'
+    global.am_logger.saveFile(filename)
+    console.log(`Saved a snapshot to ${filename}`)
   }
+  console.log(root.listMachines())
   if (root.data) {
     console.log(root.data.toString())
   }
+  exit_printed = true
   process.exit()
 }
 

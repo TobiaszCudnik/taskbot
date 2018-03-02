@@ -256,6 +256,12 @@ export abstract class Sync<TConfig, TStates, IBind, IEmit> {
     }
     process.stderr.write('\n')
   }
+
+  listMachines() {
+    let ret = this.state.statesToString(true)
+    ret += this.subs_flat.map(sub => sub.listMachines()).join('')
+    return ret
+  }
 }
 
 // TODO consider moving to a separate file?
@@ -266,6 +272,7 @@ export abstract class SyncWriter<TConfig, TStates, IBind, IEmit> extends Sync<
   IEmit
 > {
   get state_writer(): TSyncStateWriter {
+    // @ts-ignore
     return this.state
   }
   // sub_states_inbound: [TStatesWriter, TStatesWriter][]

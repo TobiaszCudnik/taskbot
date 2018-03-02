@@ -49,9 +49,9 @@ export default class GoogleSync extends SyncWriter<
     this.auth = new Auth(root.config)
   }
 
-  getState() {
-    return machine(sync_state).id('Google')
-  }
+  // ----- -----
+  // Transitions
+  // ----- -----
 
   SubsInited_state() {
     this.subs = {
@@ -60,5 +60,19 @@ export default class GoogleSync extends SyncWriter<
     }
     this.bindToSubs()
     this.auth.pipe('Ready', this.state, 'Authenticated')
+  }
+
+  // ----- -----
+  // Methods
+  // ----- -----
+
+  getState() {
+    return machine(sync_state).id('Google')
+  }
+
+  listMachines() {
+    let ret = super.listMachines()
+    ret += this.auth.statesToString(true)
+    return ret
   }
 }

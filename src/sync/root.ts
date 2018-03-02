@@ -1,11 +1,7 @@
 import { machine } from 'asyncmachine'
 import GoogleSync from '../google/sync'
 import { Semaphore } from 'await-semaphore'
-import {
-  sync_writer_state as base_state,
-  SyncWriter,
-  IStateWriter
-} from './sync'
+import { sync_writer_state as base_state, SyncWriter } from './sync'
 import * as Loki from 'lokijs'
 import { promisify, promisifyArray } from 'typed-promisify-tob'
 import { IConfig, ILabelDefinition, IListConfig } from '../types'
@@ -29,6 +25,7 @@ import {
   IBindBase,
   AsyncMachine
 } from '../../typings/machines/sync/root'
+import winston = require('winston')
 
 export const sync_state: IJSONStates = {
   ...base_state,
@@ -100,6 +97,8 @@ export default class RootSync extends SyncWriter<
   last_gmail: string
   last_gtasks: string
 
+  file_logger = this.createLogger()
+
   constructor(config: IConfig) {
     super(config)
   }
@@ -112,7 +111,8 @@ export default class RootSync extends SyncWriter<
     return true
   }
 
-  Exception_Exception() {
+  Exception_Exception(err: Error) {
+    this.file_logger.error(err)
     this.exceptions_count++
     this.last_exception_time = moment().unix()
     // quit after more than 100 exceptions
@@ -123,7 +123,7 @@ export default class RootSync extends SyncWriter<
 
   // TODO react on specific exception types
   async Exception_state(err: Error) {
-    this.Exception_Exception()
+    this.Exception_Exception(err)
     // quit after more than 100 exceptions
     if (this.exceptions_count > 100) {
       process.exit()
@@ -190,21 +190,27 @@ export default class RootSync extends SyncWriter<
       process.stderr.write(db)
       process.stderr.write(gmail)
       process.stderr.write(gtasks)
+      this.file_logger.info(db)
+      this.file_logger.info(gmail)
+      this.file_logger.info(gtasks)
     }
     // TODO extract, unify, only in debug
     if (this.last_db && db != this.last_db) {
+      this.file_logger.info(db)
       for (const chunk of diff.diffChars(this.last_db, db)) {
         const color = chunk.added ? 'green' : chunk.removed ? 'red' : 'white'
         process.stderr.write(chunk.value[color])
       }
     }
     if (this.last_gmail && gmail != this.last_gmail) {
+      this.file_logger.info(gmail)
       for (const chunk of diff.diffChars(this.last_gmail, gmail)) {
         const color = chunk.added ? 'green' : chunk.removed ? 'red' : 'white'
         process.stderr.write(chunk.value[color])
       }
     }
     if (this.last_gtasks && gtasks != this.last_gtasks) {
+      this.file_logger.info(gtasks)
       for (const chunk of diff.diffChars(this.last_gtasks, gtasks)) {
         const color = chunk.added ? 'green' : chunk.removed ? 'red' : 'white'
         process.stderr.write(chunk.value[color])
@@ -385,5 +391,25 @@ export default class RootSync extends SyncWriter<
     } while (changes.length && ++c < MAX)
     this.log(`SYNCED after ${c} round(s)`)
     return []
+  }
+
+  // TODO extract to a separate file and make it awesome
+  // add timestamps, maybe readable json
+  createLogger() {
+    // @ts-ignore
+    return winston.createLogger({
+      // TODO read from env.DEBUG
+      level: 'info',
+      // @ts-ignore
+      // format: winston.format.json(),
+      format: winston.format.simple(),
+      transports: [
+        new winston.transports.File({
+          filename: 'logs/error.log',
+          level: 'error'
+        }),
+        new winston.transports.File({ filename: 'logs/combined.log' })
+      ]
+    })
   }
 }

@@ -197,4 +197,10 @@ export default class GmailListSync extends Sync<
         .join('\n')
     )
   }
+
+  listMachines() {
+    let ret = super.listMachines()
+    ret += this.query.state.statesToString(true)
+    return ret
+  }
 }
