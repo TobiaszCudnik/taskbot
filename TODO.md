@@ -8,7 +8,12 @@ Bugs:
 
 TODO:
 
-* HeartBeat state - global keep-alive timeout, checking on the root machine
+* print diffs using the logger
+* repl
+* option to hook up AMI to a running engine
+* requests
+  * timeouts
+  * throw exception on an empty response
 * label matching should be case-insensitive
 * only emails send by yourself should be parsed for tags while in inbox
 * missing extended GTD labels
@@ -54,7 +59,6 @@ TODO:
   * currently the record is re-added from the other source
 * mark gmail queries as Dirty based on related labels
 * check if all the requests use the 'fields' limits
-* print diffs using the logger
 * exceeded quota
   * should add the Exception state in the specific sync instance
   * should slow down the refresh
