@@ -3,6 +3,8 @@ Bugs:
 * dont delete tasks with children
   * mark as deleted?
 * cant add !p to V/now
+* cant add !f to V/now, INBOX in gmail
+* double "email:XXXX" ref link in gtasks description
 
 TODO:
 
@@ -60,8 +62,7 @@ TODO:
     * bases on the estimation
     * before the limit is hit
 * use views from lokijs
-* dry run
-  * argv processor
+* argv processor
 * tmp IDs for entries from non-gmail sources
 * check if requests are gzipped
 * use history ID changes instead of refetching gmail queries
