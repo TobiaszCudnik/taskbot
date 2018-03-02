@@ -105,6 +105,7 @@ export default class RootSync extends SyncWriter<
   last_gtasks: string
 
   file_logger = this.createLogger()
+  log_verbose = debug('root-verbose')
 
   constructor(config: IConfig) {
     super(config)
@@ -134,25 +135,21 @@ export default class RootSync extends SyncWriter<
 
   // TODO react on specific exception types
   async Exception_state(err: Error) {
+    this.log('ERROR: %O', err)
     this.file_logger.error(err)
     this.exceptions.push(moment().unix())
 
     // pick the correct delay
-    if (this.isExceptionFlood()) {
-      // long delay
-      const wait = this.config.exception_flood_delay
-      this.log(`Waiting for ${wait}sec...`)
-      this.state.add('Scheduled', wait)
-    } else {
-      // short delay
-      const wait = this.config.exception_delay
-      this.log(`Waiting for ${wait}sec...`)
-      this.state.add('Scheduled', wait)
-    }
+    const delay = this.isExceptionFlood()
+      ? this.config.exception_flood_delay
+      : this.config.exception_delay
+
+    this.state.add('Scheduled', delay)
   }
 
   async Scheduled_state(wait: number) {
     const abort = this.state.getAbort('Scheduled')
+    this.log(`Waiting for ${wait}sec...`)
     await delay(wait * SEC)
     if (abort()) return
     // start syncing again
@@ -196,47 +193,10 @@ export default class RootSync extends SyncWriter<
   ReadingDone_state() {
     super.ReadingDone_state()
     this.merge()
-    console.log(`DB read in ${this.last_read_time.asSeconds()}sec`)
-    // TODO extract, unify, only in debug
-    const db = this.data.toString() + '\n'
-    const gmail_sync = this.subs.google.subs.gmail
-    const gmail = gmail_sync.subs.lists.map(l => l.toString()).join('\n') + '\n'
-    const gtasks_sync = this.subs.google.subs.tasks
-    const gtasks =
-      gtasks_sync.subs.lists.map(l => l.toString()).join('\n') + '\n'
-    if (!this.last_db) {
-      process.stderr.write(db)
-      process.stderr.write(gmail)
-      process.stderr.write(gtasks)
-      this.file_logger.info(db)
-      this.file_logger.info(gmail)
-      this.file_logger.info(gtasks)
+    this.log(`DB read in ${this.last_read_time.asSeconds()}sec`)
+    if (debug.enabled('db-diffs')) {
+      this.printDBDiffs()
     }
-    // TODO extract, unify, only in debug
-    if (this.last_db && db != this.last_db) {
-      this.file_logger.info(db)
-      for (const chunk of diff.diffChars(this.last_db, db)) {
-        const color = chunk.added ? 'green' : chunk.removed ? 'red' : 'white'
-        process.stderr.write(chunk.value[color])
-      }
-    }
-    if (this.last_gmail && gmail != this.last_gmail) {
-      this.file_logger.info(gmail)
-      for (const chunk of diff.diffChars(this.last_gmail, gmail)) {
-        const color = chunk.added ? 'green' : chunk.removed ? 'red' : 'white'
-        process.stderr.write(chunk.value[color])
-      }
-    }
-    if (this.last_gtasks && gtasks != this.last_gtasks) {
-      this.file_logger.info(gtasks)
-      for (const chunk of diff.diffChars(this.last_gtasks, gtasks)) {
-        const color = chunk.added ? 'green' : chunk.removed ? 'red' : 'white'
-        process.stderr.write(chunk.value[color])
-      }
-    }
-    this.last_db = db
-    this.last_gmail = gmail
-    this.last_gtasks = gtasks
     this.state.add('Writing')
   }
 
@@ -436,5 +396,43 @@ export default class RootSync extends SyncWriter<
         new winston.transports.File({ filename: 'logs/combined.log' })
       ]
     })
+  }
+
+  printDBDiffs() {
+    const db = this.data.toString() + '\n'
+    const gmail_sync = this.subs.google.subs.gmail
+    const gmail = gmail_sync.subs.lists.map(l => l.toString()).join('\n') + '\n'
+    const gtasks_sync = this.subs.google.subs.tasks
+    const gtasks =
+      gtasks_sync.subs.lists.map(l => l.toString()).join('\n') + '\n'
+    const dbs = [
+      [db, this.last_db],
+      [gmail, this.last_gmail],
+      [gtasks, this.last_gtasks]
+    ]
+    for (const [current, previous] of dbs) {
+      const db_diff = this.getDBDiff(current, previous)
+      if (!db_diff) continue
+      this.file_logger.info(db_diff)
+      this.log_verbose(db_diff)
+    }
+    this.last_db = db
+    this.last_gmail = gmail
+    this.last_gtasks = gtasks
+  }
+
+  getDBDiff(current, previous) {
+    if (!previous) {
+      // print the initial version at the start
+      return current
+    } else if (current != previous) {
+      // print the diff in case of a change
+      let output = ''
+      for (const chunk of diff.diffChars(previous, current)) {
+        const color = chunk.added ? 'green' : chunk.removed ? 'red' : 'white'
+        output += chunk.value[color]
+      }
+      return output
+    }
   }
 }

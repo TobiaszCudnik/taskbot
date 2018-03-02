@@ -46,7 +46,7 @@ export default class LabelFilterSync extends Sync<
       this.log(`Changing labels for '${r.title}'`)
       this.applyLabels(r, { add, remove })
       r.updated = moment().unix()
-      this.compareRecord(before, r)
+      this.printRecordDiff(before, r)
       count++
     }
     return count ? [count] : []

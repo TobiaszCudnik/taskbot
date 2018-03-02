@@ -231,7 +231,7 @@ export abstract class Sync<TConfig, TStates, IBind, IEmit> {
   }
 
   // TODO output to the logger, loose ID in the msg
-  compareRecord(before, record, title = '') {
+  printRecordDiff(before, record, title = '') {
     if (!debug.enabled('record-diffs')) {
       return
     }
@@ -248,14 +248,14 @@ export abstract class Sync<TConfig, TStates, IBind, IEmit> {
       msg += ` '${title}'`
     }
     msg += ` from ${this.state.id()}`
-    console.log(msg)
     for (const chunk of diff.diffChars(inspect(before), inspect(after))) {
       const color = chunk.added ? 'green' : chunk.removed ? 'red' : 'white'
-      process.stderr.write(chunk.value[color])
+      msg += chunk.value[color]
     }
-    process.stderr.write('\n')
+    this.log(msg)
   }
 
+  // TODO change to getMachines()
   listMachines() {
     let ret = this.state.statesToString(true)
     ret += this.subs_flat.map(sub => sub.listMachines()).join('')

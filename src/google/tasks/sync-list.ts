@@ -277,7 +277,7 @@ export default class GTasksListSync extends Sync<
     record.gtasks_ids[task.id] = this.list.id
     if (task_updated <= record.updated) {
       // TODO check resolve conflict? since the last sync
-      this.compareRecord(before, record)
+      this.printRecordDiff(before, record)
       return false
     }
     // update the record with changes from gtasks
@@ -288,7 +288,7 @@ export default class GTasksListSync extends Sync<
     const labels =
       task.status == 'completed' ? this.config.exit : this.config.enter
     this.applyLabels(record, labels)
-    this.compareRecord(before, record)
+    this.printRecordDiff(before, record)
     return true
   }
 

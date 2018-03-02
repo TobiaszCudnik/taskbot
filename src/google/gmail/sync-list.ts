@@ -125,7 +125,7 @@ export default class GmailListSync extends Sync<
       const before = clone(record)
       // TODO confirm if unnecessary
       // this.applyLabels(record, this.config.exit)
-      this.compareRecord(before, record, 'threads to close')
+      this.printRecordDiff(before, record, 'threads to close')
       return record
     })
     return changed ? [changed] : []
@@ -175,7 +175,7 @@ export default class GmailListSync extends Sync<
     this.applyLabels(record, { add: this.gmail.getLabelsFromThread(thread) })
     // TODO confirm if unnecessary
     // this.applyLabels(record, this.config.enter)
-    this.compareRecord(before, record)
+    this.printRecordDiff(before, record)
     return true
   }
 

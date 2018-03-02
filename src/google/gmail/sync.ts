@@ -188,8 +188,7 @@ export default class GmailSync extends SyncWriter<
       abort,
       false
     )
-    // TODO redo when no response
-    if (!response || (abort && abort())) return
+    if (abort && abort()) return
     this.history_id_latest = parseInt(response.historyId, 10)
     this.history_ids.push({ id: this.history_id_latest, time: moment().unix() })
     this.last_sync_time = moment().unix()
