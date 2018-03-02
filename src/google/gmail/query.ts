@@ -74,6 +74,7 @@ export default class GmailQuery {
     this.state = <AsyncMachine<TStates, IBind, IEmit>>(<any>machine(
       sync_state
     ).id('Gmail/query: ' + this.name))
+    this.state.setTarget(this)
     if (process.env['DEBUG_AM'] || global.am_network) {
       machineLogToDebug(this.state)
       if (global.am_network) {

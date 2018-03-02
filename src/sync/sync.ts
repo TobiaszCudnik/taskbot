@@ -82,6 +82,7 @@ export type TSyncStateWriter = AsyncMachine<
 export abstract class Sync<TConfig, TStates, IBind, IEmit> {
   state: TAsyncMachine
   get state_reader(): TSyncState {
+    // @ts-ignore
     return this.state
   }
   active_requests: number
@@ -133,6 +134,7 @@ export abstract class Sync<TConfig, TStates, IBind, IEmit> {
       this.root = root
     }
     this.state = this.getState()
+    this.state.setTarget(this)
     this.state_reader.add('Initializing')
     if (process.env['DEBUG_AM'] || global.am_network) {
       machineLogToDebug(this.state_reader)

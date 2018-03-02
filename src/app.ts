@@ -24,7 +24,9 @@ function exit(err?) {
     console.log(global.am_network.toString())
     console.log('Saved a snapshot to snapshot.json')
   }
-  console.log(root.data.toString())
+  if (root.data) {
+    console.log(root.data.toString())
+  }
   process.exit()
 }
 
