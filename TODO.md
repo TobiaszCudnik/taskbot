@@ -8,12 +8,12 @@ Bugs:
 
 TODO:
 
-* print diffs using the logger
+* logger class passing msgs to both debug and winston
 * repl
 * option to hook up AMI to a running engine
 * requests
   * timeouts
-  * throw exception on an empty response
+  * throw exception on an empty response when 2xx
 * label matching should be case-insensitive
 * only emails send by yourself should be parsed for tags while in inbox
 * missing extended GTD labels
@@ -55,6 +55,9 @@ TODO:
 * threads out-of-queries arent observed for changes
   * is that a real problem?
 * check if keepalive is used in googleapis
+* IM interface
+* siri/ical interface
+* google spreadsheets backend
 * implement deleting
   * currently the record is re-added from the other source
 * mark gmail queries as Dirty based on related labels
