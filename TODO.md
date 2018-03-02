@@ -8,7 +8,6 @@ Bugs:
 
 TODO:
 
-* use watson to log
 * HeartBeat state - global keep-alive timeout, checking on the root machine
 * label matching should be case-insensitive
 * only emails send by yourself should be parsed for tags while in inbox
