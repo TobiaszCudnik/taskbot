@@ -374,6 +374,72 @@ export interface ITransitions {
     | Promise<boolean | void>
 }
 
+// ----- ----- ----- ----- -----
+// STATE: HeartBeat
+// ----- ----- ----- ----- -----
+
+/** machine.bind('HeartBeat', (param1, param2) => {}) */
+export interface IBind extends IBindBase {
+  (
+    event: 'HeartBeat_enter',
+    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
+    context?: Object
+  ): this
+  (
+    event: 'HeartBeat_state',
+    listener: () => /* param1: any?, param2: any? */ any,
+    context?: Object
+  ): this
+}
+
+/** machine.emit('HeartBeat', param1, param2) */
+export interface IEmit extends IEmitBase {
+  (event: 'HeartBeat_enter' /*, param1: any?, param2: any? */): boolean | void
+  (event: 'HeartBeat_state' /*, param1: any?, param2: any? */): boolean | void
+}
+
+/** Method declarations */
+export interface ITransitions {
+  HeartBeat_enter /* param1: any?, param2: any? */?(): boolean | void
+  HeartBeat_state /* param1: any?, param2: any? */?():
+    | boolean
+    | void
+    | Promise<boolean | void>
+}
+
+// ----- ----- ----- ----- -----
+// STATE: Scheduled
+// ----- ----- ----- ----- -----
+
+/** machine.bind('Scheduled', (param1, param2) => {}) */
+export interface IBind extends IBindBase {
+  (
+    event: 'Scheduled_enter',
+    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
+    context?: Object
+  ): this
+  (
+    event: 'Scheduled_state',
+    listener: () => /* param1: any?, param2: any? */ any,
+    context?: Object
+  ): this
+}
+
+/** machine.emit('Scheduled', param1, param2) */
+export interface IEmit extends IEmitBase {
+  (event: 'Scheduled_enter' /*, param1: any?, param2: any? */): boolean | void
+  (event: 'Scheduled_state' /*, param1: any?, param2: any? */): boolean | void
+}
+
+/** Method declarations */
+export interface ITransitions {
+  Scheduled_enter /* param1: any?, param2: any? */?(): boolean | void
+  Scheduled_state /* param1: any?, param2: any? */?():
+    | boolean
+    | void
+    | Promise<boolean | void>
+}
+
 // ----- ----- -----
 // GENERAL TYPES
 // ----- ----- -----
@@ -392,6 +458,8 @@ export interface ITransitions {
   Enabled_WritingDone?(): boolean | void
   Enabled_DBReady?(): boolean | void
   Enabled_Exception?(): boolean | void
+  Enabled_HeartBeat?(): boolean | void
+  Enabled_Scheduled?(): boolean | void
   Enabled_Exception?(): boolean | void
   Enabled_exit?(): boolean | void
   Enabled_end?(): boolean | void
@@ -407,6 +475,8 @@ export interface ITransitions {
   Initializing_WritingDone?(): boolean | void
   Initializing_DBReady?(): boolean | void
   Initializing_Exception?(): boolean | void
+  Initializing_HeartBeat?(): boolean | void
+  Initializing_Scheduled?(): boolean | void
   Initializing_Exception?(): boolean | void
   Initializing_exit?(): boolean | void
   Initializing_end?(): boolean | void
@@ -422,6 +492,8 @@ export interface ITransitions {
   Ready_WritingDone?(): boolean | void
   Ready_DBReady?(): boolean | void
   Ready_Exception?(): boolean | void
+  Ready_HeartBeat?(): boolean | void
+  Ready_Scheduled?(): boolean | void
   Ready_Exception?(): boolean | void
   Ready_exit?(): boolean | void
   Ready_end?(): boolean | void
@@ -437,6 +509,8 @@ export interface ITransitions {
   ConfigSet_WritingDone?(): boolean | void
   ConfigSet_DBReady?(): boolean | void
   ConfigSet_Exception?(): boolean | void
+  ConfigSet_HeartBeat?(): boolean | void
+  ConfigSet_Scheduled?(): boolean | void
   ConfigSet_Exception?(): boolean | void
   ConfigSet_exit?(): boolean | void
   ConfigSet_end?(): boolean | void
@@ -452,6 +526,8 @@ export interface ITransitions {
   SubsReady_WritingDone?(): boolean | void
   SubsReady_DBReady?(): boolean | void
   SubsReady_Exception?(): boolean | void
+  SubsReady_HeartBeat?(): boolean | void
+  SubsReady_Scheduled?(): boolean | void
   SubsReady_Exception?(): boolean | void
   SubsReady_exit?(): boolean | void
   SubsReady_end?(): boolean | void
@@ -467,6 +543,8 @@ export interface ITransitions {
   SubsInited_WritingDone?(): boolean | void
   SubsInited_DBReady?(): boolean | void
   SubsInited_Exception?(): boolean | void
+  SubsInited_HeartBeat?(): boolean | void
+  SubsInited_Scheduled?(): boolean | void
   SubsInited_Exception?(): boolean | void
   SubsInited_exit?(): boolean | void
   SubsInited_end?(): boolean | void
@@ -482,6 +560,8 @@ export interface ITransitions {
   Reading_WritingDone?(): boolean | void
   Reading_DBReady?(): boolean | void
   Reading_Exception?(): boolean | void
+  Reading_HeartBeat?(): boolean | void
+  Reading_Scheduled?(): boolean | void
   Reading_Exception?(): boolean | void
   Reading_exit?(): boolean | void
   Reading_end?(): boolean | void
@@ -497,6 +577,8 @@ export interface ITransitions {
   ReadingDone_WritingDone?(): boolean | void
   ReadingDone_DBReady?(): boolean | void
   ReadingDone_Exception?(): boolean | void
+  ReadingDone_HeartBeat?(): boolean | void
+  ReadingDone_Scheduled?(): boolean | void
   ReadingDone_Exception?(): boolean | void
   ReadingDone_exit?(): boolean | void
   ReadingDone_end?(): boolean | void
@@ -512,6 +594,8 @@ export interface ITransitions {
   Writing_WritingDone?(): boolean | void
   Writing_DBReady?(): boolean | void
   Writing_Exception?(): boolean | void
+  Writing_HeartBeat?(): boolean | void
+  Writing_Scheduled?(): boolean | void
   Writing_Exception?(): boolean | void
   Writing_exit?(): boolean | void
   Writing_end?(): boolean | void
@@ -527,6 +611,8 @@ export interface ITransitions {
   WritingDone_Any?(): boolean | void
   WritingDone_DBReady?(): boolean | void
   WritingDone_Exception?(): boolean | void
+  WritingDone_HeartBeat?(): boolean | void
+  WritingDone_Scheduled?(): boolean | void
   WritingDone_Exception?(): boolean | void
   WritingDone_exit?(): boolean | void
   WritingDone_end?(): boolean | void
@@ -542,6 +628,8 @@ export interface ITransitions {
   DBReady_WritingDone?(): boolean | void
   DBReady_Any?(): boolean | void
   DBReady_Exception?(): boolean | void
+  DBReady_HeartBeat?(): boolean | void
+  DBReady_Scheduled?(): boolean | void
   DBReady_Exception?(): boolean | void
   DBReady_exit?(): boolean | void
   DBReady_end?(): boolean | void
@@ -556,8 +644,44 @@ export interface ITransitions {
   Exception_Writing?(): boolean | void
   Exception_WritingDone?(): boolean | void
   Exception_DBReady?(): boolean | void
+  Exception_HeartBeat?(): boolean | void
+  Exception_Scheduled?(): boolean | void
   Exception_exit?(): boolean | void
   Exception_end?(): boolean | void
+  HeartBeat_Enabled?(): boolean | void
+  HeartBeat_Initializing?(): boolean | void
+  HeartBeat_Ready?(): boolean | void
+  HeartBeat_ConfigSet?(): boolean | void
+  HeartBeat_SubsReady?(): boolean | void
+  HeartBeat_SubsInited?(): boolean | void
+  HeartBeat_Reading?(): boolean | void
+  HeartBeat_ReadingDone?(): boolean | void
+  HeartBeat_Writing?(): boolean | void
+  HeartBeat_WritingDone?(): boolean | void
+  HeartBeat_DBReady?(): boolean | void
+  HeartBeat_Exception?(): boolean | void
+  HeartBeat_Any?(): boolean | void
+  HeartBeat_Scheduled?(): boolean | void
+  HeartBeat_Exception?(): boolean | void
+  HeartBeat_exit?(): boolean | void
+  HeartBeat_end?(): boolean | void
+  Scheduled_Enabled?(): boolean | void
+  Scheduled_Initializing?(): boolean | void
+  Scheduled_Ready?(): boolean | void
+  Scheduled_ConfigSet?(): boolean | void
+  Scheduled_SubsReady?(): boolean | void
+  Scheduled_SubsInited?(): boolean | void
+  Scheduled_Reading?(): boolean | void
+  Scheduled_ReadingDone?(): boolean | void
+  Scheduled_Writing?(): boolean | void
+  Scheduled_WritingDone?(): boolean | void
+  Scheduled_DBReady?(): boolean | void
+  Scheduled_Exception?(): boolean | void
+  Scheduled_HeartBeat?(): boolean | void
+  Scheduled_Any?(): boolean | void
+  Scheduled_Exception?(): boolean | void
+  Scheduled_exit?(): boolean | void
+  Scheduled_end?(): boolean | void
   Exception_Enabled?(): boolean | void
   Exception_Initializing?(): boolean | void
   Exception_Ready?(): boolean | void
@@ -569,6 +693,8 @@ export interface ITransitions {
   Exception_Writing?(): boolean | void
   Exception_WritingDone?(): boolean | void
   Exception_DBReady?(): boolean | void
+  Exception_HeartBeat?(): boolean | void
+  Exception_Scheduled?(): boolean | void
   Exception_exit?(): boolean | void
   Exception_end?(): boolean | void
 }
@@ -586,6 +712,8 @@ export type TStates =
   | 'Writing'
   | 'WritingDone'
   | 'DBReady'
+  | 'HeartBeat'
+  | 'Scheduled'
 
 /** All the transition names */
 export type TTransitions =
@@ -601,6 +729,8 @@ export type TTransitions =
   | 'Enabled_WritingDone'
   | 'Enabled_DBReady'
   | 'Enabled_Exception'
+  | 'Enabled_HeartBeat'
+  | 'Enabled_Scheduled'
   | 'Enabled_Exception'
   | 'Enabled_exit'
   | 'Enabled_end'
@@ -616,6 +746,8 @@ export type TTransitions =
   | 'Initializing_WritingDone'
   | 'Initializing_DBReady'
   | 'Initializing_Exception'
+  | 'Initializing_HeartBeat'
+  | 'Initializing_Scheduled'
   | 'Initializing_Exception'
   | 'Initializing_exit'
   | 'Initializing_end'
@@ -631,6 +763,8 @@ export type TTransitions =
   | 'Ready_WritingDone'
   | 'Ready_DBReady'
   | 'Ready_Exception'
+  | 'Ready_HeartBeat'
+  | 'Ready_Scheduled'
   | 'Ready_Exception'
   | 'Ready_exit'
   | 'Ready_end'
@@ -646,6 +780,8 @@ export type TTransitions =
   | 'ConfigSet_WritingDone'
   | 'ConfigSet_DBReady'
   | 'ConfigSet_Exception'
+  | 'ConfigSet_HeartBeat'
+  | 'ConfigSet_Scheduled'
   | 'ConfigSet_Exception'
   | 'ConfigSet_exit'
   | 'ConfigSet_end'
@@ -661,6 +797,8 @@ export type TTransitions =
   | 'SubsReady_WritingDone'
   | 'SubsReady_DBReady'
   | 'SubsReady_Exception'
+  | 'SubsReady_HeartBeat'
+  | 'SubsReady_Scheduled'
   | 'SubsReady_Exception'
   | 'SubsReady_exit'
   | 'SubsReady_end'
@@ -676,6 +814,8 @@ export type TTransitions =
   | 'SubsInited_WritingDone'
   | 'SubsInited_DBReady'
   | 'SubsInited_Exception'
+  | 'SubsInited_HeartBeat'
+  | 'SubsInited_Scheduled'
   | 'SubsInited_Exception'
   | 'SubsInited_exit'
   | 'SubsInited_end'
@@ -691,6 +831,8 @@ export type TTransitions =
   | 'Reading_WritingDone'
   | 'Reading_DBReady'
   | 'Reading_Exception'
+  | 'Reading_HeartBeat'
+  | 'Reading_Scheduled'
   | 'Reading_Exception'
   | 'Reading_exit'
   | 'Reading_end'
@@ -706,6 +848,8 @@ export type TTransitions =
   | 'ReadingDone_WritingDone'
   | 'ReadingDone_DBReady'
   | 'ReadingDone_Exception'
+  | 'ReadingDone_HeartBeat'
+  | 'ReadingDone_Scheduled'
   | 'ReadingDone_Exception'
   | 'ReadingDone_exit'
   | 'ReadingDone_end'
@@ -721,6 +865,8 @@ export type TTransitions =
   | 'Writing_WritingDone'
   | 'Writing_DBReady'
   | 'Writing_Exception'
+  | 'Writing_HeartBeat'
+  | 'Writing_Scheduled'
   | 'Writing_Exception'
   | 'Writing_exit'
   | 'Writing_end'
@@ -736,6 +882,8 @@ export type TTransitions =
   | 'WritingDone_Any'
   | 'WritingDone_DBReady'
   | 'WritingDone_Exception'
+  | 'WritingDone_HeartBeat'
+  | 'WritingDone_Scheduled'
   | 'WritingDone_Exception'
   | 'WritingDone_exit'
   | 'WritingDone_end'
@@ -751,6 +899,8 @@ export type TTransitions =
   | 'DBReady_WritingDone'
   | 'DBReady_Any'
   | 'DBReady_Exception'
+  | 'DBReady_HeartBeat'
+  | 'DBReady_Scheduled'
   | 'DBReady_Exception'
   | 'DBReady_exit'
   | 'DBReady_end'
@@ -765,8 +915,44 @@ export type TTransitions =
   | 'Exception_Writing'
   | 'Exception_WritingDone'
   | 'Exception_DBReady'
+  | 'Exception_HeartBeat'
+  | 'Exception_Scheduled'
   | 'Exception_exit'
   | 'Exception_end'
+  | 'HeartBeat_Enabled'
+  | 'HeartBeat_Initializing'
+  | 'HeartBeat_Ready'
+  | 'HeartBeat_ConfigSet'
+  | 'HeartBeat_SubsReady'
+  | 'HeartBeat_SubsInited'
+  | 'HeartBeat_Reading'
+  | 'HeartBeat_ReadingDone'
+  | 'HeartBeat_Writing'
+  | 'HeartBeat_WritingDone'
+  | 'HeartBeat_DBReady'
+  | 'HeartBeat_Exception'
+  | 'HeartBeat_Any'
+  | 'HeartBeat_Scheduled'
+  | 'HeartBeat_Exception'
+  | 'HeartBeat_exit'
+  | 'HeartBeat_end'
+  | 'Scheduled_Enabled'
+  | 'Scheduled_Initializing'
+  | 'Scheduled_Ready'
+  | 'Scheduled_ConfigSet'
+  | 'Scheduled_SubsReady'
+  | 'Scheduled_SubsInited'
+  | 'Scheduled_Reading'
+  | 'Scheduled_ReadingDone'
+  | 'Scheduled_Writing'
+  | 'Scheduled_WritingDone'
+  | 'Scheduled_DBReady'
+  | 'Scheduled_Exception'
+  | 'Scheduled_HeartBeat'
+  | 'Scheduled_Any'
+  | 'Scheduled_Exception'
+  | 'Scheduled_exit'
+  | 'Scheduled_end'
   | 'Exception_Enabled'
   | 'Exception_Initializing'
   | 'Exception_Ready'
@@ -778,6 +964,8 @@ export type TTransitions =
   | 'Exception_Writing'
   | 'Exception_WritingDone'
   | 'Exception_DBReady'
+  | 'Exception_HeartBeat'
+  | 'Exception_Scheduled'
   | 'Exception_exit'
   | 'Exception_end'
 
@@ -809,5 +997,7 @@ export interface IJSONStates {
   Writing: IState
   WritingDone: IState
   DBReady: IState
+  HeartBeat: IState
+  Scheduled: IState
   Exception?: IState
 }

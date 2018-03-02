@@ -80,9 +80,8 @@ export type TSyncStateWriter = AsyncMachine<
 >
 
 export abstract class Sync<TConfig, TStates, IBind, IEmit> {
-  state: TAsyncMachine
+  state: AsyncMachine<any, any, any>
   get state_reader(): TSyncState {
-    // @ts-ignore
     return this.state
   }
   active_requests: number
@@ -272,7 +271,6 @@ export abstract class SyncWriter<TConfig, TStates, IBind, IEmit> extends Sync<
   IEmit
 > {
   get state_writer(): TSyncStateWriter {
-    // @ts-ignore
     return this.state
   }
   // sub_states_inbound: [TStatesWriter, TStatesWriter][]

@@ -23,6 +23,7 @@ import {
   IBindBase,
   AsyncMachine
 } from '../../../typings/machines/google/tasks/sync'
+import GC from '../../sync/gc'
 
 // TODO tmp
 export interface TasksAPI extends google.tasks.v1.Tasks {
@@ -83,6 +84,7 @@ export default class GTasksSync extends SyncWriter<
   verbose = debug('gtasks-verbose')
   // TODO archive & combine the request history
   requests: number[] = []
+  requests_gc = new GC('gtasks', this.requests)
   // remaining quota, range between 0 (full limit) to 1 (none left)
   get short_quota_usage(): number {
     const i = _.sortedIndex(

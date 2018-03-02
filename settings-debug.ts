@@ -17,6 +17,7 @@ let config: IConfig = {
   // TODO implement
   gmail_max_results: 300,
   exception_delay: 5,
+  exception_flood_delay: 10 * 60,
   gtasks: {
     request_quota_100: 500,
     request_quota_day: 50000,

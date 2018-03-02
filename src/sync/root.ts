@@ -8,12 +8,11 @@ import { IConfig, ILabelDefinition, IListConfig } from '../types'
 import * as debug from 'debug'
 import 'colors'
 import * as diff from 'diff'
+import { sortedIndex } from 'lodash'
 import * as delay from 'delay'
 import * as moment from 'moment'
 import * as regexEscape from 'escape-string-regexp'
-import GmailLabelFilterSync, {
-  default as LabelFilterSync
-} from './label-filter'
+import LabelFilterSync from './label-filter'
 // Machine types
 import {
   IBind,
@@ -26,6 +25,9 @@ import {
   AsyncMachine
 } from '../../typings/machines/sync/root'
 import winston = require('winston')
+import GC from './gc'
+
+const SEC = 1000
 
 export const sync_state: IJSONStates = {
   ...base_state,
@@ -43,7 +45,9 @@ export const sync_state: IJSONStates = {
     add: ['Reading']
   },
   DBReady: { auto: true },
-  Exception: { drop: ['Reading', 'Writing'] }
+  Exception: { drop: ['Reading', 'Writing'] },
+  HeartBeat: {},
+  Scheduled: {}
 }
 
 export type DB = LokiCollection<DBRecord>
@@ -78,7 +82,7 @@ export default class RootSync extends SyncWriter<
   IEmit
 > {
   state: AsyncMachine<TStates, IBind, IEmit>
-  subs: { google: GoogleSync; label_filters: GmailLabelFilterSync[] }
+  subs: { google: GoogleSync; label_filters: LabelFilterSync[] }
 
   max_active_requests = 5
   semaphore: Semaphore = new Semaphore(this.max_active_requests)
@@ -89,8 +93,11 @@ export default class RootSync extends SyncWriter<
   data: DB
   log_requests = debug('requests')
 
-  last_exception_time: number
-  exceptions_count = 0
+  exceptions: number[] = []
+  exceptions_gc = new GC('gtasks', this.exceptions)
+  get last_exception(): number | null {
+    return this.exceptions[this.exceptions.length - 1] || null
+  }
 
   // TODO debug only
   last_db: string
@@ -101,44 +108,55 @@ export default class RootSync extends SyncWriter<
 
   constructor(config: IConfig) {
     super(config)
+    // HeartBeat scheduler
+    setInterval(() => {
+      this.state.add('HeartBeat')
+    }, 10 * 60 * SEC)
   }
 
   // ----- -----
   // Transitions
   // ----- -----
 
+  HeartBeat_state() {
+    const is = state => this.state.is(state)
+    if (!is('Reading') && !is('Writing') && !is('Scheduled')) {
+      this.log('HeartBeat - resurrecting...')
+      this.state.drop('Exception')
+      this.state.add('Reading')
+    }
+    this.state.drop('HeartBeat')
+  }
+
   Exception_enter() {
     return true
   }
 
-  Exception_Exception(err: Error) {
+  // TODO react on specific exception types
+  async Exception_state(err: Error) {
     this.file_logger.error(err)
-    this.exceptions_count++
-    this.last_exception_time = moment().unix()
-    // quit after more than 100 exceptions
-    if (this.exceptions_count > 100) {
-      process.exit()
+    this.exceptions.push(moment().unix())
+
+    // pick the correct delay
+    if (this.isExceptionFlood()) {
+      // long delay
+      const wait = this.config.exception_flood_delay
+      this.log(`Waiting for ${wait}sec...`)
+      this.state.add('Scheduled', wait)
+    } else {
+      // short delay
+      const wait = this.config.exception_delay
+      this.log(`Waiting for ${wait}sec...`)
+      this.state.add('Scheduled', wait)
     }
   }
 
-  // TODO react on specific exception types
-  async Exception_state(err: Error) {
-    this.Exception_Exception(err)
-    // quit after more than 100 exceptions
-    if (this.exceptions_count > 100) {
-      process.exit()
-    }
-    const SEC = 1000
-    // TODO exponential
-    let err_delay = this.config.exception_delay
-    while (this.last_exception_time + err_delay > moment().unix()) {
-      const wait = this.last_exception_time + err_delay - moment().unix()
-      this.log(`Waiting for ${wait}sec...`)
-      // TODO decide when to break
-      await delay(wait * SEC)
-    }
-    // start syncing
-    this.state.drop('Exception')
+  async Scheduled_state(wait: number) {
+    const abort = this.state.getAbort('Scheduled')
+    await delay(wait * SEC)
+    if (abort()) return
+    // start syncing again
+    this.state.drop(['Exception', 'Scheduled'])
     this.state.add('Reading')
   }
 
@@ -228,10 +246,7 @@ export default class RootSync extends SyncWriter<
       `SYNC DONE:\nRead: ${this.last_read_time.asSeconds()}sec\n` +
         `Write: ${this.last_write_time.asSeconds()}sec`
     )
-    setTimeout(
-      this.state.addByListener('Reading'),
-      this.config.sync_frequency * 1000
-    )
+    this.state.add('Scheduled', this.config.sync_frequency)
   }
 
   // ----- -----
@@ -240,6 +255,16 @@ export default class RootSync extends SyncWriter<
 
   getState() {
     return machine(sync_state).id('root')
+  }
+
+  // Returns true in case of more than 100 exceptions during the last 10 minutes
+  isExceptionFlood() {
+    const min_range = moment()
+      .subtract(10, 'minutes')
+      .unix()
+    const index = sortedIndex(this.exceptions, min_range)
+    // quit after more than 100 exceptions
+    return this.exceptions.length - index > 100
   }
 
   // TODO take abort() as the second param
