@@ -13,7 +13,9 @@ TODO:
 * option to hook up AMI to a running engine
 * requests
   * timeouts
-  * throw exception on an empty response when 2xx
+  * throw an exception on an empty response when 2xx
+  * timeout for states (eg Reading can take max 2 mins)
+    * HeartBeat checks the timeouts (for the root)
 * label matching should be case-insensitive
 * only emails send by yourself should be parsed for tags while in inbox
 * missing extended GTD labels
@@ -29,10 +31,10 @@ TODO:
   * redo Ready as a special case
 * periodic cache save
   * resume on start
+  * include etags and history IDs
 * label filters - add labels based on a stream of changes
   * instead of query=add|remove
   * get the latest label changeset from time on labels
-* timeouts for requests
 * use etags in patch requests in gtasks
   * reuse the answer
   * avoid the Dirty state
