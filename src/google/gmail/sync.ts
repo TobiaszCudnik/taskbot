@@ -302,7 +302,6 @@ export default class GmailSync extends SyncWriter<
     return this.history_id_latest <= history_id
   }
 
-  // TODO support thread object as a param a parseInt(r.historyId, 10)
   timeFromHistoryID(history_id: number) {
     // floor the guess (to the closest previous recorded history ID)
     // or now

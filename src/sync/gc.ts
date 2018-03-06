@@ -8,6 +8,7 @@ const SEC = 1000
 
 /**
  * GC for date based lists.
+ * TODO refactor to TimeArray, extract common methods
  */
 export default class GC {
   timeout: Timer | number
@@ -48,6 +49,6 @@ export default class GC {
     if (!index) return
 
     this.data.splice(0, index)
-    this.log(`GC ${index} entries from '${this.name}`)
+    this.log(`GCing ${index} entries from '${this.name}'`)
   }
 }

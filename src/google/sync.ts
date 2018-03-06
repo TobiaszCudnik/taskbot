@@ -70,9 +70,9 @@ export default class GoogleSync extends SyncWriter<
     return machine(sync_state).id('Google')
   }
 
-  listMachines() {
-    let ret = super.listMachines()
-    ret += this.auth.statesToString(true)
-    return ret
+  getMachines() {
+    const machines = super.getMachines()
+    machines.push(this.auth)
+    return machines
   }
 }

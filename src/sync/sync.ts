@@ -44,7 +44,6 @@ export const sync_state: IJSONStatesSync = {
     drop: ['ReadingDone'],
     require: ['Enabled', 'Ready']
   },
-
   ReadingDone: {
     drop: ['Reading']
   }
@@ -66,7 +65,6 @@ export const sync_writer_state: IJSONStatesWriter = {
     drop: ['ReadingDone', 'Writing', 'WritingDone'],
     require: ['Enabled', 'Ready']
   },
-
   ReadingDone: {
     drop: ['Reading', 'Writing', 'WritingDone']
   }
@@ -255,11 +253,12 @@ export abstract class Sync<TConfig, TStates, IBind, IEmit> {
     this.log(msg)
   }
 
-  // TODO change to getMachines()
-  listMachines() {
-    let ret = this.state.statesToString(true)
-    ret += this.subs_flat.map(sub => sub.listMachines()).join('')
-    return ret
+  getMachines() {
+    const machines = [this.state]
+    for (const sub of this.subs_flat) {
+      machines.push(...sub.getMachines())
+    }
+    return machines
   }
 }
 

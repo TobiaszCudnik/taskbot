@@ -26,6 +26,7 @@ import {
 } from '../../typings/machines/sync/root'
 import winston = require('winston')
 import GC from './gc'
+import * as http from 'http'
 
 const SEC = 1000
 
@@ -107,12 +108,19 @@ export default class RootSync extends SyncWriter<
   file_logger = this.createLogger()
   log_verbose = debug('root-verbose')
 
+  // seconds
+  read_timeout = 2 * 60
+  // seconds
+  write_timeout = 2 * 60
+  // seconds
+  heartbeat_freq = 60
+
   constructor(config: IConfig) {
     super(config)
     // HeartBeat scheduler
     setInterval(() => {
       this.state.add('HeartBeat')
-    }, 10 * 60 * SEC)
+    }, this.heartbeat_freq * SEC)
   }
 
   // ----- -----
