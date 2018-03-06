@@ -128,11 +128,25 @@ export default class RootSync extends SyncWriter<
   // ----- -----
 
   HeartBeat_state() {
+    const now = moment().unix()
     const is = state => this.state.is(state)
-    if (!is('Reading') && !is('Writing') && !is('Scheduled')) {
-      this.log('HeartBeat - resurrecting...')
-      this.state.drop('Exception')
+    const restart = (reason: string) => {
+      this.log(`HeartBeat, restarting because of - '${reason}'`)
+      this.state.drop(['Exception', 'Reading', 'Writing'])
       this.state.add('Reading')
+    }
+    if (!is('Reading') && !is('Writing') && !is('Scheduled')) {
+      restart('Action states not set')
+    } else if (
+      is('Reading') &&
+      this.last_read_start.unix() + this.read_timeout < now
+    ) {
+      restart('Reading timeout')
+    } else if (
+      is('Writing') &&
+      this.last_write_start.unix() + this.write_timeout < now
+    ) {
+      restart('Writing timeout')
     }
     this.state.drop('HeartBeat')
   }
@@ -254,7 +268,7 @@ export default class RootSync extends SyncWriter<
     method: (arg: A, cb: (err: any, res: T) => void) => void,
     params: A,
     abort: (() => boolean) | null | undefined,
-    returnArray: boolean,
+    return_array: boolean,
     options?: object
   ): Promise<any> {
     let release = await this.semaphore.acquire()
@@ -268,17 +282,19 @@ export default class RootSync extends SyncWriter<
       params = {} as A
     }
     this.log_requests(`REQUEST (${this.active_requests} active): %O`, params)
-    // TODO catch errors
-    // TODO try util.promisify, type the return array manually
-    let promise_method = returnArray
-      ? promisifyArray(method)
-      : promisify(method)
     // TODO googleapis specific code should be in google/sync.ts
-    // TODO @ts-ignore for > 1 param to the promise
     let ret
     try {
       // @ts-ignore
-      ret = await promise_method(params, options)
+      ret = await promisifyArray(method)(params, options)
+      const was2xx = (ret[1] as http.IncomingMessage).statusCode
+        .toString()
+        .match(/^2/)
+      if (was2xx && !ret[0]) {
+        throw Error('Empty response on 2xx')
+      } else if (!ret[1] && !ret[0]) {
+        throw Error('Response and body empty')
+      }
     } finally {
       release()
       this.active_requests--
@@ -286,7 +302,7 @@ export default class RootSync extends SyncWriter<
     }
     this.log_requests('emit: request-finished')
 
-    return ret
+    return return_array ? ret : ret[0]
   }
 
   // Extracts labels from text
