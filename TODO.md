@@ -9,13 +9,6 @@ Bugs:
 TODO:
 
 * logger class passing msgs to both debug and winston
-* repl
-* option to hook up AMI to a running engine
-* requests
-  * timeouts
-  * throw an exception on an empty response when 2xx
-  * timeout for states (eg Reading can take max 2 mins)
-    * HeartBeat checks the timeouts (for the root)
 * label matching should be case-insensitive
 * only emails send by yourself should be parsed for tags while in inbox
 * missing extended GTD labels
