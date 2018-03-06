@@ -409,10 +409,11 @@ export default class GmailSync extends SyncWriter<
   // TODO make it async and download if msgs missing
   getThread(id: string, with_content = false): google.gmail.v1.Thread | null {
     const thread = this.threads.get(id)
+    if (!thread) return null
     if (with_content && !(thread.messages && thread.messages.length)) {
       return null
     }
-    return thread || null
+    return thread
   }
 
   /**
