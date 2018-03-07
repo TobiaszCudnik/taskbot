@@ -1,14 +1,13 @@
 Bugs:
 
-* dont delete tasks with children
-  * mark as deleted?
-* cant add !p to V/now
-* cant add !f to V/now, INBOX in gmail
+* taking an action label off in gmail should push the task to inbox
 * double "email:XXXX" ref link in gtasks description
+  * reproduce
 
 TODO:
 
 * logger class passing msgs to both debug and winston
+* move the child tasks along with the parent
 * label matching should be case-insensitive
 * only emails send by yourself should be parsed for tags while in inbox
 * missing extended GTD labels
@@ -72,6 +71,14 @@ TODO:
   * should be safe to merge in the same record many times
 * use keep alive in google auth
 * make requests generic (instead of google-specific)
+
+Milestone 2:
+
+* custom list
+  * query creator
+* merge subtasks
+  * for the same email ID between different lists
+  * only un completed ones
 
 Later:
 
