@@ -90,10 +90,12 @@ export default class GmailListSync extends Sync<
       })
       if (!record) {
         const new_record = this.toDB(thread)
+        this.log('change')
         this.verbose('new record:\n %O', new_record)
         this.root.data.insert(new_record)
         changed++
       } else if (this.mergeRecord(thread, record)) {
+        this.log('change')
         changed++
       }
       // TODO should be done in the query class
@@ -119,12 +121,16 @@ export default class GmailListSync extends Sync<
           this.gmail.timeFromHistoryID(this.query.history_id_synced)
       )
     }
+    // TODO indexes - dont update here, update in the top merge
     this.root.data.findAndUpdate(find, (record: DBRecord) => {
       changed++
+      this.log('change')
       // TODO clone only in debug
       const before = clone(record)
-      // TODO confirm if unnecessary
-      // this.applyLabels(record, this.config.exit)
+      // remove enter labels, as the thread left the query
+      // TODO maybe re-download the thread while reading? to be sure
+      //   else - delete the thread and expect the main sync re-downloads it
+      this.applyLabels(record, { remove: this.config.enter.add })
       this.printRecordDiff(before, record, 'threads to close')
       return record
     })

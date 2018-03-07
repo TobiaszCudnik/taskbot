@@ -217,7 +217,6 @@ export default class GTasksSync extends SyncWriter<
 
   getTasksToModify(abort: () => boolean) {
     return map(this.subs.lists, async (sync: GTasksListSync) => {
-      // TODO fake cast, wrong d.ts
       await map(sync.getTasks(), async task => {
         const db_res = <DBRecord>(<any>this.root.data
           .chain()
@@ -323,11 +322,11 @@ export default class GTasksSync extends SyncWriter<
         if (task_id) return
         const params = {
           tasklist: sync.list.id,
+          fields: 'id',
           resource: {
             title:
               record.title +
               this.root.getRecordLabelsAsText(record, sync.config),
-            fields: 'id',
             // TODO extract
             notes: record.content + '\nemail:' + record.gmail_id
           }

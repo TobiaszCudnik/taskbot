@@ -245,7 +245,7 @@ export abstract class Sync<TConfig, TStates, IBind, IEmit> {
     if (title) {
       msg += ` '${title}'`
     }
-    msg += ` from ${this.state.id()}`
+    msg += ` from '${this.state.id()}'\n`
     for (const chunk of diff.diffChars(inspect(before), inspect(after))) {
       const color = chunk.added ? 'green' : chunk.removed ? 'red' : 'white'
       msg += chunk.value[color]
