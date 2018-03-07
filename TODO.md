@@ -1,12 +1,12 @@
 Bugs:
 
-* taking an action label off in gmail should push the task to inbox
 * double "email:XXXX" ref link in gtasks description
   * reproduce
 
 TODO:
 
 * logger class passing msgs to both debug and winston
+* merge GC and time array into a single TimeArray class
 * move the child tasks along with the parent
 * label matching should be case-insensitive
 * only emails send by yourself should be parsed for tags while in inbox
@@ -24,9 +24,6 @@ TODO:
 * periodic cache save
   * resume on start
   * include etags and history IDs
-* label filters - add labels based on a stream of changes
-  * instead of query=add|remove
-  * get the latest label changeset from time on labels
 * use etags in patch requests in gtasks
   * reuse the answer
   * avoid the Dirty state
@@ -79,6 +76,10 @@ Milestone 2:
 * merge subtasks
   * for the same email ID between different lists
   * only un completed ones
+* stream based label filters
+  * stream of label changes
+  * with dates for both active and inactive (for the same label)
+  * simple version: get the latest label changeset from times on labels
 
 Later:
 
