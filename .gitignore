@@ -1,5 +1,3 @@
-/settings.js
-/settings.ts
 /*.iml
 /.idea
 /node_modules/
@@ -8,6 +6,7 @@
 /.DS_Store
 /src/**.js
 /test/**.js
+/settings.js
 /settings.d.ts
 /settings.js.map
 /src/**/*.js

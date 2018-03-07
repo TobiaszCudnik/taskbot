@@ -89,7 +89,7 @@ export default class GTasksSync extends SyncWriter<
   }
   subs_flat: GTasksListSync[]
   verbose = debug('gtasks-verbose')
-  // TODO archive & combine the request history
+  // TODO extract TimeArray
   requests: number[] = []
   requests_gc = new GC('gtasks', this.requests)
   // remaining quota, range between 0 (full limit) to 1 (none left)
