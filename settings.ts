@@ -1,6 +1,7 @@
 import { IConfig } from './src/types'
 
 function hasLabel(r, label) {
+  // TODO case insensitive compare
   return r.labels[label] && r.labels[label].active
 }
 
@@ -121,38 +122,18 @@ let config: IConfig = {
   sync_frequency: 1,
   label_filters: [
     {
-      name: 'i&(f|p)=-f-p',
-      db_query: r =>
-        hasLabel(r, 'INBOX') &&
-        (hasLabel(r, 'S/Finished') || hasLabel(r, 'S/Pending')),
-      add: [],
-      remove: ['S/Finished', 'S/Pending']
-    },
-    {
-      name: '(i|na)-f-e-p-vnow=vnow',
-      db_query: r =>
-        (hasLabel(r, 'INBOX') || hasLabel(r, 'S/Next Action')) &&
-        !(
-          hasLabel(r, 'S/Finished') ||
-          hasLabel(r, 'S/Expired') ||
-          hasLabel(r, 'S/Pending') ||
-          hasLabel(r, 'V/now')
-        ),
-      add: ['V/now'],
-      remove: []
-    },
-    {
-      name: '(f|e)&(a|na|p|vnow)=-a-na-p-vnow',
+      name: 'finish or expired removes all other statuses',
       db_query: r =>
         (hasLabel(r, 'S/Finished') || hasLabel(r, 'S/Expired')) &&
         (hasLabel(r, 'S/Next Action') ||
           hasLabel(r, 'S/Action') ||
+          hasLabel(r, 'S/Some day') ||
           hasLabel(r, 'S/Pending')),
       add: [],
-      remove: ['S/Next Action', 'S/Action', 'S/Pending', 'V/now']
+      remove: ['S/Next Action', 'S/Action', 'S/Pending']
     },
     {
-      name: 's&(na|a)=-na-a',
+      name: 'someday removes action and next action',
       db_query: r =>
         hasLabel(r, 'S/Someday') &&
         (hasLabel(r, 'S/Next Action') || hasLabel(r, 'S/Action')),
@@ -160,40 +141,60 @@ let config: IConfig = {
       remove: ['S/Next Action', 'S/Action']
     },
     {
-      name: 'na&a=-a',
+      name: 'next action removes action',
       db_query: r => hasLabel(r, 'S/Action') && hasLabel(r, 'S/Next Action'),
       add: [],
       remove: ['S/Action']
     },
     {
-      name: 'p&na=-na',
+      name: 'pending removes next action',
       db_query: r => hasLabel(r, 'S/Pending') && hasLabel(r, 'S/Next Action'),
       add: [],
       remove: ['S/Next Action']
     },
     {
-      name: '(na|a|e|f)&i=-i',
+      name: 'records with a status leave the inbox',
       db_query: r =>
+        // TODO list all status labels
         (hasLabel(r, 'S/Action') ||
           hasLabel(r, 'S/Next Action') ||
           hasLabel(r, 'S/Expired') ||
+          hasLabel(r, 'S/Pending') ||
+          hasLabel(r, 'S/Some day') ||
           hasLabel(r, 'S/Finished')) &&
         hasLabel(r, 'INBOX'),
       add: [],
       remove: ['INBOX']
     },
     {
-      name: 'no status records goes into inbox',
+      name: 'records without a status go into the inbox',
       db_query: r =>
         // TODO list all status labels
         !hasLabel(r, 'S/Action') &&
         !hasLabel(r, 'S/Next Action') &&
         !hasLabel(r, 'S/Expired') &&
+        !hasLabel(r, 'S/Pending') &&
         !hasLabel(r, 'S/Finished') &&
-        !hasLabel(r, 'S/Some Day') &&
+        !hasLabel(r, 'S/Some day') &&
         !hasLabel(r, 'INBOX'),
       add: ['INBOX'],
       remove: []
+    },
+    {
+      name: 'inbox or next action adds v-now',
+      db_query: r =>
+        (hasLabel(r, 'INBOX') || hasLabel(r, 'S/Next Action')) &&
+        !hasLabel(r, 'V/now'),
+      add: ['V/now'],
+      remove: []
+    },
+    {
+      name: 'no inbox and no next action removes v-now',
+      db_query: r =>
+        !(hasLabel(r, 'INBOX') || hasLabel(r, 'S/Next Action')) &&
+        hasLabel(r, 'V/now'),
+      add: [],
+      remove: ['V/now']
     }
   ],
   status_map: {
@@ -255,7 +256,7 @@ let config: IConfig = {
     {
       name: '!Someday',
       gmail_query: 'label:s-some-day',
-      db_query: r => hasLabel(r, 'S/Action'),
+      db_query: r => hasLabel(r, 'S/Some day'),
       enter: {
         remove: ['S/Finished'],
         add: ['S/Some day']
