@@ -58,6 +58,13 @@ export const sync_state: IJSONStates = {
   QuotaExceeded: { drop: ['Reading', 'Writing'] }
 }
 
+export type TaskTree = {
+  title: string
+  status: 'needsAction' | 'completed'
+  notes?: string
+  children: TaskTree[]
+}
+
 export default class GTasksSync extends SyncWriter<
   IConfig,
   TStates,
@@ -241,6 +248,7 @@ export default class GTasksSync extends SyncWriter<
           patch.completed = null
         } else if (!sync.config.db_query(record)) {
           // Delete
+          // TODO get the IDs - list's ID and the local tasks ID
           delete_task = this.taskIsUncompletedElsewhere(
             record,
             sync.config.name
@@ -248,6 +256,10 @@ export default class GTasksSync extends SyncWriter<
           // Complete
           if (!delete_task && !this.isCompleted(task)) {
             patch.status = 'completed'
+          } else if (delete_task) {
+            const children = sync.getChildren(task.id)
+            this.log('TODO - move the children:\n%O', children)
+            // await this.addChildren(other_list_id, children
           }
         }
         if (delete_task) {
@@ -292,6 +304,7 @@ export default class GTasksSync extends SyncWriter<
     return this.subs_flat.find(sync => sync.list.id == id)
   }
 
+  // TODO return the ID of the first list
   taskIsUncompletedElsewhere(record: DBRecord, name: string) {
     return this.subs_flat
       .filter(sync => sync.config.name != name)

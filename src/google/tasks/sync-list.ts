@@ -2,7 +2,7 @@ import * as moment from 'moment'
 import { Sync, sync_state as base_state } from '../../sync/sync'
 import * as google from 'googleapis'
 import RootSync, { DBRecord } from '../../sync/root'
-import GTasksSync from './sync'
+import GTasksSync, { TaskTree } from './sync'
 import { IListConfig } from '../../types'
 import * as debug from 'debug'
 import * as clone from 'deepcopy'
@@ -127,6 +127,7 @@ export default class GTasksListSync extends Sync<
       {
         tasklist: this.list.id,
         fields: 'etag,items(id,title,notes,updated,etag,status)',
+        // TODO paging
         maxResults: '1000',
         showHidden: false,
         // request a cached version after an etag is confirmed twice
@@ -178,6 +179,36 @@ export default class GTasksListSync extends Sync<
     return this.tasks ? this.tasks.items.filter(t => !t.parent && t.title) : []
   }
 
+  // TODO tests, maybe write a more efficient version
+  getChildren(task_id: string): TaskTree[] | null {
+    const tasks = this.tasks.items
+    const children = []
+    const index = tasks.findIndex(t => t.id == task_id)
+    // assume sorted, if next has a parent, its a child
+    let i
+    let parents = []
+    for (i = index; tasks[i] && tasks[i].parent; i++) {
+      let target
+      if (tasks[i].parent == task_id) {
+        target = children
+      } else {
+        target = parents.find(p => p.id == tasks[i].parent)
+      }
+      target.push({
+        id: tasks[i].id,
+        title: tasks[i].title,
+        completed: this.gtasks.isCompleted(tasks[i]),
+        children: []
+      })
+      parents.push(target[target.length - 1])
+    }
+    if (!children.length)
+      return null
+      // remove the IDs, as they aren't relevant any more
+    ;[...children, ...parents].forEach(t => delete t.id)
+    return children
+  }
+
   merge() {
     let changed = 0
     // add / merge
@@ -185,10 +216,12 @@ export default class GTasksListSync extends Sync<
       const record = this.getFromDB(task)
       if (!record) {
         const new_record = this.toDB(task)
+        this.log('change')
         this.verbose('new record:\n %O', new_record)
         this.root.data.insert(new_record)
         changed++
       } else if (this.mergeRecord(task, record)) {
+        this.log('change')
         changed++
       }
     }
