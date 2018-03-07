@@ -287,12 +287,12 @@ export default class RootSync extends SyncWriter<
     try {
       // @ts-ignore
       ret = await promisifyArray(method)(params, options)
-      const was2xx = (ret[1] as http.IncomingMessage).statusCode
-        .toString()
-        .match(/^2/)
-      if (was2xx && !ret[0]) {
+      const res: http.IncomingMessage = ret[1]
+      const was2xx = res && res.statusCode.toString().match(/^2/)
+      const wasNoContent = res && res.statusMessage == 'No Content'
+      if (was2xx && ret[0] === undefined && !wasNoContent) {
         throw Error('Empty response on 2xx')
-      } else if (!ret[1] && !ret[0]) {
+      } else if (ret[1] === undefined && ret[0] === undefined) {
         throw Error('Response and body empty')
       }
     } finally {
@@ -398,6 +398,9 @@ export default class RootSync extends SyncWriter<
         this.log('changes: %o', changes)
       }
     } while (changes.length && ++c < MAX)
+    if (c == MAX) {
+      this.log(`MERGE LIMIT EXCEEDED`)
+    }
     this.log(`SYNCED after ${c} round(s)`)
     return []
   }
