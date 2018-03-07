@@ -1,7 +1,6 @@
 import 'source-map-support/register'
 import * as debug from 'debug'
-// import settings from '../settings'
-import settings_debug from '../settings-debug'
+import settings_base from '../settings'
 import settings_credentials from '../settings.credentials'
 import RootSync from './sync/root'
 import { Logger, Network } from 'ami-logger/remote'
@@ -9,10 +8,8 @@ import { IConfig } from './types'
 import create_repl, { REPLServer } from './repl'
 import { TAsyncMachine } from 'asyncmachine'
 
-// const app_settings = process.env['DEBUG'] ? settings_debug : settings
-
 let root: RootSync
-const settings = { ...settings_debug, ...settings_credentials }
+const settings = { ...settings_base, ...settings_credentials }
 
 // TODO make it less global
 function init_am_inspector(machines?: TAsyncMachine[]) {
