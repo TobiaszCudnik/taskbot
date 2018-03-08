@@ -91,7 +91,8 @@ export default class RootSync extends SyncWriter<
 
   db: Loki
   data: DB
-  log_requests = debug('requests')
+  // @ts-ignore
+  log_requests = this.logger.createLogger('requests', 'verbose')
 
   exceptions: number[] = []
   exceptions_gc = new GC('gtasks', this.exceptions)
@@ -242,7 +243,6 @@ export default class RootSync extends SyncWriter<
       .subtract(10, 'minutes')
       .unix()
     const index = sortedIndex(this.exceptions, min_range)
-    // quit after more than 100 exceptions
     return this.exceptions.length - index > 100
   }
 
@@ -368,7 +368,6 @@ export default class RootSync extends SyncWriter<
   getLabelDefinition(label: string): ILabelDefinition {
     for (const def of this.config.labels) {
       if (
-        // TODO type guards
         (def.name && def.prefix + def.name == label) ||
         (!def.name && label.startsWith(def.prefix))
       ) {

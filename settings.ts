@@ -95,6 +95,10 @@ let config: IConfig = {
       }
     },
     {
+      prefix: 'S/',
+      name: 'Ignored'
+    },
+    {
       symbol: '#',
       prefix: 'P/',
       colors: {
@@ -176,6 +180,7 @@ let config: IConfig = {
         !hasLabel(r, 'S/Pending') &&
         !hasLabel(r, 'S/Finished') &&
         !hasLabel(r, 'S/Some day') &&
+        !hasLabel(r, 'S/Ignored') &&
         !hasLabel(r, 'INBOX'),
       add: ['INBOX'],
       remove: []
@@ -197,9 +202,6 @@ let config: IConfig = {
       remove: ['V/now']
     }
   ],
-  status_map: {
-    na: 'S/Next action'
-  },
   lists: [
     {
       name: '!Next',
@@ -229,8 +231,8 @@ let config: IConfig = {
     },
     {
       name: '!Inbox',
-      gmail_query: 'in:inbox',
-      db_query: r => hasLabel(r, 'INBOX'),
+      gmail_query: 'in:inbox -s-ignored',
+      db_query: r => hasLabel(r, 'INBOX') && !hasLabel(r, 'S/Ignored'),
       enter: {
         add: ['INBOX'],
         remove: ['S/Finished']
