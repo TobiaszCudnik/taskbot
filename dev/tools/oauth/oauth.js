@@ -54,6 +54,6 @@ rl.question('Enter the code here:', function(code) {
     // TODO: tokens should be set by OAuth2 client.
     if (err) console.error(err)
     console.log(tokens)
-    oauth2Client.setCredentials(tokens)
+    oauth2Client.credentials = tokens
   })
 })
