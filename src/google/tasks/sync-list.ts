@@ -1,25 +1,22 @@
-import * as moment from 'moment'
-import { Sync, sync_state as base_state } from '../../sync/sync'
-import * as google from 'googleapis'
-import RootSync, { DBRecord } from '../../sync/root'
-import GTasksSync, { TaskTree } from './sync'
-import { IListConfig } from '../../types'
+import { machine } from 'asyncmachine'
 import * as debug from 'debug'
 import * as clone from 'deepcopy'
 import * as delay from 'delay'
+import * as google from 'googleapis'
 import * as _ from 'lodash'
-import { machine } from 'asyncmachine'
+import * as moment from 'moment'
 // Machine types
 import {
+  AsyncMachine,
   IBind,
   IEmit,
   IJSONStates,
-  IState,
-  TStates,
-  IEmitBase,
-  IBindBase,
-  AsyncMachine
+  TStates
 } from '../../../typings/machines/google/tasks/sync-list'
+import RootSync, { DBRecord } from '../../sync/root'
+import { Sync, sync_state as base_state } from '../../sync/sync'
+import { IListConfig } from '../../types'
+import GTasksSync, { TaskTree } from './sync'
 
 export type Task = google.tasks.v1.Task
 export type TaskList = google.tasks.v1.TaskList
@@ -110,6 +107,7 @@ export default class GTasksListSync extends Sync<
       return cancel()
     }
     const since_last_read = moment.duration(moment().diff(this.last_read_start))
+    // TODO per list sync_frequency
     const sync_frequency =
       this.config.sync_frequency || this.gtasks.config.gtasks.sync_frequency
     if (sync_frequency && since_last_read.asSeconds() < sync_frequency) {

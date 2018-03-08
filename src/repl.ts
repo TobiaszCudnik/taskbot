@@ -1,8 +1,8 @@
-import * as repl from 'repl'
-import * as net from 'net'
-import RootSync from './sync/root'
-import { REPLServer } from 'repl'
 import { Logger } from 'ami-logger/remote'
+import * as net from 'net'
+import * as repl from 'repl'
+import { REPLServer } from 'repl'
+import RootSync from './sync/root'
 
 export { REPLServer }
 

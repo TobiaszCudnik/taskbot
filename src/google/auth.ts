@@ -1,16 +1,14 @@
-import * as google from 'googleapis'
 import AsyncMachine from 'asyncmachine'
-import { IConfig } from '../types'
-import { machineLogToDebug } from '../utils'
+import * as google from 'googleapis'
 // Machine types
 import {
   IBind,
   IEmit,
   IState,
-  TStates,
-  IEmitBase,
-  IBindBase
+  TStates
 } from '../../typings/machines/google/auth'
+import { IConfig } from '../types'
+import { machineLogToDebug } from '../utils'
 
 export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
   CredentialsSet: IState = {}

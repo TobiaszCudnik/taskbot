@@ -1,27 +1,24 @@
-///<reference path="../../../node_modules/typed-promisify-tob/index.ts"/>
-import { Thread } from './query'
-import * as _ from 'lodash'
-import * as google from 'googleapis'
-import { IConfig, ILabelDefinition, TRawEmail } from '../../types'
-import { map } from 'typed-promisify-tob'
-import { Sync, SyncWriter, sync_writer_state } from '../../sync/sync'
-import Auth from '../auth'
-import GmailListSync from './sync-list'
-import RootSync, { DBRecord } from '../../sync/root'
-import * as moment from 'moment'
-import * as debug from 'debug'
 import { machine } from 'asyncmachine'
+import * as debug from 'debug'
+import * as google from 'googleapis'
+import * as _ from 'lodash'
+import * as moment from 'moment'
+import { map } from 'typed-promisify-tob'
 // Machine types
 import {
+  AsyncMachine,
   IBind,
   IEmit,
   IJSONStates,
-  IState,
-  TStates,
-  IEmitBase,
-  IBindBase,
-  AsyncMachine
+  TStates
 } from '../../../typings/machines/google/gmail/sync'
+import RootSync, { DBRecord } from '../../sync/root'
+import { sync_writer_state, SyncWriter } from '../../sync/sync'
+import { IConfig, ILabelDefinition, TRawEmail } from '../../types'
+import Auth from '../auth'
+///<reference path="../../../node_modules/typed-promisify-tob/index.ts"/>
+import { Thread } from './query'
+import GmailListSync from './sync-list'
 
 export const sync_state: IJSONStates = {
   ...sync_writer_state,

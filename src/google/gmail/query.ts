@@ -1,21 +1,18 @@
 import { machine } from 'asyncmachine'
-import * as moment from 'moment'
-import GmailSync, { getTitleFromThread } from './sync'
+import { debug } from 'debug'
 import * as google from 'googleapis'
 import { map } from 'typed-promisify-tob'
-import { debug } from 'debug'
-import { machineLogToDebug } from '../../utils'
 // Machine types
 import {
+  AsyncMachine,
   IBind,
   IEmit,
   IJSONStates,
-  IState,
-  TStates,
-  IEmitBase,
-  IBindBase,
-  AsyncMachine
+  TStates
 } from '../../../typings/machines/google/gmail/query'
+import { log_fn } from '../../sync/logger'
+import { machineLogToDebug } from '../../utils'
+import GmailSync, { getTitleFromThread } from './sync'
 
 export type Thread = google.gmail.v1.Thread
 
@@ -50,19 +47,14 @@ export const sync_state: IJSONStates = {
   }
 }
 
-export type TThreadCompletion = {
-  completed: boolean
-  time: moment.Moment
-}
-
 export default class GmailQuery {
   state: AsyncMachine<TStates, IBind, IEmit>
   // history ID from the moment of reading
   history_id_synced: number | null
   threads: Thread[] = []
-  completions = new Map<string, TThreadCompletion>()
   protected previous_threads: Thread[] | null = null
-  log = debug('gmail-query')
+
+  log: log_fn
 
   constructor(
     public gmail: GmailSync,
@@ -75,6 +67,7 @@ export default class GmailQuery {
       sync_state
     ).id('Gmail/query: ' + this.name))
     this.state.setTarget(this)
+    this.log = this.gmail.root.logger.createLogger(this.state.id(true))
     if (process.env['DEBUG_AM'] || global.am_network) {
       machineLogToDebug(this.state)
       if (global.am_network) {
@@ -88,6 +81,7 @@ export default class GmailQuery {
   // ----- -----
 
   Exception_state(...params) {
+    // TODO log errors per query, using this.log_error
     // forward the exception to the gmail class and effectively the root
     this.state.drop('Exception')
     this.gmail.state.add('Exception', ...params)

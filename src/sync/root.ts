@@ -1,32 +1,29 @@
 import { machine } from 'asyncmachine'
-import GoogleSync from '../google/sync'
 import { Semaphore } from 'await-semaphore'
-import { sync_writer_state as base_state, SyncWriter } from './sync'
-import * as Loki from 'lokijs'
-import { promisify, promisifyArray } from 'typed-promisify-tob'
-import { IConfig, ILabelDefinition, IListConfig } from '../types'
-import * as debug from 'debug'
 import 'colors'
-import * as diff from 'diff'
-import { sortedIndex } from 'lodash'
+import * as debug from 'debug'
 import * as delay from 'delay'
-import * as moment from 'moment'
+import * as diff from 'diff'
 import * as regexEscape from 'escape-string-regexp'
-import LabelFilterSync from './label-filter'
+import * as http from 'http'
+import { sortedIndex } from 'lodash'
+import * as Loki from 'lokijs'
+import * as moment from 'moment'
+import { promisifyArray } from 'typed-promisify-tob'
 // Machine types
 import {
+  AsyncMachine,
   IBind,
   IEmit,
   IJSONStates,
-  IState,
-  TStates,
-  IEmitBase,
-  IBindBase,
-  AsyncMachine
+  TStates
 } from '../../typings/machines/sync/root'
-import winston = require('winston')
+import GoogleSync from '../google/sync'
+import { IConfig, ILabelDefinition, IListConfig } from '../types'
 import GC from './gc'
-import * as http from 'http'
+import LabelFilterSync from './label-filter'
+import Logger from './logger'
+import { sync_writer_state as base_state, SyncWriter } from './sync'
 
 const SEC = 1000
 

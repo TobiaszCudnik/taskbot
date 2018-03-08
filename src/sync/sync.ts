@@ -1,31 +1,25 @@
-import AsyncMachine, {
-  machine,
-  IEmit,
-  IBind,
-  TAsyncMachine
-} from 'asyncmachine'
-import RootSync, { DBRecord } from './root'
-import * as moment from 'moment'
-import { machineLogToDebug } from '../utils'
+import AsyncMachine, { machine } from 'asyncmachine'
+import debug from 'debug'
 import * as clone from 'deepcopy'
 import * as diff from 'diff'
+import * as moment from 'moment'
 import { inspect } from 'util'
-import debug from 'debug'
 // Machine types
 import {
   IBind as IBindSync,
-  IEmit as IEmitSync,
   IJSONStates as IJSONStatesSync,
   IState as IStateSync,
   TStates as TStatesSync
 } from '../../typings/machines/sync/sync'
 import {
   IBind as IBindWriter,
-  IEmit as IEmitWriter,
   IJSONStates as IJSONStatesWriter,
   IState as IStateWriter,
   TStates as TStatesWriter
 } from '../../typings/machines/sync/sync-writer'
+import { machineLogToDebug } from '../utils'
+import Logger, { log_fn } from './logger'
+import RootSync, { DBRecord } from './root'
 
 export { IStateSync, IStateWriter }
 
@@ -125,7 +119,7 @@ export abstract class Sync<TConfig, TStates, IBind, IEmit> {
     return ret
   }
 
-  constructor(config?, root?) {
+  constructor(config, root?: RootSync) {
     this.config = config
     if (root) {
       this.root = root

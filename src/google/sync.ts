@@ -1,21 +1,18 @@
 import { machine } from 'asyncmachine'
-import GmailSync from './gmail/sync'
-import Auth from './auth'
-import { SyncWriter, sync_writer_state } from '../sync/sync'
-import RootSync from '../sync/root'
-import GTasksSync from './tasks/sync'
-import { IConfig } from '../types'
 // Machine types
 import {
+  AsyncMachine,
   IBind,
   IEmit,
   IJSONStates,
-  IState,
-  TStates,
-  IEmitBase,
-  IBindBase,
-  AsyncMachine
+  TStates
 } from '../../typings/machines/google/sync'
+import RootSync from '../sync/root'
+import { sync_writer_state, SyncWriter } from '../sync/sync'
+import { IConfig } from '../types'
+import Auth from './auth'
+import GmailSync from './gmail/sync'
+import GTasksSync from './tasks/sync'
 
 export const sync_state: IJSONStates = {
   ...sync_writer_state,

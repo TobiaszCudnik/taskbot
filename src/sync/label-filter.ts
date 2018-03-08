@@ -1,19 +1,15 @@
-import { Sync } from './sync'
-import { ILabelFilter } from '../types'
-import RootSync, { DBRecord } from './root'
 import * as clone from 'deepcopy'
 import * as moment from 'moment'
 // Machine types
 import {
+  AsyncMachine,
   IBind,
   IEmit,
-  IJSONStates,
-  IState,
-  TStates,
-  IEmitBase,
-  IBindBase,
-  AsyncMachine
+  TStates
 } from '../../typings/machines/sync/sync'
+import { ILabelFilter } from '../types'
+import { DBRecord } from './root'
+import { Sync } from './sync'
 
 export default class LabelFilterSync extends Sync<
   ILabelFilter,
@@ -22,10 +18,6 @@ export default class LabelFilterSync extends Sync<
   IEmit
 > {
   state: AsyncMachine<TStates, IBind, IEmit>
-
-  constructor(config: ILabelFilter, public root: RootSync) {
-    super(config)
-  }
 
   Reading_state() {
     this.state.add('ReadingDone')

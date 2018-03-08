@@ -1,8 +1,8 @@
-import * as moment from 'moment'
-import Timer = NodeJS.Timer
-import { sortedIndex } from 'lodash'
 import * as debug from 'debug'
 import * as delay from 'delay'
+import { sortedIndex } from 'lodash'
+import * as moment from 'moment'
+import Timer = NodeJS.Timer
 
 const SEC = 1000
 

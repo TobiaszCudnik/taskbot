@@ -1,29 +1,26 @@
-import * as google from 'googleapis'
-import GTasksListSync, { Task, TaskList } from './sync-list'
-import { IConfig } from '../../types'
-import { SyncWriter, sync_writer_state } from '../../sync/sync'
-import RootSync, { DBRecord } from '../../sync/root'
-import { map } from 'typed-promisify-tob'
-import Auth from '../auth'
-import * as debug from 'debug'
-import * as moment from 'moment'
-import * as _ from 'lodash'
-import * as http from 'http'
-import * as roundTo from 'round-to'
-import { TAbortFunction } from 'asyncmachine/build/types'
 import { machine } from 'asyncmachine'
+import { TAbortFunction } from 'asyncmachine/build/types'
+import * as debug from 'debug'
+import * as google from 'googleapis'
+import * as http from 'http'
+import * as _ from 'lodash'
+import * as moment from 'moment'
+import * as roundTo from 'round-to'
+import { map } from 'typed-promisify-tob'
 // Machine types
 import {
+  AsyncMachine,
   IBind,
   IEmit,
   IJSONStates,
-  IState,
-  TStates,
-  IEmitBase,
-  IBindBase,
-  AsyncMachine
+  TStates
 } from '../../../typings/machines/google/tasks/sync'
 import GC from '../../sync/gc'
+import RootSync, { DBRecord } from '../../sync/root'
+import { sync_writer_state, SyncWriter } from '../../sync/sync'
+import { IConfig } from '../../types'
+import Auth from '../auth'
+import GTasksListSync, { Task, TaskList } from './sync-list'
 
 // TODO tmp
 export interface TasksAPI extends google.tasks.v1.Tasks {
@@ -106,8 +103,8 @@ export default class GTasksSync extends SyncWriter<
     )
   }
 
-  constructor(public root: RootSync, public auth: Auth) {
-    super(root.config)
+  constructor(root: RootSync, public auth: Auth) {
+    super(root.config, root)
     this.api = <TasksAPI>google.tasks('v1')
     this.api = Object.create(this.api)
     this.api.req = async (method, params, abort, ret_array, options = {}) => {

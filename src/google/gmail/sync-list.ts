@@ -1,24 +1,21 @@
-import GmailQuery, { Thread } from './query'
-import * as google from 'googleapis'
-import { Sync, sync_state as base_state } from '../../sync/sync'
-import * as moment from 'moment'
-import RootSync, { DBRecord } from '../../sync/root'
-import GmailSync, { getTitleFromThread } from './sync'
-import { IListConfig } from '../../types'
-import * as clone from 'deepcopy'
-import { debug } from 'debug'
 import { machine } from 'asyncmachine'
+import { debug } from 'debug'
+import * as clone from 'deepcopy'
+import * as google from 'googleapis'
+import * as moment from 'moment'
 // Machine types
 import {
+  AsyncMachine,
   IBind,
   IEmit,
   IJSONStates,
-  IState,
-  TStates,
-  IEmitBase,
-  IBindBase,
-  AsyncMachine
+  TStates
 } from '../../../typings/machines/google/gmail/sync-list'
+import RootSync, { DBRecord } from '../../sync/root'
+import { Sync, sync_state as base_state } from '../../sync/sync'
+import { IListConfig } from '../../types'
+import GmailQuery, { Thread } from './query'
+import GmailSync, { getTitleFromThread } from './sync'
 
 export const sync_state: IJSONStates = {
   ...base_state,
@@ -38,12 +35,8 @@ export default class GmailListSync extends Sync<
   query: GmailQuery
   verbose = debug(this.state.id(true) + '-verbose')
 
-  constructor(
-    config: IListConfig,
-    public root: RootSync,
-    public gmail: GmailSync
-  ) {
-    super(config)
+  constructor(config: IListConfig, root: RootSync, public gmail: GmailSync) {
+    super(config, root)
     this.query = new GmailQuery(
       this.gmail,
       config.gmail_query,

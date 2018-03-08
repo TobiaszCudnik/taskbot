@@ -1,12 +1,11 @@
+import { Logger, Network } from 'ami-logger/remote'
+import { TAsyncMachine } from 'asyncmachine'
 import 'source-map-support/register'
-import * as debug from 'debug'
 import settings_base from '../settings'
 import settings_credentials from '../settings.credentials'
+import create_repl from './repl'
 import RootSync from './sync/root'
-import { Logger, Network } from 'ami-logger/remote'
 import { IConfig } from './types'
-import create_repl, { REPLServer } from './repl'
-import { TAsyncMachine } from 'asyncmachine'
 
 let root: RootSync
 const settings = { ...settings_base, ...settings_credentials }
@@ -47,6 +46,7 @@ function exit(err?) {
 process.on('SIGINT', exit)
 process.on('exit', exit)
 
+console.log('Starting the sync service...')
 root = new RootSync((<any>settings) as IConfig)
 root.state.add('Enabled')
 create_repl(root, init_am_inspector)
