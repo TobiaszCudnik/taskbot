@@ -1,14 +1,19 @@
 Bugs:
 
+* thrown exceptions dont go to the error.log file
 * double "email:XXXX" ref link in gtasks description
   * reproduce
 * investigate "gmail-query-next History ID changed for thread" after start
+* backend error on mass label color change
+  * throttle / redo ?
 
 TODO:
 
-* support archiving email in the inbox
-  * no status bounces back to inbox
-  * add S/Ignored
+* on HeartBeat reset - kill all the active connections, release the semaphore
+* include the email author in the task's name
+* tasks for archived emails from the inbox should be deleted
+  * from the task list, instead of completed
+* S/Ignored should remove other statuses
 * define timeout for googlapis requests (and others) in the settings
 * merge GC and time array into a single TimeArray class
 * move the child tasks along with the parent
@@ -69,6 +74,7 @@ Milestone 2:
 * missing extended GTD labels
   * S/Started or S/Current
   * RP/ - reference project, eg 'buy stuff #js-conf ##store'
+  * Contexts?
 
 Later:
 
