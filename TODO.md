@@ -2,9 +2,14 @@ Bugs:
 
 * double "email:XXXX" ref link in gtasks description
   * reproduce
+* investigate "gmail-query-next History ID changed for thread" after start
 
 TODO:
 
+* support archiving email in the inbox
+  * no status bounces back to inbox
+  * add S/Ignored
+* define timeout for googlapis requests (and others) in the settings
 * merge GC and time array into a single TimeArray class
 * move the child tasks along with the parent
 * label matching should be case-insensitive
@@ -32,6 +37,7 @@ TODO:
   * paging support
   * max limit of results per query/gtask list (for archived lists)
 * rotate file logs
+* add some useful repl commands
 * put a limit on initial gmail inbox size
 * threads out-of-queries arent observed for changes
   * is that a real problem?
