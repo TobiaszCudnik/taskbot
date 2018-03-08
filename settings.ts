@@ -5,6 +5,11 @@ function hasLabel(r, label) {
   return r.labels[label] && r.labels[label].active
 }
 
+function hadLabel(r, label) {
+  // TODO case insensitive compare
+  return r.labels[label] && !r.labels[label].active
+}
+
 // let config: IConfig = {
 let config: IConfig = {
   repl_port: 5002,
@@ -172,6 +177,7 @@ let config: IConfig = {
     },
     {
       name: 'records without a status go into the inbox',
+      // only the ones who used to have one
       db_query: r =>
         // TODO list all status labels
         !hasLabel(r, 'S/Action') &&
@@ -180,8 +186,14 @@ let config: IConfig = {
         !hasLabel(r, 'S/Pending') &&
         !hasLabel(r, 'S/Finished') &&
         !hasLabel(r, 'S/Some day') &&
-        !hasLabel(r, 'S/Ignored') &&
-        !hasLabel(r, 'INBOX'),
+        (hadLabel(r, 'S/Action') ||
+          hadLabel(r, 'S/Next Action') ||
+          hadLabel(r, 'S/Expired') ||
+          hadLabel(r, 'S/Pending') ||
+          hadLabel(r, 'S/Finished') ||
+          hadLabel(r, 'S/Some day')) &&
+        !hasLabel(r, 'INBOX') &&
+        !hasLabel(r, 'S/Ignored'),
       add: ['INBOX'],
       remove: []
     },
