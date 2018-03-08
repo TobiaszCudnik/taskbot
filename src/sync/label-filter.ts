@@ -5,7 +5,9 @@ import {
   AsyncMachine,
   IBind,
   IEmit,
-  TStates
+  TStates,
+  IBindBase,
+  IEmitBase
 } from '../../typings/machines/sync/sync'
 import { ILabelFilter } from '../types'
 import { DBRecord } from './root'

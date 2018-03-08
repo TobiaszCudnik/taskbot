@@ -16,7 +16,9 @@ import {
   IBind,
   IEmit,
   IJSONStates,
-  TStates
+  TStates,
+  IBindBase,
+  IEmitBase
 } from '../../typings/machines/sync/root'
 import GoogleSync from '../google/sync'
 import { IConfig, ILabelDefinition, IListConfig } from '../types'

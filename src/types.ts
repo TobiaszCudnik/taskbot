@@ -40,12 +40,18 @@ export interface ILabelDefinition2 {
   name: string
   prefix: string
   colors?: { bg: string; fg: string }
+  // ignore errors on those
+  symbol?: string
+  shortcut?: string
 }
 
 export interface ILabelDefinition3 {
   symbol: string
   prefix: string
   colors?: { bg: string; fg: string }
+  // ignore errors on those
+  name?: string
+  shortcut?: string
 }
 
 export type IConfig = {

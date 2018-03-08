@@ -10,7 +10,9 @@ import {
   IBind,
   IEmit,
   IJSONStates,
-  TStates
+  TStates,
+  IBindBase,
+  IEmitBase
 } from '../../../typings/machines/google/gmail/sync'
 import RootSync, { DBRecord } from '../../sync/root'
 import { sync_writer_state, SyncWriter } from '../../sync/sync'
@@ -79,6 +81,7 @@ export default class GmailSync extends SyncWriter<
   last_sync_time: number
   labels: Label[]
   history_ids: { id: number; time: number }[] = []
+  // @ts-ignore
   sub_states_outbound = [['Reading', 'Reading'], ['Enabled', 'Enabled']]
   threads = new Map<string, Thread>()
   subs: {
@@ -155,7 +158,6 @@ export default class GmailSync extends SyncWriter<
     await map(this.labels, async (label: Label) => {
       const def = this.root.getLabelDefinition(label.name)
       if (!def || !def.colors) return
-      // TODO regenerate googleapis typings
       if (
         !label.color ||
         label.color.textColor != def.colors.fg ||

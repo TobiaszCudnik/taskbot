@@ -13,7 +13,9 @@ import {
   IBind,
   IEmit,
   IJSONStates,
-  TStates
+  TStates,
+  IBindBase,
+  IEmitBase
 } from '../../../typings/machines/google/tasks/sync'
 import GC from '../../sync/gc'
 import RootSync, { DBRecord } from '../../sync/root'
@@ -75,6 +77,7 @@ export default class GTasksSync extends SyncWriter<
     task_lists: null
   }
   api: TasksAPI
+  // @ts-ignore
   sub_states_outbound = [
     ['Reading', 'Reading'],
     ['Enabled', 'Enabled'],
@@ -84,6 +87,7 @@ export default class GTasksSync extends SyncWriter<
   subs: {
     lists: GTasksListSync[]
   }
+  // @ts-ignore
   subs_flat: GTasksListSync[]
   verbose = debug('gtasks-verbose')
   // TODO extract TimeArray

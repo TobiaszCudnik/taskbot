@@ -9,7 +9,9 @@ import {
   IBind,
   IEmit,
   IJSONStates,
-  TStates
+  TStates,
+  IBindBase,
+  IEmitBase
 } from '../../../typings/machines/google/gmail/sync-list'
 import RootSync, { DBRecord } from '../../sync/root'
 import { Sync, sync_state as base_state } from '../../sync/sync'

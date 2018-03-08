@@ -5,7 +5,9 @@ import {
   IBind,
   IEmit,
   IJSONStates,
-  TStates
+  TStates,
+  IEmitBase,
+  IBindBase
 } from '../../typings/machines/google/sync'
 import RootSync from '../sync/root'
 import { sync_writer_state, SyncWriter } from '../sync/sync'

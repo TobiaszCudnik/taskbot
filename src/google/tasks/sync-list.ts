@@ -11,7 +11,9 @@ import {
   IBind,
   IEmit,
   IJSONStates,
-  TStates
+  TStates,
+  IBindBase,
+  IEmitBase
 } from '../../../typings/machines/google/tasks/sync-list'
 import RootSync, { DBRecord } from '../../sync/root'
 import { Sync, sync_state as base_state } from '../../sync/sync'
@@ -166,7 +168,6 @@ export default class GTasksListSync extends Sync<
   // Methods
   // ----- -----
 
-  // TODO fix types
   // @ts-ignore
   getState() {
     return machine(sync_state).id('GTasks/list: ' + this.config.name)

@@ -9,7 +9,9 @@ import {
   IBind as IBindSync,
   IJSONStates as IJSONStatesSync,
   IState as IStateSync,
-  TStates as TStatesSync
+  TStates as TStatesSync,
+  IBindBase,
+  IEmitBase
 } from '../../typings/machines/sync/sync'
 import {
   IBind as IBindWriter,
