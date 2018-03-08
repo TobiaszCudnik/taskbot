@@ -1,8 +1,12 @@
+// TODO wait for winston3 types
+
 import * as debug from 'debug'
 import * as winston from 'winston'
 import * as printf from 'printf'
 
+// @ts-ignore
 const { combine, timestamp } = winston.format
+// @ts-ignore
 const winston_format = winston.format.printf(info => {
   return `${info.timestamp} [${info.label}] ${info.level}: ${info.message}`
 })
@@ -15,7 +19,6 @@ export default class Logger {
 
   // TODO read from env.DEBUG
   constructor() {
-    // TODO add timestamp and the name to entries
     // @ts-ignore
     this.winston = winston.createLogger({
       level: 'verbose',
@@ -34,15 +37,15 @@ export default class Logger {
   }
 
   createLogger(name, level: level = 'info'): log_fn {
-    const console = debug(name)
+    const terminal = debug(name)
     return (...msgs) => {
-      console(...msgs)
+      msgs[0] = msgs[0] || ''
+      terminal(...msgs)
       // optional file logging
       if (!process.env.DEBUG_FILE) return
-      // @ts-ignore TODO wait for winston3 types
+      // @ts-ignore
       this.winston.log({
         label: name,
-        // TODO better printf
         message: printf(...msgs),
         level
       })

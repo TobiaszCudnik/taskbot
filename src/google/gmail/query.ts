@@ -10,7 +10,7 @@ import {
   IJSONStates,
   TStates
 } from '../../../typings/machines/google/gmail/query'
-import { log_fn } from '../../sync/logger'
+import { log_fn } from '../../logger'
 import { machineLogToDebug } from '../../utils'
 import GmailSync, { getTitleFromThread } from './sync'
 
@@ -173,11 +173,11 @@ export default class GmailQuery {
       const previous = this.gmail.threads.get(thread.id)
       if (!previous || previous.historyId != thread.historyId) {
         const refreshed = await this.gmail.fetchThread(thread.id, abort)
-        if (!previous) {
+        if (previous) {
           this.log(
             `History ID changed for thread '${getTitleFromThread(
               refreshed
-            )}', re-fetching`
+            )}', re-fetched`
           )
         }
         return refreshed

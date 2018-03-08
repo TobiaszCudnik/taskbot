@@ -24,7 +24,7 @@ import GoogleSync from '../google/sync'
 import { IConfig, ILabelDefinition, IListConfig } from '../types'
 import GC from './gc'
 import LabelFilterSync from './label-filter'
-import Logger from './logger'
+import Logger from '../logger'
 import { sync_writer_state as base_state, SyncWriter } from './sync'
 
 const SEC = 1000
@@ -116,6 +116,7 @@ export default class RootSync extends SyncWriter<
 
   constructor(config: IConfig) {
     super(config)
+    this.log('Starting the sync service...')
     // HeartBeat scheduler
     setInterval(() => {
       this.state.add('HeartBeat')
@@ -130,6 +131,7 @@ export default class RootSync extends SyncWriter<
     const now = moment().unix()
     const is = state => this.state.is(state)
     const restart = (reason: string) => {
+      // TODO kill all the active requests
       this.log(`HeartBeat, restarting because of - '${reason}'`)
       this.state.drop(['Exception', 'Reading', 'Writing'])
       this.state.add('Reading')

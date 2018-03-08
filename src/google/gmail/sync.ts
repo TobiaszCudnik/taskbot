@@ -532,10 +532,12 @@ export default class GmailSync extends SyncWriter<
 }
 
 export function getTitleFromThread(thread: google.gmail.v1.Thread) {
+  if (!thread.messages || !thread.messages.length)
+    throw new Error(`Thread content not fetched, id: ${thread.id}`)
   try {
     return thread.messages[0].payload.headers[0].value
   } catch (e) {
-    throw new Error('Thread content not fetched')
+    return '(no subject)'
   }
 }
 

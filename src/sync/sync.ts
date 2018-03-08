@@ -20,7 +20,7 @@ import {
   TStates as TStatesWriter
 } from '../../typings/machines/sync/sync-writer'
 import { machineLogToDebug } from '../utils'
-import Logger, { log_fn } from './logger'
+import Logger, { log_fn } from '../logger'
 import RootSync, { DBRecord } from './root'
 
 export { IStateSync, IStateWriter }
@@ -145,7 +145,7 @@ export abstract class Sync<TConfig, TStates, IBind, IEmit> {
   // ----- -----
 
   Exception_enter(err, ...rest): boolean {
-    this.log('Error: %O', err)
+    this.log_error(err)
     if (this.root) {
       this.root.state.add('Exception', err, ...rest)
       return false

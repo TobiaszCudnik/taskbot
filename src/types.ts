@@ -64,7 +64,7 @@ export type IConfig = {
   access_token?: string
   refresh_token?: string
   gmail_username?: string
-  gmail_password?: string
+  redirect_url?: string
   gmail_host: string
   // TODO
   gmail_max_results: number
