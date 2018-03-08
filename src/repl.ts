@@ -8,16 +8,22 @@ export { REPLServer }
 
 export default function create(
   root: RootSync,
-  init_am_inspector: (machines?: any[]) => Logger
+  init_am_inspector: (machines?: any[]) => Logger,
+  port = 5001
 ) {
+  root.log(`Starting REPL on ${port}`)
   let r
   net
-    .createServer(function(socket) {
-      r = repl.start('> ')
+    .createServer(socket => {
+      r = repl
+        .start({ prompt: '> ', input: socket, output: socket })
+        .on('exit', () => {
+          socket.end()
+        })
       r.context.root = root
       r.context.init_am_inspector = init_am_inspector
       return r
     })
-    .listen(5001, 'localhost')
+    .listen(port, 'localhost')
   return r
 }

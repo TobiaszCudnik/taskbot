@@ -1,4 +1,7 @@
-debug:
 DEBUG=*,-requests
 DEBUG_AM=3
-DEBUG=gmail-am
+DEBUG_AMI=2
+DEBUG=gmail,gmail-am
+DEBUG_FILE=1
+
+ssh dev@localhost nc localhost 5002

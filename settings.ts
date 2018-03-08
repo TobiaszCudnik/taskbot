@@ -7,7 +7,7 @@ function hasLabel(r, label) {
 
 // let config: IConfig = {
 let config: IConfig = {
-  debug: false,
+  repl_port: 5002,
   google: {
     scopes: [
       'https://www.googleapis.com/auth/tasks',

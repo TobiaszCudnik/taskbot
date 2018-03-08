@@ -13,42 +13,47 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+const credentials = require('../../../settings.credentials').default
 
-var readline = require('readline');
+var readline = require('readline')
 
-var google = require('googleapis');
-var OAuth2Client = google.auth.OAuth2;
-var plus = google.plus('v1');
+var google = require('googleapis')
+var OAuth2Client = google.auth.OAuth2
+var plus = google.plus('v1')
 
 // Client ID and client secret are available at
 // https://code.google.com/apis/console
-var CLIENT_ID = "900809192866-270pemf710e7me8l9aaptsirjmkvit66.apps.googleusercontent.com";
-var CLIENT_SECRET = "TohSI-VXNRKKNq0cYTkS72S6";
 var REDIRECT_URL = 'http://local.me/oauth2callback'
-var SCOPES = ['https://www.googleapis.com/auth/tasks', 'https://www.googleapis.com/auth/gmail.modify']
+var SCOPES = [
+  'https://www.googleapis.com/auth/tasks',
+  'https://www.googleapis.com/auth/gmail.modify'
+]
 
-var oauth2Client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URL);
+var oauth2Client = new OAuth2Client(
+  credentials.client_id,
+  credentials.client_secret,
+  REDIRECT_URL
+)
 
 var rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
+  input: process.stdin,
+  output: process.stdout
+})
 
 // generate consent page url
 var url = oauth2Client.generateAuthUrl({
-    access_type: 'offline', // will return a refresh token
-    scope: SCOPES
-});
+  access_type: 'offline', // will return a refresh token
+  scope: SCOPES
+})
 
-console.log('Visit the url: ', url + "&approval_prompt=force");
+console.log('Visit the url: ', url + '&approval_prompt=force')
 rl.question('Enter the code here:', function(code) {
-    // request access token
-    oauth2Client.getToken(code, function(err, tokens) {
-        // set tokens to the client
-        // TODO: tokens should be set by OAuth2 client.
-        if (err)
-            console.error(err)
-        console.log(tokens)
-        oauth2Client.setCredentials(tokens);
-    });
-});
+  // request access token
+  oauth2Client.getToken(code, function(err, tokens) {
+    // set tokens to the client
+    // TODO: tokens should be set by OAuth2 client.
+    if (err) console.error(err)
+    console.log(tokens)
+    oauth2Client.setCredentials(tokens)
+  })
+})

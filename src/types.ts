@@ -55,7 +55,7 @@ export interface ILabelDefinition3 {
 }
 
 export type IConfig = {
-  debug: boolean
+  repl_port: number
   google: {
     scopes: string[]
   }
@@ -77,15 +77,10 @@ export type IConfig = {
     // seconds
     sync_frequency: number
   }
-  // redirect_url: string
   labels: ILabelDefinition[]
   label_filters: ILabelFilter[]
   sync_frequency: number
   lists: IListConfig[]
-  // TODO this could be dynamic?
-  status_map: { [shortcut: string]: string }
-  // lists_labels_in_title: LabelsInTitles
-  // lists_defaults: ILabelDefaults,
 }
 
 export type TRawEmail = string
