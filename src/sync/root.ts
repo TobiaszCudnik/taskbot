@@ -102,8 +102,7 @@ export default class RootSync extends SyncWriter<
   last_gmail: string
   last_gtasks: string
 
-  file_logger = this.createLogger()
-  log_verbose = debug('root-verbose')
+  logger: Logger
 
   // seconds
   read_timeout = 2 * 60
@@ -154,8 +153,7 @@ export default class RootSync extends SyncWriter<
 
   // TODO react on specific exception types
   async Exception_state(err: Error) {
-    this.log('ERROR: %O', err)
-    this.file_logger.error(err)
+    this.log_error(err)
     this.exceptions.push(moment().unix())
 
     // pick the correct delay
@@ -402,26 +400,6 @@ export default class RootSync extends SyncWriter<
     return []
   }
 
-  // TODO extract to a separate file and make it awesome
-  // add timestamps, maybe readable json
-  createLogger() {
-    // @ts-ignore
-    return winston.createLogger({
-      // TODO read from env.DEBUG
-      level: 'info',
-      // @ts-ignore
-      // format: winston.format.json(),
-      format: winston.format.simple(),
-      transports: [
-        new winston.transports.File({
-          filename: 'logs/error.log',
-          level: 'error'
-        }),
-        new winston.transports.File({ filename: 'logs/combined.log' })
-      ]
-    })
-  }
-
   printDBDiffs() {
     const db = this.data.toString() + '\n'
     const gmail_sync = this.subs.google.subs.gmail
@@ -437,7 +415,6 @@ export default class RootSync extends SyncWriter<
     for (const [current, previous] of dbs) {
       const db_diff = this.getDBDiff(current, previous)
       if (!db_diff) continue
-      this.file_logger.info(db_diff)
       this.log_verbose(db_diff)
     }
     this.last_db = db

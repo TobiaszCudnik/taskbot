@@ -95,17 +95,14 @@ export abstract class Sync<TConfig, TStates, IBind, IEmit> {
     // | Sync<any, TStates, IBind, IEmit>[]
   } = {}
   root: RootSync
-  private log_: debug
-  get log() {
-    if (!this.log_) {
-      this.log_ = debug(this.state.id(true))
-    }
-    return this.log_
-  }
 
   last_read_end: moment.Moment
   last_read_start: moment.Moment
   last_read_time: moment.Duration
+
+  log: log_fn
+  log_error: log_fn
+  log_verbose: log_fn
 
   get subs_flat(): Sync<TConfig, TStates, IBind, IEmit>[] {
     let ret = []
@@ -121,7 +118,11 @@ export abstract class Sync<TConfig, TStates, IBind, IEmit> {
 
   constructor(config, root?: RootSync) {
     this.config = config
-    if (root) {
+    // config and ConfigSet force us to do this here
+    if (!root) {
+      this.root = <RootSync>(<any>this)
+      this.root.logger = new Logger()
+    } else {
       this.root = root
     }
     this.state = this.getState()
@@ -133,9 +134,8 @@ export abstract class Sync<TConfig, TStates, IBind, IEmit> {
         global.am_network.addMachine(this.state_reader)
       }
     }
-    if (config) {
-      this.state_reader.add('ConfigSet', config)
-    }
+    this.state_reader.add('ConfigSet', config)
+    this.initLoggers()
   }
 
   // ----- -----
@@ -253,6 +253,14 @@ export abstract class Sync<TConfig, TStates, IBind, IEmit> {
       machines.push(...sub.getMachines())
     }
     return machines
+  }
+
+  initLoggers() {
+    let name = this.state.id(true)
+
+    this.log = this.root.logger.createLogger(name)
+    this.log_verbose = this.root.logger.createLogger(name, 'verbose')
+    this.log_error = this.root.logger.createLogger(name, 'error')
   }
 }
 
