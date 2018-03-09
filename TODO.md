@@ -1,16 +1,20 @@
 Bugs:
 
-* thrown exceptions dont go to the error.log file
+* archiving in inbox doesnt complete the task
 * double "email:XXXX" ref link in gtasks description
   * reproduce
-* investigate "gmail-query-next History ID changed for thread" after start
 * backend error on mass label color change
   * throttle / redo ?
+* labels from someones email saved as a gtasks text create a label in gmail
+  * only the owner should be able to #tag
 
 TODO:
 
+* tmp: include the full link to the email
+* add to task title
+  * references R/Foo as ^Foo
+  * the email author
 * on HeartBeat reset - kill all the active connections, release the semaphore
-* include the email author in the task's name
 * tasks for archived emails from the inbox should be deleted
   * from the task list, instead of completed
 * S/Ignored should remove other statuses
@@ -70,6 +74,7 @@ Milestone 2:
   * simple version: get the latest label changeset from times on labels
 * siri/ical interface
 * IM interface
+* OCR interface
 * google spreadsheets backend
 * missing extended GTD labels
   * S/Started or S/Current
