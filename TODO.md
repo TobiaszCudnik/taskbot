@@ -3,17 +3,16 @@ Bugs:
 * archiving in inbox doesnt complete the task
 * double "email:XXXX" ref link in gtasks description
   * reproduce
-* backend error on mass label color change
-  * throttle / redo ?
 * labels from someones email saved as a gtasks text create a label in gmail
   * only the owner should be able to #tag
+  * filter out other label prefixes
+* references R/Foo as ^Foo dont work in tasks
+* redo when creating lists
 
 TODO:
 
+* long quota delay for gtasks in case of the daily one exceeded
 * tmp: include the full link to the email
-* add to task title
-  * references R/Foo as ^Foo
-  * the email author
 * on HeartBeat reset - kill all the active connections, release the semaphore
 * tasks for archived emails from the inbox should be deleted
   * from the task list, instead of completed
@@ -32,6 +31,9 @@ TODO:
   * reuse the answer
   * avoid the Dirty state
 * error handling & redo logic for the init phase
+  * before Ready is set
+  * include quota checking
+* calculate the daily quota by counting requests
 * auto setup all the required labels on the startup
 * handle deleted task IDs
 * rename settings to config
