@@ -164,7 +164,6 @@ export abstract class Sync<TConfig, TStates, IBind, IEmit> {
 
   // TODO extract google specific code to GoogleAPIMixin
   Exception_enter(err, ...rest): boolean {
-    debugger
     this.log_error('ERROR: %O', err)
     if (err.errors) {
       let quota_err = false

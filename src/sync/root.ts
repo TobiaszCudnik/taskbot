@@ -280,7 +280,7 @@ export default class RootSync extends SyncWriter<
     if (!params) {
       params = {} as A
     }
-    this.log_requests(`REQUEST (${this.active_requests} active): %O`, params)
+    this.log_requests(`REQUEST (${this.active_requests} active):\n%O`, params)
     // TODO googleapis specific code should be in google/sync.ts
     let ret
     try {
