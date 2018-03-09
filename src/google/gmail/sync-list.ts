@@ -123,9 +123,12 @@ export default class GmailListSync extends Sync<
       // TODO clone only in debug
       const before = clone(record)
       // remove enter labels, as the thread left the query
-      // TODO maybe re-download the thread while reading? to be sure
-      //   else - delete the thread and expect the main sync re-downloads it
       this.applyLabels(record, { remove: this.config.enter.add })
+      // TODO sync the local thread object
+      // option 1 - re-download the thread while reading
+      // option 2 - delete the thread and expect the main sync re-downloads it
+      // option 3 - apply the label changes on the local thread object
+      this.gmail.threads.delete(record.gmail_id)
       this.printRecordDiff(before, record, 'threads to close')
       return record
     })
