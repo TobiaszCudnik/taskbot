@@ -276,6 +276,43 @@ export interface ITransitions {
 }
 
 // ----- ----- ----- ----- -----
+// STATE: QuotaExceeded
+// ----- ----- ----- ----- -----
+
+/** machine.bind('QuotaExceeded', (param1, param2) => {}) */
+export interface IBind extends IBindBase {
+  (
+    event: 'QuotaExceeded_enter',
+    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
+    context?: Object
+  ): this
+  (
+    event: 'QuotaExceeded_state',
+    listener: () => /* param1: any?, param2: any? */ any,
+    context?: Object
+  ): this
+}
+
+/** machine.emit('QuotaExceeded', param1, param2) */
+export interface IEmit extends IEmitBase {
+  (event: 'QuotaExceeded_enter' /*, param1: any?, param2: any? */):
+    | boolean
+    | void
+  (event: 'QuotaExceeded_state' /*, param1: any?, param2: any? */):
+    | boolean
+    | void
+}
+
+/** Method declarations */
+export interface ITransitions {
+  QuotaExceeded_enter /* param1: any?, param2: any? */?(): boolean | void
+  QuotaExceeded_state /* param1: any?, param2: any? */?():
+    | boolean
+    | void
+    | Promise<boolean | void>
+}
+
+// ----- ----- ----- ----- -----
 // STATE: Writing
 // ----- ----- ----- ----- -----
 
@@ -454,6 +491,7 @@ export interface ITransitions {
   Enabled_SubsInited?(): boolean | void
   Enabled_Reading?(): boolean | void
   Enabled_ReadingDone?(): boolean | void
+  Enabled_QuotaExceeded?(): boolean | void
   Enabled_Writing?(): boolean | void
   Enabled_WritingDone?(): boolean | void
   Enabled_DBReady?(): boolean | void
@@ -471,6 +509,7 @@ export interface ITransitions {
   Initializing_SubsInited?(): boolean | void
   Initializing_Reading?(): boolean | void
   Initializing_ReadingDone?(): boolean | void
+  Initializing_QuotaExceeded?(): boolean | void
   Initializing_Writing?(): boolean | void
   Initializing_WritingDone?(): boolean | void
   Initializing_DBReady?(): boolean | void
@@ -488,6 +527,7 @@ export interface ITransitions {
   Ready_SubsInited?(): boolean | void
   Ready_Reading?(): boolean | void
   Ready_ReadingDone?(): boolean | void
+  Ready_QuotaExceeded?(): boolean | void
   Ready_Writing?(): boolean | void
   Ready_WritingDone?(): boolean | void
   Ready_DBReady?(): boolean | void
@@ -505,6 +545,7 @@ export interface ITransitions {
   ConfigSet_SubsInited?(): boolean | void
   ConfigSet_Reading?(): boolean | void
   ConfigSet_ReadingDone?(): boolean | void
+  ConfigSet_QuotaExceeded?(): boolean | void
   ConfigSet_Writing?(): boolean | void
   ConfigSet_WritingDone?(): boolean | void
   ConfigSet_DBReady?(): boolean | void
@@ -522,6 +563,7 @@ export interface ITransitions {
   SubsReady_SubsInited?(): boolean | void
   SubsReady_Reading?(): boolean | void
   SubsReady_ReadingDone?(): boolean | void
+  SubsReady_QuotaExceeded?(): boolean | void
   SubsReady_Writing?(): boolean | void
   SubsReady_WritingDone?(): boolean | void
   SubsReady_DBReady?(): boolean | void
@@ -539,6 +581,7 @@ export interface ITransitions {
   SubsInited_Any?(): boolean | void
   SubsInited_Reading?(): boolean | void
   SubsInited_ReadingDone?(): boolean | void
+  SubsInited_QuotaExceeded?(): boolean | void
   SubsInited_Writing?(): boolean | void
   SubsInited_WritingDone?(): boolean | void
   SubsInited_DBReady?(): boolean | void
@@ -556,6 +599,7 @@ export interface ITransitions {
   Reading_SubsInited?(): boolean | void
   Reading_Any?(): boolean | void
   Reading_ReadingDone?(): boolean | void
+  Reading_QuotaExceeded?(): boolean | void
   Reading_Writing?(): boolean | void
   Reading_WritingDone?(): boolean | void
   Reading_DBReady?(): boolean | void
@@ -573,6 +617,7 @@ export interface ITransitions {
   ReadingDone_SubsInited?(): boolean | void
   ReadingDone_Reading?(): boolean | void
   ReadingDone_Any?(): boolean | void
+  ReadingDone_QuotaExceeded?(): boolean | void
   ReadingDone_Writing?(): boolean | void
   ReadingDone_WritingDone?(): boolean | void
   ReadingDone_DBReady?(): boolean | void
@@ -582,6 +627,24 @@ export interface ITransitions {
   ReadingDone_Exception?(): boolean | void
   ReadingDone_exit?(): boolean | void
   ReadingDone_end?(): boolean | void
+  QuotaExceeded_Enabled?(): boolean | void
+  QuotaExceeded_Initializing?(): boolean | void
+  QuotaExceeded_Ready?(): boolean | void
+  QuotaExceeded_ConfigSet?(): boolean | void
+  QuotaExceeded_SubsReady?(): boolean | void
+  QuotaExceeded_SubsInited?(): boolean | void
+  QuotaExceeded_Reading?(): boolean | void
+  QuotaExceeded_ReadingDone?(): boolean | void
+  QuotaExceeded_Any?(): boolean | void
+  QuotaExceeded_Writing?(): boolean | void
+  QuotaExceeded_WritingDone?(): boolean | void
+  QuotaExceeded_DBReady?(): boolean | void
+  QuotaExceeded_Exception?(): boolean | void
+  QuotaExceeded_HeartBeat?(): boolean | void
+  QuotaExceeded_Scheduled?(): boolean | void
+  QuotaExceeded_Exception?(): boolean | void
+  QuotaExceeded_exit?(): boolean | void
+  QuotaExceeded_end?(): boolean | void
   Writing_Enabled?(): boolean | void
   Writing_Initializing?(): boolean | void
   Writing_Ready?(): boolean | void
@@ -590,6 +653,7 @@ export interface ITransitions {
   Writing_SubsInited?(): boolean | void
   Writing_Reading?(): boolean | void
   Writing_ReadingDone?(): boolean | void
+  Writing_QuotaExceeded?(): boolean | void
   Writing_Any?(): boolean | void
   Writing_WritingDone?(): boolean | void
   Writing_DBReady?(): boolean | void
@@ -607,6 +671,7 @@ export interface ITransitions {
   WritingDone_SubsInited?(): boolean | void
   WritingDone_Reading?(): boolean | void
   WritingDone_ReadingDone?(): boolean | void
+  WritingDone_QuotaExceeded?(): boolean | void
   WritingDone_Writing?(): boolean | void
   WritingDone_Any?(): boolean | void
   WritingDone_DBReady?(): boolean | void
@@ -624,6 +689,7 @@ export interface ITransitions {
   DBReady_SubsInited?(): boolean | void
   DBReady_Reading?(): boolean | void
   DBReady_ReadingDone?(): boolean | void
+  DBReady_QuotaExceeded?(): boolean | void
   DBReady_Writing?(): boolean | void
   DBReady_WritingDone?(): boolean | void
   DBReady_Any?(): boolean | void
@@ -641,6 +707,7 @@ export interface ITransitions {
   Exception_SubsInited?(): boolean | void
   Exception_Reading?(): boolean | void
   Exception_ReadingDone?(): boolean | void
+  Exception_QuotaExceeded?(): boolean | void
   Exception_Writing?(): boolean | void
   Exception_WritingDone?(): boolean | void
   Exception_DBReady?(): boolean | void
@@ -656,6 +723,7 @@ export interface ITransitions {
   HeartBeat_SubsInited?(): boolean | void
   HeartBeat_Reading?(): boolean | void
   HeartBeat_ReadingDone?(): boolean | void
+  HeartBeat_QuotaExceeded?(): boolean | void
   HeartBeat_Writing?(): boolean | void
   HeartBeat_WritingDone?(): boolean | void
   HeartBeat_DBReady?(): boolean | void
@@ -673,6 +741,7 @@ export interface ITransitions {
   Scheduled_SubsInited?(): boolean | void
   Scheduled_Reading?(): boolean | void
   Scheduled_ReadingDone?(): boolean | void
+  Scheduled_QuotaExceeded?(): boolean | void
   Scheduled_Writing?(): boolean | void
   Scheduled_WritingDone?(): boolean | void
   Scheduled_DBReady?(): boolean | void
@@ -690,6 +759,7 @@ export interface ITransitions {
   Exception_SubsInited?(): boolean | void
   Exception_Reading?(): boolean | void
   Exception_ReadingDone?(): boolean | void
+  Exception_QuotaExceeded?(): boolean | void
   Exception_Writing?(): boolean | void
   Exception_WritingDone?(): boolean | void
   Exception_DBReady?(): boolean | void
@@ -709,6 +779,7 @@ export type TStates =
   | 'SubsInited'
   | 'Reading'
   | 'ReadingDone'
+  | 'QuotaExceeded'
   | 'Writing'
   | 'WritingDone'
   | 'DBReady'
@@ -725,6 +796,7 @@ export type TTransitions =
   | 'Enabled_SubsInited'
   | 'Enabled_Reading'
   | 'Enabled_ReadingDone'
+  | 'Enabled_QuotaExceeded'
   | 'Enabled_Writing'
   | 'Enabled_WritingDone'
   | 'Enabled_DBReady'
@@ -742,6 +814,7 @@ export type TTransitions =
   | 'Initializing_SubsInited'
   | 'Initializing_Reading'
   | 'Initializing_ReadingDone'
+  | 'Initializing_QuotaExceeded'
   | 'Initializing_Writing'
   | 'Initializing_WritingDone'
   | 'Initializing_DBReady'
@@ -759,6 +832,7 @@ export type TTransitions =
   | 'Ready_SubsInited'
   | 'Ready_Reading'
   | 'Ready_ReadingDone'
+  | 'Ready_QuotaExceeded'
   | 'Ready_Writing'
   | 'Ready_WritingDone'
   | 'Ready_DBReady'
@@ -776,6 +850,7 @@ export type TTransitions =
   | 'ConfigSet_SubsInited'
   | 'ConfigSet_Reading'
   | 'ConfigSet_ReadingDone'
+  | 'ConfigSet_QuotaExceeded'
   | 'ConfigSet_Writing'
   | 'ConfigSet_WritingDone'
   | 'ConfigSet_DBReady'
@@ -793,6 +868,7 @@ export type TTransitions =
   | 'SubsReady_SubsInited'
   | 'SubsReady_Reading'
   | 'SubsReady_ReadingDone'
+  | 'SubsReady_QuotaExceeded'
   | 'SubsReady_Writing'
   | 'SubsReady_WritingDone'
   | 'SubsReady_DBReady'
@@ -810,6 +886,7 @@ export type TTransitions =
   | 'SubsInited_Any'
   | 'SubsInited_Reading'
   | 'SubsInited_ReadingDone'
+  | 'SubsInited_QuotaExceeded'
   | 'SubsInited_Writing'
   | 'SubsInited_WritingDone'
   | 'SubsInited_DBReady'
@@ -827,6 +904,7 @@ export type TTransitions =
   | 'Reading_SubsInited'
   | 'Reading_Any'
   | 'Reading_ReadingDone'
+  | 'Reading_QuotaExceeded'
   | 'Reading_Writing'
   | 'Reading_WritingDone'
   | 'Reading_DBReady'
@@ -844,6 +922,7 @@ export type TTransitions =
   | 'ReadingDone_SubsInited'
   | 'ReadingDone_Reading'
   | 'ReadingDone_Any'
+  | 'ReadingDone_QuotaExceeded'
   | 'ReadingDone_Writing'
   | 'ReadingDone_WritingDone'
   | 'ReadingDone_DBReady'
@@ -853,6 +932,24 @@ export type TTransitions =
   | 'ReadingDone_Exception'
   | 'ReadingDone_exit'
   | 'ReadingDone_end'
+  | 'QuotaExceeded_Enabled'
+  | 'QuotaExceeded_Initializing'
+  | 'QuotaExceeded_Ready'
+  | 'QuotaExceeded_ConfigSet'
+  | 'QuotaExceeded_SubsReady'
+  | 'QuotaExceeded_SubsInited'
+  | 'QuotaExceeded_Reading'
+  | 'QuotaExceeded_ReadingDone'
+  | 'QuotaExceeded_Any'
+  | 'QuotaExceeded_Writing'
+  | 'QuotaExceeded_WritingDone'
+  | 'QuotaExceeded_DBReady'
+  | 'QuotaExceeded_Exception'
+  | 'QuotaExceeded_HeartBeat'
+  | 'QuotaExceeded_Scheduled'
+  | 'QuotaExceeded_Exception'
+  | 'QuotaExceeded_exit'
+  | 'QuotaExceeded_end'
   | 'Writing_Enabled'
   | 'Writing_Initializing'
   | 'Writing_Ready'
@@ -861,6 +958,7 @@ export type TTransitions =
   | 'Writing_SubsInited'
   | 'Writing_Reading'
   | 'Writing_ReadingDone'
+  | 'Writing_QuotaExceeded'
   | 'Writing_Any'
   | 'Writing_WritingDone'
   | 'Writing_DBReady'
@@ -878,6 +976,7 @@ export type TTransitions =
   | 'WritingDone_SubsInited'
   | 'WritingDone_Reading'
   | 'WritingDone_ReadingDone'
+  | 'WritingDone_QuotaExceeded'
   | 'WritingDone_Writing'
   | 'WritingDone_Any'
   | 'WritingDone_DBReady'
@@ -895,6 +994,7 @@ export type TTransitions =
   | 'DBReady_SubsInited'
   | 'DBReady_Reading'
   | 'DBReady_ReadingDone'
+  | 'DBReady_QuotaExceeded'
   | 'DBReady_Writing'
   | 'DBReady_WritingDone'
   | 'DBReady_Any'
@@ -912,6 +1012,7 @@ export type TTransitions =
   | 'Exception_SubsInited'
   | 'Exception_Reading'
   | 'Exception_ReadingDone'
+  | 'Exception_QuotaExceeded'
   | 'Exception_Writing'
   | 'Exception_WritingDone'
   | 'Exception_DBReady'
@@ -927,6 +1028,7 @@ export type TTransitions =
   | 'HeartBeat_SubsInited'
   | 'HeartBeat_Reading'
   | 'HeartBeat_ReadingDone'
+  | 'HeartBeat_QuotaExceeded'
   | 'HeartBeat_Writing'
   | 'HeartBeat_WritingDone'
   | 'HeartBeat_DBReady'
@@ -944,6 +1046,7 @@ export type TTransitions =
   | 'Scheduled_SubsInited'
   | 'Scheduled_Reading'
   | 'Scheduled_ReadingDone'
+  | 'Scheduled_QuotaExceeded'
   | 'Scheduled_Writing'
   | 'Scheduled_WritingDone'
   | 'Scheduled_DBReady'
@@ -961,6 +1064,7 @@ export type TTransitions =
   | 'Exception_SubsInited'
   | 'Exception_Reading'
   | 'Exception_ReadingDone'
+  | 'Exception_QuotaExceeded'
   | 'Exception_Writing'
   | 'Exception_WritingDone'
   | 'Exception_DBReady'
@@ -994,6 +1098,7 @@ export interface IJSONStates {
   SubsInited: IState
   Reading: IState
   ReadingDone: IState
+  QuotaExceeded: IState
   Writing: IState
   WritingDone: IState
   DBReady: IState

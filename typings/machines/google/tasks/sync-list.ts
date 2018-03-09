@@ -276,6 +276,43 @@ export interface ITransitions {
 }
 
 // ----- ----- ----- ----- -----
+// STATE: QuotaExceeded
+// ----- ----- ----- ----- -----
+
+/** machine.bind('QuotaExceeded', (param1, param2) => {}) */
+export interface IBind extends IBindBase {
+  (
+    event: 'QuotaExceeded_enter',
+    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
+    context?: Object
+  ): this
+  (
+    event: 'QuotaExceeded_state',
+    listener: () => /* param1: any?, param2: any? */ any,
+    context?: Object
+  ): this
+}
+
+/** machine.emit('QuotaExceeded', param1, param2) */
+export interface IEmit extends IEmitBase {
+  (event: 'QuotaExceeded_enter' /*, param1: any?, param2: any? */):
+    | boolean
+    | void
+  (event: 'QuotaExceeded_state' /*, param1: any?, param2: any? */):
+    | boolean
+    | void
+}
+
+/** Method declarations */
+export interface ITransitions {
+  QuotaExceeded_enter /* param1: any?, param2: any? */?(): boolean | void
+  QuotaExceeded_state /* param1: any?, param2: any? */?():
+    | boolean
+    | void
+    | Promise<boolean | void>
+}
+
+// ----- ----- ----- ----- -----
 // STATE: Cached
 // ----- ----- ----- ----- -----
 
@@ -341,43 +378,6 @@ export interface ITransitions {
     | Promise<boolean | void>
 }
 
-// ----- ----- ----- ----- -----
-// STATE: QuotaExceeded
-// ----- ----- ----- ----- -----
-
-/** machine.bind('QuotaExceeded', (param1, param2) => {}) */
-export interface IBind extends IBindBase {
-  (
-    event: 'QuotaExceeded_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'QuotaExceeded_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
-}
-
-/** machine.emit('QuotaExceeded', param1, param2) */
-export interface IEmit extends IEmitBase {
-  (event: 'QuotaExceeded_enter' /*, param1: any?, param2: any? */):
-    | boolean
-    | void
-  (event: 'QuotaExceeded_state' /*, param1: any?, param2: any? */):
-    | boolean
-    | void
-}
-
-/** Method declarations */
-export interface ITransitions {
-  QuotaExceeded_enter /* param1: any?, param2: any? */?(): boolean | void
-  QuotaExceeded_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
-}
-
 // ----- ----- -----
 // GENERAL TYPES
 // ----- ----- -----
@@ -392,9 +392,9 @@ export interface ITransitions {
   Enabled_SubsInited?(): boolean | void
   Enabled_Reading?(): boolean | void
   Enabled_ReadingDone?(): boolean | void
+  Enabled_QuotaExceeded?(): boolean | void
   Enabled_Cached?(): boolean | void
   Enabled_Dirty?(): boolean | void
-  Enabled_QuotaExceeded?(): boolean | void
   Enabled_Exception?(): boolean | void
   Enabled_exit?(): boolean | void
   Enabled_end?(): boolean | void
@@ -406,9 +406,9 @@ export interface ITransitions {
   Initializing_SubsInited?(): boolean | void
   Initializing_Reading?(): boolean | void
   Initializing_ReadingDone?(): boolean | void
+  Initializing_QuotaExceeded?(): boolean | void
   Initializing_Cached?(): boolean | void
   Initializing_Dirty?(): boolean | void
-  Initializing_QuotaExceeded?(): boolean | void
   Initializing_Exception?(): boolean | void
   Initializing_exit?(): boolean | void
   Initializing_end?(): boolean | void
@@ -420,9 +420,9 @@ export interface ITransitions {
   Ready_SubsInited?(): boolean | void
   Ready_Reading?(): boolean | void
   Ready_ReadingDone?(): boolean | void
+  Ready_QuotaExceeded?(): boolean | void
   Ready_Cached?(): boolean | void
   Ready_Dirty?(): boolean | void
-  Ready_QuotaExceeded?(): boolean | void
   Ready_Exception?(): boolean | void
   Ready_exit?(): boolean | void
   Ready_end?(): boolean | void
@@ -434,9 +434,9 @@ export interface ITransitions {
   ConfigSet_SubsInited?(): boolean | void
   ConfigSet_Reading?(): boolean | void
   ConfigSet_ReadingDone?(): boolean | void
+  ConfigSet_QuotaExceeded?(): boolean | void
   ConfigSet_Cached?(): boolean | void
   ConfigSet_Dirty?(): boolean | void
-  ConfigSet_QuotaExceeded?(): boolean | void
   ConfigSet_Exception?(): boolean | void
   ConfigSet_exit?(): boolean | void
   ConfigSet_end?(): boolean | void
@@ -448,9 +448,9 @@ export interface ITransitions {
   SubsReady_SubsInited?(): boolean | void
   SubsReady_Reading?(): boolean | void
   SubsReady_ReadingDone?(): boolean | void
+  SubsReady_QuotaExceeded?(): boolean | void
   SubsReady_Cached?(): boolean | void
   SubsReady_Dirty?(): boolean | void
-  SubsReady_QuotaExceeded?(): boolean | void
   SubsReady_Exception?(): boolean | void
   SubsReady_exit?(): boolean | void
   SubsReady_end?(): boolean | void
@@ -462,9 +462,9 @@ export interface ITransitions {
   SubsInited_Any?(): boolean | void
   SubsInited_Reading?(): boolean | void
   SubsInited_ReadingDone?(): boolean | void
+  SubsInited_QuotaExceeded?(): boolean | void
   SubsInited_Cached?(): boolean | void
   SubsInited_Dirty?(): boolean | void
-  SubsInited_QuotaExceeded?(): boolean | void
   SubsInited_Exception?(): boolean | void
   SubsInited_exit?(): boolean | void
   SubsInited_end?(): boolean | void
@@ -476,9 +476,9 @@ export interface ITransitions {
   Reading_SubsInited?(): boolean | void
   Reading_Any?(): boolean | void
   Reading_ReadingDone?(): boolean | void
+  Reading_QuotaExceeded?(): boolean | void
   Reading_Cached?(): boolean | void
   Reading_Dirty?(): boolean | void
-  Reading_QuotaExceeded?(): boolean | void
   Reading_Exception?(): boolean | void
   Reading_exit?(): boolean | void
   Reading_end?(): boolean | void
@@ -490,12 +490,26 @@ export interface ITransitions {
   ReadingDone_SubsInited?(): boolean | void
   ReadingDone_Reading?(): boolean | void
   ReadingDone_Any?(): boolean | void
+  ReadingDone_QuotaExceeded?(): boolean | void
   ReadingDone_Cached?(): boolean | void
   ReadingDone_Dirty?(): boolean | void
-  ReadingDone_QuotaExceeded?(): boolean | void
   ReadingDone_Exception?(): boolean | void
   ReadingDone_exit?(): boolean | void
   ReadingDone_end?(): boolean | void
+  QuotaExceeded_Enabled?(): boolean | void
+  QuotaExceeded_Initializing?(): boolean | void
+  QuotaExceeded_Ready?(): boolean | void
+  QuotaExceeded_ConfigSet?(): boolean | void
+  QuotaExceeded_SubsReady?(): boolean | void
+  QuotaExceeded_SubsInited?(): boolean | void
+  QuotaExceeded_Reading?(): boolean | void
+  QuotaExceeded_ReadingDone?(): boolean | void
+  QuotaExceeded_Any?(): boolean | void
+  QuotaExceeded_Cached?(): boolean | void
+  QuotaExceeded_Dirty?(): boolean | void
+  QuotaExceeded_Exception?(): boolean | void
+  QuotaExceeded_exit?(): boolean | void
+  QuotaExceeded_end?(): boolean | void
   Cached_Enabled?(): boolean | void
   Cached_Initializing?(): boolean | void
   Cached_Ready?(): boolean | void
@@ -504,9 +518,9 @@ export interface ITransitions {
   Cached_SubsInited?(): boolean | void
   Cached_Reading?(): boolean | void
   Cached_ReadingDone?(): boolean | void
+  Cached_QuotaExceeded?(): boolean | void
   Cached_Any?(): boolean | void
   Cached_Dirty?(): boolean | void
-  Cached_QuotaExceeded?(): boolean | void
   Cached_Exception?(): boolean | void
   Cached_exit?(): boolean | void
   Cached_end?(): boolean | void
@@ -518,26 +532,12 @@ export interface ITransitions {
   Dirty_SubsInited?(): boolean | void
   Dirty_Reading?(): boolean | void
   Dirty_ReadingDone?(): boolean | void
+  Dirty_QuotaExceeded?(): boolean | void
   Dirty_Cached?(): boolean | void
   Dirty_Any?(): boolean | void
-  Dirty_QuotaExceeded?(): boolean | void
   Dirty_Exception?(): boolean | void
   Dirty_exit?(): boolean | void
   Dirty_end?(): boolean | void
-  QuotaExceeded_Enabled?(): boolean | void
-  QuotaExceeded_Initializing?(): boolean | void
-  QuotaExceeded_Ready?(): boolean | void
-  QuotaExceeded_ConfigSet?(): boolean | void
-  QuotaExceeded_SubsReady?(): boolean | void
-  QuotaExceeded_SubsInited?(): boolean | void
-  QuotaExceeded_Reading?(): boolean | void
-  QuotaExceeded_ReadingDone?(): boolean | void
-  QuotaExceeded_Cached?(): boolean | void
-  QuotaExceeded_Dirty?(): boolean | void
-  QuotaExceeded_Any?(): boolean | void
-  QuotaExceeded_Exception?(): boolean | void
-  QuotaExceeded_exit?(): boolean | void
-  QuotaExceeded_end?(): boolean | void
   Exception_Enabled?(): boolean | void
   Exception_Initializing?(): boolean | void
   Exception_Ready?(): boolean | void
@@ -546,9 +546,9 @@ export interface ITransitions {
   Exception_SubsInited?(): boolean | void
   Exception_Reading?(): boolean | void
   Exception_ReadingDone?(): boolean | void
+  Exception_QuotaExceeded?(): boolean | void
   Exception_Cached?(): boolean | void
   Exception_Dirty?(): boolean | void
-  Exception_QuotaExceeded?(): boolean | void
   Exception_exit?(): boolean | void
   Exception_end?(): boolean | void
 }
@@ -563,9 +563,9 @@ export type TStates =
   | 'SubsInited'
   | 'Reading'
   | 'ReadingDone'
+  | 'QuotaExceeded'
   | 'Cached'
   | 'Dirty'
-  | 'QuotaExceeded'
 
 /** All the transition names */
 export type TTransitions =
@@ -577,9 +577,9 @@ export type TTransitions =
   | 'Enabled_SubsInited'
   | 'Enabled_Reading'
   | 'Enabled_ReadingDone'
+  | 'Enabled_QuotaExceeded'
   | 'Enabled_Cached'
   | 'Enabled_Dirty'
-  | 'Enabled_QuotaExceeded'
   | 'Enabled_Exception'
   | 'Enabled_exit'
   | 'Enabled_end'
@@ -591,9 +591,9 @@ export type TTransitions =
   | 'Initializing_SubsInited'
   | 'Initializing_Reading'
   | 'Initializing_ReadingDone'
+  | 'Initializing_QuotaExceeded'
   | 'Initializing_Cached'
   | 'Initializing_Dirty'
-  | 'Initializing_QuotaExceeded'
   | 'Initializing_Exception'
   | 'Initializing_exit'
   | 'Initializing_end'
@@ -605,9 +605,9 @@ export type TTransitions =
   | 'Ready_SubsInited'
   | 'Ready_Reading'
   | 'Ready_ReadingDone'
+  | 'Ready_QuotaExceeded'
   | 'Ready_Cached'
   | 'Ready_Dirty'
-  | 'Ready_QuotaExceeded'
   | 'Ready_Exception'
   | 'Ready_exit'
   | 'Ready_end'
@@ -619,9 +619,9 @@ export type TTransitions =
   | 'ConfigSet_SubsInited'
   | 'ConfigSet_Reading'
   | 'ConfigSet_ReadingDone'
+  | 'ConfigSet_QuotaExceeded'
   | 'ConfigSet_Cached'
   | 'ConfigSet_Dirty'
-  | 'ConfigSet_QuotaExceeded'
   | 'ConfigSet_Exception'
   | 'ConfigSet_exit'
   | 'ConfigSet_end'
@@ -633,9 +633,9 @@ export type TTransitions =
   | 'SubsReady_SubsInited'
   | 'SubsReady_Reading'
   | 'SubsReady_ReadingDone'
+  | 'SubsReady_QuotaExceeded'
   | 'SubsReady_Cached'
   | 'SubsReady_Dirty'
-  | 'SubsReady_QuotaExceeded'
   | 'SubsReady_Exception'
   | 'SubsReady_exit'
   | 'SubsReady_end'
@@ -647,9 +647,9 @@ export type TTransitions =
   | 'SubsInited_Any'
   | 'SubsInited_Reading'
   | 'SubsInited_ReadingDone'
+  | 'SubsInited_QuotaExceeded'
   | 'SubsInited_Cached'
   | 'SubsInited_Dirty'
-  | 'SubsInited_QuotaExceeded'
   | 'SubsInited_Exception'
   | 'SubsInited_exit'
   | 'SubsInited_end'
@@ -661,9 +661,9 @@ export type TTransitions =
   | 'Reading_SubsInited'
   | 'Reading_Any'
   | 'Reading_ReadingDone'
+  | 'Reading_QuotaExceeded'
   | 'Reading_Cached'
   | 'Reading_Dirty'
-  | 'Reading_QuotaExceeded'
   | 'Reading_Exception'
   | 'Reading_exit'
   | 'Reading_end'
@@ -675,12 +675,26 @@ export type TTransitions =
   | 'ReadingDone_SubsInited'
   | 'ReadingDone_Reading'
   | 'ReadingDone_Any'
+  | 'ReadingDone_QuotaExceeded'
   | 'ReadingDone_Cached'
   | 'ReadingDone_Dirty'
-  | 'ReadingDone_QuotaExceeded'
   | 'ReadingDone_Exception'
   | 'ReadingDone_exit'
   | 'ReadingDone_end'
+  | 'QuotaExceeded_Enabled'
+  | 'QuotaExceeded_Initializing'
+  | 'QuotaExceeded_Ready'
+  | 'QuotaExceeded_ConfigSet'
+  | 'QuotaExceeded_SubsReady'
+  | 'QuotaExceeded_SubsInited'
+  | 'QuotaExceeded_Reading'
+  | 'QuotaExceeded_ReadingDone'
+  | 'QuotaExceeded_Any'
+  | 'QuotaExceeded_Cached'
+  | 'QuotaExceeded_Dirty'
+  | 'QuotaExceeded_Exception'
+  | 'QuotaExceeded_exit'
+  | 'QuotaExceeded_end'
   | 'Cached_Enabled'
   | 'Cached_Initializing'
   | 'Cached_Ready'
@@ -689,9 +703,9 @@ export type TTransitions =
   | 'Cached_SubsInited'
   | 'Cached_Reading'
   | 'Cached_ReadingDone'
+  | 'Cached_QuotaExceeded'
   | 'Cached_Any'
   | 'Cached_Dirty'
-  | 'Cached_QuotaExceeded'
   | 'Cached_Exception'
   | 'Cached_exit'
   | 'Cached_end'
@@ -703,26 +717,12 @@ export type TTransitions =
   | 'Dirty_SubsInited'
   | 'Dirty_Reading'
   | 'Dirty_ReadingDone'
+  | 'Dirty_QuotaExceeded'
   | 'Dirty_Cached'
   | 'Dirty_Any'
-  | 'Dirty_QuotaExceeded'
   | 'Dirty_Exception'
   | 'Dirty_exit'
   | 'Dirty_end'
-  | 'QuotaExceeded_Enabled'
-  | 'QuotaExceeded_Initializing'
-  | 'QuotaExceeded_Ready'
-  | 'QuotaExceeded_ConfigSet'
-  | 'QuotaExceeded_SubsReady'
-  | 'QuotaExceeded_SubsInited'
-  | 'QuotaExceeded_Reading'
-  | 'QuotaExceeded_ReadingDone'
-  | 'QuotaExceeded_Cached'
-  | 'QuotaExceeded_Dirty'
-  | 'QuotaExceeded_Any'
-  | 'QuotaExceeded_Exception'
-  | 'QuotaExceeded_exit'
-  | 'QuotaExceeded_end'
   | 'Exception_Enabled'
   | 'Exception_Initializing'
   | 'Exception_Ready'
@@ -731,9 +731,9 @@ export type TTransitions =
   | 'Exception_SubsInited'
   | 'Exception_Reading'
   | 'Exception_ReadingDone'
+  | 'Exception_QuotaExceeded'
   | 'Exception_Cached'
   | 'Exception_Dirty'
-  | 'Exception_QuotaExceeded'
   | 'Exception_exit'
   | 'Exception_end'
 
@@ -762,8 +762,8 @@ export interface IJSONStates {
   SubsInited: IState
   Reading: IState
   ReadingDone: IState
+  QuotaExceeded: IState
   Cached: IState
   Dirty: IState
-  QuotaExceeded: IState
   Exception?: IState
 }
