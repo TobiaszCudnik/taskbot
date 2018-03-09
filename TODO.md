@@ -1,16 +1,14 @@
 Bugs:
 
-* archiving in inbox doesnt complete the task
+* cant archive new email in inbox bc S/Finished is active: false, by default
 * double "email:XXXX" ref link in gtasks description
   * reproduce
-* labels from someones email saved as a gtasks text create a label in gmail
-  * only the owner should be able to #tag
-  * filter out other label prefixes
-* references R/Foo as ^Foo dont work in tasks
-* redo when creating lists
+* references R/Foo as ^Foo dont show up in tasks
+* change from gmail, undone by the labels filter isnt applied back to gmail
 
 TODO:
 
+* log requests to a separate file
 * tmp: include the full link to the email
 * on HeartBeat reset - kill all the active connections, release the semaphore
 * tasks for archived emails from the inbox should be deleted
@@ -45,11 +43,21 @@ TODO:
   * is that a real problem?
 * implement deleting
   * currently the record is re-added from the other source
-* argv processor
+* cli params
+  * config
+  * terminal debugs
+  * AM debug / level
+  * AMI debug / host / level
+  * file debug / level
+    * append logs
 * add some useful repl commands
+  * print all machines
+  * print the DB
+    * gmail, gtasks
 
 Optimizations:
 
+* clone records for diffing only in the debug mode
 * use etags in patch requests in gtasks
   * reuse the answer
   * avoid the Dirty state
@@ -59,6 +67,7 @@ Optimizations:
 * check if all the requests use the 'fields' limits
 * use views from lokijs
 * check if requests are gzipped
+* use Users.messages.batchModify for gmail labels
 
 Refactor:
 
@@ -68,6 +77,8 @@ Refactor:
 
 Milestone 2:
 
+* project label mapped to an email address
+  * search query, like a gmail filter?
 * custom list
   * query creator
 * merge subtasks
