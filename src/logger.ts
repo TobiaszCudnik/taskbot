@@ -39,7 +39,7 @@ export default class Logger {
   createLogger(name, level: level = 'info'): log_fn {
     const terminal = debug(name)
     return (...msgs) => {
-      msgs[0] = msgs[0] || ''
+      msgs[0] = (msgs[0] && msgs[0].toString()) || ''
       terminal(...msgs)
       // optional file logging
       if (!process.env.DEBUG_FILE) return

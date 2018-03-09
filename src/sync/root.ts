@@ -299,7 +299,8 @@ export default class RootSync extends SyncWriter<
       this.active_requests--
       this.executed_requests++
     }
-    this.log_requests('emit: request-finished')
+    // TODO show the number of pending requests
+    this.log_verbose('request finished')
 
     return return_array ? ret : ret[0]
   }

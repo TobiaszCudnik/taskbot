@@ -16,7 +16,13 @@ export default function create(
   net
     .createServer(socket => {
       r = repl
-        .start({ prompt: '> ', input: socket, output: socket })
+        .start({
+          prompt: '> ',
+          input: socket,
+          output: socket,
+          // TODO test
+          terminal: true
+        })
         .on('exit', () => {
           socket.end()
         })
