@@ -4,6 +4,7 @@ import * as google from 'googleapis'
 import * as _ from 'lodash'
 import * as moment from 'moment'
 import { map } from 'typed-promisify-tob'
+import * as regexEscape from 'escape-string-regexp'
 // Machine types
 import {
   AsyncMachine,
@@ -14,6 +15,7 @@ import {
   IBindBase,
   IEmitBase
 } from '../../../typings/machines/google/gmail/sync'
+import GC from '../../sync/gc'
 import RootSync, { DBRecord } from '../../sync/root'
 import { sync_writer_state, SyncWriter } from '../../sync/sync'
 import { IConfig, ILabelDefinition, TRawEmail } from '../../types'
@@ -152,7 +154,14 @@ export default class GmailSync extends SyncWriter<
     if (abort()) return
     this.labels = res.labels
     await this.assertPredefinedLabelsExist(abort)
-    await this.assertLabelsColors(abort)
+    // TODO simple hack for a mass label re-coloring
+    try {
+      await this.assertLabelsColors(abort)
+    } catch {
+      this.state.drop('FetchingLabels')
+      this.state.add('FetchingLabels')
+      return
+    }
     this.state.add('LabelsFetched')
   }
 
@@ -345,7 +354,9 @@ export default class GmailSync extends SyncWriter<
     let remove_label_ids = remove_labels.map(l => this.getLabelId(l))
     let thread = this.getThread(thread_id, true)
 
-    let title = thread ? `'${getTitleFromThread(thread)}'` : `ID: ${thread_id}`
+    let title = thread
+      ? `'${this.getTitleFromThread(thread)}'`
+      : `ID: ${thread_id}`
 
     let log_msg = `Modifying labels for thread ${title} `
     if (add_labels.length) {
@@ -387,7 +398,6 @@ export default class GmailSync extends SyncWriter<
     return this.history_id_latest
   }
 
-  // TODO avoid duplicate concurrent re-fetching
   async fetchThread(
     id: string,
     abort?: () => boolean
@@ -416,7 +426,7 @@ export default class GmailSync extends SyncWriter<
     return thread
   }
 
-  // TODO make it async and download if msgs missing
+  // TODO make it async and download if msgs missing, as a param ???
   getThread(id: string, with_content = false): google.gmail.v1.Thread | null {
     const thread = this.threads.get(id)
     if (!thread) return null
@@ -530,16 +540,32 @@ export default class GmailSync extends SyncWriter<
     }
     return null
   }
-}
 
-export function getTitleFromThread(thread: google.gmail.v1.Thread) {
-  if (!thread.messages || !thread.messages.length)
-    throw new Error(`Thread content not fetched, id: ${thread.id}`)
-  let title
-  try {
-    title = thread.messages[0].payload.headers[0].value
-  } catch (e) {}
-  return trim(title) ? trim(title) : '(no subject)'
+  getTitleFromThread(thread: google.gmail.v1.Thread) {
+    if (!thread.messages || !thread.messages.length)
+      throw new Error(`Thread content not fetched, id: ${thread.id}`)
+    let title
+    try {
+      title = thread.messages[0].payload.headers[0].value
+    } catch (e) {}
+    return trim(title) ? this.removeLabelSymbols(trim(title)) : '(no subject)'
+  }
+
+  // eg 'foo #bar baz' -> 'foo bar baz'
+  removeLabelSymbols(text: string) {
+    // get all label symbols
+    const symbols = new Set<string>()
+    for (const label of this.config.labels) {
+      if (label.symbol) {
+        symbols.add(label.symbol)
+      }
+    }
+    // replace
+    for (const symbol of symbols.values()) {
+      text.replace(new RegExp(regexEscape(symbol) + '(\\w)', 'g'), '$1')
+    }
+    return text
+  }
 }
 
 export function normalizeLabelName(label: string) {

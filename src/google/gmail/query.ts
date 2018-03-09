@@ -12,7 +12,7 @@ import {
 } from '../../../typings/machines/google/gmail/query'
 import { log_fn } from '../../logger'
 import { machineLogToDebug } from '../../utils'
-import GmailSync, { getTitleFromThread } from './sync'
+import GmailSync from './sync'
 
 export type Thread = google.gmail.v1.Thread
 
@@ -175,7 +175,7 @@ export default class GmailQuery {
         const refreshed = await this.gmail.fetchThread(thread.id, abort)
         if (previous) {
           this.log(
-            `History ID changed for thread '${getTitleFromThread(
+            `History ID changed for thread '${this.gmail.getTitleFromThread(
               refreshed
             )}', re-fetched`
           )

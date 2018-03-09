@@ -17,7 +17,7 @@ import RootSync, { DBRecord } from '../../sync/root'
 import { Sync, sync_state as base_state } from '../../sync/sync'
 import { IListConfig } from '../../types'
 import GmailQuery, { Thread } from './query'
-import GmailSync, { getTitleFromThread } from './sync'
+import GmailSync from './sync'
 
 export const sync_state: IJSONStates = {
   ...base_state,
@@ -135,7 +135,7 @@ export default class GmailListSync extends Sync<
   toDB(thread: google.gmail.v1.Thread): DBRecord {
     const record: DBRecord = {
       gmail_id: this.toDBID(thread.id),
-      title: getTitleFromThread(thread),
+      title: this.gmail.getTitleFromThread(thread),
       content: thread.snippet || '',
       labels: {},
       updated: moment().unix()
@@ -191,7 +191,7 @@ export default class GmailListSync extends Sync<
       '\n' +
       this.query.threads
         .map((t: Thread) => {
-          let ret = '- ' + getTitleFromThread(t) + '\n  '
+          let ret = '- ' + this.gmail.getTitleFromThread(t) + '\n  '
           ret += this.gmail.getLabelsFromThread(t).join(', ')
           return ret
         })
