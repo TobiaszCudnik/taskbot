@@ -133,9 +133,15 @@ export default class GmailListSync extends Sync<
   }
 
   toDB(thread: google.gmail.v1.Thread): DBRecord {
+    const sender = this.gmail.getThreadAuthor(thread)
+    const self_sent = sender == this.root.config.gmail_username
+    let title = this.gmail.getTitleFromThread(thread)
+    if (!self_sent) {
+      title += ` (from ${sender})`
+    }
     const record: DBRecord = {
       gmail_id: this.toDBID(thread.id),
-      title: this.gmail.getTitleFromThread(thread),
+      title: title,
       content: thread.snippet || '',
       labels: {},
       updated: moment().unix()
@@ -143,8 +149,8 @@ export default class GmailListSync extends Sync<
     // apply labels from gmail
     const labels_from_thread = this.gmail.getLabelsFromThread(thread)
     this.applyLabels(record, { add: labels_from_thread })
-    // apply labels from text, only when in inbox AND created in gmail
-    if (labels_from_thread.includes('INBOX')) {
+    // apply labels from text, only when in inbox AND send to yourself
+    if (labels_from_thread.includes('INBOX') && self_sent) {
       this.applyLabels(record, {
         add: this.root.getLabelsFromText(record.title).labels
       })

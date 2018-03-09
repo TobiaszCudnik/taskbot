@@ -408,7 +408,7 @@ export default class GmailSync extends SyncWriter<
       {
         id,
         userId: 'me',
-        metadataHeaders: 'SUBJECT',
+        metadataHeaders: ['SUBJECT', 'FROM'],
         format: 'metadata',
         fields: 'id,historyId,messages(id,labelIds,payload(headers))'
       },
@@ -546,9 +546,20 @@ export default class GmailSync extends SyncWriter<
       throw new Error(`Thread content not fetched, id: ${thread.id}`)
     let title
     try {
-      title = thread.messages[0].payload.headers[0].value
+      title = thread.messages[0].payload.headers.find(h => h.name == 'Subject')
+        .value
     } catch (e) {}
     return trim(title) ? this.removeLabelSymbols(trim(title)) : '(no subject)'
+  }
+
+  getThreadAuthor(thread: Thread) {
+    if (!thread.messages || !thread.messages.length)
+      throw new Error(`Thread content not fetched, id: ${thread.id}`)
+    const author = thread.messages[0].payload.headers.find(
+      h => h.name == 'From'
+    ).value
+    const email = author.match(/<([^<]+)>$/)
+    return email ? email[1] : author
   }
 
   // eg 'foo #bar baz' -> 'foo bar baz'
