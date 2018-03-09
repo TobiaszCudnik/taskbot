@@ -2,6 +2,7 @@ import { machine } from 'asyncmachine'
 import * as debug from 'debug'
 import * as google from 'googleapis'
 import * as _ from 'lodash'
+import * as delay from 'delay'
 import * as moment from 'moment'
 import { map } from 'typed-promisify-tob'
 import * as regexEscape from 'escape-string-regexp'
@@ -24,6 +25,8 @@ import Auth from '../auth'
 import { Thread } from './query'
 import GmailListSync from './sync-list'
 import { trim } from 'lodash'
+
+const SEC = 1000
 
 export const sync_state: IJSONStates = {
   ...sync_writer_state,
@@ -158,6 +161,7 @@ export default class GmailSync extends SyncWriter<
     try {
       await this.assertLabelsColors(abort)
     } catch {
+      await delay(3 * SEC)
       this.state.drop('FetchingLabels')
       this.state.add('FetchingLabels')
       return

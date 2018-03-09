@@ -2,7 +2,7 @@ import AsyncMachine, { machine } from 'asyncmachine'
 import debug from 'debug'
 import * as clone from 'deepcopy'
 import * as diff from 'diff'
-import * as moment from 'moment'
+import * as moment from 'moment-timezone'
 import { inspect } from 'util'
 // Machine types
 import {
@@ -42,7 +42,9 @@ export const sync_state: IJSONStatesSync = {
   },
   ReadingDone: {
     drop: ['Reading']
-  }
+  },
+
+  QuotaExceeded: {}
 }
 
 export const sync_writer_state: IJSONStatesWriter = {
@@ -106,6 +108,22 @@ export abstract class Sync<TConfig, TStates, IBind, IEmit> {
   log_error: log_fn
   log_verbose: log_fn
 
+  quota_error: string | null
+  quota_next_sync: number | null
+
+  // TODO google specific
+  // TODO use TimeArray, calculate the daily quota
+  get daily_quota_ok() {
+    const check =
+      !this.quota_next_sync || this.quota_next_sync < moment().unix()
+    // clean up
+    if (check && this.quota_next_sync) {
+      this.state.drop('QuotaExceeded')
+      this.quota_next_sync = null
+    }
+    return check
+  }
+
   get subs_flat(): Sync<TConfig, TStates, IBind, IEmit>[] {
     let ret = []
     for (const sub of Object.values(this.subs)) {
@@ -144,11 +162,53 @@ export abstract class Sync<TConfig, TStates, IBind, IEmit> {
   // Transitions
   // ----- -----
 
+  // TODO extract google specific code to GoogleAPIMixin
   Exception_enter(err, ...rest): boolean {
-    this.log_error(err)
+    debugger
+    this.log_error('ERROR: %O', err)
+    if (err.errors) {
+      let quota_err = false
+      for (const error of err.errors) {
+        if (error.domain == 'usageLimits') {
+          this.state.add('QuotaExceeded', error.reason)
+          quota_err = true
+        }
+      }
+      if (quota_err) {
+        return false
+      }
+    }
     if (this.root) {
       this.root.state.add('Exception', err, ...rest)
       return false
+    }
+  }
+
+  // TODO extract google specific code to GoogleAPIMixin
+  QuotaExceeded_state(reason: string) {
+    this.quota_error = reason
+    switch (reason) {
+      case 'dailyLimitExceeded':
+        // delay syncing per API endpoint until midnight PDF
+        const next_sync = moment()
+          .tz('America/Los_Angeles')
+          .add(1, 'day')
+          .startOf('day')
+          .tz(moment.tz.guess())
+          .unix()
+        // TODO extract google specific code to GoogleAPIMixin
+        // @ts-ignore
+        if (this.gtasks) {
+          // @ts-ignore
+          this.gtasks.quota_next_sync = next_sync
+          // @ts-ignore
+        } else if (this.gmail) {
+          // @ts-ignore
+          this.gmail.quota_next_sync = next_sync
+        } else {
+          this.quota_next_sync = next_sync
+        }
+        break
     }
   }
 
@@ -164,6 +224,14 @@ export abstract class Sync<TConfig, TStates, IBind, IEmit> {
 
   SubsReady_enter() {
     return this.subs_flat.every(sync => sync.state.is('Ready'))
+  }
+
+  Reading_enter() {
+    if (!this.daily_quota_ok) {
+      this.log_error('Skipping sync because of quota')
+      this.state.add('ReadingDone')
+      return false
+    }
   }
 
   Reading_state() {
@@ -293,6 +361,11 @@ export abstract class SyncWriter<TConfig, TStates, IBind, IEmit> extends Sync<
   // ----- -----
 
   Writing_enter() {
+    if (!this.daily_quota_ok) {
+      this.log_error('Skipping sync because of quota')
+      this.state.add('WritingDone')
+      return false
+    }
     if (!this.last_read_end) {
       return false
     }

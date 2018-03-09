@@ -158,7 +158,7 @@ export default class RootSync extends SyncWriter<
 
   // TODO react on specific exception types
   async Exception_state(err: Error) {
-    this.log_error(err)
+    this.log_error('ERROR: %O', err)
     this.exceptions.push(moment().unix())
 
     // pick the correct delay

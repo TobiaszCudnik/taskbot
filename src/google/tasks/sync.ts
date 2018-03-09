@@ -5,6 +5,7 @@ import * as google from 'googleapis'
 import * as http from 'http'
 import * as _ from 'lodash'
 import * as moment from 'moment'
+import * as delay from 'delay'
 import * as roundTo from 'round-to'
 import { map } from 'typed-promisify-tob'
 // Machine types
@@ -23,6 +24,8 @@ import { sync_writer_state, SyncWriter } from '../../sync/sync'
 import { IConfig } from '../../types'
 import Auth from '../auth'
 import GTasksListSync, { Task, TaskList } from './sync-list'
+
+const SEC = 1000
 
 // TODO tmp
 export interface TasksAPI extends google.tasks.v1.Tasks {
@@ -52,9 +55,7 @@ export const sync_state: IJSONStates = {
   },
   TaskListsFetched: {
     drop: ['FetchingTaskLists']
-  },
-
-  QuotaExceeded: { drop: ['Reading', 'Writing'] }
+  }
 }
 
 export type TaskTree = {
@@ -125,14 +126,6 @@ export default class GTasksSync extends SyncWriter<
   // Transitions
   // ----- -----
 
-  Exception_enter(err: Error, ...rest) {
-    if (err.message == 'Quota Exceeded') {
-      this.state.add('QuotaExceeded')
-      return false
-    }
-    return super.Exception_enter(err, ...rest)
-  }
-
   async Writing_state() {
     super.Writing_state()
     // TODO check if temporary IDs work
@@ -175,10 +168,16 @@ export default class GTasksSync extends SyncWriter<
       .filter(config => !this.lists.find(list => list.title == config.name))
       .map(config => config.name)
     if (missing.length) {
-      delete this.etags.task_lists
-      await this.createTaskLists(missing, abort)
-      this.state.drop('FetchingTaskLists')
-      this.state.add('FetchingTaskLists')
+      // TODO dirty hack to redo list creation
+      try {
+        delete this.etags.task_lists
+        await this.createTaskLists(missing, abort)
+      } catch {
+        await delay(3 * SEC)
+      } finally {
+        this.state.drop('FetchingTaskLists')
+        this.state.add('FetchingTaskLists')
+      }
     } else {
       this.state.add('TaskListsFetched')
     }
