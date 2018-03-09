@@ -11,32 +11,24 @@ Bugs:
 
 TODO:
 
-* long quota delay for gtasks in case of the daily one exceeded
 * tmp: include the full link to the email
 * on HeartBeat reset - kill all the active connections, release the semaphore
 * tasks for archived emails from the inbox should be deleted
   * from the task list, instead of completed
 * S/Ignored should remove other statuses
-* define timeout for googlapis requests (and others) in the settings
-* merge GC and time array into a single TimeArray class
+  * remove S/Ignored if not necessary
 * move the child tasks along with the parent
 * label matching should be case-insensitive
 * only emails send by yourself should be parsed for tags while in inbox
 * order for labels
   * always the same, defined in the settings
-* periodic cache save
-  * resume on start
-  * include etags and history IDs
-* use etags in patch requests in gtasks
-  * reuse the answer
-  * avoid the Dirty state
+* define timeout for googlapis requests (and others) in the settings
 * error handling & redo logic for the init phase
   * before Ready is set
   * include quota checking
 * calculate the daily quota by counting requests
-* auto setup all the required labels on the startup
 * handle deleted task IDs
-* rename settings to config
+  * ... ?
 * label masks eg S/\* matches S/Action and S/Finished
   * settings - label filters
   * settings - lists
@@ -48,20 +40,31 @@ TODO:
   * paging support
   * max limit of results per query/gtask list (for archived lists)
 * rotate file logs
-* add some useful repl commands
 * put a limit on initial gmail inbox size
 * threads out-of-queries arent observed for changes
   * is that a real problem?
 * implement deleting
   * currently the record is re-added from the other source
+* argv processor
+* add some useful repl commands
+
+Optimizations:
+
+* use etags in patch requests in gtasks
+  * reuse the answer
+  * avoid the Dirty state
+* use keep alive in google auth
+* gmail pubsub instead of pulling
 * mark gmail queries as Dirty based on related labels
 * check if all the requests use the 'fields' limits
 * use views from lokijs
-* argv processor
 * check if requests are gzipped
-* gmail pubsub instead of pulling
-* use keep alive in google auth
+
+Refactor:
+
+* merge GC and time array into a single TimeArray class
 * make (root) requests generic (instead of google-specific)
+* rename settings to config
 
 Milestone 2:
 
@@ -82,7 +85,10 @@ Milestone 2:
   * S/Started or S/Current
   * RP/ - reference project, eg 'buy stuff #js-conf ##store'
   * Contexts?
+* periodic cache save
+  * resume on start
+  * include etags and history IDs
 
 Later:
 
-* ID mapper (sync, async)
+* ID mapper (instead of email IDs)
