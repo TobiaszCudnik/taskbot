@@ -21,6 +21,7 @@ import Auth from '../auth'
 ///<reference path="../../../node_modules/typed-promisify-tob/index.ts"/>
 import { Thread } from './query'
 import GmailListSync from './sync-list'
+import { trim } from 'lodash'
 
 export const sync_state: IJSONStates = {
   ...sync_writer_state,
@@ -534,11 +535,11 @@ export default class GmailSync extends SyncWriter<
 export function getTitleFromThread(thread: google.gmail.v1.Thread) {
   if (!thread.messages || !thread.messages.length)
     throw new Error(`Thread content not fetched, id: ${thread.id}`)
+  let title
   try {
-    return thread.messages[0].payload.headers[0].value
-  } catch (e) {
-    return '(no subject)'
-  }
+    title = thread.messages[0].payload.headers[0].value
+  } catch (e) {}
+  return trim(title) ? trim(title) : '(no subject)'
 }
 
 export function normalizeLabelName(label: string) {
