@@ -1,4 +1,5 @@
-import { Logger, Network } from 'ami-logger/remote'
+import { Logger as LoggerRemote, Network } from 'ami-logger/remote'
+import { Logger } from 'ami-logger'
 import { TAsyncMachine } from 'asyncmachine'
 import 'source-map-support/register'
 import settings_base from '../settings'
@@ -13,7 +14,7 @@ const settings = { ...settings_base, ...settings_credentials }
 // TODO make it less global
 function init_am_inspector(machines?: TAsyncMachine[]) {
   global.am_network = new Network()
-  global.am_logger = new Logger(global.am_network)
+  global.am_logger = new LoggerRemote(global.am_network, null)
   if (machines) {
     for (const machine of machines) {
       global.am_network.addMachine(machine)
@@ -25,11 +26,20 @@ if (process.env['DEBUG_AMI']) {
   init_am_inspector()
 }
 
+process.on('SIGINT', exit)
+process.on('exit', exit)
+
+console.log('Starting the sync service...')
+root = new RootSync((<any>settings) as IConfig)
+root.state.add('Enabled')
+
 let exit_printed = false
 function exit(err?) {
   if (exit_printed) return
   if (global.am_network) {
-    const filename = err ? 'logs/snapshot-exception.json' : 'logs/snapshot.json'
+    const filename = err.name
+      ? 'logs/snapshot-exception.json'
+      : 'logs/snapshot.json'
     global.am_logger.saveFile(filename)
     console.log(`Saved a snapshot to ${filename}`)
   }
@@ -43,10 +53,4 @@ function exit(err?) {
   process.exit()
 }
 
-process.on('SIGINT', exit)
-process.on('exit', exit)
-
-console.log('Starting the sync service...')
-root = new RootSync((<any>settings) as IConfig)
-root.state.add('Enabled')
-create_repl(root, init_am_inspector, settings.repl_port)
+// create_repl(root, init_am_inspector, settings.repl_port)

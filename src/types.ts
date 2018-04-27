@@ -20,7 +20,9 @@ export interface IListConfig {
     remove?: string[]
   }
   // seconds
-  sync_frequency?: number
+  sync_frequency?: {
+    gtasks?: number
+  }
 }
 
 export type ILabelDefinition =
