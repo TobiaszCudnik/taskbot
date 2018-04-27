@@ -1,5 +1,6 @@
 Bugs:
 
+* cant pause while playing
 * cant archive new email in inbox bc S/Finished is active: false, by default
 * double "email:XXXX" ref link in gtasks description
   * reproduce
@@ -8,9 +9,15 @@ Bugs:
 
 TODO:
 
-* log requests to a separate file
-* tmp: include the full link to the email
+* errors not logged, HeartBeat not present in the logs at all
 * on HeartBeat reset - kill all the active connections, release the semaphore
+* multi user mode for syncing gtasks lists only
+* gtask sync frequency per list
+* show the orgin of a finished request in root::req
+* log requests to a separate file
+* include the full link to the email
+  * move "from foo@bar.com" into the description
+* check if `(#tag)` works
 * tasks for archived emails from the inbox should be deleted
   * from the task list, instead of completed
 * S/Ignored should remove other statuses
@@ -57,6 +64,7 @@ TODO:
 
 Optimizations:
 
+* route requests through several apps to bypass quota limits
 * clone records for diffing only in the debug mode
 * use etags in patch requests in gtasks
   * reuse the answer
@@ -68,6 +76,8 @@ Optimizations:
 * use views from lokijs
 * check if requests are gzipped
 * use Users.messages.batchModify for gmail labels
+* use a real DB when running in node
+  * required a DAO layer
 
 Refactor:
 
@@ -77,6 +87,7 @@ Refactor:
 
 Milestone 2:
 
+* collaborative syncing
 * project label mapped to an email address
   * search query, like a gmail filter?
 * custom list
@@ -92,6 +103,14 @@ Milestone 2:
 * IM interface
 * OCR interface
 * google spreadsheets backend
+* other todo app backend
+  * Todoist?
+  * remember the milk?
+* integrate google contacts, add @ mention
+  * define shortcuts (where?)
+* integrate google calendar
+  * language processing, dates, etc
+* web crawling bots backend
 * missing extended GTD labels
   * S/Started or S/Current
   * RP/ - reference project, eg 'buy stuff #js-conf ##store'
