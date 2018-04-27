@@ -26,9 +26,9 @@
     "service"
   ],
   "dependencies": {
-    "ami-logger": "^0.3.5",
+    "ami-logger": "^0.3.10",
     "async": "^2.6.0",
-    "asyncmachine": "^3.2.1",
+    "asyncmachine": "^3.2.3",
     "await-semaphore": "^0.1.3",
     "colors": "^1.1.2",
     "dateformat": "^1.0.8",
