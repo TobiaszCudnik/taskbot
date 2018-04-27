@@ -13,7 +13,7 @@ build-watch:
 	node_modules/.bin/tsc --watch
 
 start:
-	node src/app.js
+	DEBUG=root DEBUG_FILE=1 node src/app.js
 
 debug:
 	DEBUG=3 node src/app.js
