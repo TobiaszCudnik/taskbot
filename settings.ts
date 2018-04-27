@@ -28,7 +28,7 @@ let config: IConfig = {
     request_quota_100: 500,
     request_quota_day: 50000,
     quota_exceeded_delay: 50,
-    sync_frequency: 5
+    sync_frequency: 10
   },
   labels: [
     {
@@ -226,6 +226,9 @@ let config: IConfig = {
       exit: {
         add: ['S/Finished'],
         remove: ['S/Next Action']
+      },
+      sync_frequency: {
+        gtasks: 5
       }
     },
     {
@@ -239,6 +242,9 @@ let config: IConfig = {
       exit: {
         add: ['S/Finished'],
         remove: ['S/Pending']
+      },
+      sync_frequency: {
+        gtasks: 20
       }
     },
     {
@@ -252,6 +258,9 @@ let config: IConfig = {
       exit: {
         add: ['S/Finished'],
         remove: ['INBOX']
+      },
+      sync_frequency: {
+        gtasks: 20
       }
     },
     {
@@ -278,6 +287,9 @@ let config: IConfig = {
       exit: {
         add: ['S/Finished'],
         remove: ['S/Some day']
+      },
+      sync_frequency: {
+        gtasks: 20
       }
     }
   ]
