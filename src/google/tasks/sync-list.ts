@@ -109,9 +109,9 @@ export default class GTasksListSync extends Sync<
       return cancel()
     }
     const since_last_read = moment.duration(moment().diff(this.last_read_start))
-    // TODO per list sync_frequency
     const sync_frequency =
-      this.config.sync_frequency || this.gtasks.config.gtasks.sync_frequency
+      (this.config.sync_frequency || {}).gtasks ||
+      this.gtasks.config.gtasks.sync_frequency
     if (sync_frequency && since_last_read.asSeconds() < sync_frequency) {
       this.verbose(`Reading skipped - max frequency exceeded`)
       return cancel()
@@ -201,9 +201,10 @@ export default class GTasksListSync extends Sync<
       })
       parents.push(target[target.length - 1])
     }
-    if (!children.length)
+    if (!children.length) {
       return null
       // remove the IDs, as they aren't relevant any more
+    }
     ;[...children, ...parents].forEach(t => delete t.id)
     return children
   }

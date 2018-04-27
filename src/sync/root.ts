@@ -85,7 +85,7 @@ export default class RootSync extends SyncWriter<
   subs: { google: GoogleSync; label_filters: LabelFilterSync[] }
 
   max_active_requests = 5
-  semaphore: Semaphore = new Semaphore(this.max_active_requests)
+  semaphore = new Semaphore(this.max_active_requests)
   active_requests = 0
   executed_requests: number
 
@@ -132,6 +132,7 @@ export default class RootSync extends SyncWriter<
     const is = state => this.state.is(state)
     const restart = (reason: string) => {
       // TODO kill all the active requests
+      this.semaphore = new Semaphore(this.max_active_requests)
       this.log(`HeartBeat, restarting because of - '${reason}'`)
       this.state.drop(['Exception', 'Reading', 'Writing'])
       this.state.add('Reading')
