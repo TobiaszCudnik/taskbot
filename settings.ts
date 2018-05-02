@@ -247,22 +247,22 @@ let config: IConfig = {
         gtasks: 20
       }
     },
-    {
-      name: '!Inbox',
-      gmail_query: 'in:inbox -s-ignored',
-      db_query: r => hasLabel(r, 'INBOX') && !hasLabel(r, 'S/Ignored'),
-      enter: {
-        add: ['INBOX'],
-        remove: ['S/Finished']
-      },
-      exit: {
-        add: ['S/Finished'],
-        remove: ['INBOX']
-      },
-      sync_frequency: {
-        gtasks: 20
-      }
-    },
+    // {
+    //   name: '!Inbox',
+    //   gmail_query: 'in:inbox -s-ignored',
+    //   db_query: r => hasLabel(r, 'INBOX') && !hasLabel(r, 'S/Ignored'),
+    //   enter: {
+    //     add: ['INBOX'],
+    //     remove: ['S/Finished']
+    //    ,
+    //    xit: {
+    //     add: ['S/Finished'],
+    //     remove: ['INBOX']
+    //    ,
+    //    ync_frequency: {
+    //     gtasks: 20
+    //
+    // },
     {
       name: '!Actions',
       gmail_query: 'label:s-action',
