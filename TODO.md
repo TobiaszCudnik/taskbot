@@ -6,9 +6,18 @@ Bugs:
   * reproduce
 * references R/Foo as ^Foo dont show up in tasks
 * change from gmail, undone by the labels filter isnt applied back to gmail
+* cant go from S/Finished -> S/Next Action using gmail
+  * change is reverted
+* cant go from S/Pending -> S/Next Action using gmail
+  * change is reverted
+  * workaround: take off S/Pending, go to inbox, add S/Next Action
+* after 500 backendError
+  * root HeartBeat, restarting because of - 'Reading timeout' +2m
+  * restart doesnt work
 
 TODO:
 
+* make syncing Inbox disabled by default
 * errors not logged, HeartBeat not present in the logs at all
 * on HeartBeat reset - kill all the active connections, release the semaphore
 * multi user mode for syncing gtasks lists only
@@ -118,6 +127,8 @@ Milestone 2:
 * periodic cache save
   * resume on start
   * include etags and history IDs
+* auto archive completed tasks
+  * being completed for longer than XXX days
 
 Later:
 
