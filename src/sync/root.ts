@@ -134,6 +134,9 @@ export default class RootSync extends SyncWriter<
       // TODO kill all the active requests
       this.semaphore = new Semaphore(this.max_active_requests)
       this.log(`HeartBeat, restarting because of - '${reason}'`)
+      for (const machine of this.getMachines()) {
+        this.log_verbose(machine.statesToString(true))
+      }
       this.state.drop(['Exception', 'Reading', 'Writing'])
       this.state.add('Reading')
     }
