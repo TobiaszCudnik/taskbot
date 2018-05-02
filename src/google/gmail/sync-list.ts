@@ -139,13 +139,10 @@ export default class GmailListSync extends Sync<
     const sender = this.gmail.getThreadAuthor(thread)
     const self_sent = sender == this.root.config.gmail_username
     let title = this.gmail.getTitleFromThread(thread)
-    if (!self_sent) {
-      title += ` (from ${sender})`
-    }
     const record: DBRecord = {
       gmail_id: this.toDBID(thread.id),
       title: title,
-      content: thread.snippet || '',
+      content: self_sent ? '' : `From ${sender}\n`,
       labels: {},
       updated: moment().unix()
     }
