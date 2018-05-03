@@ -15,11 +15,14 @@ build-watch:
 start:
 	DEBUG=root DEBUG_FILE=1 node src/app.js
 
-debug:
-	DEBUG=root DEBUG_FILE=1 DEBUG_AMI=1 node src/app.js
+start-am:
+	DEBUG=root DEBUG_FILE=1 DEBUG_AM=1 node src/app.js
 
-debug-am:
+start-ami:
 	DEBUG=root DEBUG_FILE=1 DEBUG_AMI=1 DEBUG_AM=1 node src/app.js
+
+debug:
+	DEBUG=root DEBUG_FILE=1 DEBUG_AMI=1 node --inspect-brk src/app.js
 
 format:
 	prettier --config package.json --write *.ts

@@ -14,18 +14,13 @@ const settings = { ...settings_base, ...settings_credentials }
 
 // TODO make it less global
 function init_am_inspector(machines?: TAsyncMachine[]) {
-  global.am_network = new Network()
+  global.am_network = new Network(machines)
   // TODO types for the options param
   const WorkerLogger = WorkerpoolMixin(Logger)
   global.am_logger = new WorkerLogger(global.am_network, {
     granularity: 1
   })
   global.am_logger.start()
-  if (machines) {
-    for (const machine of machines) {
-      global.am_network.addMachine(machine)
-    }
-  }
 }
 
 if (process.env['DEBUG_AMI']) {
