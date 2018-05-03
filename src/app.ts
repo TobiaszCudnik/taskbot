@@ -1,5 +1,6 @@
-import { Logger as LoggerRemote, Network } from 'ami-logger/remote'
-import { Logger } from 'ami-logger'
+// import { Logger as LoggerRemote } from 'ami-logger/remote'
+import { Logger, Network } from 'ami-logger'
+import WorkerpoolMixin from 'ami-logger/logger/mixins/workerpool'
 import { TAsyncMachine } from 'asyncmachine'
 import 'source-map-support/register'
 import settings_base from '../settings'
@@ -14,7 +15,12 @@ const settings = { ...settings_base, ...settings_credentials }
 // TODO make it less global
 function init_am_inspector(machines?: TAsyncMachine[]) {
   global.am_network = new Network()
-  global.am_logger = new LoggerRemote(global.am_network, null)
+  // TODO types for the options param
+  const WorkerLogger = WorkerpoolMixin(Logger)
+  global.am_logger = new WorkerLogger(global.am_network, {
+    granularity: 1
+  })
+  global.am_logger.start()
   if (machines) {
     for (const machine of machines) {
       global.am_network.addMachine(machine)

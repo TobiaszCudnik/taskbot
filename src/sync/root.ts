@@ -134,11 +134,9 @@ export default class RootSync extends SyncWriter<
       // TODO kill all the active requests
       this.semaphore = new Semaphore(this.max_active_requests)
       this.log(`HeartBeat, restarting because of - '${reason}'`)
-      this.logActiveStates('Before stop')
+      this.logStates()
       this.state.drop(['Exception', 'Reading', 'Writing'])
-      this.logActiveStates('After stop')
       this.state.add('Reading')
-      this.logActiveStates('After start')
     }
     if (!is('Reading') && !is('Writing') && !is('Scheduled')) {
       restart('Action states not set')
@@ -243,13 +241,15 @@ export default class RootSync extends SyncWriter<
     return machine(sync_state).id('root')
   }
 
-  logActiveStates(msg?: string) {
+  logStates(msg?: string, include_inactive = false) {
     if (msg) {
       this.log_verbose(msg)
     }
+    let states = ''
     for (const machine of this.getMachines()) {
-      this.log_verbose(machine.statesToString())
+      states += machine.statesToString(include_inactive)
     }
+    this.log_verbose(states)
   }
 
   // Returns true in case of more than 100 exceptions during the last 10 minutes

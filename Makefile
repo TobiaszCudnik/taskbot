@@ -16,7 +16,10 @@ start:
 	DEBUG=root DEBUG_FILE=1 node src/app.js
 
 debug:
-	DEBUG=3 node src/app.js
+	DEBUG=root DEBUG_FILE=1 DEBUG_AMI=1 node src/app.js
+
+debug-am:
+	DEBUG=root DEBUG_FILE=1 DEBUG_AMI=1 DEBUG_AM=1 node src/app.js
 
 format:
 	prettier --config package.json --write *.ts

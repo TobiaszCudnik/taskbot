@@ -203,8 +203,8 @@ export default class GTasksListSync extends Sync<
     }
     if (!children.length) {
       return null
-      // remove the IDs, as they aren't relevant any more
     }
+    // remove the IDs, as they aren't relevant any more
     ;[...children, ...parents].forEach(t => delete t.id)
     return children
   }
