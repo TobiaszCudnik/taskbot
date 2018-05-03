@@ -26,7 +26,7 @@
     "service"
   ],
   "dependencies": {
-    "ami-logger": "^0.3.14",
+    "ami-logger": "^0.3",
     "async": "^2.6.0",
     "asyncmachine": "^3.2.4",
     "await-semaphore": "^0.1.3",
