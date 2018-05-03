@@ -10,7 +10,6 @@ function hadLabel(r, label) {
   return r.labels[label] && !r.labels[label].active
 }
 
-// let config: IConfig = {
 let config: IConfig = {
   repl_port: 5002,
   google: {
