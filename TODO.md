@@ -1,4 +1,4 @@
-Bugs:
+## Bugs
 
 * cant pause while playing
 * cant archive new email in inbox bc S/Finished is active: false, by default
@@ -14,26 +14,34 @@ Bugs:
 * after 500 backendError
   * root HeartBeat, restarting because of - 'Reading timeout' +2m
   * restart doesnt work
-
-TODO:
-
-* make syncing Inbox disabled by default
+* out-of-memory after 2 days on default sync freqs
 * errors not logged, HeartBeat not present in the logs at all
+  * repro?
+
+## TODO
+
+* auto create the logs dir
+* parse #hashtags only if email send by the author to HIMSELF
+  * currently only the sender is checked
+* stream based label filters
+  * stream of label changes
+  * with dates for both active and inactive (for the same label)
+  * simple version: get the latest label changeset from times on labels
 * on HeartBeat reset - kill all the active connections, release the semaphore
-* multi user mode for syncing gtasks lists only
-* gtask sync frequency per list
-* show the orgin of a finished request in root::req
+* show the origin of a finished request in root::req
 * log requests to a separate file
 * include the full link to the email
-  * move "from foo@bar.com" into the description
 * check if `(#tag)` works
 * tasks for archived emails from the inbox should be deleted
   * from the task list, instead of completed
+  * not needed as inbox isnt covered anymore?
 * S/Ignored should remove other statuses
   * remove S/Ignored if not necessary
+  * not needed as inbox isnt covered anymore?
 * move the child tasks along with the parent
 * label matching should be case-insensitive
 * only emails send by yourself should be parsed for tags while in inbox
+  * not needed as inbox isnt covered anymore?
 * order for labels
   * always the same, defined in the settings
 * define timeout for googlapis requests (and others) in the settings
@@ -47,9 +55,6 @@ TODO:
   * settings - label filters
   * settings - lists
 * use lucene query parse to get condition checking from gmail queries
-* variadic resync times
-  * per gtasks list
-  * not important list and lists used for archiving should be low priority
 * GTasks results limit
   * paging support
   * max limit of results per query/gtask list (for archived lists)
@@ -71,7 +76,7 @@ TODO:
   * print the DB
     * gmail, gtasks
 
-Optimizations:
+## Optimizations
 
 * route requests through several apps to bypass quota limits
 * clone records for diffing only in the debug mode
@@ -88,14 +93,16 @@ Optimizations:
 * use a real DB when running in node
   * required a DAO layer
 
-Refactor:
+## Refactor
 
 * merge GC and time array into a single TimeArray class
 * make (root) requests generic (instead of google-specific)
 * rename settings to config
 
-Milestone 2:
+## Milestone 2
 
+* multi user mode for syncing gtasks lists only
+  * usecase: share a google tasks list with someone
 * collaborative syncing
 * project label mapped to an email address
   * search query, like a gmail filter?
@@ -104,10 +111,6 @@ Milestone 2:
 * merge subtasks
   * for the same email ID between different lists
   * only un completed ones
-* stream based label filters
-  * stream of label changes
-  * with dates for both active and inactive (for the same label)
-  * simple version: get the latest label changeset from times on labels
 * siri/ical interface
 * IM interface
 * OCR interface
@@ -129,7 +132,4 @@ Milestone 2:
   * include etags and history IDs
 * auto archive completed tasks
   * being completed for longer than XXX days
-
-Later:
-
 * ID mapper (instead of email IDs)
