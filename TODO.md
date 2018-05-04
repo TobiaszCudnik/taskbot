@@ -1,9 +1,5 @@
 ## Bugs
 
-* cant pause while playing
-* cant archive new email in inbox bc S/Finished is active: false, by default
-* double "email:XXXX" ref link in gtasks description
-  * reproduce
 * references R/Foo as ^Foo dont show up in tasks
 * change from gmail, undone by the labels filter isnt applied back to gmail
 * cant go from S/Finished -> S/Next Action using gmail
@@ -14,9 +10,8 @@
 * after 500 backendError
   * root HeartBeat, restarting because of - 'Reading timeout' +2m
   * restart doesnt work
+  * queue error?
 * out-of-memory after 2 days on default sync freqs
-* errors not logged, HeartBeat not present in the logs at all
-  * repro?
 
 ## TODO
 
