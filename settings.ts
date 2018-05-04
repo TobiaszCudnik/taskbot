@@ -1,13 +1,34 @@
+import { DBRecord } from './src/sync/root'
 import { IConfig } from './src/types'
+import * as _ from 'lodash'
 
-function hasLabel(r, label) {
-  // TODO case insensitive compare
-  return r.labels[label] && r.labels[label].active
+// TODO move functions to /src/sync/label-filter.ts
+const hasLabel = function(r: DBRecord, label: string | RegExp): number {
+  return checkLabel(r, label, true)
 }
 
-function hadLabel(r, label) {
-  // TODO case insensitive compare
-  return r.labels[label] && !r.labels[label].active
+const hadLabel = function(r: DBRecord, label: string | RegExp): number {
+  return checkLabel(r, label, false)
+}
+
+function checkLabel(
+  r: DBRecord,
+  match: string | RegExp,
+  active: boolean
+): number {
+  let matches = 0
+  for (const [label, data] of Object.entries(r.labels)) {
+    if (!data.active) continue
+    if (match instanceof RegExp && match.test(label)) {
+      matches++
+    } else if (
+      !(match instanceof RegExp) &&
+      match.toLowerCase() == label.toLowerCase()
+    ) {
+      matches++
+    }
+  }
+  return matches
 }
 
 let config: IConfig = {
@@ -130,94 +151,31 @@ let config: IConfig = {
   sync_frequency: 1,
   label_filters: [
     {
-      name: 'finish or expired removes all other statuses',
-      db_query: r =>
-        (hasLabel(r, 'S/Finished') || hasLabel(r, 'S/Expired')) &&
-        (hasLabel(r, 'S/Next Action') ||
-          hasLabel(r, 'S/Action') ||
-          hasLabel(r, 'S/Some day') ||
-          hasLabel(r, 'S/Pending')),
-      add: [],
-      remove: ['S/Next Action', 'S/Action', 'S/Pending']
-    },
-    {
-      name: 'someday removes action and next action',
-      db_query: r =>
-        hasLabel(r, 'S/Someday') &&
-        (hasLabel(r, 'S/Next Action') || hasLabel(r, 'S/Action')),
-      add: [],
-      remove: ['S/Next Action', 'S/Action']
-    },
-    {
-      name: 'next action removes action',
-      db_query: r => hasLabel(r, 'S/Action') && hasLabel(r, 'S/Next Action'),
-      add: [],
-      remove: ['S/Action']
-    },
-    {
-      name: 'pending removes next action',
-      db_query: r => hasLabel(r, 'S/Pending') && hasLabel(r, 'S/Next Action'),
-      add: [],
-      remove: ['S/Next Action']
-    },
-    {
-      name: 'records with a status leave the inbox',
-      db_query: r =>
-        // TODO list all status labels
-        (hasLabel(r, 'S/Action') ||
-          hasLabel(r, 'S/Next Action') ||
-          hasLabel(r, 'S/Expired') ||
-          hasLabel(r, 'S/Pending') ||
-          hasLabel(r, 'S/Some day') ||
-          hasLabel(r, 'S/Finished')) &&
-        hasLabel(r, 'INBOX'),
-      add: [],
-      remove: ['INBOX']
-    },
-    {
-      name: 'records without a status go into the inbox',
+      name: 'newest status removes other ones',
       // only the ones who used to have one
-      db_query: r =>
-        // TODO list all status labels
-        !hasLabel(r, 'S/Action') &&
-        !hasLabel(r, 'S/Next Action') &&
-        !hasLabel(r, 'S/Expired') &&
-        !hasLabel(r, 'S/Pending') &&
-        !hasLabel(r, 'S/Finished') &&
-        !hasLabel(r, 'S/Some day') &&
-        (hadLabel(r, 'S/Action') ||
-          hadLabel(r, 'S/Next Action') ||
-          hadLabel(r, 'S/Expired') ||
-          hadLabel(r, 'S/Pending') ||
-          hadLabel(r, 'S/Finished') ||
-          hadLabel(r, 'S/Some day')) &&
-        !hasLabel(r, 'INBOX') &&
-        !hasLabel(r, 'S/Ignored'),
-      add: ['INBOX'],
-      remove: []
-    },
-    {
-      name: 'inbox or next action adds v-now',
-      db_query: r =>
-        (hasLabel(r, 'INBOX') || hasLabel(r, 'S/Next Action')) &&
-        !hasLabel(r, 'V/now'),
-      add: ['V/now'],
-      remove: []
-    },
-    {
-      name: 'no inbox and no next action removes v-now',
-      db_query: r =>
-        !(hasLabel(r, 'INBOX') || hasLabel(r, 'S/Next Action')) &&
-        hasLabel(r, 'V/now'),
-      add: [],
-      remove: ['V/now']
+      db_query: r => hasLabel(r, /S\/.+/) > 1,
+      remove(r: DBRecord) {
+        let newest: { label: string; date: number } = null
+        const remove = []
+        for (const [label, data] of Object.entries(r.labels)) {
+          if (!data.active || !/S\/.+/.test(label)) continue
+          remove.push(label)
+          if (!newest || newest.date < data.updated) {
+            newest = {
+              label,
+              date: data.updated
+            }
+          }
+        }
+        return _.without(remove, newest.label)
+      }
     }
   ],
   lists: [
     {
       name: '!Next',
       gmail_query: 'label:s-next-action',
-      db_query: r => hasLabel(r, 'S/Next Action'),
+      db_query: r => Boolean(hasLabel(r, 'S/Next Action')),
       enter: {
         add: ['S/Next Action'],
         remove: ['S/Finished']
@@ -233,7 +191,7 @@ let config: IConfig = {
     {
       name: '!Waiting',
       gmail_query: 'label:s-pending',
-      db_query: r => hasLabel(r, 'S/Pending'),
+      db_query: r => Boolean(hasLabel(r, 'S/Pending')),
       enter: {
         add: ['S/Pending'],
         remove: ['S/Finished']
@@ -246,26 +204,10 @@ let config: IConfig = {
         gtasks: 20
       }
     },
-    // {
-    //   name: '!Inbox',
-    //   gmail_query: 'in:inbox -s-ignored',
-    //   db_query: r => hasLabel(r, 'INBOX') && !hasLabel(r, 'S/Ignored'),
-    //   enter: {
-    //     add: ['INBOX'],
-    //     remove: ['S/Finished']
-    //    ,
-    //    xit: {
-    //     add: ['S/Finished'],
-    //     remove: ['INBOX']
-    //    ,
-    //    ync_frequency: {
-    //     gtasks: 20
-    //
-    // },
     {
       name: '!Actions',
       gmail_query: 'label:s-action',
-      db_query: r => hasLabel(r, 'S/Action'),
+      db_query: r => Boolean(hasLabel(r, 'S/Action')),
       enter: {
         remove: ['S/Finished'],
         add: ['S/Action']
@@ -278,7 +220,7 @@ let config: IConfig = {
     {
       name: '!Someday',
       gmail_query: 'label:s-some-day',
-      db_query: r => hasLabel(r, 'S/Some day'),
+      db_query: r => Boolean(hasLabel(r, 'S/Some day')),
       enter: {
         remove: ['S/Finished'],
         add: ['S/Some day']

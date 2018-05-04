@@ -2,9 +2,9 @@ import { DBRecord } from './sync/root'
 
 export interface ILabelFilter {
   name: string
-  db_query: (r: DBRecord) => boolean
-  add?: string[]
-  remove?: string[]
+  db_query(r: DBRecord): boolean
+  add?(r: DBRecord): string[]
+  remove?(r: DBRecord): string[]
 }
 
 export interface IListConfig {

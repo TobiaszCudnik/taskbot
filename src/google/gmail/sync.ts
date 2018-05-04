@@ -94,7 +94,7 @@ export default class GmailSync extends SyncWriter<
     lists: GmailListSync[]
   }
   verbose = debug('gmail-verbose')
-  thread_label_filters = [
+  included_labels = [
     /^S\/[\w\s-]+$/,
     /^V\/[\w\s-]+$/,
     /^P\/[\w\s-]+$/,
@@ -499,7 +499,7 @@ export default class GmailSync extends SyncWriter<
     for (const msg of thread.messages) {
       for (const id of msg.labelIds) {
         const name = this.getLabelName(id)
-        if (!filter || this.thread_label_filters.some(f => !!f.exec(name))) {
+        if (!filter || this.included_labels.some(f => !!f.exec(name))) {
           labels.add(this.getLabelName(id))
         }
       }

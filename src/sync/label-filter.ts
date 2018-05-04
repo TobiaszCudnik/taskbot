@@ -36,7 +36,8 @@ export default class LabelFilterSync extends Sync<
     ))
     for (const r of records) {
       const before = clone(r)
-      const { add, remove } = this.config
+      const add = this.config.add(r)
+      const remove = this.config.remove(r)
       this.log(`Changing labels for '${r.title}'`)
       this.applyLabels(r, { add, remove })
       r.updated = moment().unix()
