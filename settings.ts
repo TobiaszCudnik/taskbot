@@ -31,7 +31,7 @@ function checkLabel(
   return matches
 }
 
-let config: IConfig = {
+const config: IConfig = {
   repl_port: 5002,
   google: {
     scopes: [

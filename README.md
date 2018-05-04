@@ -22,5 +22,12 @@ Real time Gmail to Google Tasks sync and a GTD workflow manager.
 1.  `$ tsc`
 1.  `$ make start`
 1.  Enable keyboard shortcuts and multi inbox in Gmail
+1.  Use your fav GTasks client for mobile and [tasks canvas](https://mail.google.com/tasks/canvas) for the web
 
-[Work in progress](https://github.com/TobiaszCudnik/gtd-bot/blob/master/TODO.md)...
+## Still to come
+
+* More tasks APIs covered
+* Spreadsheets support
+* Faster syncing
+* Multi user support
+* [and more...](https://github.com/TobiaszCudnik/gtd-bot/blob/master/TODO.md)
