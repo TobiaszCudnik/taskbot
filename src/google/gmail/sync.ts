@@ -387,8 +387,8 @@ export default class GmailSync extends SyncWriter<
       abort,
       false
     )
-    // re-fetch the thread immediately, so its refreshed even if not a part of
-    // any query any more
+    // immediately re-fetch the thread, so its refreshed even if included in
+    // any other query
     await this.fetchThread(thread_id, abort)
     return Boolean(ret)
   }

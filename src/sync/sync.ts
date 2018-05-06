@@ -278,12 +278,16 @@ export abstract class Sync<TConfig, TStates, IBind, IEmit> {
   applyLabels(record: DBRecord, labels: { add?: string[]; remove?: string[] }) {
     record.labels = record.labels || {}
     for (const label of labels.remove || []) {
+      // update the time only when something changes
+      if (record.labels[label] && !record.labels[label].active) continue
       record.labels[label] = {
         active: false,
         updated: record.updated
       }
     }
     for (const label of labels.add || []) {
+      // update the time only when something changes
+      if (record.labels[label] && record.labels[label].active) continue
       record.labels[label] = {
         active: true,
         updated: record.updated
