@@ -1,10 +1,10 @@
-# GTD bot
+# GTD Bot
 
 Real time Gmail to Google Tasks sync and a GTD workflow manager.
 
 ## Features
 
-* **~0.1 sec** sync time
+* **~0.05 sec** sync time
 * GTD workflows using Gmail labels and GTasks lists
 * Automatically managed status labels
 * `#hashtags` to labels from subjects and tasks
