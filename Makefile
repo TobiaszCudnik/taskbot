@@ -21,6 +21,9 @@ start-am:
 start-ami:
 	DEBUG=root DEBUG_FILE=1 DEBUG_AMI=1 DEBUG_AM=1 node src/app.js
 
+start-inspect:
+	DEBUG=root node --inspect src/app.js
+
 debug:
 	DEBUG=root DEBUG_FILE=1 DEBUG_AMI=1 node --inspect-brk src/app.js
 

@@ -1,6 +1,7 @@
 // import { Logger as LoggerRemote } from 'ami-logger/remote'
 import { Logger, Network, Granularity } from 'ami-logger'
-import WorkerPoolMixin from 'ami-logger/logger/mixins/workerpool'
+import WorkerPoolMixin from 'ami-logger/mixins/workerpool'
+import FileFSMixin from 'ami-logger/mixins/file-fs'
 import { TAsyncMachine } from 'asyncmachine'
 import 'source-map-support/register'
 import settings_base from '../settings'
@@ -16,8 +17,11 @@ const settings = { ...settings_base, ...settings_credentials }
 // TODO make it less global
 function init_am_inspector(machines?: TAsyncMachine[]) {
   global.am_network = new Network(machines)
-  // TODO types for the options param
-  const LoggerClass = os.cpus().length == 1 ? Logger : WorkerPoolMixin(Logger)
+  // build the logger class
+  let LoggerClass = FileFSMixin(Logger)
+  if (os.cpus().length > 1) {
+    LoggerClass = WorkerPoolMixin(LoggerClass)
+  }
   global.am_logger = new LoggerClass(global.am_network, {
     granularity: Granularity.STATES
   })

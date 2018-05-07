@@ -130,11 +130,18 @@ export default class RootSync extends SyncWriter<
   HeartBeat_state() {
     const now = moment().unix()
     const is = state => this.state.is(state)
+    const log = async () => {
+      await this.state.whenNot(['Exception', 'Reading', 'Writing'])
+      this.logStates('After drop')
+      await this.state.when('Reading')
+      this.logStates('After restart')
+    }
     const restart = (reason: string) => {
       // TODO kill all the active requests
       this.semaphore = new Semaphore(this.max_active_requests)
       this.log(`HeartBeat, restarting because of - '${reason}'`)
-      this.logStates()
+      this.logStates('Timeout')
+      log()
       this.state.drop(['Exception', 'Reading', 'Writing'])
       this.state.add('Reading')
     }
