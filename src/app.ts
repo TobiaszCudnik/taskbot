@@ -55,6 +55,7 @@ function exit(err?) {
   if (root.data) {
     console.log(root.data.toString())
   }
+  console.log(`Restarts count: ${root.restarts_count}`)
   exit_printed = true
   process.exit()
 }

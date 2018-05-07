@@ -113,6 +113,7 @@ export default class RootSync extends SyncWriter<
   write_timeout = 2 * 60
   // seconds
   heartbeat_freq = 60
+  restarts_count = 0
 
   constructor(config: IConfig) {
     super(config)
@@ -130,22 +131,20 @@ export default class RootSync extends SyncWriter<
   HeartBeat_state() {
     const now = moment().unix()
     const is = state => this.state.is(state)
-    const log = async () => {
-      await this.state.whenNot(['Exception', 'Reading', 'Writing'])
-      this.logStates('After drop')
-      await this.state.when('Reading')
-      this.logStates('After restart')
-    }
-    const restart = (reason: string) => {
+    const restart = async (reason: string) => {
       // TODO kill all the active requests
+      this.restarts_count++
       this.semaphore = new Semaphore(this.max_active_requests)
       this.log(`HeartBeat, restarting because of - '${reason}'`)
       this.logStates('Timeout')
-      log()
       this.state.drop(['Exception', 'Reading', 'Writing'])
+      await this.state.whenNot(['Exception', 'Reading', 'Writing'])
+      this.logStates('After drop')
       this.state.add('Reading')
+      await this.state.when('Reading')
+      this.logStates('After restart')
     }
-    if (!is('Reading') && !is('Writing') && !is('Scheduled')) {
+    if (!this.state.not(['Reading', 'Writing', 'Scheduled'])) {
       restart('Action states not set')
     } else if (
       is('Reading') &&
