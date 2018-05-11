@@ -132,11 +132,11 @@ export default class RootSync extends SyncWriter<
     const now = moment().unix()
     const is = state => this.state.is(state)
     const restart = async (reason: string) => {
-      // TODO kill all the active requests
       this.restarts_count++
+      // TODO kill all the active requests
       this.semaphore = new Semaphore(this.max_active_requests)
       this.log(`HeartBeat, restarting because of - '${reason}'`)
-      this.logStates('Timeout')
+      this.logStates('Before restart')
       this.state.drop(['Exception', 'Reading', 'Writing'])
       await this.state.whenNot(['Exception', 'Reading', 'Writing'])
       this.logStates('After drop')
@@ -144,8 +144,8 @@ export default class RootSync extends SyncWriter<
       await this.state.when('Reading')
       this.logStates('After restart')
     }
-    if (!this.state.not(['Reading', 'Writing', 'Scheduled'])) {
-      restart('Action states not set')
+    if (this.state.not(['Reading', 'Writing', 'Scheduled'])) {
+      restart('None of the action states is set')
     } else if (
       is('Reading') &&
       this.last_read_start.unix() + this.read_timeout < now
@@ -232,6 +232,7 @@ export default class RootSync extends SyncWriter<
 
   WritingDone_state() {
     super.WritingDone_state()
+    // TODO show how many sources were actually synced
     this.log(
       `SYNC DONE:\nRead: ${this.last_read_time.asSeconds()}sec\n` +
         `Write: ${this.last_write_time.asSeconds()}sec`
