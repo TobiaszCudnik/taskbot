@@ -1,8 +1,9 @@
 // import { Logger as LoggerRemote } from 'ami-logger/remote'
 import { Logger, Network, Granularity } from 'ami-logger'
 import WorkerPoolMixin from 'ami-logger/mixins/workerpool'
-import FileFSMixin from 'ami-logger/mixins/file-fs'
+import FileFSStreamMixin from 'ami-logger/mixins/snapshot/fs-stream'
 import { TAsyncMachine } from 'asyncmachine'
+import * as fs from 'fs'
 // import 'source-map-support/register'
 import settings_base from '../settings'
 import settings_credentials from '../settings.credentials'
@@ -18,12 +19,13 @@ const settings = { ...settings_base, ...settings_credentials }
 function init_am_inspector(machines?: TAsyncMachine[]) {
   global.am_network = new Network(machines)
   // build the logger class
-  let LoggerClass = FileFSMixin(Logger)
-  if (os.cpus().length > 1) {
-    LoggerClass = WorkerPoolMixin(LoggerClass)
-  }
+  let LoggerClass = FileFSStreamMixin(Logger)
+  // if (os.cpus().length > 1) {
+  //   LoggerClass = WorkerPoolMixin(LoggerClass)
+  // }
   global.am_logger = new LoggerClass(global.am_network, {
-    granularity: Granularity.STATES
+    granularity: Granularity.STATES,
+    stream: fs.createWriteStream('logs/snapshot.json')
   })
   global.am_logger.start()
 }
@@ -40,14 +42,16 @@ root = new RootSync((<any>settings) as IConfig)
 root.state.add('Enabled')
 
 let exit_printed = false
-function exit(err?) {
+async function exit(err?) {
   if (exit_printed) return
   if (global.am_network) {
-    const filename = err.name
-      ? 'logs/snapshot-exception.json'
-      : 'logs/snapshot.json'
-    global.am_logger.saveFile(filename)
-    console.log(`Saved a snapshot to ${filename}`)
+    // const filename = err.name
+    //   ? 'logs/snapshot-exception.json'
+    //   : 'logs/snapshot.json'
+    // global.am_logger.saveFile(filename)
+    // console.log(`Saved a snapshot to ${filename}`)
+    await global.am_logger.dispose()
+    console.log(`Saved a snapshot to logs/snapshot.json`)
   }
   for (const machine of root.getMachines()) {
     console.log(machine.statesToString(true))
