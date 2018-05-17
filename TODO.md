@@ -1,5 +1,6 @@
 ## Bugs
 
+* changing from S/Finished to S/Pending works the second time
 * references R/Foo as ^Foo dont show up in tasks
 * change from gmail, undone by the labels filter isnt applied back to gmail
 * after 500 backendError
@@ -10,6 +11,9 @@
 
 ## TODO
 
+* colors should be added when the new label has been discovered
+  * this includes added via #hashtags and via gmail
+  * currently colors are set only on the start
 * auto create the logs dir
 * parse #hashtags only if email send by the author to HIMSELF
   * currently only the sender is checked
