@@ -1,12 +1,11 @@
 ## Bugs
 
-* changing from S/Finished to S/Pending works the second time
+* changing from S/\* to S/Finished doesnt always work
+  * the reversed situation is also problematic
+* taking off S/\* status label creates an infinite loop
+  * which adds it and takes it back again
+  * the respective task should be deleted
 * references R/Foo as ^Foo dont show up in tasks
-* change from gmail, undone by the labels filter isnt applied back to gmail
-* after 500 backendError
-  * root HeartBeat, restarting because of - 'Reading timeout' +2m
-  * restart doesnt work
-  * queue error?
 * out-of-memory after 2 days on default sync freqs
 
 ## TODO
