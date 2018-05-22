@@ -2,7 +2,7 @@ import {
   IState as IStateBase,
   IBind as IBindBase,
   IEmit as IEmitBase
-} from 'asyncmachine/build/types'
+} from 'asyncmachine/types'
 import AsyncMachine from 'asyncmachine'
 
 export { IBindBase, IEmitBase, AsyncMachine }
@@ -589,7 +589,7 @@ export interface ITransitions {
   Enabled_InitialHistoryIdFetched?(): boolean | void
   Enabled_Exception?(): boolean | void
   Enabled_exit?(): boolean | void
-  Enabled_end?(): boolean | void
+  Enabled_end?(): boolean | void | Promise<boolean | void>
   Initializing_Enabled?(): boolean | void
   Initializing_Any?(): boolean | void
   Initializing_Ready?(): boolean | void
@@ -608,7 +608,7 @@ export interface ITransitions {
   Initializing_InitialHistoryIdFetched?(): boolean | void
   Initializing_Exception?(): boolean | void
   Initializing_exit?(): boolean | void
-  Initializing_end?(): boolean | void
+  Initializing_end?(): boolean | void | Promise<boolean | void>
   Ready_Enabled?(): boolean | void
   Ready_Initializing?(): boolean | void
   Ready_Any?(): boolean | void
@@ -627,7 +627,7 @@ export interface ITransitions {
   Ready_InitialHistoryIdFetched?(): boolean | void
   Ready_Exception?(): boolean | void
   Ready_exit?(): boolean | void
-  Ready_end?(): boolean | void
+  Ready_end?(): boolean | void | Promise<boolean | void>
   ConfigSet_Enabled?(): boolean | void
   ConfigSet_Initializing?(): boolean | void
   ConfigSet_Ready?(): boolean | void
@@ -646,7 +646,7 @@ export interface ITransitions {
   ConfigSet_InitialHistoryIdFetched?(): boolean | void
   ConfigSet_Exception?(): boolean | void
   ConfigSet_exit?(): boolean | void
-  ConfigSet_end?(): boolean | void
+  ConfigSet_end?(): boolean | void | Promise<boolean | void>
   SubsReady_Enabled?(): boolean | void
   SubsReady_Initializing?(): boolean | void
   SubsReady_Ready?(): boolean | void
@@ -665,7 +665,7 @@ export interface ITransitions {
   SubsReady_InitialHistoryIdFetched?(): boolean | void
   SubsReady_Exception?(): boolean | void
   SubsReady_exit?(): boolean | void
-  SubsReady_end?(): boolean | void
+  SubsReady_end?(): boolean | void | Promise<boolean | void>
   SubsInited_Enabled?(): boolean | void
   SubsInited_Initializing?(): boolean | void
   SubsInited_Ready?(): boolean | void
@@ -684,7 +684,7 @@ export interface ITransitions {
   SubsInited_InitialHistoryIdFetched?(): boolean | void
   SubsInited_Exception?(): boolean | void
   SubsInited_exit?(): boolean | void
-  SubsInited_end?(): boolean | void
+  SubsInited_end?(): boolean | void | Promise<boolean | void>
   Reading_Enabled?(): boolean | void
   Reading_Initializing?(): boolean | void
   Reading_Ready?(): boolean | void
@@ -703,7 +703,7 @@ export interface ITransitions {
   Reading_InitialHistoryIdFetched?(): boolean | void
   Reading_Exception?(): boolean | void
   Reading_exit?(): boolean | void
-  Reading_end?(): boolean | void
+  Reading_end?(): boolean | void | Promise<boolean | void>
   ReadingDone_Enabled?(): boolean | void
   ReadingDone_Initializing?(): boolean | void
   ReadingDone_Ready?(): boolean | void
@@ -722,7 +722,7 @@ export interface ITransitions {
   ReadingDone_InitialHistoryIdFetched?(): boolean | void
   ReadingDone_Exception?(): boolean | void
   ReadingDone_exit?(): boolean | void
-  ReadingDone_end?(): boolean | void
+  ReadingDone_end?(): boolean | void | Promise<boolean | void>
   QuotaExceeded_Enabled?(): boolean | void
   QuotaExceeded_Initializing?(): boolean | void
   QuotaExceeded_Ready?(): boolean | void
@@ -741,7 +741,7 @@ export interface ITransitions {
   QuotaExceeded_InitialHistoryIdFetched?(): boolean | void
   QuotaExceeded_Exception?(): boolean | void
   QuotaExceeded_exit?(): boolean | void
-  QuotaExceeded_end?(): boolean | void
+  QuotaExceeded_end?(): boolean | void | Promise<boolean | void>
   Writing_Enabled?(): boolean | void
   Writing_Initializing?(): boolean | void
   Writing_Ready?(): boolean | void
@@ -760,7 +760,7 @@ export interface ITransitions {
   Writing_InitialHistoryIdFetched?(): boolean | void
   Writing_Exception?(): boolean | void
   Writing_exit?(): boolean | void
-  Writing_end?(): boolean | void
+  Writing_end?(): boolean | void | Promise<boolean | void>
   WritingDone_Enabled?(): boolean | void
   WritingDone_Initializing?(): boolean | void
   WritingDone_Ready?(): boolean | void
@@ -779,7 +779,7 @@ export interface ITransitions {
   WritingDone_InitialHistoryIdFetched?(): boolean | void
   WritingDone_Exception?(): boolean | void
   WritingDone_exit?(): boolean | void
-  WritingDone_end?(): boolean | void
+  WritingDone_end?(): boolean | void | Promise<boolean | void>
   FetchingLabels_Enabled?(): boolean | void
   FetchingLabels_Initializing?(): boolean | void
   FetchingLabels_Ready?(): boolean | void
@@ -798,7 +798,7 @@ export interface ITransitions {
   FetchingLabels_InitialHistoryIdFetched?(): boolean | void
   FetchingLabels_Exception?(): boolean | void
   FetchingLabels_exit?(): boolean | void
-  FetchingLabels_end?(): boolean | void
+  FetchingLabels_end?(): boolean | void | Promise<boolean | void>
   LabelsFetched_Enabled?(): boolean | void
   LabelsFetched_Initializing?(): boolean | void
   LabelsFetched_Ready?(): boolean | void
@@ -817,7 +817,7 @@ export interface ITransitions {
   LabelsFetched_InitialHistoryIdFetched?(): boolean | void
   LabelsFetched_Exception?(): boolean | void
   LabelsFetched_exit?(): boolean | void
-  LabelsFetched_end?(): boolean | void
+  LabelsFetched_end?(): boolean | void | Promise<boolean | void>
   FetchingHistoryId_Enabled?(): boolean | void
   FetchingHistoryId_Initializing?(): boolean | void
   FetchingHistoryId_Ready?(): boolean | void
@@ -836,7 +836,7 @@ export interface ITransitions {
   FetchingHistoryId_InitialHistoryIdFetched?(): boolean | void
   FetchingHistoryId_Exception?(): boolean | void
   FetchingHistoryId_exit?(): boolean | void
-  FetchingHistoryId_end?(): boolean | void
+  FetchingHistoryId_end?(): boolean | void | Promise<boolean | void>
   HistoryIdFetched_Enabled?(): boolean | void
   HistoryIdFetched_Initializing?(): boolean | void
   HistoryIdFetched_Ready?(): boolean | void
@@ -855,7 +855,7 @@ export interface ITransitions {
   HistoryIdFetched_InitialHistoryIdFetched?(): boolean | void
   HistoryIdFetched_Exception?(): boolean | void
   HistoryIdFetched_exit?(): boolean | void
-  HistoryIdFetched_end?(): boolean | void
+  HistoryIdFetched_end?(): boolean | void | Promise<boolean | void>
   InitialHistoryIdFetched_Enabled?(): boolean | void
   InitialHistoryIdFetched_Initializing?(): boolean | void
   InitialHistoryIdFetched_Ready?(): boolean | void
@@ -874,7 +874,7 @@ export interface ITransitions {
   InitialHistoryIdFetched_Any?(): boolean | void
   InitialHistoryIdFetched_Exception?(): boolean | void
   InitialHistoryIdFetched_exit?(): boolean | void
-  InitialHistoryIdFetched_end?(): boolean | void
+  InitialHistoryIdFetched_end?(): boolean | void | Promise<boolean | void>
   Exception_Enabled?(): boolean | void
   Exception_Initializing?(): boolean | void
   Exception_Ready?(): boolean | void
@@ -892,7 +892,7 @@ export interface ITransitions {
   Exception_HistoryIdFetched?(): boolean | void
   Exception_InitialHistoryIdFetched?(): boolean | void
   Exception_exit?(): boolean | void
-  Exception_end?(): boolean | void
+  Exception_end?(): boolean | void | Promise<boolean | void>
 }
 
 /** All the state names */

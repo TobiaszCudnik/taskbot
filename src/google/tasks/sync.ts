@@ -1,5 +1,5 @@
 import { machine } from 'asyncmachine'
-import { TAbortFunction } from 'asyncmachine/build/types'
+import { TAbortFunction } from 'asyncmachine/types'
 import * as debug from 'debug'
 import * as google from 'googleapis'
 import * as http from 'http'

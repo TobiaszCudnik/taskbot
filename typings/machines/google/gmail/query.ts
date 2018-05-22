@@ -2,7 +2,7 @@ import {
   IState as IStateBase,
   IBind as IBindBase,
   IEmit as IEmitBase
-} from 'asyncmachine/build/types'
+} from 'asyncmachine/types'
 import AsyncMachine from 'asyncmachine'
 
 export { IBindBase, IEmitBase, AsyncMachine }
@@ -232,7 +232,7 @@ export interface ITransitions {
   Enabled_Exception?(): boolean | void
   Enabled_Exception?(): boolean | void
   Enabled_exit?(): boolean | void
-  Enabled_end?(): boolean | void
+  Enabled_end?(): boolean | void | Promise<boolean | void>
   Dirty_Enabled?(): boolean | void
   Dirty_Any?(): boolean | void
   Dirty_FetchingThreads?(): boolean | void
@@ -242,7 +242,7 @@ export interface ITransitions {
   Dirty_Exception?(): boolean | void
   Dirty_Exception?(): boolean | void
   Dirty_exit?(): boolean | void
-  Dirty_end?(): boolean | void
+  Dirty_end?(): boolean | void | Promise<boolean | void>
   FetchingThreads_Enabled?(): boolean | void
   FetchingThreads_Dirty?(): boolean | void
   FetchingThreads_Any?(): boolean | void
@@ -252,7 +252,7 @@ export interface ITransitions {
   FetchingThreads_Exception?(): boolean | void
   FetchingThreads_Exception?(): boolean | void
   FetchingThreads_exit?(): boolean | void
-  FetchingThreads_end?(): boolean | void
+  FetchingThreads_end?(): boolean | void | Promise<boolean | void>
   ThreadsFetched_Enabled?(): boolean | void
   ThreadsFetched_Dirty?(): boolean | void
   ThreadsFetched_FetchingThreads?(): boolean | void
@@ -262,7 +262,7 @@ export interface ITransitions {
   ThreadsFetched_Exception?(): boolean | void
   ThreadsFetched_Exception?(): boolean | void
   ThreadsFetched_exit?(): boolean | void
-  ThreadsFetched_end?(): boolean | void
+  ThreadsFetched_end?(): boolean | void | Promise<boolean | void>
   FetchingMsgs_Enabled?(): boolean | void
   FetchingMsgs_Dirty?(): boolean | void
   FetchingMsgs_FetchingThreads?(): boolean | void
@@ -272,7 +272,7 @@ export interface ITransitions {
   FetchingMsgs_Exception?(): boolean | void
   FetchingMsgs_Exception?(): boolean | void
   FetchingMsgs_exit?(): boolean | void
-  FetchingMsgs_end?(): boolean | void
+  FetchingMsgs_end?(): boolean | void | Promise<boolean | void>
   MsgsFetched_Enabled?(): boolean | void
   MsgsFetched_Dirty?(): boolean | void
   MsgsFetched_FetchingThreads?(): boolean | void
@@ -282,7 +282,7 @@ export interface ITransitions {
   MsgsFetched_Exception?(): boolean | void
   MsgsFetched_Exception?(): boolean | void
   MsgsFetched_exit?(): boolean | void
-  MsgsFetched_end?(): boolean | void
+  MsgsFetched_end?(): boolean | void | Promise<boolean | void>
   Exception_Enabled?(): boolean | void
   Exception_Dirty?(): boolean | void
   Exception_FetchingThreads?(): boolean | void
@@ -290,7 +290,7 @@ export interface ITransitions {
   Exception_FetchingMsgs?(): boolean | void
   Exception_MsgsFetched?(): boolean | void
   Exception_exit?(): boolean | void
-  Exception_end?(): boolean | void
+  Exception_end?(): boolean | void | Promise<boolean | void>
   Exception_Enabled?(): boolean | void
   Exception_Dirty?(): boolean | void
   Exception_FetchingThreads?(): boolean | void
@@ -298,7 +298,7 @@ export interface ITransitions {
   Exception_FetchingMsgs?(): boolean | void
   Exception_MsgsFetched?(): boolean | void
   Exception_exit?(): boolean | void
-  Exception_end?(): boolean | void
+  Exception_end?(): boolean | void | Promise<boolean | void>
 }
 
 /** All the state names */

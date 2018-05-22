@@ -2,7 +2,7 @@ import {
   IState as IStateBase,
   IBind as IBindBase,
   IEmit as IEmitBase
-} from 'asyncmachine/build/types'
+} from 'asyncmachine/types'
 import AsyncMachine from 'asyncmachine'
 
 export { IBindBase, IEmitBase, AsyncMachine }
@@ -197,7 +197,7 @@ export interface ITransitions {
   CredentialsSet_RefreshingToken?(): boolean | void
   CredentialsSet_Exception?(): boolean | void
   CredentialsSet_exit?(): boolean | void
-  CredentialsSet_end?(): boolean | void
+  CredentialsSet_end?(): boolean | void | Promise<boolean | void>
   Ready_CredentialsSet?(): boolean | void
   Ready_Any?(): boolean | void
   Ready_Error?(): boolean | void
@@ -205,7 +205,7 @@ export interface ITransitions {
   Ready_RefreshingToken?(): boolean | void
   Ready_Exception?(): boolean | void
   Ready_exit?(): boolean | void
-  Ready_end?(): boolean | void
+  Ready_end?(): boolean | void | Promise<boolean | void>
   Error_CredentialsSet?(): boolean | void
   Error_Ready?(): boolean | void
   Error_Any?(): boolean | void
@@ -213,7 +213,7 @@ export interface ITransitions {
   Error_RefreshingToken?(): boolean | void
   Error_Exception?(): boolean | void
   Error_exit?(): boolean | void
-  Error_end?(): boolean | void
+  Error_end?(): boolean | void | Promise<boolean | void>
   TokenRefreshed_CredentialsSet?(): boolean | void
   TokenRefreshed_Ready?(): boolean | void
   TokenRefreshed_Error?(): boolean | void
@@ -221,7 +221,7 @@ export interface ITransitions {
   TokenRefreshed_RefreshingToken?(): boolean | void
   TokenRefreshed_Exception?(): boolean | void
   TokenRefreshed_exit?(): boolean | void
-  TokenRefreshed_end?(): boolean | void
+  TokenRefreshed_end?(): boolean | void | Promise<boolean | void>
   RefreshingToken_CredentialsSet?(): boolean | void
   RefreshingToken_Ready?(): boolean | void
   RefreshingToken_Error?(): boolean | void
@@ -229,14 +229,14 @@ export interface ITransitions {
   RefreshingToken_Any?(): boolean | void
   RefreshingToken_Exception?(): boolean | void
   RefreshingToken_exit?(): boolean | void
-  RefreshingToken_end?(): boolean | void
+  RefreshingToken_end?(): boolean | void | Promise<boolean | void>
   Exception_CredentialsSet?(): boolean | void
   Exception_Ready?(): boolean | void
   Exception_Error?(): boolean | void
   Exception_TokenRefreshed?(): boolean | void
   Exception_RefreshingToken?(): boolean | void
   Exception_exit?(): boolean | void
-  Exception_end?(): boolean | void
+  Exception_end?(): boolean | void | Promise<boolean | void>
 }
 
 /** All the state names */

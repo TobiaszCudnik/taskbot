@@ -2,7 +2,7 @@ import {
   IState as IStateBase,
   IBind as IBindBase,
   IEmit as IEmitBase
-} from 'asyncmachine/build/types'
+} from 'asyncmachine/types'
 import AsyncMachine from 'asyncmachine'
 
 export { IBindBase, IEmitBase, AsyncMachine }
@@ -500,7 +500,7 @@ export interface ITransitions {
   Enabled_Scheduled?(): boolean | void
   Enabled_Exception?(): boolean | void
   Enabled_exit?(): boolean | void
-  Enabled_end?(): boolean | void
+  Enabled_end?(): boolean | void | Promise<boolean | void>
   Initializing_Enabled?(): boolean | void
   Initializing_Any?(): boolean | void
   Initializing_Ready?(): boolean | void
@@ -518,7 +518,7 @@ export interface ITransitions {
   Initializing_Scheduled?(): boolean | void
   Initializing_Exception?(): boolean | void
   Initializing_exit?(): boolean | void
-  Initializing_end?(): boolean | void
+  Initializing_end?(): boolean | void | Promise<boolean | void>
   Ready_Enabled?(): boolean | void
   Ready_Initializing?(): boolean | void
   Ready_Any?(): boolean | void
@@ -536,7 +536,7 @@ export interface ITransitions {
   Ready_Scheduled?(): boolean | void
   Ready_Exception?(): boolean | void
   Ready_exit?(): boolean | void
-  Ready_end?(): boolean | void
+  Ready_end?(): boolean | void | Promise<boolean | void>
   ConfigSet_Enabled?(): boolean | void
   ConfigSet_Initializing?(): boolean | void
   ConfigSet_Ready?(): boolean | void
@@ -554,7 +554,7 @@ export interface ITransitions {
   ConfigSet_Scheduled?(): boolean | void
   ConfigSet_Exception?(): boolean | void
   ConfigSet_exit?(): boolean | void
-  ConfigSet_end?(): boolean | void
+  ConfigSet_end?(): boolean | void | Promise<boolean | void>
   SubsReady_Enabled?(): boolean | void
   SubsReady_Initializing?(): boolean | void
   SubsReady_Ready?(): boolean | void
@@ -572,7 +572,7 @@ export interface ITransitions {
   SubsReady_Scheduled?(): boolean | void
   SubsReady_Exception?(): boolean | void
   SubsReady_exit?(): boolean | void
-  SubsReady_end?(): boolean | void
+  SubsReady_end?(): boolean | void | Promise<boolean | void>
   SubsInited_Enabled?(): boolean | void
   SubsInited_Initializing?(): boolean | void
   SubsInited_Ready?(): boolean | void
@@ -590,7 +590,7 @@ export interface ITransitions {
   SubsInited_Scheduled?(): boolean | void
   SubsInited_Exception?(): boolean | void
   SubsInited_exit?(): boolean | void
-  SubsInited_end?(): boolean | void
+  SubsInited_end?(): boolean | void | Promise<boolean | void>
   Reading_Enabled?(): boolean | void
   Reading_Initializing?(): boolean | void
   Reading_Ready?(): boolean | void
@@ -608,7 +608,7 @@ export interface ITransitions {
   Reading_Scheduled?(): boolean | void
   Reading_Exception?(): boolean | void
   Reading_exit?(): boolean | void
-  Reading_end?(): boolean | void
+  Reading_end?(): boolean | void | Promise<boolean | void>
   ReadingDone_Enabled?(): boolean | void
   ReadingDone_Initializing?(): boolean | void
   ReadingDone_Ready?(): boolean | void
@@ -626,7 +626,7 @@ export interface ITransitions {
   ReadingDone_Scheduled?(): boolean | void
   ReadingDone_Exception?(): boolean | void
   ReadingDone_exit?(): boolean | void
-  ReadingDone_end?(): boolean | void
+  ReadingDone_end?(): boolean | void | Promise<boolean | void>
   QuotaExceeded_Enabled?(): boolean | void
   QuotaExceeded_Initializing?(): boolean | void
   QuotaExceeded_Ready?(): boolean | void
@@ -644,7 +644,7 @@ export interface ITransitions {
   QuotaExceeded_Scheduled?(): boolean | void
   QuotaExceeded_Exception?(): boolean | void
   QuotaExceeded_exit?(): boolean | void
-  QuotaExceeded_end?(): boolean | void
+  QuotaExceeded_end?(): boolean | void | Promise<boolean | void>
   Writing_Enabled?(): boolean | void
   Writing_Initializing?(): boolean | void
   Writing_Ready?(): boolean | void
@@ -662,7 +662,7 @@ export interface ITransitions {
   Writing_Scheduled?(): boolean | void
   Writing_Exception?(): boolean | void
   Writing_exit?(): boolean | void
-  Writing_end?(): boolean | void
+  Writing_end?(): boolean | void | Promise<boolean | void>
   WritingDone_Enabled?(): boolean | void
   WritingDone_Initializing?(): boolean | void
   WritingDone_Ready?(): boolean | void
@@ -680,7 +680,7 @@ export interface ITransitions {
   WritingDone_Scheduled?(): boolean | void
   WritingDone_Exception?(): boolean | void
   WritingDone_exit?(): boolean | void
-  WritingDone_end?(): boolean | void
+  WritingDone_end?(): boolean | void | Promise<boolean | void>
   DBReady_Enabled?(): boolean | void
   DBReady_Initializing?(): boolean | void
   DBReady_Ready?(): boolean | void
@@ -698,7 +698,7 @@ export interface ITransitions {
   DBReady_Scheduled?(): boolean | void
   DBReady_Exception?(): boolean | void
   DBReady_exit?(): boolean | void
-  DBReady_end?(): boolean | void
+  DBReady_end?(): boolean | void | Promise<boolean | void>
   Exception_Enabled?(): boolean | void
   Exception_Initializing?(): boolean | void
   Exception_Ready?(): boolean | void
@@ -714,7 +714,7 @@ export interface ITransitions {
   Exception_HeartBeat?(): boolean | void
   Exception_Scheduled?(): boolean | void
   Exception_exit?(): boolean | void
-  Exception_end?(): boolean | void
+  Exception_end?(): boolean | void | Promise<boolean | void>
   HeartBeat_Enabled?(): boolean | void
   HeartBeat_Initializing?(): boolean | void
   HeartBeat_Ready?(): boolean | void
@@ -732,7 +732,7 @@ export interface ITransitions {
   HeartBeat_Scheduled?(): boolean | void
   HeartBeat_Exception?(): boolean | void
   HeartBeat_exit?(): boolean | void
-  HeartBeat_end?(): boolean | void
+  HeartBeat_end?(): boolean | void | Promise<boolean | void>
   Scheduled_Enabled?(): boolean | void
   Scheduled_Initializing?(): boolean | void
   Scheduled_Ready?(): boolean | void
@@ -750,7 +750,7 @@ export interface ITransitions {
   Scheduled_Any?(): boolean | void
   Scheduled_Exception?(): boolean | void
   Scheduled_exit?(): boolean | void
-  Scheduled_end?(): boolean | void
+  Scheduled_end?(): boolean | void | Promise<boolean | void>
   Exception_Enabled?(): boolean | void
   Exception_Initializing?(): boolean | void
   Exception_Ready?(): boolean | void
@@ -766,7 +766,7 @@ export interface ITransitions {
   Exception_HeartBeat?(): boolean | void
   Exception_Scheduled?(): boolean | void
   Exception_exit?(): boolean | void
-  Exception_end?(): boolean | void
+  Exception_end?(): boolean | void | Promise<boolean | void>
 }
 
 /** All the state names */
