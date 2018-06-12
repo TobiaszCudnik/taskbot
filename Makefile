@@ -24,8 +24,24 @@ start-ami:
 start-inspect:
 	DEBUG=root node --inspect src/app.js
 
+start-am-heartbeat:
+	@echo 'Start with expressive log for HeartBeat and the --inspect flag'
+	DEBUG=root,root-verbose,root-am \
+		DEBUG_FILE=1 \
+		DEBUG_AM=1 \
+		node --inspect src/app.js
+
+clear-logs:
+	rm logs/*
+
 debug:
 	DEBUG=root DEBUG_FILE=1 DEBUG_AMI=1 node --inspect-brk src/app.js
+
+debug-list-next:
+	DEBUG=record-diffs,google,gmail,gtasks,gmail-query-next,gmail-list-next,gtasks-list-next \
+		DEBUG_FILE=1 \
+		DEBUG_AM=1 \
+		node --inspect-brk src/app.js
 
 format:
 	prettier --config package.json --write *.ts
