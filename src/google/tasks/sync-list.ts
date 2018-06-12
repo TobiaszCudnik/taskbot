@@ -16,7 +16,7 @@ import {
   IEmitBase
 } from '../../../typings/machines/google/tasks/sync-list'
 import RootSync, { DBRecord } from '../../sync/root'
-import { Sync, sync_state as base_state } from '../../sync/sync'
+import { SyncReader, sync_reader_state } from '../../sync/reader'
 import { IListConfig } from '../../types'
 import GTasksSync, { TaskTree } from './sync'
 
@@ -32,7 +32,7 @@ export interface ITasks {
 }
 
 export const sync_state: IJSONStates = {
-  ...base_state,
+  ...sync_reader_state,
 
   Cached: {},
   Dirty: { drop: ['Cached'] },
@@ -40,7 +40,7 @@ export const sync_state: IJSONStates = {
   QuotaExceeded: { drop: ['Reading'] }
 }
 
-export default class GTasksListSync extends Sync<
+export default class GTasksListSync extends SyncReader<
   IListConfig,
   TStates,
   IBind,

@@ -10,7 +10,7 @@ import {
   IBindBase
 } from '../../typings/machines/google/sync'
 import RootSync from '../sync/root'
-import { sync_writer_state, SyncWriter } from '../sync/sync'
+import { sync_writer_state, SyncWriter } from '../sync/writer'
 import { IConfig } from '../types'
 import Auth from './auth'
 import GmailSync from './gmail/sync'

@@ -20,7 +20,7 @@ import {
 } from '../../../typings/machines/google/tasks/sync'
 import GC from '../../sync/gc'
 import RootSync, { DBRecord } from '../../sync/root'
-import { sync_writer_state, SyncWriter } from '../../sync/sync'
+import { sync_writer_state, SyncWriter } from '../../sync/writer'
 import { IConfig } from '../../types'
 import Auth from '../auth'
 import GTasksListSync, { Task, TaskList } from './sync-list'
@@ -110,21 +110,17 @@ export default class GTasksSync extends SyncWriter<
 
   constructor(root: RootSync, public auth: Auth) {
     super(root.config, root)
-    this.api = <TasksAPI>google.tasks('v1')
-    this.api = Object.create(this.api)
-    this.api.req = async (method, params, abort, ret_array, options = {}) => {
-      this.requests.push(moment().unix())
-      params.auth = this.auth.client
-      return await this.root.req(method, params, abort, ret_array, {
-        forever: true,
-        ...options
-      })
-    }
+    this.initAPIClient()
   }
 
   // ----- -----
   // Transitions
   // ----- -----
+
+  RestartingNetwork() {
+    this.initAPIClient()
+    this.state.add('NetworkRestarted')
+  }
 
   async Writing_state() {
     super.Writing_state()
@@ -189,6 +185,22 @@ export default class GTasksSync extends SyncWriter<
 
   getState() {
     return machine(sync_state).id('GTasks')
+  }
+
+  initAPIClient() {
+    if (this.api) {
+      // TODO dispose
+    }
+    this.api = <TasksAPI>google.tasks('v1')
+    this.api = Object.create(this.api)
+    this.api.req = async (method, params, abort, ret_array, options = {}) => {
+      this.requests.push(moment().unix())
+      params.auth = this.auth.client
+      return await this.root.req(method, params, abort, ret_array, {
+        forever: true,
+        ...options
+      })
+    }
   }
 
   async createTaskLists(names, abort: TAbortFunction) {

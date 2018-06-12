@@ -8,12 +8,12 @@ import {
   TStates,
   IBindBase,
   IEmitBase
-} from '../../typings/machines/sync/sync'
+} from '../../typings/machines/sync/reader'
 import { ILabelFilter } from '../types'
 import { DBRecord } from './root'
-import { Sync } from './sync'
+import { SyncReader } from './reader'
 
-export default class LabelFilterSync extends Sync<
+export default class LabelFilterSync extends SyncReader<
   ILabelFilter,
   TStates,
   IBind,

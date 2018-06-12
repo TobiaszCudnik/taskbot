@@ -25,8 +25,9 @@ import { IConfig, ILabelDefinition, IListConfig } from '../types'
 import GC from './gc'
 import LabelFilterSync from './label-filter'
 import Logger from '../logger'
-import { sync_writer_state as base_state, SyncWriter } from './sync'
+import { sync_writer_state as base_state, SyncWriter } from './writer'
 
+// TODO move to utils.ts
 const SEC = 1000
 
 export const sync_state: IJSONStates = {

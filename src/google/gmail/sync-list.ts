@@ -14,20 +14,20 @@ import {
   IEmitBase
 } from '../../../typings/machines/google/gmail/sync-list'
 import RootSync, { DBRecord } from '../../sync/root'
-import { Sync, sync_state as base_state } from '../../sync/sync'
+import { SyncReader, sync_reader_state } from '../../sync/reader'
 import { IListConfig } from '../../types'
 import GmailQuery, { Thread } from './query'
 import GmailSync from './sync'
 
 export const sync_state: IJSONStates = {
-  ...base_state,
+  ...sync_reader_state,
 
   Ready: { auto: true, drop: ['Initializing'] }
 }
 
 type GmailAPI = google.gmail.v1.Gmail
 type DBCollection = LokiCollection<DBRecord>
-export default class GmailListSync extends Sync<
+export default class GmailListSync extends SyncReader<
   IListConfig,
   TStates,
   IBind,

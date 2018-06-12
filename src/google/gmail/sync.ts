@@ -18,7 +18,7 @@ import {
 } from '../../../typings/machines/google/gmail/sync'
 import GC from '../../sync/gc'
 import RootSync, { DBRecord } from '../../sync/root'
-import { sync_writer_state, SyncWriter } from '../../sync/sync'
+import { sync_writer_state, SyncWriter } from '../../sync/writer'
 import { IConfig, ILabelDefinition, TRawEmail } from '../../types'
 import Auth from '../auth'
 ///<reference path="../../../node_modules/typed-promisify-tob/index.ts"/>
@@ -98,17 +98,17 @@ export default class GmailSync extends SyncWriter<
 
   constructor(root: RootSync, public auth: Auth) {
     super(root.config, root)
-    this.api = <GmailAPI>google.gmail('v1')
-    this.api = Object.create(this.api)
-    this.api.req = async (a, params, c, d) => {
-      params.auth = this.auth.client
-      return await this.root.req(a, params, c, d, { forever: true })
-    }
+    this.initAPIClient()
   }
 
   // ----- -----
   // Transitions
   // ----- -----
+
+  RestartingNetwork() {
+    this.initAPIClient()
+    this.state.add('NetworkRestarted')
+  }
 
   SubsInited_state() {
     this.subs = {
@@ -188,6 +188,18 @@ export default class GmailSync extends SyncWriter<
 
   getState() {
     return machine(sync_state).id('Gmail')
+  }
+
+  initAPIClient() {
+    if (this.api) {
+      // TODO dispose
+    }
+    this.api = <GmailAPI>google.gmail('v1')
+    this.api = Object.create(this.api)
+    this.api.req = async (a, params, c, d) => {
+      params.auth = this.auth.client
+      return await this.root.req(a, params, c, d, { forever: true })
+    }
   }
 
   async assertPredefinedLabelsExist(abort?) {
