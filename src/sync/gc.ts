@@ -23,7 +23,7 @@ export default class GC {
     public interval_sec = 10 * 60
   ) {
     this.scheduler()
-    this.log = debug('GC ' + name)
+    this.log = debug('gc-' + name)
   }
 
   async scheduler() {

@@ -4,6 +4,7 @@ import WorkerPoolMixin from 'ami-logger/mixins/workerpool'
 import FileFSStreamMixin from 'ami-logger/mixins/snapshot/fs-stream'
 import { TAsyncMachine } from 'asyncmachine'
 import * as fs from 'fs'
+import * as debug from 'debug'
 // import 'source-map-support/register'
 import settings_base from '../settings'
 import settings_credentials from '../settings.credentials'
@@ -42,7 +43,8 @@ root = new RootSync((<any>settings) as IConfig)
 root.state.add('Enabled')
 
 let exit_printed = false
-async function exit(err?) {
+async function exit() {
+  const loggers = debug.instances.map(logger => logger.namespace)
   if (exit_printed) return
   if (global.am_network) {
     // const filename = err.name
@@ -59,6 +61,7 @@ async function exit(err?) {
   if (root.data) {
     console.log(root.data.toString())
   }
+  console.log('Loggers:', loggers.join(', '))
   console.log(`Restarts count: ${root.restarts_count}`)
   exit_printed = true
   process.exit()

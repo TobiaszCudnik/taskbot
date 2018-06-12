@@ -316,6 +316,7 @@ export default class GTasksSync extends SyncWriter<
       const records = <DBRecord[]>(<any>this.root.data.where(
         sync.config.db_query
       ))
+      debugger
       await map(records, async record => {
         const task_id = _.findKey(record.gtasks_ids, id => id == sync.list.id)
         // omit tasks who are already on the list

@@ -94,12 +94,7 @@ export default class GmailSync extends SyncWriter<
     lists: GmailListSync[]
   }
   verbose = debug('gmail-verbose')
-  included_labels = [
-    /^S\/[\w\s-]+$/,
-    /^V\/[\w\s-]+$/,
-    /^P\/[\w\s-]+$/,
-    /^INBOX$/
-  ]
+  included_labels = this.root.config.gmail.included_labels
 
   constructor(root: RootSync, public auth: Auth) {
     super(root.config, root)

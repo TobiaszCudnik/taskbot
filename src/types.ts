@@ -67,9 +67,11 @@ export type IConfig = {
   refresh_token?: string
   gmail_username?: string
   redirect_url?: string
-  gmail_host: string
-  // TODO
-  gmail_max_results: number
+  gmail: {
+    // TODO
+    max_results: number
+    included_labels: RegExp[]
+  }
   exception_delay: number
   exception_flood_delay: number
   gtasks: {

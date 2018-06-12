@@ -13,6 +13,7 @@
 * colors should be added when the new label has been discovered
   * this includes added via #hashtags and via gmail
   * currently colors are set only on the start
+  * requires pub sub
 * auto create the logs dir
 * parse #hashtags only if email send by the author to HIMSELF
   * currently only the sender is checked
@@ -85,6 +86,7 @@
 * use Users.messages.batchModify for gmail labels
 * use a real DB when running in node
   * required a DAO layer
+* consider serverless architecture
 
 ## Refactor
 

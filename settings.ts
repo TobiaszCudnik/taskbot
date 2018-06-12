@@ -39,9 +39,16 @@ const config: IConfig = {
       'https://www.googleapis.com/auth/gmail.modify'
     ]
   },
-  gmail_host: 'gmail.com',
-  // TODO implement
-  gmail_max_results: 300,
+  gmail: {
+    // TODO implement?
+    max_results: 300,
+    included_labels: [
+      /^!S\/[\w\s-]+$/,
+      /^V\/[\w\s-]+$/,
+      /^P\/[\w\s-]+$/,
+      /^INBOX$/
+    ]
+  },
   exception_delay: 5,
   exception_flood_delay: 10 * 60,
   gtasks: {
@@ -55,7 +62,7 @@ const config: IConfig = {
       symbol: '!',
       shortcut: 'na',
       name: 'Next Action',
-      prefix: 'S/',
+      prefix: '!S/',
       colors: {
         bg: '#fb4c2f',
         fg: '#ffffff'
@@ -65,7 +72,7 @@ const config: IConfig = {
       symbol: '!',
       shortcut: 'a',
       name: 'Action',
-      prefix: 'S/',
+      prefix: '!S/',
       colors: {
         bg: '#ffad47',
         fg: '#ffffff'
@@ -75,7 +82,7 @@ const config: IConfig = {
       symbol: '!',
       shortcut: 'p',
       name: 'Pending',
-      prefix: 'S/',
+      prefix: '!S/',
       colors: {
         bg: '#efa093',
         fg: '#000000'
@@ -85,7 +92,7 @@ const config: IConfig = {
       symbol: '!',
       shortcut: 'sd',
       name: 'Some day',
-      prefix: 'S/',
+      prefix: '!S/',
       colors: {
         bg: '#c9daf8',
         fg: '#000000'
@@ -95,7 +102,7 @@ const config: IConfig = {
       symbol: '!',
       shortcut: 'e',
       name: 'Expired',
-      prefix: 'S/',
+      prefix: '!S/',
       colors: {
         bg: '#cccccc',
         fg: '#ffffff'
@@ -105,7 +112,7 @@ const config: IConfig = {
       symbol: '!',
       shortcut: 'f',
       name: 'Finished',
-      prefix: 'S/',
+      prefix: '!S/',
       colors: {
         bg: '#e07798',
         fg: '#ffffff'
@@ -118,10 +125,6 @@ const config: IConfig = {
         bg: '#fcdee8',
         fg: '#000000'
       }
-    },
-    {
-      prefix: 'S/',
-      name: 'Ignored'
     },
     {
       symbol: '#',
@@ -153,12 +156,12 @@ const config: IConfig = {
     {
       name: 'newest status removes other ones',
       // only the ones who used to have one
-      db_query: r => hasLabel(r, /S\/.+/) > 1,
+      db_query: r => hasLabel(r, /!S\/.+/) > 1,
       remove(r: DBRecord) {
         let newest: { label: string; date: number } = null
         const remove = []
         for (const [label, data] of Object.entries(r.labels)) {
-          if (!data.active || !/S\/.+/.test(label)) continue
+          if (!data.active || !/!S\/.+/.test(label)) continue
           remove.push(label)
           if (!newest || newest.date < data.updated) {
             newest = {
@@ -174,15 +177,15 @@ const config: IConfig = {
   lists: [
     {
       name: '!Next',
-      gmail_query: 'label:s-next-action',
-      db_query: r => Boolean(hasLabel(r, 'S/Next Action')),
+      gmail_query: 'label:!s-next-action',
+      db_query: r => Boolean(hasLabel(r, '!S/Next Action')),
       enter: {
-        add: ['S/Next Action'],
-        remove: ['S/Finished']
+        add: ['!S/Next Action'],
+        remove: ['!S/Finished']
       },
       exit: {
-        add: ['S/Finished'],
-        remove: ['S/Next Action']
+        add: ['!S/Finished'],
+        remove: ['!S/Next Action']
       },
       sync_frequency: {
         gtasks: 5
@@ -190,15 +193,15 @@ const config: IConfig = {
     },
     {
       name: '!Waiting',
-      gmail_query: 'label:s-pending',
-      db_query: r => Boolean(hasLabel(r, 'S/Pending')),
+      gmail_query: 'label:!s-pending',
+      db_query: r => Boolean(hasLabel(r, '!S/Pending')),
       enter: {
-        add: ['S/Pending'],
-        remove: ['S/Finished']
+        add: ['!S/Pending'],
+        remove: ['!S/Finished']
       },
       exit: {
-        add: ['S/Finished'],
-        remove: ['S/Pending']
+        add: ['!S/Finished'],
+        remove: ['!S/Pending']
       },
       sync_frequency: {
         gtasks: 20
@@ -206,28 +209,28 @@ const config: IConfig = {
     },
     {
       name: '!Actions',
-      gmail_query: 'label:s-action',
-      db_query: r => Boolean(hasLabel(r, 'S/Action')),
+      gmail_query: 'label:!s-action',
+      db_query: r => Boolean(hasLabel(r, '!S/Action')),
       enter: {
-        remove: ['S/Finished'],
-        add: ['S/Action']
+        remove: ['!S/Finished'],
+        add: ['!S/Action']
       },
       exit: {
-        add: ['S/Finished'],
-        remove: ['S/Action']
+        add: ['!S/Finished'],
+        remove: ['!S/Action']
       }
     },
     {
       name: '!Someday',
-      gmail_query: 'label:s-some-day',
-      db_query: r => Boolean(hasLabel(r, 'S/Some day')),
+      gmail_query: 'label:!s-some-day',
+      db_query: r => Boolean(hasLabel(r, '!S/Some day')),
       enter: {
-        remove: ['S/Finished'],
-        add: ['S/Some day']
+        remove: ['!S/Finished'],
+        add: ['!S/Some day']
       },
       exit: {
-        add: ['S/Finished'],
-        remove: ['S/Some day']
+        add: ['!S/Finished'],
+        remove: ['!S/Some day']
       },
       sync_frequency: {
         gtasks: 20
