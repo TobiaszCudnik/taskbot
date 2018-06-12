@@ -8,13 +8,15 @@ import * as debug from 'debug'
 // import 'source-map-support/register'
 import settings_base from '../settings'
 import settings_credentials from '../settings.credentials'
+import * as deepmerge from 'deepmerge'
 import create_repl from './repl'
 import RootSync from './sync/root'
 import { IConfig } from './types'
 import * as os from 'os'
+import * as _ from 'lodash'
 
 let root: RootSync
-const settings = { ...settings_base, ...settings_credentials }
+const settings = deepmerge(settings_base, settings_credentials)
 
 // TODO make it less global
 function init_am_inspector(machines?: TAsyncMachine[]) {
@@ -44,7 +46,6 @@ root.state.add('Enabled')
 
 let exit_printed = false
 async function exit() {
-  const loggers = debug.instances.map(logger => logger.namespace)
   if (exit_printed) return
   if (global.am_network) {
     // const filename = err.name
@@ -61,7 +62,14 @@ async function exit() {
   if (root.data) {
     console.log(root.data.toString())
   }
-  console.log('Loggers:', loggers.join(', '))
+  const loggers = _(debug.instances)
+    .map(logger => logger.namespace)
+    .concat('record-diffs')
+    .uniq()
+    .sortBy()
+    .value()
+    .join('\n  ')
+  console.log('Loggers:\n  ', loggers)
   console.log(`Restarts count: ${root.restarts_count}`)
   exit_printed = true
   process.exit()

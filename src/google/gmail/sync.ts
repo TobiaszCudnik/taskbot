@@ -465,8 +465,8 @@ export default class GmailSync extends SyncWriter<
 
   createEmail(subject: string): TRawEmail {
     let email = [
-      `From: ${this.config.gmail_username} <${this.config.gmail_username}>s`,
-      `To: ${this.config.gmail_username}`,
+      `From: ${this.config.google.username} <${this.config.google.username}>s`,
+      `To: ${this.config.google.username}`,
       'Content-type: text/html;charset=utf-8',
       'MIME-Version: 1.0',
       `Subject: ${subject}`

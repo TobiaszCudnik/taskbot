@@ -137,14 +137,14 @@ export default class GmailListSync extends Sync<
 
   toDB(thread: google.gmail.v1.Thread): DBRecord {
     const sender = this.gmail.getThreadAuthor(thread)
-    const self_sent = sender == this.root.config.gmail_username
+    const self_sent = sender == this.root.config.google.username
     let title = this.gmail.getTitleFromThread(thread)
     const record: DBRecord = {
       gmail_id: this.toDBID(thread.id),
       title: title,
       content: self_sent ? '' : `From ${sender}\n`,
       labels: {},
-      updated: moment().unix()
+      updated: this.gmail.timeFromHistoryID(parseInt(thread.historyId, 10))
     }
     // apply labels from gmail
     const labels_from_thread = this.gmail.getLabelsFromThread(thread)
@@ -168,15 +168,14 @@ export default class GmailListSync extends Sync<
     const before = clone(record)
     // TODO support duplicating in case of a conflict ???
     //   or send a new email in the thread?
-    if (
-      this.gmail.timeFromHistoryID(parseInt(thread.historyId, 10)) <=
-      record.updated
-    ) {
+    let thread_update_time = this.gmail.timeFromHistoryID(
+      parseInt(thread.historyId, 10)
+    )
+    if (thread_update_time <= record.updated) {
       // TODO check resolve conflict? since the last sync
       return false
     }
-    // TODO compare the date via history_id
-    record.updated = moment().unix()
+    record.updated = thread_update_time
     // TODO content from emails
     // apply labels from gmail
     this.applyLabels(record, { add: this.gmail.getLabelsFromThread(thread) })

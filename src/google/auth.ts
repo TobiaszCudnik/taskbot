@@ -56,11 +56,11 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
     }
     // TODO missing type
     this.client = new (<any>google).auth.OAuth2(
-      config.client_id,
-      config.client_secret,
-      config.redirect_url
+      config.google.client_id,
+      config.google.client_secret,
+      config.google.redirect_url
     )
-    if (config.access_token && config.refresh_token) {
+    if (config.google.access_token && config.google.refresh_token) {
       this.add('CredentialsSet')
     } else {
       throw new Error('not-implemented')
@@ -69,8 +69,8 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
 
   CredentialsSet_state() {
     this.client.credentials = {
-      access_token: this.settings.access_token,
-      refresh_token: this.settings.refresh_token
+      access_token: this.settings.google.access_token,
+      refresh_token: this.settings.google.refresh_token
     }
   }
 

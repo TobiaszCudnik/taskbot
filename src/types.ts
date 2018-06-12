@@ -60,13 +60,14 @@ export type IConfig = {
   repl_port: number
   google: {
     scopes: string[]
+    username?: string
+    // settings.credentials.ts
+    client_id?: string
+    client_secret?: string
+    redirect_url?: string
+    access_token?: string
+    refresh_token?: string
   }
-  client_id?: string
-  client_secret?: string
-  access_token?: string
-  refresh_token?: string
-  gmail_username?: string
-  redirect_url?: string
   gmail: {
     // TODO
     max_results: number
