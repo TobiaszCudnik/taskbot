@@ -379,6 +379,80 @@ export interface ITransitions {
 }
 
 // ----- ----- ----- ----- -----
+// STATE: RestartingNetwork
+// ----- ----- ----- ----- -----
+
+/** machine.bind('RestartingNetwork', (param1, param2) => {}) */
+export interface IBind extends IBindBase {
+  (
+    event: 'RestartingNetwork_enter',
+    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
+    context?: Object
+  ): this
+  (
+    event: 'RestartingNetwork_state',
+    listener: () => /* param1: any?, param2: any? */ any,
+    context?: Object
+  ): this
+}
+
+/** machine.emit('RestartingNetwork', param1, param2) */
+export interface IEmit extends IEmitBase {
+  (event: 'RestartingNetwork_enter' /*, param1: any?, param2: any? */):
+    | boolean
+    | void
+  (event: 'RestartingNetwork_state' /*, param1: any?, param2: any? */):
+    | boolean
+    | void
+}
+
+/** Method declarations */
+export interface ITransitions {
+  RestartingNetwork_enter /* param1: any?, param2: any? */?(): boolean | void
+  RestartingNetwork_state /* param1: any?, param2: any? */?():
+    | boolean
+    | void
+    | Promise<boolean | void>
+}
+
+// ----- ----- ----- ----- -----
+// STATE: NetworkRestarted
+// ----- ----- ----- ----- -----
+
+/** machine.bind('NetworkRestarted', (param1, param2) => {}) */
+export interface IBind extends IBindBase {
+  (
+    event: 'NetworkRestarted_enter',
+    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
+    context?: Object
+  ): this
+  (
+    event: 'NetworkRestarted_state',
+    listener: () => /* param1: any?, param2: any? */ any,
+    context?: Object
+  ): this
+}
+
+/** machine.emit('NetworkRestarted', param1, param2) */
+export interface IEmit extends IEmitBase {
+  (event: 'NetworkRestarted_enter' /*, param1: any?, param2: any? */):
+    | boolean
+    | void
+  (event: 'NetworkRestarted_state' /*, param1: any?, param2: any? */):
+    | boolean
+    | void
+}
+
+/** Method declarations */
+export interface ITransitions {
+  NetworkRestarted_enter /* param1: any?, param2: any? */?(): boolean | void
+  NetworkRestarted_state /* param1: any?, param2: any? */?():
+    | boolean
+    | void
+    | Promise<boolean | void>
+}
+
+// ----- ----- ----- ----- -----
 // STATE: FetchingTaskLists
 // ----- ----- ----- ----- -----
 
@@ -469,6 +543,8 @@ export interface ITransitions {
   Enabled_QuotaExceeded?(): boolean | void
   Enabled_Writing?(): boolean | void
   Enabled_WritingDone?(): boolean | void
+  Enabled_RestartingNetwork?(): boolean | void
+  Enabled_NetworkRestarted?(): boolean | void
   Enabled_FetchingTaskLists?(): boolean | void
   Enabled_TaskListsFetched?(): boolean | void
   Enabled_Exception?(): boolean | void
@@ -485,6 +561,8 @@ export interface ITransitions {
   Initializing_QuotaExceeded?(): boolean | void
   Initializing_Writing?(): boolean | void
   Initializing_WritingDone?(): boolean | void
+  Initializing_RestartingNetwork?(): boolean | void
+  Initializing_NetworkRestarted?(): boolean | void
   Initializing_FetchingTaskLists?(): boolean | void
   Initializing_TaskListsFetched?(): boolean | void
   Initializing_Exception?(): boolean | void
@@ -501,6 +579,8 @@ export interface ITransitions {
   Ready_QuotaExceeded?(): boolean | void
   Ready_Writing?(): boolean | void
   Ready_WritingDone?(): boolean | void
+  Ready_RestartingNetwork?(): boolean | void
+  Ready_NetworkRestarted?(): boolean | void
   Ready_FetchingTaskLists?(): boolean | void
   Ready_TaskListsFetched?(): boolean | void
   Ready_Exception?(): boolean | void
@@ -517,6 +597,8 @@ export interface ITransitions {
   ConfigSet_QuotaExceeded?(): boolean | void
   ConfigSet_Writing?(): boolean | void
   ConfigSet_WritingDone?(): boolean | void
+  ConfigSet_RestartingNetwork?(): boolean | void
+  ConfigSet_NetworkRestarted?(): boolean | void
   ConfigSet_FetchingTaskLists?(): boolean | void
   ConfigSet_TaskListsFetched?(): boolean | void
   ConfigSet_Exception?(): boolean | void
@@ -533,6 +615,8 @@ export interface ITransitions {
   SubsReady_QuotaExceeded?(): boolean | void
   SubsReady_Writing?(): boolean | void
   SubsReady_WritingDone?(): boolean | void
+  SubsReady_RestartingNetwork?(): boolean | void
+  SubsReady_NetworkRestarted?(): boolean | void
   SubsReady_FetchingTaskLists?(): boolean | void
   SubsReady_TaskListsFetched?(): boolean | void
   SubsReady_Exception?(): boolean | void
@@ -549,6 +633,8 @@ export interface ITransitions {
   SubsInited_QuotaExceeded?(): boolean | void
   SubsInited_Writing?(): boolean | void
   SubsInited_WritingDone?(): boolean | void
+  SubsInited_RestartingNetwork?(): boolean | void
+  SubsInited_NetworkRestarted?(): boolean | void
   SubsInited_FetchingTaskLists?(): boolean | void
   SubsInited_TaskListsFetched?(): boolean | void
   SubsInited_Exception?(): boolean | void
@@ -565,6 +651,8 @@ export interface ITransitions {
   Reading_QuotaExceeded?(): boolean | void
   Reading_Writing?(): boolean | void
   Reading_WritingDone?(): boolean | void
+  Reading_RestartingNetwork?(): boolean | void
+  Reading_NetworkRestarted?(): boolean | void
   Reading_FetchingTaskLists?(): boolean | void
   Reading_TaskListsFetched?(): boolean | void
   Reading_Exception?(): boolean | void
@@ -581,6 +669,8 @@ export interface ITransitions {
   ReadingDone_QuotaExceeded?(): boolean | void
   ReadingDone_Writing?(): boolean | void
   ReadingDone_WritingDone?(): boolean | void
+  ReadingDone_RestartingNetwork?(): boolean | void
+  ReadingDone_NetworkRestarted?(): boolean | void
   ReadingDone_FetchingTaskLists?(): boolean | void
   ReadingDone_TaskListsFetched?(): boolean | void
   ReadingDone_Exception?(): boolean | void
@@ -597,6 +687,8 @@ export interface ITransitions {
   QuotaExceeded_Any?(): boolean | void
   QuotaExceeded_Writing?(): boolean | void
   QuotaExceeded_WritingDone?(): boolean | void
+  QuotaExceeded_RestartingNetwork?(): boolean | void
+  QuotaExceeded_NetworkRestarted?(): boolean | void
   QuotaExceeded_FetchingTaskLists?(): boolean | void
   QuotaExceeded_TaskListsFetched?(): boolean | void
   QuotaExceeded_Exception?(): boolean | void
@@ -613,6 +705,8 @@ export interface ITransitions {
   Writing_QuotaExceeded?(): boolean | void
   Writing_Any?(): boolean | void
   Writing_WritingDone?(): boolean | void
+  Writing_RestartingNetwork?(): boolean | void
+  Writing_NetworkRestarted?(): boolean | void
   Writing_FetchingTaskLists?(): boolean | void
   Writing_TaskListsFetched?(): boolean | void
   Writing_Exception?(): boolean | void
@@ -629,11 +723,49 @@ export interface ITransitions {
   WritingDone_QuotaExceeded?(): boolean | void
   WritingDone_Writing?(): boolean | void
   WritingDone_Any?(): boolean | void
+  WritingDone_RestartingNetwork?(): boolean | void
+  WritingDone_NetworkRestarted?(): boolean | void
   WritingDone_FetchingTaskLists?(): boolean | void
   WritingDone_TaskListsFetched?(): boolean | void
   WritingDone_Exception?(): boolean | void
   WritingDone_exit?(): boolean | void
   WritingDone_end?(): boolean | void | Promise<boolean | void>
+  RestartingNetwork_Enabled?(): boolean | void
+  RestartingNetwork_Initializing?(): boolean | void
+  RestartingNetwork_Ready?(): boolean | void
+  RestartingNetwork_ConfigSet?(): boolean | void
+  RestartingNetwork_SubsReady?(): boolean | void
+  RestartingNetwork_SubsInited?(): boolean | void
+  RestartingNetwork_Reading?(): boolean | void
+  RestartingNetwork_ReadingDone?(): boolean | void
+  RestartingNetwork_QuotaExceeded?(): boolean | void
+  RestartingNetwork_Writing?(): boolean | void
+  RestartingNetwork_WritingDone?(): boolean | void
+  RestartingNetwork_Any?(): boolean | void
+  RestartingNetwork_NetworkRestarted?(): boolean | void
+  RestartingNetwork_FetchingTaskLists?(): boolean | void
+  RestartingNetwork_TaskListsFetched?(): boolean | void
+  RestartingNetwork_Exception?(): boolean | void
+  RestartingNetwork_exit?(): boolean | void
+  RestartingNetwork_end?(): boolean | void | Promise<boolean | void>
+  NetworkRestarted_Enabled?(): boolean | void
+  NetworkRestarted_Initializing?(): boolean | void
+  NetworkRestarted_Ready?(): boolean | void
+  NetworkRestarted_ConfigSet?(): boolean | void
+  NetworkRestarted_SubsReady?(): boolean | void
+  NetworkRestarted_SubsInited?(): boolean | void
+  NetworkRestarted_Reading?(): boolean | void
+  NetworkRestarted_ReadingDone?(): boolean | void
+  NetworkRestarted_QuotaExceeded?(): boolean | void
+  NetworkRestarted_Writing?(): boolean | void
+  NetworkRestarted_WritingDone?(): boolean | void
+  NetworkRestarted_RestartingNetwork?(): boolean | void
+  NetworkRestarted_Any?(): boolean | void
+  NetworkRestarted_FetchingTaskLists?(): boolean | void
+  NetworkRestarted_TaskListsFetched?(): boolean | void
+  NetworkRestarted_Exception?(): boolean | void
+  NetworkRestarted_exit?(): boolean | void
+  NetworkRestarted_end?(): boolean | void | Promise<boolean | void>
   FetchingTaskLists_Enabled?(): boolean | void
   FetchingTaskLists_Initializing?(): boolean | void
   FetchingTaskLists_Ready?(): boolean | void
@@ -645,6 +777,8 @@ export interface ITransitions {
   FetchingTaskLists_QuotaExceeded?(): boolean | void
   FetchingTaskLists_Writing?(): boolean | void
   FetchingTaskLists_WritingDone?(): boolean | void
+  FetchingTaskLists_RestartingNetwork?(): boolean | void
+  FetchingTaskLists_NetworkRestarted?(): boolean | void
   FetchingTaskLists_Any?(): boolean | void
   FetchingTaskLists_TaskListsFetched?(): boolean | void
   FetchingTaskLists_Exception?(): boolean | void
@@ -661,6 +795,8 @@ export interface ITransitions {
   TaskListsFetched_QuotaExceeded?(): boolean | void
   TaskListsFetched_Writing?(): boolean | void
   TaskListsFetched_WritingDone?(): boolean | void
+  TaskListsFetched_RestartingNetwork?(): boolean | void
+  TaskListsFetched_NetworkRestarted?(): boolean | void
   TaskListsFetched_FetchingTaskLists?(): boolean | void
   TaskListsFetched_Any?(): boolean | void
   TaskListsFetched_Exception?(): boolean | void
@@ -677,6 +813,8 @@ export interface ITransitions {
   Exception_QuotaExceeded?(): boolean | void
   Exception_Writing?(): boolean | void
   Exception_WritingDone?(): boolean | void
+  Exception_RestartingNetwork?(): boolean | void
+  Exception_NetworkRestarted?(): boolean | void
   Exception_FetchingTaskLists?(): boolean | void
   Exception_TaskListsFetched?(): boolean | void
   Exception_exit?(): boolean | void
@@ -696,6 +834,8 @@ export type TStates =
   | 'QuotaExceeded'
   | 'Writing'
   | 'WritingDone'
+  | 'RestartingNetwork'
+  | 'NetworkRestarted'
   | 'FetchingTaskLists'
   | 'TaskListsFetched'
 
@@ -712,6 +852,8 @@ export type TTransitions =
   | 'Enabled_QuotaExceeded'
   | 'Enabled_Writing'
   | 'Enabled_WritingDone'
+  | 'Enabled_RestartingNetwork'
+  | 'Enabled_NetworkRestarted'
   | 'Enabled_FetchingTaskLists'
   | 'Enabled_TaskListsFetched'
   | 'Enabled_Exception'
@@ -728,6 +870,8 @@ export type TTransitions =
   | 'Initializing_QuotaExceeded'
   | 'Initializing_Writing'
   | 'Initializing_WritingDone'
+  | 'Initializing_RestartingNetwork'
+  | 'Initializing_NetworkRestarted'
   | 'Initializing_FetchingTaskLists'
   | 'Initializing_TaskListsFetched'
   | 'Initializing_Exception'
@@ -744,6 +888,8 @@ export type TTransitions =
   | 'Ready_QuotaExceeded'
   | 'Ready_Writing'
   | 'Ready_WritingDone'
+  | 'Ready_RestartingNetwork'
+  | 'Ready_NetworkRestarted'
   | 'Ready_FetchingTaskLists'
   | 'Ready_TaskListsFetched'
   | 'Ready_Exception'
@@ -760,6 +906,8 @@ export type TTransitions =
   | 'ConfigSet_QuotaExceeded'
   | 'ConfigSet_Writing'
   | 'ConfigSet_WritingDone'
+  | 'ConfigSet_RestartingNetwork'
+  | 'ConfigSet_NetworkRestarted'
   | 'ConfigSet_FetchingTaskLists'
   | 'ConfigSet_TaskListsFetched'
   | 'ConfigSet_Exception'
@@ -776,6 +924,8 @@ export type TTransitions =
   | 'SubsReady_QuotaExceeded'
   | 'SubsReady_Writing'
   | 'SubsReady_WritingDone'
+  | 'SubsReady_RestartingNetwork'
+  | 'SubsReady_NetworkRestarted'
   | 'SubsReady_FetchingTaskLists'
   | 'SubsReady_TaskListsFetched'
   | 'SubsReady_Exception'
@@ -792,6 +942,8 @@ export type TTransitions =
   | 'SubsInited_QuotaExceeded'
   | 'SubsInited_Writing'
   | 'SubsInited_WritingDone'
+  | 'SubsInited_RestartingNetwork'
+  | 'SubsInited_NetworkRestarted'
   | 'SubsInited_FetchingTaskLists'
   | 'SubsInited_TaskListsFetched'
   | 'SubsInited_Exception'
@@ -808,6 +960,8 @@ export type TTransitions =
   | 'Reading_QuotaExceeded'
   | 'Reading_Writing'
   | 'Reading_WritingDone'
+  | 'Reading_RestartingNetwork'
+  | 'Reading_NetworkRestarted'
   | 'Reading_FetchingTaskLists'
   | 'Reading_TaskListsFetched'
   | 'Reading_Exception'
@@ -824,6 +978,8 @@ export type TTransitions =
   | 'ReadingDone_QuotaExceeded'
   | 'ReadingDone_Writing'
   | 'ReadingDone_WritingDone'
+  | 'ReadingDone_RestartingNetwork'
+  | 'ReadingDone_NetworkRestarted'
   | 'ReadingDone_FetchingTaskLists'
   | 'ReadingDone_TaskListsFetched'
   | 'ReadingDone_Exception'
@@ -840,6 +996,8 @@ export type TTransitions =
   | 'QuotaExceeded_Any'
   | 'QuotaExceeded_Writing'
   | 'QuotaExceeded_WritingDone'
+  | 'QuotaExceeded_RestartingNetwork'
+  | 'QuotaExceeded_NetworkRestarted'
   | 'QuotaExceeded_FetchingTaskLists'
   | 'QuotaExceeded_TaskListsFetched'
   | 'QuotaExceeded_Exception'
@@ -856,6 +1014,8 @@ export type TTransitions =
   | 'Writing_QuotaExceeded'
   | 'Writing_Any'
   | 'Writing_WritingDone'
+  | 'Writing_RestartingNetwork'
+  | 'Writing_NetworkRestarted'
   | 'Writing_FetchingTaskLists'
   | 'Writing_TaskListsFetched'
   | 'Writing_Exception'
@@ -872,11 +1032,49 @@ export type TTransitions =
   | 'WritingDone_QuotaExceeded'
   | 'WritingDone_Writing'
   | 'WritingDone_Any'
+  | 'WritingDone_RestartingNetwork'
+  | 'WritingDone_NetworkRestarted'
   | 'WritingDone_FetchingTaskLists'
   | 'WritingDone_TaskListsFetched'
   | 'WritingDone_Exception'
   | 'WritingDone_exit'
   | 'WritingDone_end'
+  | 'RestartingNetwork_Enabled'
+  | 'RestartingNetwork_Initializing'
+  | 'RestartingNetwork_Ready'
+  | 'RestartingNetwork_ConfigSet'
+  | 'RestartingNetwork_SubsReady'
+  | 'RestartingNetwork_SubsInited'
+  | 'RestartingNetwork_Reading'
+  | 'RestartingNetwork_ReadingDone'
+  | 'RestartingNetwork_QuotaExceeded'
+  | 'RestartingNetwork_Writing'
+  | 'RestartingNetwork_WritingDone'
+  | 'RestartingNetwork_Any'
+  | 'RestartingNetwork_NetworkRestarted'
+  | 'RestartingNetwork_FetchingTaskLists'
+  | 'RestartingNetwork_TaskListsFetched'
+  | 'RestartingNetwork_Exception'
+  | 'RestartingNetwork_exit'
+  | 'RestartingNetwork_end'
+  | 'NetworkRestarted_Enabled'
+  | 'NetworkRestarted_Initializing'
+  | 'NetworkRestarted_Ready'
+  | 'NetworkRestarted_ConfigSet'
+  | 'NetworkRestarted_SubsReady'
+  | 'NetworkRestarted_SubsInited'
+  | 'NetworkRestarted_Reading'
+  | 'NetworkRestarted_ReadingDone'
+  | 'NetworkRestarted_QuotaExceeded'
+  | 'NetworkRestarted_Writing'
+  | 'NetworkRestarted_WritingDone'
+  | 'NetworkRestarted_RestartingNetwork'
+  | 'NetworkRestarted_Any'
+  | 'NetworkRestarted_FetchingTaskLists'
+  | 'NetworkRestarted_TaskListsFetched'
+  | 'NetworkRestarted_Exception'
+  | 'NetworkRestarted_exit'
+  | 'NetworkRestarted_end'
   | 'FetchingTaskLists_Enabled'
   | 'FetchingTaskLists_Initializing'
   | 'FetchingTaskLists_Ready'
@@ -888,6 +1086,8 @@ export type TTransitions =
   | 'FetchingTaskLists_QuotaExceeded'
   | 'FetchingTaskLists_Writing'
   | 'FetchingTaskLists_WritingDone'
+  | 'FetchingTaskLists_RestartingNetwork'
+  | 'FetchingTaskLists_NetworkRestarted'
   | 'FetchingTaskLists_Any'
   | 'FetchingTaskLists_TaskListsFetched'
   | 'FetchingTaskLists_Exception'
@@ -904,6 +1104,8 @@ export type TTransitions =
   | 'TaskListsFetched_QuotaExceeded'
   | 'TaskListsFetched_Writing'
   | 'TaskListsFetched_WritingDone'
+  | 'TaskListsFetched_RestartingNetwork'
+  | 'TaskListsFetched_NetworkRestarted'
   | 'TaskListsFetched_FetchingTaskLists'
   | 'TaskListsFetched_Any'
   | 'TaskListsFetched_Exception'
@@ -920,6 +1122,8 @@ export type TTransitions =
   | 'Exception_QuotaExceeded'
   | 'Exception_Writing'
   | 'Exception_WritingDone'
+  | 'Exception_RestartingNetwork'
+  | 'Exception_NetworkRestarted'
   | 'Exception_FetchingTaskLists'
   | 'Exception_TaskListsFetched'
   | 'Exception_exit'
@@ -953,6 +1157,8 @@ export interface IJSONStates {
   QuotaExceeded: IState
   Writing: IState
   WritingDone: IState
+  RestartingNetwork: IState
+  NetworkRestarted: IState
   FetchingTaskLists: IState
   TaskListsFetched: IState
   Exception?: IState

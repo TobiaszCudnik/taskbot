@@ -379,6 +379,80 @@ export interface ITransitions {
 }
 
 // ----- ----- ----- ----- -----
+// STATE: RestartingNetwork
+// ----- ----- ----- ----- -----
+
+/** machine.bind('RestartingNetwork', (param1, param2) => {}) */
+export interface IBind extends IBindBase {
+  (
+    event: 'RestartingNetwork_enter',
+    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
+    context?: Object
+  ): this
+  (
+    event: 'RestartingNetwork_state',
+    listener: () => /* param1: any?, param2: any? */ any,
+    context?: Object
+  ): this
+}
+
+/** machine.emit('RestartingNetwork', param1, param2) */
+export interface IEmit extends IEmitBase {
+  (event: 'RestartingNetwork_enter' /*, param1: any?, param2: any? */):
+    | boolean
+    | void
+  (event: 'RestartingNetwork_state' /*, param1: any?, param2: any? */):
+    | boolean
+    | void
+}
+
+/** Method declarations */
+export interface ITransitions {
+  RestartingNetwork_enter /* param1: any?, param2: any? */?(): boolean | void
+  RestartingNetwork_state /* param1: any?, param2: any? */?():
+    | boolean
+    | void
+    | Promise<boolean | void>
+}
+
+// ----- ----- ----- ----- -----
+// STATE: NetworkRestarted
+// ----- ----- ----- ----- -----
+
+/** machine.bind('NetworkRestarted', (param1, param2) => {}) */
+export interface IBind extends IBindBase {
+  (
+    event: 'NetworkRestarted_enter',
+    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
+    context?: Object
+  ): this
+  (
+    event: 'NetworkRestarted_state',
+    listener: () => /* param1: any?, param2: any? */ any,
+    context?: Object
+  ): this
+}
+
+/** machine.emit('NetworkRestarted', param1, param2) */
+export interface IEmit extends IEmitBase {
+  (event: 'NetworkRestarted_enter' /*, param1: any?, param2: any? */):
+    | boolean
+    | void
+  (event: 'NetworkRestarted_state' /*, param1: any?, param2: any? */):
+    | boolean
+    | void
+}
+
+/** Method declarations */
+export interface ITransitions {
+  NetworkRestarted_enter /* param1: any?, param2: any? */?(): boolean | void
+  NetworkRestarted_state /* param1: any?, param2: any? */?():
+    | boolean
+    | void
+    | Promise<boolean | void>
+}
+
+// ----- ----- ----- ----- -----
 // STATE: DBReady
 // ----- ----- ----- ----- -----
 
@@ -494,6 +568,8 @@ export interface ITransitions {
   Enabled_QuotaExceeded?(): boolean | void
   Enabled_Writing?(): boolean | void
   Enabled_WritingDone?(): boolean | void
+  Enabled_RestartingNetwork?(): boolean | void
+  Enabled_NetworkRestarted?(): boolean | void
   Enabled_DBReady?(): boolean | void
   Enabled_Exception?(): boolean | void
   Enabled_HeartBeat?(): boolean | void
@@ -512,6 +588,8 @@ export interface ITransitions {
   Initializing_QuotaExceeded?(): boolean | void
   Initializing_Writing?(): boolean | void
   Initializing_WritingDone?(): boolean | void
+  Initializing_RestartingNetwork?(): boolean | void
+  Initializing_NetworkRestarted?(): boolean | void
   Initializing_DBReady?(): boolean | void
   Initializing_Exception?(): boolean | void
   Initializing_HeartBeat?(): boolean | void
@@ -530,6 +608,8 @@ export interface ITransitions {
   Ready_QuotaExceeded?(): boolean | void
   Ready_Writing?(): boolean | void
   Ready_WritingDone?(): boolean | void
+  Ready_RestartingNetwork?(): boolean | void
+  Ready_NetworkRestarted?(): boolean | void
   Ready_DBReady?(): boolean | void
   Ready_Exception?(): boolean | void
   Ready_HeartBeat?(): boolean | void
@@ -548,6 +628,8 @@ export interface ITransitions {
   ConfigSet_QuotaExceeded?(): boolean | void
   ConfigSet_Writing?(): boolean | void
   ConfigSet_WritingDone?(): boolean | void
+  ConfigSet_RestartingNetwork?(): boolean | void
+  ConfigSet_NetworkRestarted?(): boolean | void
   ConfigSet_DBReady?(): boolean | void
   ConfigSet_Exception?(): boolean | void
   ConfigSet_HeartBeat?(): boolean | void
@@ -566,6 +648,8 @@ export interface ITransitions {
   SubsReady_QuotaExceeded?(): boolean | void
   SubsReady_Writing?(): boolean | void
   SubsReady_WritingDone?(): boolean | void
+  SubsReady_RestartingNetwork?(): boolean | void
+  SubsReady_NetworkRestarted?(): boolean | void
   SubsReady_DBReady?(): boolean | void
   SubsReady_Exception?(): boolean | void
   SubsReady_HeartBeat?(): boolean | void
@@ -584,6 +668,8 @@ export interface ITransitions {
   SubsInited_QuotaExceeded?(): boolean | void
   SubsInited_Writing?(): boolean | void
   SubsInited_WritingDone?(): boolean | void
+  SubsInited_RestartingNetwork?(): boolean | void
+  SubsInited_NetworkRestarted?(): boolean | void
   SubsInited_DBReady?(): boolean | void
   SubsInited_Exception?(): boolean | void
   SubsInited_HeartBeat?(): boolean | void
@@ -602,6 +688,8 @@ export interface ITransitions {
   Reading_QuotaExceeded?(): boolean | void
   Reading_Writing?(): boolean | void
   Reading_WritingDone?(): boolean | void
+  Reading_RestartingNetwork?(): boolean | void
+  Reading_NetworkRestarted?(): boolean | void
   Reading_DBReady?(): boolean | void
   Reading_Exception?(): boolean | void
   Reading_HeartBeat?(): boolean | void
@@ -620,6 +708,8 @@ export interface ITransitions {
   ReadingDone_QuotaExceeded?(): boolean | void
   ReadingDone_Writing?(): boolean | void
   ReadingDone_WritingDone?(): boolean | void
+  ReadingDone_RestartingNetwork?(): boolean | void
+  ReadingDone_NetworkRestarted?(): boolean | void
   ReadingDone_DBReady?(): boolean | void
   ReadingDone_Exception?(): boolean | void
   ReadingDone_HeartBeat?(): boolean | void
@@ -638,6 +728,8 @@ export interface ITransitions {
   QuotaExceeded_Any?(): boolean | void
   QuotaExceeded_Writing?(): boolean | void
   QuotaExceeded_WritingDone?(): boolean | void
+  QuotaExceeded_RestartingNetwork?(): boolean | void
+  QuotaExceeded_NetworkRestarted?(): boolean | void
   QuotaExceeded_DBReady?(): boolean | void
   QuotaExceeded_Exception?(): boolean | void
   QuotaExceeded_HeartBeat?(): boolean | void
@@ -656,6 +748,8 @@ export interface ITransitions {
   Writing_QuotaExceeded?(): boolean | void
   Writing_Any?(): boolean | void
   Writing_WritingDone?(): boolean | void
+  Writing_RestartingNetwork?(): boolean | void
+  Writing_NetworkRestarted?(): boolean | void
   Writing_DBReady?(): boolean | void
   Writing_Exception?(): boolean | void
   Writing_HeartBeat?(): boolean | void
@@ -674,6 +768,8 @@ export interface ITransitions {
   WritingDone_QuotaExceeded?(): boolean | void
   WritingDone_Writing?(): boolean | void
   WritingDone_Any?(): boolean | void
+  WritingDone_RestartingNetwork?(): boolean | void
+  WritingDone_NetworkRestarted?(): boolean | void
   WritingDone_DBReady?(): boolean | void
   WritingDone_Exception?(): boolean | void
   WritingDone_HeartBeat?(): boolean | void
@@ -681,6 +777,46 @@ export interface ITransitions {
   WritingDone_Exception?(): boolean | void
   WritingDone_exit?(): boolean | void
   WritingDone_end?(): boolean | void | Promise<boolean | void>
+  RestartingNetwork_Enabled?(): boolean | void
+  RestartingNetwork_Initializing?(): boolean | void
+  RestartingNetwork_Ready?(): boolean | void
+  RestartingNetwork_ConfigSet?(): boolean | void
+  RestartingNetwork_SubsReady?(): boolean | void
+  RestartingNetwork_SubsInited?(): boolean | void
+  RestartingNetwork_Reading?(): boolean | void
+  RestartingNetwork_ReadingDone?(): boolean | void
+  RestartingNetwork_QuotaExceeded?(): boolean | void
+  RestartingNetwork_Writing?(): boolean | void
+  RestartingNetwork_WritingDone?(): boolean | void
+  RestartingNetwork_Any?(): boolean | void
+  RestartingNetwork_NetworkRestarted?(): boolean | void
+  RestartingNetwork_DBReady?(): boolean | void
+  RestartingNetwork_Exception?(): boolean | void
+  RestartingNetwork_HeartBeat?(): boolean | void
+  RestartingNetwork_Scheduled?(): boolean | void
+  RestartingNetwork_Exception?(): boolean | void
+  RestartingNetwork_exit?(): boolean | void
+  RestartingNetwork_end?(): boolean | void | Promise<boolean | void>
+  NetworkRestarted_Enabled?(): boolean | void
+  NetworkRestarted_Initializing?(): boolean | void
+  NetworkRestarted_Ready?(): boolean | void
+  NetworkRestarted_ConfigSet?(): boolean | void
+  NetworkRestarted_SubsReady?(): boolean | void
+  NetworkRestarted_SubsInited?(): boolean | void
+  NetworkRestarted_Reading?(): boolean | void
+  NetworkRestarted_ReadingDone?(): boolean | void
+  NetworkRestarted_QuotaExceeded?(): boolean | void
+  NetworkRestarted_Writing?(): boolean | void
+  NetworkRestarted_WritingDone?(): boolean | void
+  NetworkRestarted_RestartingNetwork?(): boolean | void
+  NetworkRestarted_Any?(): boolean | void
+  NetworkRestarted_DBReady?(): boolean | void
+  NetworkRestarted_Exception?(): boolean | void
+  NetworkRestarted_HeartBeat?(): boolean | void
+  NetworkRestarted_Scheduled?(): boolean | void
+  NetworkRestarted_Exception?(): boolean | void
+  NetworkRestarted_exit?(): boolean | void
+  NetworkRestarted_end?(): boolean | void | Promise<boolean | void>
   DBReady_Enabled?(): boolean | void
   DBReady_Initializing?(): boolean | void
   DBReady_Ready?(): boolean | void
@@ -692,6 +828,8 @@ export interface ITransitions {
   DBReady_QuotaExceeded?(): boolean | void
   DBReady_Writing?(): boolean | void
   DBReady_WritingDone?(): boolean | void
+  DBReady_RestartingNetwork?(): boolean | void
+  DBReady_NetworkRestarted?(): boolean | void
   DBReady_Any?(): boolean | void
   DBReady_Exception?(): boolean | void
   DBReady_HeartBeat?(): boolean | void
@@ -710,6 +848,8 @@ export interface ITransitions {
   Exception_QuotaExceeded?(): boolean | void
   Exception_Writing?(): boolean | void
   Exception_WritingDone?(): boolean | void
+  Exception_RestartingNetwork?(): boolean | void
+  Exception_NetworkRestarted?(): boolean | void
   Exception_DBReady?(): boolean | void
   Exception_HeartBeat?(): boolean | void
   Exception_Scheduled?(): boolean | void
@@ -726,6 +866,8 @@ export interface ITransitions {
   HeartBeat_QuotaExceeded?(): boolean | void
   HeartBeat_Writing?(): boolean | void
   HeartBeat_WritingDone?(): boolean | void
+  HeartBeat_RestartingNetwork?(): boolean | void
+  HeartBeat_NetworkRestarted?(): boolean | void
   HeartBeat_DBReady?(): boolean | void
   HeartBeat_Exception?(): boolean | void
   HeartBeat_Any?(): boolean | void
@@ -744,6 +886,8 @@ export interface ITransitions {
   Scheduled_QuotaExceeded?(): boolean | void
   Scheduled_Writing?(): boolean | void
   Scheduled_WritingDone?(): boolean | void
+  Scheduled_RestartingNetwork?(): boolean | void
+  Scheduled_NetworkRestarted?(): boolean | void
   Scheduled_DBReady?(): boolean | void
   Scheduled_Exception?(): boolean | void
   Scheduled_HeartBeat?(): boolean | void
@@ -762,6 +906,8 @@ export interface ITransitions {
   Exception_QuotaExceeded?(): boolean | void
   Exception_Writing?(): boolean | void
   Exception_WritingDone?(): boolean | void
+  Exception_RestartingNetwork?(): boolean | void
+  Exception_NetworkRestarted?(): boolean | void
   Exception_DBReady?(): boolean | void
   Exception_HeartBeat?(): boolean | void
   Exception_Scheduled?(): boolean | void
@@ -782,6 +928,8 @@ export type TStates =
   | 'QuotaExceeded'
   | 'Writing'
   | 'WritingDone'
+  | 'RestartingNetwork'
+  | 'NetworkRestarted'
   | 'DBReady'
   | 'HeartBeat'
   | 'Scheduled'
@@ -799,6 +947,8 @@ export type TTransitions =
   | 'Enabled_QuotaExceeded'
   | 'Enabled_Writing'
   | 'Enabled_WritingDone'
+  | 'Enabled_RestartingNetwork'
+  | 'Enabled_NetworkRestarted'
   | 'Enabled_DBReady'
   | 'Enabled_Exception'
   | 'Enabled_HeartBeat'
@@ -817,6 +967,8 @@ export type TTransitions =
   | 'Initializing_QuotaExceeded'
   | 'Initializing_Writing'
   | 'Initializing_WritingDone'
+  | 'Initializing_RestartingNetwork'
+  | 'Initializing_NetworkRestarted'
   | 'Initializing_DBReady'
   | 'Initializing_Exception'
   | 'Initializing_HeartBeat'
@@ -835,6 +987,8 @@ export type TTransitions =
   | 'Ready_QuotaExceeded'
   | 'Ready_Writing'
   | 'Ready_WritingDone'
+  | 'Ready_RestartingNetwork'
+  | 'Ready_NetworkRestarted'
   | 'Ready_DBReady'
   | 'Ready_Exception'
   | 'Ready_HeartBeat'
@@ -853,6 +1007,8 @@ export type TTransitions =
   | 'ConfigSet_QuotaExceeded'
   | 'ConfigSet_Writing'
   | 'ConfigSet_WritingDone'
+  | 'ConfigSet_RestartingNetwork'
+  | 'ConfigSet_NetworkRestarted'
   | 'ConfigSet_DBReady'
   | 'ConfigSet_Exception'
   | 'ConfigSet_HeartBeat'
@@ -871,6 +1027,8 @@ export type TTransitions =
   | 'SubsReady_QuotaExceeded'
   | 'SubsReady_Writing'
   | 'SubsReady_WritingDone'
+  | 'SubsReady_RestartingNetwork'
+  | 'SubsReady_NetworkRestarted'
   | 'SubsReady_DBReady'
   | 'SubsReady_Exception'
   | 'SubsReady_HeartBeat'
@@ -889,6 +1047,8 @@ export type TTransitions =
   | 'SubsInited_QuotaExceeded'
   | 'SubsInited_Writing'
   | 'SubsInited_WritingDone'
+  | 'SubsInited_RestartingNetwork'
+  | 'SubsInited_NetworkRestarted'
   | 'SubsInited_DBReady'
   | 'SubsInited_Exception'
   | 'SubsInited_HeartBeat'
@@ -907,6 +1067,8 @@ export type TTransitions =
   | 'Reading_QuotaExceeded'
   | 'Reading_Writing'
   | 'Reading_WritingDone'
+  | 'Reading_RestartingNetwork'
+  | 'Reading_NetworkRestarted'
   | 'Reading_DBReady'
   | 'Reading_Exception'
   | 'Reading_HeartBeat'
@@ -925,6 +1087,8 @@ export type TTransitions =
   | 'ReadingDone_QuotaExceeded'
   | 'ReadingDone_Writing'
   | 'ReadingDone_WritingDone'
+  | 'ReadingDone_RestartingNetwork'
+  | 'ReadingDone_NetworkRestarted'
   | 'ReadingDone_DBReady'
   | 'ReadingDone_Exception'
   | 'ReadingDone_HeartBeat'
@@ -943,6 +1107,8 @@ export type TTransitions =
   | 'QuotaExceeded_Any'
   | 'QuotaExceeded_Writing'
   | 'QuotaExceeded_WritingDone'
+  | 'QuotaExceeded_RestartingNetwork'
+  | 'QuotaExceeded_NetworkRestarted'
   | 'QuotaExceeded_DBReady'
   | 'QuotaExceeded_Exception'
   | 'QuotaExceeded_HeartBeat'
@@ -961,6 +1127,8 @@ export type TTransitions =
   | 'Writing_QuotaExceeded'
   | 'Writing_Any'
   | 'Writing_WritingDone'
+  | 'Writing_RestartingNetwork'
+  | 'Writing_NetworkRestarted'
   | 'Writing_DBReady'
   | 'Writing_Exception'
   | 'Writing_HeartBeat'
@@ -979,6 +1147,8 @@ export type TTransitions =
   | 'WritingDone_QuotaExceeded'
   | 'WritingDone_Writing'
   | 'WritingDone_Any'
+  | 'WritingDone_RestartingNetwork'
+  | 'WritingDone_NetworkRestarted'
   | 'WritingDone_DBReady'
   | 'WritingDone_Exception'
   | 'WritingDone_HeartBeat'
@@ -986,6 +1156,46 @@ export type TTransitions =
   | 'WritingDone_Exception'
   | 'WritingDone_exit'
   | 'WritingDone_end'
+  | 'RestartingNetwork_Enabled'
+  | 'RestartingNetwork_Initializing'
+  | 'RestartingNetwork_Ready'
+  | 'RestartingNetwork_ConfigSet'
+  | 'RestartingNetwork_SubsReady'
+  | 'RestartingNetwork_SubsInited'
+  | 'RestartingNetwork_Reading'
+  | 'RestartingNetwork_ReadingDone'
+  | 'RestartingNetwork_QuotaExceeded'
+  | 'RestartingNetwork_Writing'
+  | 'RestartingNetwork_WritingDone'
+  | 'RestartingNetwork_Any'
+  | 'RestartingNetwork_NetworkRestarted'
+  | 'RestartingNetwork_DBReady'
+  | 'RestartingNetwork_Exception'
+  | 'RestartingNetwork_HeartBeat'
+  | 'RestartingNetwork_Scheduled'
+  | 'RestartingNetwork_Exception'
+  | 'RestartingNetwork_exit'
+  | 'RestartingNetwork_end'
+  | 'NetworkRestarted_Enabled'
+  | 'NetworkRestarted_Initializing'
+  | 'NetworkRestarted_Ready'
+  | 'NetworkRestarted_ConfigSet'
+  | 'NetworkRestarted_SubsReady'
+  | 'NetworkRestarted_SubsInited'
+  | 'NetworkRestarted_Reading'
+  | 'NetworkRestarted_ReadingDone'
+  | 'NetworkRestarted_QuotaExceeded'
+  | 'NetworkRestarted_Writing'
+  | 'NetworkRestarted_WritingDone'
+  | 'NetworkRestarted_RestartingNetwork'
+  | 'NetworkRestarted_Any'
+  | 'NetworkRestarted_DBReady'
+  | 'NetworkRestarted_Exception'
+  | 'NetworkRestarted_HeartBeat'
+  | 'NetworkRestarted_Scheduled'
+  | 'NetworkRestarted_Exception'
+  | 'NetworkRestarted_exit'
+  | 'NetworkRestarted_end'
   | 'DBReady_Enabled'
   | 'DBReady_Initializing'
   | 'DBReady_Ready'
@@ -997,6 +1207,8 @@ export type TTransitions =
   | 'DBReady_QuotaExceeded'
   | 'DBReady_Writing'
   | 'DBReady_WritingDone'
+  | 'DBReady_RestartingNetwork'
+  | 'DBReady_NetworkRestarted'
   | 'DBReady_Any'
   | 'DBReady_Exception'
   | 'DBReady_HeartBeat'
@@ -1015,6 +1227,8 @@ export type TTransitions =
   | 'Exception_QuotaExceeded'
   | 'Exception_Writing'
   | 'Exception_WritingDone'
+  | 'Exception_RestartingNetwork'
+  | 'Exception_NetworkRestarted'
   | 'Exception_DBReady'
   | 'Exception_HeartBeat'
   | 'Exception_Scheduled'
@@ -1031,6 +1245,8 @@ export type TTransitions =
   | 'HeartBeat_QuotaExceeded'
   | 'HeartBeat_Writing'
   | 'HeartBeat_WritingDone'
+  | 'HeartBeat_RestartingNetwork'
+  | 'HeartBeat_NetworkRestarted'
   | 'HeartBeat_DBReady'
   | 'HeartBeat_Exception'
   | 'HeartBeat_Any'
@@ -1049,6 +1265,8 @@ export type TTransitions =
   | 'Scheduled_QuotaExceeded'
   | 'Scheduled_Writing'
   | 'Scheduled_WritingDone'
+  | 'Scheduled_RestartingNetwork'
+  | 'Scheduled_NetworkRestarted'
   | 'Scheduled_DBReady'
   | 'Scheduled_Exception'
   | 'Scheduled_HeartBeat'
@@ -1067,6 +1285,8 @@ export type TTransitions =
   | 'Exception_QuotaExceeded'
   | 'Exception_Writing'
   | 'Exception_WritingDone'
+  | 'Exception_RestartingNetwork'
+  | 'Exception_NetworkRestarted'
   | 'Exception_DBReady'
   | 'Exception_HeartBeat'
   | 'Exception_Scheduled'
@@ -1101,6 +1321,8 @@ export interface IJSONStates {
   QuotaExceeded: IState
   Writing: IState
   WritingDone: IState
+  RestartingNetwork: IState
+  NetworkRestarted: IState
   DBReady: IState
   HeartBeat: IState
   Scheduled: IState
