@@ -16,20 +16,24 @@ start:
 	DEBUG=root DEBUG_FILE=1 node src/app.js
 
 start-am:
-	DEBUG=root DEBUG_FILE=1 DEBUG_AM=1 node src/app.js
+	DEBUG=root,gmail,gtasks DEBUG_FILE=1 DEBUG_AM=1 node src/app.js
 
 start-ami:
-	DEBUG=root DEBUG_FILE=1 DEBUG_AMI=1 DEBUG_AM=1 node src/app.js
+	DEBUG=root,gmail,gtasks DEBUG_FILE=1 DEBUG_AMI=1 DEBUG_AM=1 \
+		node --inspect src/app.js
+		#node --inspect-brk src/app.js
 
 start-inspect:
 	DEBUG=root node --inspect src/app.js
 
 start-am-heartbeat:
-	@echo 'Start with expressive log for HeartBeat and the --inspect flag'
-	DEBUG=root,root-verbose,root-am \
+	@echo 'Start with expressive logging for HeartBeat with the --inspect flag'
+	# requests-verbose,
+	DEBUG=root\*,gtasks,\*-am \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node --inspect src/app.js
+		#node --inspect-brk src/app.js
 
 clear-logs:
 	rm logs/*
