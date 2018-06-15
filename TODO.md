@@ -1,30 +1,37 @@
 ## Bugs
 
-* changing from S/\* to S/Finished doesnt always work
-  * the reversed situation is also problematic
-* taking off S/\* status label creates an infinite loop
-  * which adds it and takes it back again
-  * the respective task should be deleted
 * references R/Foo as ^Foo dont show up in tasks
 * out-of-memory after 2 days on default sync freqs
 
-## TODO
+## Milestone 1:
 
+* move the child tasks along with the parent
+* treat everything matching /^-/ as a child and dont sync
 * colors should be added when the new label has been discovered
   * this includes added via #hashtags and via gmail
   * currently colors are set only on the start
   * requires pub sub
-* auto create the logs dir
+  * temp solution is pooling for changes every X minutes
+* sync multiple users
+  * work on the same quota
+  * reuse the API clients (support the RestartingNetwork state)
 * parse #hashtags only if email send by the author to HIMSELF
   * currently only the sender is checked
-* stream based label filters
-  * stream of label changes
-  * with dates for both active and inactive (for the same label)
-  * simple version: get the latest label changeset from times on labels
 * on HeartBeat reset - kill all the active connections, release the semaphore
-* show the origin of a finished request in root::req
-* log requests to a separate file
+* push logs to a log service
+  * OR rotate file logs
 * include the full link to the email
+  * https://mail.google.com/mail/u/0/#all/__ID__
+* results limit
+  * gtasks paging support
+  * max limit of results per query/gtask list
+
+## TODO
+
+* change logger names
+  * 'gtasks' -> 'gtasks-root', 'google' -> 'google-root'
+* auto create the logs dir
+* show the origin of a finished request in root::req
 * check if `(#tag)` works
 * tasks for archived emails from the inbox should be deleted
   * from the task list, instead of completed
@@ -32,27 +39,11 @@
 * S/Ignored should remove other statuses
   * remove S/Ignored if not necessary
   * not needed as inbox isnt covered anymore?
-* move the child tasks along with the parent
-* label matching should be case-insensitive
-* only emails send by yourself should be parsed for tags while in inbox
-  * not needed as inbox isnt covered anymore?
-* order for labels
-  * always the same, defined in the settings
 * define timeout for googlapis requests (and others) in the settings
 * error handling & redo logic for the init phase
   * before Ready is set
   * include quota checking
-* calculate the daily quota by counting requests
-* handle deleted task IDs
-  * ... ?
-* label masks eg S/\* matches S/Action and S/Finished
-  * settings - label filters
-  * settings - lists
 * use lucene query parse to get condition checking from gmail queries
-* GTasks results limit
-  * paging support
-  * max limit of results per query/gtask list (for archived lists)
-* rotate file logs
 * put a limit on initial gmail inbox size
 * threads out-of-queries arent observed for changes
   * is that a real problem?
@@ -78,7 +69,9 @@
   * reuse the answer
   * avoid the Dirty state
 * use keep alive in google auth
-* gmail pubsub instead of pulling
+* gmail
+  * pubsub instead of pulling
+  * OR track own gmail changes and DONT re-fetch
 * mark gmail queries as Dirty based on related labels
 * check if all the requests use the 'fields' limits
 * use views from lokijs
