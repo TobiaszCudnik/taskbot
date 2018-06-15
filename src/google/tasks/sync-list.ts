@@ -62,11 +62,7 @@ export default class GTasksListSync extends SyncReader<
     if (!this.gtasks.lists) {
       throw Error('Lists not fetched')
     }
-    for (const list of this.gtasks.lists) {
-      if (list.title == this.config.name) {
-        return list
-      }
-    }
+    return this.gtasks.lists.find(l => l.title == this.config.name)
   }
   verbose = debug(this.state.id(true) + '-verbose')
 
@@ -84,16 +80,11 @@ export default class GTasksListSync extends SyncReader<
     this.state.drop('QuotaExceeded')
   }
 
-  Reading_enter() {
-    const cancel = () => {
-      // ReadingDone need to be dropped manually, as we cancel the transition
-      this.state.drop('ReadingDone')
-      this.state.add('ReadingDone')
-      return false
-    }
+  // TODO this should be a negotiation handler
+  shouldRead() {
     if (!this.list) {
       this.log(`List doesn't exist, skipping reading`)
-      return cancel()
+      return false
     }
     if (this.state.is('Dirty') || !this.last_read_end) {
       this.verbose(`Forced read - Dirty`)
@@ -106,7 +97,7 @@ export default class GTasksListSync extends SyncReader<
       this.verbose(
         `Reading skipped - short quota is ${this.gtasks.short_quota_usage}`
       )
-      return cancel()
+      return false
     }
     const since_last_read = moment.duration(moment().diff(this.last_read_start))
     const sync_frequency =
@@ -114,15 +105,18 @@ export default class GTasksListSync extends SyncReader<
       this.gtasks.config.gtasks.sync_frequency
     if (sync_frequency && since_last_read.asSeconds() < sync_frequency) {
       this.verbose(`Reading skipped - max frequency exceeded`)
-      return cancel()
+      return false
     }
   }
 
   async Reading_state() {
+    if (!this.shouldRead()) {
+      return this.state.add('ReadingDone')
+    }
     super.Reading_state()
     const quota = this.gtasks.short_quota_usage
     const abort = this.state.getAbort('Reading')
-    let [list, res] = await this.gtasks.api.req(
+    const ret = await this.gtasks.api.req(
       this.gtasks.api.tasks.list,
       {
         tasklist: this.list.id,
@@ -142,6 +136,8 @@ export default class GTasksListSync extends SyncReader<
     )
 
     if (abort()) return
+
+    const [list, res] = ret
 
     this.state.drop('Dirty')
     if (res.statusCode === 304) {

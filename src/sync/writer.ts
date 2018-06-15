@@ -1,12 +1,14 @@
-import AsyncMachine, { machine } from 'asyncmachine'
+import AsyncMachine, { machine, PipeFlags } from 'asyncmachine'
 import {
   IBind,
   IEmit,
   IJSONStates,
   IState,
-  TStates
+  TStates,
+  ITransitions
 } from '../../typings/machines/sync/writer'
 import { SyncReader, sync_reader_state } from './reader'
+import * as moment from 'moment'
 
 export type TSyncStateWriter = AsyncMachine<TStates, IBind, IEmit>
 
@@ -35,18 +37,21 @@ export const sync_writer_state: IJSONStates = {
   NetworkRestarted: { drop: ['RestartingNetwork'] }
 }
 // TODO consider moving to a separate file?
-export abstract class SyncWriter<
-  TConfig,
-  TStates,
-  IBind,
-  IEmit
-> extends SyncReader<TConfig, TStates, IBind, IEmit> {
+export abstract class SyncWriter<GConfig, GStates, GBind, GEmit>
+  extends SyncReader<GConfig, GStates, GBind, GEmit>
+  implements ITransitions {
   get state_writer(): TSyncStateWriter {
     return this.state
   }
   // TODO automate `bindToSubs()`
-  // sub_states_inbound: [TStatesWriter, TStatesWriter][]
-  // sub_states_outbound: [TStatesWriter, TStatesWriter][]
+  // sub_states_inbound: [GStates | TStates, GStates | TStates][] = [
+  //   ['ReadingDone', 'ReadingDone'],
+  //   ['Ready', 'SubsReady']
+  // ]
+  // sub_states_outbound: [GStates | TStates, GStates | TStates][] = [
+  //   ['Reading', 'Reading'],
+  //   ['Enabled', 'Enabled'],
+  // ]
 
   last_write_end: moment.Moment
   last_write_start: moment.Moment
@@ -108,8 +113,18 @@ export abstract class SyncWriter<
       sync.state.pipe('WritingDone', this.state_writer)
       sync.state.pipe('NetworkRestarted', this.state_writer)
       // outbound
-      this.state_writer.pipe('Writing', sync.state)
-      this.state_writer.pipe('RestartingNetwork', sync.state)
+      this.state_writer.pipe(
+        'Writing',
+        sync.state,
+        'Writing',
+        PipeFlags.NEGOTIATION_ENTER | PipeFlags.FINAL_EXIT
+      )
+      this.state_writer.pipe(
+        'RestartingNetwork',
+        sync.state,
+        'RestartingNetwork',
+        PipeFlags.NEGOTIATION_ENTER | PipeFlags.FINAL_EXIT
+      )
     }
   }
 }

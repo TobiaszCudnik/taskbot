@@ -117,7 +117,7 @@ export default class GTasksSync extends SyncWriter<
   // Transitions
   // ----- -----
 
-  RestartingNetwork() {
+  RestartingNetwork_state() {
     this.initAPIClient()
     this.state.add('NetworkRestarted')
   }

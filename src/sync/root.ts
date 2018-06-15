@@ -18,20 +18,21 @@ import {
   IJSONStates,
   TStates,
   IBindBase,
-  IEmitBase
+  IEmitBase,
+  ITransitions
 } from '../../typings/machines/sync/root'
 import GoogleSync from '../google/sync'
 import { IConfig, ILabelDefinition, IListConfig } from '../types'
 import GC from './gc'
 import LabelFilterSync from './label-filter'
 import Logger from '../logger'
-import { sync_writer_state as base_state, SyncWriter } from './writer'
+import { sync_writer_state, SyncWriter } from './writer'
 
 // TODO move to utils.ts
 const SEC = 1000
 
 export const sync_state: IJSONStates = {
-  ...base_state,
+  ...sync_writer_state,
 
   SubsInited: {
     require: ['ConfigSet', 'DBReady'],
@@ -76,12 +77,8 @@ export interface DBRecordLabel {
   active: boolean
 }
 
-export default class RootSync extends SyncWriter<
-  IConfig,
-  TStates,
-  IBind,
-  IEmit
-> {
+export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
+  implements ITransitions {
   state: AsyncMachine<TStates, IBind, IEmit>
   subs: { google: GoogleSync; label_filters: LabelFilterSync[] }
 
@@ -132,19 +129,8 @@ export default class RootSync extends SyncWriter<
   HeartBeat_state() {
     const now = moment().unix()
     const is = state => this.state.is(state)
-    const restart = async (reason: string) => {
-      this.restarts_count++
-      // TODO kill all the active requests
-      this.semaphore = new Semaphore(this.max_active_requests)
-      this.log(`HeartBeat, restarting because of - '${reason}'`)
-      this.logStates('Before restart')
-      this.state.drop(['Exception', 'Reading', 'Writing'])
-      await this.state.whenNot(['Exception', 'Reading', 'Writing'])
-      this.logStates('After drop')
-      this.state.add('Reading')
-      await this.state.when('Reading')
-      this.logStates('After restart')
-    }
+    // TODO this can leak
+    const restart = this.state.addByListener('RestartingNetwork')
     if (this.state.not(['Reading', 'Writing', 'Scheduled'])) {
       restart('None of the action states is set')
     } else if (
@@ -159,6 +145,20 @@ export default class RootSync extends SyncWriter<
       restart('Writing timeout')
     }
     this.state.drop('HeartBeat')
+  }
+
+  // TODO kill all the active requests
+  async RestartingNetwork_state(reason: string) {
+    this.restarts_count++
+    this.semaphore = new Semaphore(this.max_active_requests)
+    this.log(`HeartBeat, restarting because of - '${reason}'`)
+    this.logStates('Before restart')
+    this.state.drop(['Exception', 'Reading', 'Writing'])
+    await this.state.whenNot(['Exception', 'Reading', 'Writing'])
+    this.logStates('After drop')
+    this.state.add('Reading')
+    await this.state.when('Reading')
+    this.logStates('After restart')
   }
 
   Exception_enter() {
@@ -291,8 +291,11 @@ export default class RootSync extends SyncWriter<
     return_array: boolean,
     options?: object
   ): Promise<any> {
+    this.pending_requests++
     let release = await this.semaphore.acquire()
+    this.pending_requests--
     if (abort && abort()) {
+      this.log_verbose('Request aborted by the abort() function')
       release()
       return null
     }
@@ -301,7 +304,11 @@ export default class RootSync extends SyncWriter<
     if (!params) {
       params = {} as A
     }
-    this.log_requests(`REQUEST (${this.active_requests} active):\n%O`, params)
+    this.log_requests(`REQUEST (${this.active_requests} active):\n%O`, {
+      // @ts-ignore
+      ...params,
+      auth: 'REMOVED'
+    })
     // TODO googleapis specific code should be in google/sync.ts
     let ret
     try {
@@ -320,11 +327,11 @@ export default class RootSync extends SyncWriter<
       this.active_requests--
       this.executed_requests++
     }
-    // TODO show the number of pending requests
-    this.log_verbose('request finished')
+    this.log_verbose(`request finished (${this.pending_requests} pending)`)
 
     return return_array ? ret : ret[0]
   }
+  pending_requests = 0
 
   // Extracts labels from text
   getLabelsFromText(text: string): { text: string; labels: string[] } {

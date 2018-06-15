@@ -1,4 +1,4 @@
-import AsyncMachine, { machine } from 'asyncmachine'
+import AsyncMachine, { machine, PipeFlags } from 'asyncmachine'
 import debug from 'debug'
 import * as clone from 'deepcopy'
 import * as diff from 'diff'
@@ -12,7 +12,8 @@ import {
   IState,
   TStates,
   IBindBase,
-  IEmitBase
+  IEmitBase,
+  ITransitions
 } from '../../typings/machines/sync/reader'
 import { machineLogToDebug } from '../utils'
 import Logger, { log_fn } from '../logger'
@@ -43,7 +44,8 @@ export const sync_reader_state: IJSONStates = {
 }
 export type TSyncState = AsyncMachine<TStates, IBind, IEmit>
 
-export abstract class SyncReader<GConfig, GStates, GBind, GEmit> {
+export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
+  implements ITransitions {
   state: AsyncMachine<any, any, any>
   get state_reader(): TSyncState {
     return this.state
@@ -51,12 +53,10 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit> {
   active_requests: number
   // config: IConfig | null
   config: GConfig
-  // TODO types?
   sub_states_inbound: [GStates | TStates, GStates | TStates][] = [
     ['ReadingDone', 'ReadingDone'],
     ['Ready', 'SubsReady']
   ]
-  // TODO types?
   sub_states_outbound: [GStates | TStates, GStates | TStates][] = [
     ['Reading', 'Reading'],
     ['Enabled', 'Enabled']
@@ -114,6 +114,7 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit> {
       this.root = root
     }
     this.state = this.getState()
+    this.initLoggers()
     this.state.setTarget(this)
     this.state_reader.add('Initializing')
     if (process.env['DEBUG_AM'] || global.am_network) {
@@ -123,7 +124,6 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit> {
       }
     }
     this.state_reader.add('ConfigSet', config)
-    this.initLoggers()
   }
 
   // ----- -----
@@ -209,6 +209,17 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit> {
     return this.subs_flat.every(sync => sync.state.is('ReadingDone'))
   }
 
+  ReadingDone_exit() {
+    // prevent queued pipe mutations to switch ReadingDone back and forth
+    const keep_reading_done =
+      this.ReadingDone_enter() &&
+      !(
+        this.state.to().includes('Reading') ||
+        this.state.to().includes('Writing')
+      )
+    return !keep_reading_done
+  }
+
   ReadingDone_state() {
     this.last_read_end = moment()
     this.last_read_time = moment.duration(
@@ -234,11 +245,18 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit> {
 
   bindToSubs() {
     for (const sync of this.subs_flat) {
+      // inbound
       for (const [source, target] of this.sub_states_inbound) {
         sync.state.pipe(source, this.state, target)
       }
+      // outbound
       for (const [source, target] of this.sub_states_outbound) {
-        this.state.pipe(source, sync.state, target)
+        this.state.pipe(
+          source,
+          sync.state,
+          target,
+          PipeFlags.NEGOTIATION_ENTER | PipeFlags.FINAL_EXIT
+        )
       }
     }
   }

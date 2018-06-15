@@ -105,7 +105,7 @@ export default class GmailSync extends SyncWriter<
   // Transitions
   // ----- -----
 
-  RestartingNetwork() {
+  RestartingNetwork_state() {
     this.initAPIClient()
     this.state.add('NetworkRestarted')
   }
