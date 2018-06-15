@@ -58,10 +58,10 @@ am-types:
 	mkdir -p typings/machines/google/gmail
 	mkdir -p typings/machines/google/tasks
 
-	$(STATES_TYPES_BIN) src/sync/sync.js -e sync_state \
-		-o typings/machines/sync/sync.ts
-	$(STATES_TYPES_BIN) src/sync/sync.js -e sync_writer_state \
-		-o typings/machines/sync/sync-writer.ts
+	$(STATES_TYPES_BIN) src/sync/reader.js -e sync_reader_state \
+		-o typings/machines/sync/reader.ts
+	$(STATES_TYPES_BIN) src/sync/writer.js -e sync_writer_state \
+		-o typings/machines/sync/writer.ts
 	$(STATES_TYPES_BIN) src/sync/root.js -e sync_state \
 		-o typings/machines/sync/root.ts
 
