@@ -177,6 +177,17 @@ const config: IConfig = {
   ],
   lists: [
     {
+      name: 'Inbox',
+      gmail_query: 'in:inbox',
+      db_query: r => Boolean(hasLabel(r, 'INBOX')),
+      enter: {},
+      exit: {},
+      writers: ['gmail'],
+      sync_frequency: {
+        gtasks: 5
+      }
+    },
+    {
       name: '!Next',
       gmail_query: 'label:!s-next-action',
       db_query: r => Boolean(hasLabel(r, '!S/Next Action')),

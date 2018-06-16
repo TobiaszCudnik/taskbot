@@ -112,16 +112,10 @@ export default class GmailSync extends SyncWriter<
 
   SubsInited_state() {
     this.subs = {
-      lists: []
+      lists: this.config.lists
+        .filter(config => !config.writers || config.writers.includes('gmail'))
+        .map(config => new GmailListSync(config, this.root, this))
     }
-    for (const config of this.config.lists) {
-      this.subs.lists.push(new GmailListSync(config, this.root, this))
-    }
-    // this.subs.text_labels = new GmailTextLabelsSync(
-    //   this.data,
-    //   this.api,
-    //   this.config.text_labels
-    // )
     this.bindToSubs()
   }
 
@@ -419,7 +413,7 @@ export default class GmailSync extends SyncWriter<
       {
         id,
         userId: 'me',
-        metadataHeaders: ['SUBJECT', 'FROM'],
+        metadataHeaders: ['SUBJECT', 'FROM', 'TO'],
         format: 'metadata',
         fields: 'id,historyId,messages(id,labelIds,payload(headers))'
       },
@@ -568,6 +562,16 @@ export default class GmailSync extends SyncWriter<
       throw new Error(`Thread content not fetched, id: ${thread.id}`)
     const author = thread.messages[0].payload.headers.find(
       h => h.name == 'From'
+    ).value
+    const email = author.match(/<([^<]+)>$/)
+    return email ? email[1] : author
+  }
+
+  getThreadAddressee(thread: Thread) {
+    if (!thread.messages || !thread.messages.length)
+      throw new Error(`Thread content not fetched, id: ${thread.id}`)
+    const author = thread.messages[0].payload.headers.find(
+      h => h.name == 'To'
     ).value
     const email = author.match(/<([^<]+)>$/)
     return email ? email[1] : author

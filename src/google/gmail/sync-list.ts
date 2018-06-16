@@ -2,7 +2,6 @@ import { machine } from 'asyncmachine'
 import { debug } from 'debug'
 import * as clone from 'deepcopy'
 import * as google from 'googleapis'
-import * as moment from 'moment'
 // Machine types
 import {
   AsyncMachine,
@@ -136,20 +135,23 @@ export default class GmailListSync extends SyncReader<
   }
 
   toDB(thread: google.gmail.v1.Thread): DBRecord {
-    const sender = this.gmail.getThreadAuthor(thread)
-    const self_sent = sender == this.root.config.google.username
+    const me = this.root.config.google.username
+    const from = this.gmail.getThreadAuthor(thread)
+    const to = this.gmail.getThreadAddressee(thread)
+    const self_sent = from == me && to == me
     let title = this.gmail.getTitleFromThread(thread)
     const record: DBRecord = {
       gmail_id: this.toDBID(thread.id),
       title: title,
-      content: self_sent ? '' : `From ${sender}\n`,
+      content: self_sent ? '' : `From ${from}\n`,
       labels: {},
       updated: this.gmail.timeFromHistoryID(parseInt(thread.historyId, 10))
     }
     // apply labels from gmail
     const labels_from_thread = this.gmail.getLabelsFromThread(thread)
     this.applyLabels(record, { add: labels_from_thread })
-    // apply labels from text, only when in inbox AND send to yourself
+    // apply labels from text, but only when in inbox AND send to yourself AND
+    // by yourself
     if (labels_from_thread.includes('INBOX') && self_sent) {
       this.applyLabels(record, {
         add: this.root.getLabelsFromText(record.title).labels

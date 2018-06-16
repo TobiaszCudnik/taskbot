@@ -19,6 +19,7 @@ export interface IListConfig {
     add?: string[]
     remove?: string[]
   }
+  writers?: string[]
   // seconds
   sync_frequency?: {
     gtasks?: number

@@ -148,9 +148,9 @@ export default class GTasksSync extends SyncWriter<
 
   SubsInited_state() {
     this.subs = {
-      lists: this.config.lists.map(
-        config => new GTasksListSync(config, this.root, this)
-      )
+      lists: this.config.lists
+        .filter(config => !config.writers || config.writers.includes('gtasks'))
+        .map(config => new GTasksListSync(config, this.root, this))
     }
     this.bindToSubs()
   }
@@ -171,6 +171,7 @@ export default class GTasksSync extends SyncWriter<
       this.log('[CACHED] tasks lists')
     }
     const missing = this.config.lists
+      .filter(config => !config.writers || config.writers.includes('gtasks'))
       .filter(config => !this.lists.find(list => list.title == config.name))
       .map(config => config.name)
     if (missing.length) {
