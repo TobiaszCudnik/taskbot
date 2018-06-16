@@ -19,6 +19,7 @@ import RootSync, { DBRecord } from '../../sync/root'
 import { SyncReader, sync_reader_state } from '../../sync/reader'
 import { IListConfig } from '../../types'
 import GTasksSync, { TaskTree } from './sync'
+import * as regexEscape from 'escape-string-regexp'
 
 export type Task = google.tasks.v1.Task
 export type TaskList = google.tasks.v1.TaskList
@@ -228,7 +229,7 @@ export default class GTasksListSync extends SyncReader<
 
   // TODO try to make it in one query, indexes
   getFromDB(task) {
-    const id = this.gtasks.toDBID(task)
+    const id = this.gtasks.toGmailID(task)
     if (id) {
       const record = this.root.data.findOne({ gmail_id: id })
       if (record) return record
@@ -244,7 +245,7 @@ export default class GTasksListSync extends SyncReader<
   }
 
   toDB(task: Task): DBRecord {
-    const id = this.gtasks.toDBID(task)
+    const id = this.gtasks.toGmailID(task)
     const text_labels = this.root.getLabelsFromText(task.title)
     const record: DBRecord = {
       title: text_labels.text,
@@ -267,8 +268,18 @@ export default class GTasksListSync extends SyncReader<
     return record
   }
 
-  getContent(task: Task): string {
-    return (task.notes || '').replace(/\n?\bemail:\w+\b/, '') || ''
+  getContent(content: string): string {
+    const regex = new RegExp(
+      `\\n?\\bEmail: ${regexEscape(
+        this.root.subs.google.subs.tasks.email_url
+      )}[\\w-]+\\b`
+    )
+    return (
+      (content || '')
+        // legacy format
+        .replace(/\n?\bemail:[\w-]+\b/, '')
+        .replace(regex, '') || ''
+    )
   }
 
   updateTextLabels(record: DBRecord, new_title: string) {
@@ -298,7 +309,7 @@ export default class GTasksListSync extends SyncReader<
       this.updateTextLabels(record, task.title)
       text_labels_updated = true
     }
-    record.content = this.getContent(task)
+    record.content = this.getContent(task.notes)
     // add to the gtasks id map
     record.gtasks_ids = record.gtasks_ids || {}
     record.gtasks_ids[task.id] = this.list.id

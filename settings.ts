@@ -40,14 +40,15 @@ const config: IConfig = {
     ]
   },
   gmail: {
-    // TODO implement?
+    // TODO implement
     max_results: 300,
     included_labels: [
       /^!S\/[\w\s-]+$/,
       /^V\/[\w\s-]+$/,
       /^P\/[\w\s-]+$/,
       /^INBOX$/
-    ]
+    ],
+    domain: 'mail.google.com'
   },
   exception_delay: 5,
   exception_flood_delay: 10 * 60,

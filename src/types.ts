@@ -72,6 +72,7 @@ export type IConfig = {
     // TODO
     max_results: number
     included_labels: RegExp[]
+    domain: string
   }
   exception_delay: number
   exception_flood_delay: number

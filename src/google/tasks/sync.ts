@@ -24,6 +24,7 @@ import { sync_writer_state, SyncWriter } from '../../sync/writer'
 import { IConfig } from '../../types'
 import Auth from '../auth'
 import GTasksListSync, { Task, TaskList } from './sync-list'
+import * as regexEscape from 'escape-string-regexp'
 
 const SEC = 1000
 
@@ -107,6 +108,7 @@ export default class GTasksSync extends SyncWriter<
       2
     )
   }
+  email_url = `https://${this.root.config.gmail.domain}/mail/u/0/#all/`
 
   constructor(root: RootSync, public auth: Auth) {
     super(root.config, root)
@@ -215,9 +217,14 @@ export default class GTasksSync extends SyncWriter<
     })
   }
 
-  // TODO rename to toGmailID
-  toDBID(task: Task): string | null {
-    const match = (task.notes || '').match(/\bemail:([\w-]+)\b/)
+  toGmailID(task: Task): string | null {
+    // legacy format
+    let match = (task.notes || '').match(/\bemail:([\w-]+)\b/)
+    if (match) {
+      return match[1]
+    }
+    const regexp = `\\nEmail: ${regexEscape(this.email_url)}([\\w-]+)\\b`
+    match = (task.notes || '').match(regexp)
     if (match) {
       return match[1]
     }
@@ -227,7 +234,12 @@ export default class GTasksSync extends SyncWriter<
     return task.status == 'completed'
   }
 
-  getTasksToModify(abort: () => boolean) {
+  addGmailID(content: string, id: string) {
+    return content + `\nEmail: ${this.email_url}${id}`
+  }
+
+  processTasksToModify(abort: () => boolean) {
+    this.children_to_move = []
     return map(this.subs.lists, async (sync: GTasksListSync) => {
       await map(sync.getTasks(), async task => {
         const db_res = <DBRecord>(<any>this.root.data
@@ -339,8 +351,7 @@ export default class GTasksSync extends SyncWriter<
             title:
               record.title +
               this.root.getRecordLabelsAsText(record, sync.config),
-            // TODO extract
-            notes: record.content + '\nemail:' + record.gmail_id
+            notes: this.addGmailID(record.content, record.gmail_id)
           }
         }
         this.log(`Adding a new task '${record.title}' to '${sync.list.title}'`)
