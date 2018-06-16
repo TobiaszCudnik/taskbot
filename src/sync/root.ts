@@ -382,7 +382,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
       if (!data.active) continue
       if (skip.includes(label)) continue
       const short = this.labelToShortcut(label)
-      if (short) {
+      if (short && !record.title.includes(short)) {
         labels.push(short)
       }
     }
