@@ -16,7 +16,8 @@ start:
 	DEBUG=root DEBUG_FILE=1 node src/app.js
 
 start-am:
-	DEBUG=root,gmail,gtasks DEBUG_FILE=1 DEBUG_AM=1 node src/app.js
+	DEBUG=\*-error,requests-verbose,root,gmail,gtasks DEBUG_FILE=1 DEBUG_AM=1 \
+		node --inspect src/app.js
 
 start-ami:
 	DEBUG=root,gmail,gtasks DEBUG_FILE=1 DEBUG_AMI=1 DEBUG_AM=1 \
@@ -39,7 +40,7 @@ clear-logs:
 	rm logs/*
 
 debug:
-	DEBUG=root DEBUG_FILE=1 DEBUG_AMI=1 node --inspect-brk src/app.js
+	DEBUG=root DEBUG_FILE=1 node --inspect-brk src/app.js
 
 debug-list-next:
 	DEBUG=record-diffs,google,gmail,gtasks,gmail-query-next,gmail-list-next,gtasks-list-next \
