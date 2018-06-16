@@ -322,6 +322,15 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
       } else if (ret[1] === undefined && ret[0] === undefined) {
         throw Error('Response and body empty')
       }
+    } catch (e) {
+      // attach the request body
+      e.params = {
+        // @ts-ignore
+        ...params,
+        auth: 'REMOVED'
+      }
+      // TODO include the method name
+      throw e
     } finally {
       release()
       this.active_requests--
