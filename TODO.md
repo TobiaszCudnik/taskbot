@@ -6,7 +6,10 @@
 ## Milestone 1:
 
 * move the child tasks along with the parent
-* treat everything matching /^-/ as a child and dont sync
+  * dont create emails from children
+  * treat everything matching /^-/ as a child and dont sync
+* include the full link to the email
+  * https://mail.google.com/mail/u/0/#all/__ID__
 * colors should be added when the new label has been discovered
   * this includes added via #hashtags and via gmail
   * currently colors are set only on the start
@@ -20,14 +23,18 @@
 * on HeartBeat reset - kill all the active connections, release the semaphore
 * push logs to a log service
   * OR rotate file logs
-* include the full link to the email
-  * https://mail.google.com/mail/u/0/#all/__ID__
 * results limit
   * gtasks paging support
   * max limit of results per query/gtask list
+* support moving to trash
+  * ignore syncing
+  * mark as completed in gtasks
+* include payload in request-related errors
+* include the endpoint in the requests log
 
 ## TODO
 
+* removed orphaned tasks
 * change logger names
   * 'gtasks' -> 'gtasks-root', 'google' -> 'google-root'
 * auto create the logs dir
@@ -68,6 +75,7 @@
 * use etags in patch requests in gtasks
   * reuse the answer
   * avoid the Dirty state
+* set a global auth and don't re-send with every req
 * use keep alive in google auth
 * gmail
   * pubsub instead of pulling
@@ -89,8 +97,13 @@
 
 ## Milestone 2
 
+* customizable gmail domain
 * multi user mode for syncing gtasks lists only
   * usecase: share a google tasks list with someone
+  * sharing lists via the project tag eg P/groceries
+  * sharing via a dedicated CP, reading contacts directly from gmail
+  * the other person has to have the service active
+  * sync directly via own APIs
 * collaborative syncing
 * project label mapped to an email address
   * search query, like a gmail filter?
