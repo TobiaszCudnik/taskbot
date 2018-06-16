@@ -81,35 +81,6 @@ export default class GTasksListSync extends SyncReader<
     this.state.drop('QuotaExceeded')
   }
 
-  // TODO this should be a negotiation handler
-  shouldRead() {
-    if (!this.list) {
-      this.log(`List doesn't exist, skipping reading`)
-      return false
-    }
-    if (this.state.is('Dirty') || !this.last_read_end) {
-      this.verbose(`Forced read - Dirty`)
-      return true
-    }
-    // Reuse the previous version if running out of quota and data is expected
-    // to be the same
-    // TODO move to the config
-    if (this.gtasks.short_quota_usage >= 0.25) {
-      this.verbose(
-        `Reading skipped - short quota is ${this.gtasks.short_quota_usage}`
-      )
-      return false
-    }
-    const since_last_read = moment.duration(moment().diff(this.last_read_start))
-    const sync_frequency =
-      (this.config.sync_frequency || {}).gtasks ||
-      this.gtasks.config.gtasks.sync_frequency
-    if (sync_frequency && since_last_read.asSeconds() < sync_frequency) {
-      this.verbose(`Reading skipped - max frequency exceeded`)
-      return false
-    }
-  }
-
   async Reading_state() {
     if (!this.shouldRead()) {
       return this.state.add('ReadingDone')
@@ -121,13 +92,13 @@ export default class GTasksListSync extends SyncReader<
       this.gtasks.api.tasks.list,
       {
         tasklist: this.list.id,
-        fields: 'etag,items(id,title,notes,updated,etag,status)',
+        fields: 'etag,items(id,title,notes,updated,etag,status,parent)',
         // TODO paging
         maxResults: '1000',
         showHidden: false,
         // request a cached version after an etag is confirmed twice
-        // its a gtasks' api bug, where same etag can be attached to 2 different
-        // responses
+        // its a gtasks' api bug, where the same etag can be attached to 2
+        // different responses
         headers: this.etags.tasks_reqs++
           ? { 'If-None-Match': this.etags.tasks }
           : {}
@@ -172,38 +143,75 @@ export default class GTasksListSync extends SyncReader<
 
   // return a filtered list of tasks
   getTasks(): Task[] {
-    return this.tasks ? this.tasks.items.filter(t => !t.parent && t.title) : []
+    return this.tasks
+      ? this.tasks.items.filter(t => !t.parent && t.title && t.title[0] != '-')
+      : []
   }
 
-  // TODO tests, maybe write a more efficient version
-  getChildren(task_id: string): TaskTree[] | null {
+  shouldRead() {
+    if (!this.list) {
+      this.log(`List doesn't exist, skipping reading`)
+      return false
+    }
+    if (this.state.is('Dirty') || !this.last_read_end) {
+      this.verbose(`Forced read - Dirty`)
+      return true
+    }
+    // Reuse the previous version if running out of quota and data is expected
+    // to be the same
+    // TODO move to the config
+    if (this.gtasks.short_quota_usage >= 0.25) {
+      this.verbose(
+        `Reading skipped - short quota is ${this.gtasks.short_quota_usage}`
+      )
+      return false
+    }
+    const since_last_read = moment.duration(moment().diff(this.last_read_start))
+    const sync_frequency =
+      (this.config.sync_frequency || {}).gtasks ||
+      this.gtasks.config.gtasks.sync_frequency
+    if (sync_frequency && since_last_read.asSeconds() < sync_frequency) {
+      this.verbose(`Reading skipped - max frequency exceeded`)
+      return false
+    }
+    return true
+  }
+
+  /**
+   * Return tree like structure of children tasks.
+   *
+   * To move children to a new list you have to remove the old IDs.
+   *
+   * @param task_id
+   * @returns `null` in case of no children
+   */
+  getChildren(
+    task_id: string
+  ): { root_tasks: TaskTree[]; all_tasks: TaskTree[] } {
     const tasks = this.tasks.items
-    const children = []
+    const root_tasks = []
     const index = tasks.findIndex(t => t.id == task_id)
     // assume sorted, if next has a parent, its a child
     let i
-    let parents = []
-    for (i = index; tasks[i] && tasks[i].parent; i++) {
-      let target
+    let all_tasks = []
+    for (i = index + 1; tasks[i] && tasks[i].parent; i++) {
+      let target: TaskTree[]
       if (tasks[i].parent == task_id) {
-        target = children
+        target = root_tasks
       } else {
-        target = parents.find(p => p.id == tasks[i].parent)
+        target = all_tasks.find(p => p.id == tasks[i].parent).children
       }
+      // TODO extract the type
       target.push({
         id: tasks[i].id,
         title: tasks[i].title,
         completed: this.gtasks.isCompleted(tasks[i]),
-        children: []
+        children: [],
+        notes: tasks[i].notes ? this.getContent(tasks[i].notes) : null
       })
-      parents.push(target[target.length - 1])
+      all_tasks.push(target[target.length - 1])
     }
-    if (!children.length) {
-      return null
-    }
-    // remove the IDs, as they aren't relevant any more
-    ;[...children, ...parents].forEach(t => delete t.id)
-    return children
+    return { root_tasks, all_tasks }
   }
 
   merge() {
@@ -249,7 +257,7 @@ export default class GTasksListSync extends SyncReader<
     const text_labels = this.root.getLabelsFromText(task.title)
     const record: DBRecord = {
       title: text_labels.text,
-      content: this.getContent(task),
+      content: this.getContent(task.notes),
       labels: {},
       updated: moment(task.updated).unix(),
       gtasks_ids: {
