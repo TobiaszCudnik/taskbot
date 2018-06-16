@@ -1,16 +1,13 @@
 ## Bugs
 
-* references R/Foo as ^Foo dont show up in tasks
+* tags get duplicated in gtasks
+  * test #foo ^locA #foo ^locA
 * out-of-memory after 2 days on default sync freqs
+* `*loc1` causes `root MERGE LIMIT EXCEEDED`
 
 ## Milestone 1:
 
-* move the child tasks along with the parent
-  * dont create emails from children
-  * treat everything matching /^-/ as a child and dont sync
-* include the full link to the email
-  * https://mail.google.com/mail/u/0/#all/__ID__
-* colors should be added when the new label has been discovered
+* colors should be added when a new label has been discovered
   * this includes added via #hashtags and via gmail
   * currently colors are set only on the start
   * requires pub sub
@@ -20,6 +17,8 @@
   * reuse the API clients (support the RestartingNetwork state)
 * parse #hashtags only if email send by the author to HIMSELF
   * currently only the sender is checked
+  * monitor inbox separately from the lists
+* implement list.writers for gmail
 * on HeartBeat reset - kill all the active connections, release the semaphore
 * push logs to a log service
   * OR rotate file logs
@@ -29,6 +28,8 @@
 * support moving to trash
   * ignore syncing
   * mark as completed in gtasks
+  * same when deleted from gtasks and not found in any other lists
+    * add label:Trash
 * include payload in request-related errors
 * include the endpoint in the requests log
 
