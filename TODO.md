@@ -1,35 +1,34 @@
 ## Bugs
 
-* tags get duplicated in gtasks
-  * test #foo ^locA #foo ^locA
 * out-of-memory after 2 days on default sync freqs
-* `*loc1` causes `root MERGE LIMIT EXCEEDED`
 
 ## Milestone 1:
 
+* support moving to trash
+  * ignore syncing
+  * mark as completed in gtasks
+  * same when deleted from gtasks and not found in any other lists
+    * add label:Trash
 * colors should be added when a new label has been discovered
   * this includes added via #hashtags and via gmail
   * currently colors are set only on the start
   * requires pub sub
   * temp solution is pooling for changes every X minutes
+    * pool via a history query
 * sync multiple users
   * work on the same quota
-  * reuse the API clients (support the RestartingNetwork state)
-* parse #hashtags only if email send by the author to HIMSELF
-  * currently only the sender is checked
-  * monitor inbox separately from the lists
-* implement list.writers for gmail
+  * connection manager
+    * reuse the API clients (support the RestartingNetwork state)
+    * time based requests limits
+      * per user
+      * per connection
+      * per server
 * on HeartBeat reset - kill all the active connections, release the semaphore
 * push logs to a log service
   * OR rotate file logs
 * results limit
   * gtasks paging support
   * max limit of results per query/gtask list
-* support moving to trash
-  * ignore syncing
-  * mark as completed in gtasks
-  * same when deleted from gtasks and not found in any other lists
-    * add label:Trash
 * include payload in request-related errors
 * include the endpoint in the requests log
 
@@ -41,9 +40,6 @@
 * auto create the logs dir
 * show the origin of a finished request in root::req
 * check if `(#tag)` works
-* tasks for archived emails from the inbox should be deleted
-  * from the task list, instead of completed
-  * not needed as inbox isnt covered anymore?
 * S/Ignored should remove other statuses
   * remove S/Ignored if not necessary
   * not needed as inbox isnt covered anymore?

@@ -16,8 +16,11 @@ start:
 	DEBUG=root DEBUG_FILE=1 node src/app.js
 
 start-am:
-	DEBUG=\*-error,requests-verbose,root,gmail,gtasks DEBUG_FILE=1 DEBUG_AM=1 \
-		node --inspect src/app.js
+	DEBUG=\*-error,requests-verbose,root,gmail,gtasks,record-diffs \
+		DEBUG_FILE=1 \
+		DEBUG_AM=1 \
+		node --inspect \
+		src/app.js
 
 start-ami:
 	DEBUG=root,gmail,gtasks DEBUG_FILE=1 DEBUG_AMI=1 DEBUG_AM=1 \
