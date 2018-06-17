@@ -181,7 +181,7 @@ const config: IConfig = {
   lists: [
     {
       name: 'inbox-labels',
-      gmail_query: 'in:inbox label:unread',
+      gmail_query: 'in:inbox label:unread from:me to:me',
       db_query: r => Boolean(hasLabel(r, 'INBOX') && hasLabel(r, 'UNREAD')),
       enter: {},
       exit: {},
