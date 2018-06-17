@@ -17,6 +17,7 @@ import { SyncReader, sync_reader_state } from '../../sync/reader'
 import { IListConfig } from '../../types'
 import GmailQuery, { Thread } from './query'
 import GmailSync from './sync'
+import * as _ from 'lodash'
 
 export const sync_state: IJSONStates = {
   ...sync_reader_state,
@@ -96,6 +97,11 @@ export default class GmailListSync extends SyncReader<
       this.gmail.threads.set(thread.id, thread)
       ids.push(thread.id)
     }
+    // dont sync deletions if gmail is the only writer for this list
+    // TODO solve when syncing 3 different sources
+    if (this.config.writers && this.config.writers.length == 1) {
+      return changed ? [changed] : []
+    }
     // remove
     // query the db for the current list where IDs arent present locally
     // and apply the exit label changes
@@ -134,6 +140,7 @@ export default class GmailListSync extends SyncReader<
     return changed ? [changed] : []
   }
 
+  // TODO rename to createRecord
   toDB(thread: google.gmail.v1.Thread): DBRecord {
     const me = this.root.config.google.username
     const from = this.gmail.getThreadAuthor(thread)
@@ -180,7 +187,11 @@ export default class GmailListSync extends SyncReader<
     record.updated = thread_update_time
     // TODO content from emails
     // apply labels from gmail
-    this.applyLabels(record, { add: this.gmail.getLabelsFromThread(thread) })
+    const thread_labels = this.gmail.getLabelsFromThread(thread)
+    this.applyLabels(record, {
+      add: thread_labels,
+      remove: _.difference(Object.keys(record.labels), thread_labels)
+    })
     // TODO confirm if unnecessary
     // this.applyLabels(record, this.config.enter)
     this.printRecordDiff(before, record)

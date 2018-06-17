@@ -46,7 +46,10 @@ const config: IConfig = {
       /^!S\/[\w\s-]+$/,
       /^V\/[\w\s-]+$/,
       /^P\/[\w\s-]+$/,
-      /^INBOX$/
+      /^R\/[\w\s-]+$/,
+      /^L\/[\w\s-]+$/,
+      /^INBOX$/,
+      /^UNREAD$/
     ],
     domain: 'mail.google.com'
   },
@@ -179,7 +182,7 @@ const config: IConfig = {
     {
       name: 'inbox-labels',
       gmail_query: 'in:inbox label:unread',
-      db_query: r => Boolean(hasLabel(r, 'INBOX')),
+      db_query: r => Boolean(hasLabel(r, 'INBOX') && hasLabel(r, 'UNREAD')),
       enter: {},
       exit: {},
       writers: ['gmail'],
