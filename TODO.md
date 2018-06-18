@@ -4,21 +4,15 @@
 
 ## Milestone 1:
 
-* make RestartingNetwork work
-  * kill all the active connections, release the semaphore
-* support deleting
-  * when deleted from gtasks and not found in any other lists
-    * add label:Trash
-    * remove from the DB (to avoid orphan threads logic)
-  * when deleted from gmail, delete from gtasks
-    * deleted from gmail means - exists in gtasks and has an email ref
-    * but the email no longer exists
 * colors should be added when a new label has been discovered
   * this includes added via #hashtags and via gmail
   * currently colors are set only on the start
   * requires pub sub
   * temp solution is pooling for changes every X minutes
     * pool via a history query
+* make RestartingNetwork work
+  * kill all the active connections, release the semaphore
+  * dont pipe RestartingNetwork, traverse sub syncs and drop the action states
 * sync multiple users
   * work on the same quota
   * connection manager
@@ -33,6 +27,7 @@
 * results limit
   * gtasks paging support
   * max limit of results per query/gtask list
+* handle deleted labels   
 * include payload in request-related errors
 * include the endpoint in the requests log
 
