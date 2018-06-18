@@ -44,7 +44,6 @@ const config: IConfig = {
     max_results: 300,
     included_labels: [
       /^!S\/[\w\s-]+$/,
-      /^V\/[\w\s-]+$/,
       /^P\/[\w\s-]+$/,
       /^R\/[\w\s-]+$/,
       /^L\/[\w\s-]+$/,
@@ -120,14 +119,6 @@ const config: IConfig = {
       colors: {
         bg: '#e07798',
         fg: '#ffffff'
-      }
-    },
-    {
-      name: 'now',
-      prefix: 'V/',
-      colors: {
-        bg: '#fcdee8',
-        fg: '#000000'
       }
     },
     {
