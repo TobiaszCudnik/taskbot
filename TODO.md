@@ -4,11 +4,16 @@
 
 ## Milestone 1:
 
-* support moving to trash
-  * ignore syncing
-  * mark as completed in gtasks
-  * same when deleted from gtasks and not found in any other lists
+* make RestartingNetwork work
+* support deleting and moving to trash
+  * when label:trash in gmail
+    * ignore syncing
+    * mark as completed in gtasks
+  * when deleted from gtasks and not found in any other lists
     * add label:Trash
+  * when deleted from gmail, delete from gtasks
+    * deleted from gmail means - exists in gtasks and has an email ref
+    * but the email no longer exists
 * colors should be added when a new label has been discovered
   * this includes added via #hashtags and via gmail
   * currently colors are set only on the start
