@@ -639,6 +639,80 @@ export interface ITransitions {
     | Promise<boolean | void>
 }
 
+// ----- ----- ----- ----- -----
+// STATE: FetchingOrphans
+// ----- ----- ----- ----- -----
+
+/** machine.bind('FetchingOrphans', (param1, param2) => {}) */
+export interface IBind extends IBindBase {
+  (
+    event: 'FetchingOrphans_enter',
+    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
+    context?: Object
+  ): this
+  (
+    event: 'FetchingOrphans_state',
+    listener: () => /* param1: any?, param2: any? */ any,
+    context?: Object
+  ): this
+}
+
+/** machine.emit('FetchingOrphans', param1, param2) */
+export interface IEmit extends IEmitBase {
+  (event: 'FetchingOrphans_enter' /*, param1: any?, param2: any? */):
+    | boolean
+    | void
+  (event: 'FetchingOrphans_state' /*, param1: any?, param2: any? */):
+    | boolean
+    | void
+}
+
+/** Method declarations */
+export interface ITransitions {
+  FetchingOrphans_enter /* param1: any?, param2: any? */?(): boolean | void
+  FetchingOrphans_state /* param1: any?, param2: any? */?():
+    | boolean
+    | void
+    | Promise<boolean | void>
+}
+
+// ----- ----- ----- ----- -----
+// STATE: OrphansFetched
+// ----- ----- ----- ----- -----
+
+/** machine.bind('OrphansFetched', (param1, param2) => {}) */
+export interface IBind extends IBindBase {
+  (
+    event: 'OrphansFetched_enter',
+    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
+    context?: Object
+  ): this
+  (
+    event: 'OrphansFetched_state',
+    listener: () => /* param1: any?, param2: any? */ any,
+    context?: Object
+  ): this
+}
+
+/** machine.emit('OrphansFetched', param1, param2) */
+export interface IEmit extends IEmitBase {
+  (event: 'OrphansFetched_enter' /*, param1: any?, param2: any? */):
+    | boolean
+    | void
+  (event: 'OrphansFetched_state' /*, param1: any?, param2: any? */):
+    | boolean
+    | void
+}
+
+/** Method declarations */
+export interface ITransitions {
+  OrphansFetched_enter /* param1: any?, param2: any? */?(): boolean | void
+  OrphansFetched_state /* param1: any?, param2: any? */?():
+    | boolean
+    | void
+    | Promise<boolean | void>
+}
+
 // ----- ----- -----
 // GENERAL TYPES
 // ----- ----- -----
@@ -663,6 +737,8 @@ export interface ITransitions {
   Enabled_FetchingHistoryId?(): boolean | void
   Enabled_HistoryIdFetched?(): boolean | void
   Enabled_InitialHistoryIdFetched?(): boolean | void
+  Enabled_FetchingOrphans?(): boolean | void
+  Enabled_OrphansFetched?(): boolean | void
   Enabled_Exception?(): boolean | void
   Enabled_exit?(): boolean | void
   Enabled_end?(): boolean | void | Promise<boolean | void>
@@ -684,6 +760,8 @@ export interface ITransitions {
   Initializing_FetchingHistoryId?(): boolean | void
   Initializing_HistoryIdFetched?(): boolean | void
   Initializing_InitialHistoryIdFetched?(): boolean | void
+  Initializing_FetchingOrphans?(): boolean | void
+  Initializing_OrphansFetched?(): boolean | void
   Initializing_Exception?(): boolean | void
   Initializing_exit?(): boolean | void
   Initializing_end?(): boolean | void | Promise<boolean | void>
@@ -705,6 +783,8 @@ export interface ITransitions {
   Ready_FetchingHistoryId?(): boolean | void
   Ready_HistoryIdFetched?(): boolean | void
   Ready_InitialHistoryIdFetched?(): boolean | void
+  Ready_FetchingOrphans?(): boolean | void
+  Ready_OrphansFetched?(): boolean | void
   Ready_Exception?(): boolean | void
   Ready_exit?(): boolean | void
   Ready_end?(): boolean | void | Promise<boolean | void>
@@ -726,6 +806,8 @@ export interface ITransitions {
   ConfigSet_FetchingHistoryId?(): boolean | void
   ConfigSet_HistoryIdFetched?(): boolean | void
   ConfigSet_InitialHistoryIdFetched?(): boolean | void
+  ConfigSet_FetchingOrphans?(): boolean | void
+  ConfigSet_OrphansFetched?(): boolean | void
   ConfigSet_Exception?(): boolean | void
   ConfigSet_exit?(): boolean | void
   ConfigSet_end?(): boolean | void | Promise<boolean | void>
@@ -747,6 +829,8 @@ export interface ITransitions {
   SubsReady_FetchingHistoryId?(): boolean | void
   SubsReady_HistoryIdFetched?(): boolean | void
   SubsReady_InitialHistoryIdFetched?(): boolean | void
+  SubsReady_FetchingOrphans?(): boolean | void
+  SubsReady_OrphansFetched?(): boolean | void
   SubsReady_Exception?(): boolean | void
   SubsReady_exit?(): boolean | void
   SubsReady_end?(): boolean | void | Promise<boolean | void>
@@ -768,6 +852,8 @@ export interface ITransitions {
   SubsInited_FetchingHistoryId?(): boolean | void
   SubsInited_HistoryIdFetched?(): boolean | void
   SubsInited_InitialHistoryIdFetched?(): boolean | void
+  SubsInited_FetchingOrphans?(): boolean | void
+  SubsInited_OrphansFetched?(): boolean | void
   SubsInited_Exception?(): boolean | void
   SubsInited_exit?(): boolean | void
   SubsInited_end?(): boolean | void | Promise<boolean | void>
@@ -789,6 +875,8 @@ export interface ITransitions {
   Reading_FetchingHistoryId?(): boolean | void
   Reading_HistoryIdFetched?(): boolean | void
   Reading_InitialHistoryIdFetched?(): boolean | void
+  Reading_FetchingOrphans?(): boolean | void
+  Reading_OrphansFetched?(): boolean | void
   Reading_Exception?(): boolean | void
   Reading_exit?(): boolean | void
   Reading_end?(): boolean | void | Promise<boolean | void>
@@ -810,6 +898,8 @@ export interface ITransitions {
   ReadingDone_FetchingHistoryId?(): boolean | void
   ReadingDone_HistoryIdFetched?(): boolean | void
   ReadingDone_InitialHistoryIdFetched?(): boolean | void
+  ReadingDone_FetchingOrphans?(): boolean | void
+  ReadingDone_OrphansFetched?(): boolean | void
   ReadingDone_Exception?(): boolean | void
   ReadingDone_exit?(): boolean | void
   ReadingDone_end?(): boolean | void | Promise<boolean | void>
@@ -831,6 +921,8 @@ export interface ITransitions {
   QuotaExceeded_FetchingHistoryId?(): boolean | void
   QuotaExceeded_HistoryIdFetched?(): boolean | void
   QuotaExceeded_InitialHistoryIdFetched?(): boolean | void
+  QuotaExceeded_FetchingOrphans?(): boolean | void
+  QuotaExceeded_OrphansFetched?(): boolean | void
   QuotaExceeded_Exception?(): boolean | void
   QuotaExceeded_exit?(): boolean | void
   QuotaExceeded_end?(): boolean | void | Promise<boolean | void>
@@ -852,6 +944,8 @@ export interface ITransitions {
   Writing_FetchingHistoryId?(): boolean | void
   Writing_HistoryIdFetched?(): boolean | void
   Writing_InitialHistoryIdFetched?(): boolean | void
+  Writing_FetchingOrphans?(): boolean | void
+  Writing_OrphansFetched?(): boolean | void
   Writing_Exception?(): boolean | void
   Writing_exit?(): boolean | void
   Writing_end?(): boolean | void | Promise<boolean | void>
@@ -873,6 +967,8 @@ export interface ITransitions {
   WritingDone_FetchingHistoryId?(): boolean | void
   WritingDone_HistoryIdFetched?(): boolean | void
   WritingDone_InitialHistoryIdFetched?(): boolean | void
+  WritingDone_FetchingOrphans?(): boolean | void
+  WritingDone_OrphansFetched?(): boolean | void
   WritingDone_Exception?(): boolean | void
   WritingDone_exit?(): boolean | void
   WritingDone_end?(): boolean | void | Promise<boolean | void>
@@ -894,6 +990,8 @@ export interface ITransitions {
   RestartingNetwork_FetchingHistoryId?(): boolean | void
   RestartingNetwork_HistoryIdFetched?(): boolean | void
   RestartingNetwork_InitialHistoryIdFetched?(): boolean | void
+  RestartingNetwork_FetchingOrphans?(): boolean | void
+  RestartingNetwork_OrphansFetched?(): boolean | void
   RestartingNetwork_Exception?(): boolean | void
   RestartingNetwork_exit?(): boolean | void
   RestartingNetwork_end?(): boolean | void | Promise<boolean | void>
@@ -915,6 +1013,8 @@ export interface ITransitions {
   NetworkRestarted_FetchingHistoryId?(): boolean | void
   NetworkRestarted_HistoryIdFetched?(): boolean | void
   NetworkRestarted_InitialHistoryIdFetched?(): boolean | void
+  NetworkRestarted_FetchingOrphans?(): boolean | void
+  NetworkRestarted_OrphansFetched?(): boolean | void
   NetworkRestarted_Exception?(): boolean | void
   NetworkRestarted_exit?(): boolean | void
   NetworkRestarted_end?(): boolean | void | Promise<boolean | void>
@@ -936,6 +1036,8 @@ export interface ITransitions {
   FetchingLabels_FetchingHistoryId?(): boolean | void
   FetchingLabels_HistoryIdFetched?(): boolean | void
   FetchingLabels_InitialHistoryIdFetched?(): boolean | void
+  FetchingLabels_FetchingOrphans?(): boolean | void
+  FetchingLabels_OrphansFetched?(): boolean | void
   FetchingLabels_Exception?(): boolean | void
   FetchingLabels_exit?(): boolean | void
   FetchingLabels_end?(): boolean | void | Promise<boolean | void>
@@ -957,6 +1059,8 @@ export interface ITransitions {
   LabelsFetched_FetchingHistoryId?(): boolean | void
   LabelsFetched_HistoryIdFetched?(): boolean | void
   LabelsFetched_InitialHistoryIdFetched?(): boolean | void
+  LabelsFetched_FetchingOrphans?(): boolean | void
+  LabelsFetched_OrphansFetched?(): boolean | void
   LabelsFetched_Exception?(): boolean | void
   LabelsFetched_exit?(): boolean | void
   LabelsFetched_end?(): boolean | void | Promise<boolean | void>
@@ -978,6 +1082,8 @@ export interface ITransitions {
   FetchingHistoryId_Any?(): boolean | void
   FetchingHistoryId_HistoryIdFetched?(): boolean | void
   FetchingHistoryId_InitialHistoryIdFetched?(): boolean | void
+  FetchingHistoryId_FetchingOrphans?(): boolean | void
+  FetchingHistoryId_OrphansFetched?(): boolean | void
   FetchingHistoryId_Exception?(): boolean | void
   FetchingHistoryId_exit?(): boolean | void
   FetchingHistoryId_end?(): boolean | void | Promise<boolean | void>
@@ -999,6 +1105,8 @@ export interface ITransitions {
   HistoryIdFetched_FetchingHistoryId?(): boolean | void
   HistoryIdFetched_Any?(): boolean | void
   HistoryIdFetched_InitialHistoryIdFetched?(): boolean | void
+  HistoryIdFetched_FetchingOrphans?(): boolean | void
+  HistoryIdFetched_OrphansFetched?(): boolean | void
   HistoryIdFetched_Exception?(): boolean | void
   HistoryIdFetched_exit?(): boolean | void
   HistoryIdFetched_end?(): boolean | void | Promise<boolean | void>
@@ -1020,9 +1128,57 @@ export interface ITransitions {
   InitialHistoryIdFetched_FetchingHistoryId?(): boolean | void
   InitialHistoryIdFetched_HistoryIdFetched?(): boolean | void
   InitialHistoryIdFetched_Any?(): boolean | void
+  InitialHistoryIdFetched_FetchingOrphans?(): boolean | void
+  InitialHistoryIdFetched_OrphansFetched?(): boolean | void
   InitialHistoryIdFetched_Exception?(): boolean | void
   InitialHistoryIdFetched_exit?(): boolean | void
   InitialHistoryIdFetched_end?(): boolean | void | Promise<boolean | void>
+  FetchingOrphans_Enabled?(): boolean | void
+  FetchingOrphans_Initializing?(): boolean | void
+  FetchingOrphans_Ready?(): boolean | void
+  FetchingOrphans_ConfigSet?(): boolean | void
+  FetchingOrphans_SubsReady?(): boolean | void
+  FetchingOrphans_SubsInited?(): boolean | void
+  FetchingOrphans_Reading?(): boolean | void
+  FetchingOrphans_ReadingDone?(): boolean | void
+  FetchingOrphans_QuotaExceeded?(): boolean | void
+  FetchingOrphans_Writing?(): boolean | void
+  FetchingOrphans_WritingDone?(): boolean | void
+  FetchingOrphans_RestartingNetwork?(): boolean | void
+  FetchingOrphans_NetworkRestarted?(): boolean | void
+  FetchingOrphans_FetchingLabels?(): boolean | void
+  FetchingOrphans_LabelsFetched?(): boolean | void
+  FetchingOrphans_FetchingHistoryId?(): boolean | void
+  FetchingOrphans_HistoryIdFetched?(): boolean | void
+  FetchingOrphans_InitialHistoryIdFetched?(): boolean | void
+  FetchingOrphans_Any?(): boolean | void
+  FetchingOrphans_OrphansFetched?(): boolean | void
+  FetchingOrphans_Exception?(): boolean | void
+  FetchingOrphans_exit?(): boolean | void
+  FetchingOrphans_end?(): boolean | void | Promise<boolean | void>
+  OrphansFetched_Enabled?(): boolean | void
+  OrphansFetched_Initializing?(): boolean | void
+  OrphansFetched_Ready?(): boolean | void
+  OrphansFetched_ConfigSet?(): boolean | void
+  OrphansFetched_SubsReady?(): boolean | void
+  OrphansFetched_SubsInited?(): boolean | void
+  OrphansFetched_Reading?(): boolean | void
+  OrphansFetched_ReadingDone?(): boolean | void
+  OrphansFetched_QuotaExceeded?(): boolean | void
+  OrphansFetched_Writing?(): boolean | void
+  OrphansFetched_WritingDone?(): boolean | void
+  OrphansFetched_RestartingNetwork?(): boolean | void
+  OrphansFetched_NetworkRestarted?(): boolean | void
+  OrphansFetched_FetchingLabels?(): boolean | void
+  OrphansFetched_LabelsFetched?(): boolean | void
+  OrphansFetched_FetchingHistoryId?(): boolean | void
+  OrphansFetched_HistoryIdFetched?(): boolean | void
+  OrphansFetched_InitialHistoryIdFetched?(): boolean | void
+  OrphansFetched_FetchingOrphans?(): boolean | void
+  OrphansFetched_Any?(): boolean | void
+  OrphansFetched_Exception?(): boolean | void
+  OrphansFetched_exit?(): boolean | void
+  OrphansFetched_end?(): boolean | void | Promise<boolean | void>
   Exception_Enabled?(): boolean | void
   Exception_Initializing?(): boolean | void
   Exception_Ready?(): boolean | void
@@ -1041,6 +1197,8 @@ export interface ITransitions {
   Exception_FetchingHistoryId?(): boolean | void
   Exception_HistoryIdFetched?(): boolean | void
   Exception_InitialHistoryIdFetched?(): boolean | void
+  Exception_FetchingOrphans?(): boolean | void
+  Exception_OrphansFetched?(): boolean | void
   Exception_exit?(): boolean | void
   Exception_end?(): boolean | void | Promise<boolean | void>
 }
@@ -1065,6 +1223,8 @@ export type TStates =
   | 'FetchingHistoryId'
   | 'HistoryIdFetched'
   | 'InitialHistoryIdFetched'
+  | 'FetchingOrphans'
+  | 'OrphansFetched'
 
 /** All the transition names */
 export type TTransitions =
@@ -1086,6 +1246,8 @@ export type TTransitions =
   | 'Enabled_FetchingHistoryId'
   | 'Enabled_HistoryIdFetched'
   | 'Enabled_InitialHistoryIdFetched'
+  | 'Enabled_FetchingOrphans'
+  | 'Enabled_OrphansFetched'
   | 'Enabled_Exception'
   | 'Enabled_exit'
   | 'Enabled_end'
@@ -1107,6 +1269,8 @@ export type TTransitions =
   | 'Initializing_FetchingHistoryId'
   | 'Initializing_HistoryIdFetched'
   | 'Initializing_InitialHistoryIdFetched'
+  | 'Initializing_FetchingOrphans'
+  | 'Initializing_OrphansFetched'
   | 'Initializing_Exception'
   | 'Initializing_exit'
   | 'Initializing_end'
@@ -1128,6 +1292,8 @@ export type TTransitions =
   | 'Ready_FetchingHistoryId'
   | 'Ready_HistoryIdFetched'
   | 'Ready_InitialHistoryIdFetched'
+  | 'Ready_FetchingOrphans'
+  | 'Ready_OrphansFetched'
   | 'Ready_Exception'
   | 'Ready_exit'
   | 'Ready_end'
@@ -1149,6 +1315,8 @@ export type TTransitions =
   | 'ConfigSet_FetchingHistoryId'
   | 'ConfigSet_HistoryIdFetched'
   | 'ConfigSet_InitialHistoryIdFetched'
+  | 'ConfigSet_FetchingOrphans'
+  | 'ConfigSet_OrphansFetched'
   | 'ConfigSet_Exception'
   | 'ConfigSet_exit'
   | 'ConfigSet_end'
@@ -1170,6 +1338,8 @@ export type TTransitions =
   | 'SubsReady_FetchingHistoryId'
   | 'SubsReady_HistoryIdFetched'
   | 'SubsReady_InitialHistoryIdFetched'
+  | 'SubsReady_FetchingOrphans'
+  | 'SubsReady_OrphansFetched'
   | 'SubsReady_Exception'
   | 'SubsReady_exit'
   | 'SubsReady_end'
@@ -1191,6 +1361,8 @@ export type TTransitions =
   | 'SubsInited_FetchingHistoryId'
   | 'SubsInited_HistoryIdFetched'
   | 'SubsInited_InitialHistoryIdFetched'
+  | 'SubsInited_FetchingOrphans'
+  | 'SubsInited_OrphansFetched'
   | 'SubsInited_Exception'
   | 'SubsInited_exit'
   | 'SubsInited_end'
@@ -1212,6 +1384,8 @@ export type TTransitions =
   | 'Reading_FetchingHistoryId'
   | 'Reading_HistoryIdFetched'
   | 'Reading_InitialHistoryIdFetched'
+  | 'Reading_FetchingOrphans'
+  | 'Reading_OrphansFetched'
   | 'Reading_Exception'
   | 'Reading_exit'
   | 'Reading_end'
@@ -1233,6 +1407,8 @@ export type TTransitions =
   | 'ReadingDone_FetchingHistoryId'
   | 'ReadingDone_HistoryIdFetched'
   | 'ReadingDone_InitialHistoryIdFetched'
+  | 'ReadingDone_FetchingOrphans'
+  | 'ReadingDone_OrphansFetched'
   | 'ReadingDone_Exception'
   | 'ReadingDone_exit'
   | 'ReadingDone_end'
@@ -1254,6 +1430,8 @@ export type TTransitions =
   | 'QuotaExceeded_FetchingHistoryId'
   | 'QuotaExceeded_HistoryIdFetched'
   | 'QuotaExceeded_InitialHistoryIdFetched'
+  | 'QuotaExceeded_FetchingOrphans'
+  | 'QuotaExceeded_OrphansFetched'
   | 'QuotaExceeded_Exception'
   | 'QuotaExceeded_exit'
   | 'QuotaExceeded_end'
@@ -1275,6 +1453,8 @@ export type TTransitions =
   | 'Writing_FetchingHistoryId'
   | 'Writing_HistoryIdFetched'
   | 'Writing_InitialHistoryIdFetched'
+  | 'Writing_FetchingOrphans'
+  | 'Writing_OrphansFetched'
   | 'Writing_Exception'
   | 'Writing_exit'
   | 'Writing_end'
@@ -1296,6 +1476,8 @@ export type TTransitions =
   | 'WritingDone_FetchingHistoryId'
   | 'WritingDone_HistoryIdFetched'
   | 'WritingDone_InitialHistoryIdFetched'
+  | 'WritingDone_FetchingOrphans'
+  | 'WritingDone_OrphansFetched'
   | 'WritingDone_Exception'
   | 'WritingDone_exit'
   | 'WritingDone_end'
@@ -1317,6 +1499,8 @@ export type TTransitions =
   | 'RestartingNetwork_FetchingHistoryId'
   | 'RestartingNetwork_HistoryIdFetched'
   | 'RestartingNetwork_InitialHistoryIdFetched'
+  | 'RestartingNetwork_FetchingOrphans'
+  | 'RestartingNetwork_OrphansFetched'
   | 'RestartingNetwork_Exception'
   | 'RestartingNetwork_exit'
   | 'RestartingNetwork_end'
@@ -1338,6 +1522,8 @@ export type TTransitions =
   | 'NetworkRestarted_FetchingHistoryId'
   | 'NetworkRestarted_HistoryIdFetched'
   | 'NetworkRestarted_InitialHistoryIdFetched'
+  | 'NetworkRestarted_FetchingOrphans'
+  | 'NetworkRestarted_OrphansFetched'
   | 'NetworkRestarted_Exception'
   | 'NetworkRestarted_exit'
   | 'NetworkRestarted_end'
@@ -1359,6 +1545,8 @@ export type TTransitions =
   | 'FetchingLabels_FetchingHistoryId'
   | 'FetchingLabels_HistoryIdFetched'
   | 'FetchingLabels_InitialHistoryIdFetched'
+  | 'FetchingLabels_FetchingOrphans'
+  | 'FetchingLabels_OrphansFetched'
   | 'FetchingLabels_Exception'
   | 'FetchingLabels_exit'
   | 'FetchingLabels_end'
@@ -1380,6 +1568,8 @@ export type TTransitions =
   | 'LabelsFetched_FetchingHistoryId'
   | 'LabelsFetched_HistoryIdFetched'
   | 'LabelsFetched_InitialHistoryIdFetched'
+  | 'LabelsFetched_FetchingOrphans'
+  | 'LabelsFetched_OrphansFetched'
   | 'LabelsFetched_Exception'
   | 'LabelsFetched_exit'
   | 'LabelsFetched_end'
@@ -1401,6 +1591,8 @@ export type TTransitions =
   | 'FetchingHistoryId_Any'
   | 'FetchingHistoryId_HistoryIdFetched'
   | 'FetchingHistoryId_InitialHistoryIdFetched'
+  | 'FetchingHistoryId_FetchingOrphans'
+  | 'FetchingHistoryId_OrphansFetched'
   | 'FetchingHistoryId_Exception'
   | 'FetchingHistoryId_exit'
   | 'FetchingHistoryId_end'
@@ -1422,6 +1614,8 @@ export type TTransitions =
   | 'HistoryIdFetched_FetchingHistoryId'
   | 'HistoryIdFetched_Any'
   | 'HistoryIdFetched_InitialHistoryIdFetched'
+  | 'HistoryIdFetched_FetchingOrphans'
+  | 'HistoryIdFetched_OrphansFetched'
   | 'HistoryIdFetched_Exception'
   | 'HistoryIdFetched_exit'
   | 'HistoryIdFetched_end'
@@ -1443,9 +1637,57 @@ export type TTransitions =
   | 'InitialHistoryIdFetched_FetchingHistoryId'
   | 'InitialHistoryIdFetched_HistoryIdFetched'
   | 'InitialHistoryIdFetched_Any'
+  | 'InitialHistoryIdFetched_FetchingOrphans'
+  | 'InitialHistoryIdFetched_OrphansFetched'
   | 'InitialHistoryIdFetched_Exception'
   | 'InitialHistoryIdFetched_exit'
   | 'InitialHistoryIdFetched_end'
+  | 'FetchingOrphans_Enabled'
+  | 'FetchingOrphans_Initializing'
+  | 'FetchingOrphans_Ready'
+  | 'FetchingOrphans_ConfigSet'
+  | 'FetchingOrphans_SubsReady'
+  | 'FetchingOrphans_SubsInited'
+  | 'FetchingOrphans_Reading'
+  | 'FetchingOrphans_ReadingDone'
+  | 'FetchingOrphans_QuotaExceeded'
+  | 'FetchingOrphans_Writing'
+  | 'FetchingOrphans_WritingDone'
+  | 'FetchingOrphans_RestartingNetwork'
+  | 'FetchingOrphans_NetworkRestarted'
+  | 'FetchingOrphans_FetchingLabels'
+  | 'FetchingOrphans_LabelsFetched'
+  | 'FetchingOrphans_FetchingHistoryId'
+  | 'FetchingOrphans_HistoryIdFetched'
+  | 'FetchingOrphans_InitialHistoryIdFetched'
+  | 'FetchingOrphans_Any'
+  | 'FetchingOrphans_OrphansFetched'
+  | 'FetchingOrphans_Exception'
+  | 'FetchingOrphans_exit'
+  | 'FetchingOrphans_end'
+  | 'OrphansFetched_Enabled'
+  | 'OrphansFetched_Initializing'
+  | 'OrphansFetched_Ready'
+  | 'OrphansFetched_ConfigSet'
+  | 'OrphansFetched_SubsReady'
+  | 'OrphansFetched_SubsInited'
+  | 'OrphansFetched_Reading'
+  | 'OrphansFetched_ReadingDone'
+  | 'OrphansFetched_QuotaExceeded'
+  | 'OrphansFetched_Writing'
+  | 'OrphansFetched_WritingDone'
+  | 'OrphansFetched_RestartingNetwork'
+  | 'OrphansFetched_NetworkRestarted'
+  | 'OrphansFetched_FetchingLabels'
+  | 'OrphansFetched_LabelsFetched'
+  | 'OrphansFetched_FetchingHistoryId'
+  | 'OrphansFetched_HistoryIdFetched'
+  | 'OrphansFetched_InitialHistoryIdFetched'
+  | 'OrphansFetched_FetchingOrphans'
+  | 'OrphansFetched_Any'
+  | 'OrphansFetched_Exception'
+  | 'OrphansFetched_exit'
+  | 'OrphansFetched_end'
   | 'Exception_Enabled'
   | 'Exception_Initializing'
   | 'Exception_Ready'
@@ -1464,6 +1706,8 @@ export type TTransitions =
   | 'Exception_FetchingHistoryId'
   | 'Exception_HistoryIdFetched'
   | 'Exception_InitialHistoryIdFetched'
+  | 'Exception_FetchingOrphans'
+  | 'Exception_OrphansFetched'
   | 'Exception_exit'
   | 'Exception_end'
 
@@ -1502,5 +1746,7 @@ export interface IJSONStates {
   FetchingHistoryId: IState
   HistoryIdFetched: IState
   InitialHistoryIdFetched: IState
+  FetchingOrphans: IState
+  OrphansFetched: IState
   Exception?: IState
 }
