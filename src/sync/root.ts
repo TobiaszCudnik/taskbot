@@ -301,7 +301,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     if (abort && abort()) {
       this.log_verbose('Request aborted by the abort() function')
       release()
-      return null
+      return return_array ? [null, null] : null
     }
     this.active_requests++
 

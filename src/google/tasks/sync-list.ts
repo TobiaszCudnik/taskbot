@@ -88,7 +88,7 @@ export default class GTasksListSync extends SyncReader<
     super.Reading_state()
     const quota = this.gtasks.short_quota_usage
     const abort = this.state.getAbort('Reading')
-    const ret = await this.gtasks.api.req(
+    const [list, res] = await this.gtasks.api.req(
       this.gtasks.api.tasks.list,
       {
         tasklist: this.list.id,
@@ -108,8 +108,6 @@ export default class GTasksListSync extends SyncReader<
     )
 
     if (abort()) return
-
-    const [list, res] = ret
 
     this.state.drop('Dirty')
     if (res.statusCode === 304) {
