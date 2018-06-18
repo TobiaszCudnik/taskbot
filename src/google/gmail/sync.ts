@@ -14,7 +14,8 @@ import {
   IJSONStates,
   TStates,
   IBindBase,
-  IEmitBase
+  IEmitBase,
+  ITransitions
 } from '../../../typings/machines/google/gmail/sync'
 import GC from '../../sync/gc'
 import RootSync, { DBRecord } from '../../sync/root'
@@ -25,6 +26,7 @@ import Auth from '../auth'
 import { Thread } from './query'
 import GmailListSync from './sync-list'
 import { trim } from 'lodash'
+import * as merge from 'deepmerge'
 
 const SEC = 1000
 
@@ -65,7 +67,23 @@ export const sync_state: IJSONStates = {
     drop: ['FetchingHistoryId'],
     add: ['InitialHistoryIdFetched']
   },
-  InitialHistoryIdFetched: {}
+  InitialHistoryIdFetched: {},
+
+  Writing: merge(sync_writer_state.Writing, {
+    // TODO dropping FetchingOrphans shouldn't be necessary
+    drop: ['OrphansFetched', 'FetchingOrphans']
+  }),
+  // ReadingDone: merge(sync_writer_state.ReadingDone, {
+  //   require: ['OrphansFetched']
+  // }),
+
+  FetchingOrphans: {
+    drop: ['OrphansFetched']
+  },
+  OrphansFetched: {
+    add: ['ReadingDone'],
+    drop: ['FetchingOrphans', 'Reading']
+  }
 }
 
 // TODO tmp
@@ -74,12 +92,9 @@ export interface GmailAPI extends google.gmail.v1.Gmail {
 }
 
 export type Label = google.gmail.v1.Label
-export default class GmailSync extends SyncWriter<
-  IConfig,
-  TStates,
-  IBind,
-  IEmit
-> {
+export default class GmailSync
+  extends SyncWriter<IConfig, TStates, IBind, IEmit>
+  implements ITransitions {
   state: AsyncMachine<TStates, IBind, IEmit>
   api: GmailAPI
   history_id_timeout = 1
@@ -119,6 +134,63 @@ export default class GmailSync extends SyncWriter<
     this.bindToSubs()
   }
 
+  ReadingDone_enter() {
+    if (!super.ReadingDone_enter()) {
+      return false
+    }
+    // allow ReadingDone if the orphaned threads are fetched
+    if (this.state.to().includes('OrphansFetched')) {
+      return true
+    }
+    // fetch the orphaned threads after all the lists finish reading
+    if (this.state.not('FetchingOrphans')) {
+      this.state.add('FetchingOrphans')
+    }
+    return false
+  }
+
+  // Checks if the referenced thread ID is:
+  // - downloaded
+  // - existing
+  // If not, delete the bogus ID and let Writing handle adding
+  async FetchingOrphans_state() {
+    const abort = this.state.getAbort('FetchingOrphans')
+    // TODO fake cast, wrong d.ts, missing lokijs fields
+    // TODO GC the orphaned threads after some time
+    const records_without_threads = <DBRecord[]>(<any>this.root.data.where(
+      (r: DBRecord) => {
+        return r.gmail_id && !this.threads.get(r.gmail_id)
+      }
+    ))
+    this.log_verbose(
+      `Processing ${records_without_threads.length} orphaned threads`
+    )
+    await map(records_without_threads, async (record: DBRecord) => {
+      let thread
+      try {
+        thread = await this.fetchThread(record.gmail_id, abort)
+      } catch {
+        // thread doesnt exist
+        this.log_verbose(
+          `Thread '${
+            this.getTitleFromThread(thread).length
+          }' doesn't exist, removing record.gmail_id`
+        )
+        delete record.gmail_id
+        this.root.data.update(record)
+        return
+      }
+      // TODO OMG WHAT HAVE I DONE !!!1111!!1
+      // TODO extract as GmailMergeMixin or GmailReader
+      const context = Object.create(this)
+      context.gmail = this
+      GmailListSync.prototype.mergeRecord.call(context, thread, record)
+      // TODO update in bulk
+      this.root.data.update(record)
+    })
+    this.state.add('OrphansFetched')
+  }
+
   async Writing_state() {
     super.Writing_state()
     if (process.env['DRY']) {
@@ -127,10 +199,9 @@ export default class GmailSync extends SyncWriter<
       return
     }
     const abort = this.state.getAbort('Writing')
-    await this.markThreadsToFix(abort)
     await Promise.all([
-      this.getThreadsToAdd(abort),
-      this.getThreadsToModify(abort)
+      this.processThreadsToAdd(abort),
+      this.processThreadsToModify(abort)
     ])
     this.state.add('WritingDone')
   }
@@ -227,7 +298,7 @@ export default class GmailSync extends SyncWriter<
     })
   }
 
-  async getThreadsToAdd(abort: () => boolean): Promise<void[]> {
+  async processThreadsToAdd(abort: () => boolean): Promise<void[]> {
     // TODO fake cast, wrong d.ts, missing lokijs fields
     const new_threads = <DBRecord[]>(<any>this.root.data.find({
       gmail_id: undefined
@@ -248,10 +319,17 @@ export default class GmailSync extends SyncWriter<
     })
   }
 
-  async getThreadsToModify(abort: () => boolean): Promise<void[]> {
+  async processThreadsToModify(abort: () => boolean): Promise<void[]> {
     const diff_threads = [...this.threads.values()]
       .map(thread => {
         const record = this.root.data.findOne({ gmail_id: thread.id })
+        if (!record) {
+          this.log_error(
+            `Missing record for the thread ${
+              thread.id
+            } '${this.getTitleFromThread(thread)}'`
+          )
+        }
         // TODO time of write (and latter reading) should not update
         //   record.updated?
         const add = Object.entries(record.labels)
@@ -276,28 +354,6 @@ export default class GmailSync extends SyncWriter<
     }
     return await map(diff_threads, async ([id, add, remove]) => {
       await this.modifyLabels(id, add, remove, abort)
-    })
-  }
-
-  // Checks if the referenced thread ID is:
-  // - downloaded
-  // - existing
-  // If not, delete the bogus ID and let Writing handle adding
-  async markThreadsToFix(abort: () => boolean): Promise<void[]> {
-    // TODO fake cast, wrong d.ts, missing lokijs fields
-    const records_without_threads = <DBRecord[]>(<any>this.root.data.where(
-      (r: DBRecord) => {
-        return r.gmail_id && !this.threads.get(r.gmail_id)
-      }
-    ))
-    return await map(records_without_threads, async (record: DBRecord) => {
-      try {
-        await this.fetchThread(record.gmail_id, abort)
-      } catch {
-        // thread doesnt exist
-        delete record.gmail_id
-        this.root.data.update(record)
-      }
     })
   }
 
@@ -546,7 +602,10 @@ export default class GmailSync extends SyncWriter<
     return null
   }
 
-  getTitleFromThread(thread: google.gmail.v1.Thread) {
+  getTitleFromThread(
+    thread: google.gmail.v1.Thread,
+    filter_text_labels = true
+  ) {
     if (!thread.messages || !thread.messages.length)
       throw new Error(`Thread content not fetched, id: ${thread.id}`)
     let title
@@ -554,7 +613,11 @@ export default class GmailSync extends SyncWriter<
       title = thread.messages[0].payload.headers.find(h => h.name == 'Subject')
         .value
     } catch (e) {}
-    return trim(title) ? this.removeLabelSymbols(trim(title)) : '(no subject)'
+    title = trim(title)
+    if (filter_text_labels) {
+      title = this.removeTextLabelSymbols(this.removeStatusTextLabels(title))
+    }
+    return title || '(no subject)'
   }
 
   getThreadAuthor(thread: Thread) {
@@ -570,15 +633,14 @@ export default class GmailSync extends SyncWriter<
   getThreadAddressee(thread: Thread) {
     if (!thread.messages || !thread.messages.length)
       throw new Error(`Thread content not fetched, id: ${thread.id}`)
-    const author = thread.messages[0].payload.headers.find(
-      h => h.name == 'To'
-    ).value
+    const author = thread.messages[0].payload.headers.find(h => h.name == 'To')
+      .value
     const email = author.match(/<([^<]+)>$/)
     return email ? email[1] : author
   }
 
   // eg 'foo #bar baz' -> 'foo bar baz'
-  removeLabelSymbols(text: string) {
+  removeTextLabelSymbols(text: string) {
     // get all label symbols
     const symbols = new Set<string>()
     for (const label of this.config.labels) {
@@ -591,6 +653,10 @@ export default class GmailSync extends SyncWriter<
       text.replace(new RegExp(regexEscape(symbol) + '(\\w)', 'g'), '$1')
     }
     return text
+  }
+
+  removeStatusTextLabels(text: string) {
+    return text.replace(/\s!\w+\b/g, '')
   }
 }
 

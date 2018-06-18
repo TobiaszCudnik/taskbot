@@ -27,6 +27,7 @@ import GC from './gc'
 import LabelFilterSync from './label-filter'
 import Logger from '../logger'
 import { sync_writer_state, SyncWriter } from './writer'
+import * as _ from 'lodash'
 
 // TODO move to utils.ts
 const SEC = 1000
@@ -182,7 +183,10 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     const abort = this.state.getAbort('Scheduled')
     this.log(`Waiting for ${wait}sec...`)
     await delay(wait * SEC)
-    if (abort()) return
+    if (abort()) {
+      this.log('Scheduled aborted')
+      return
+    }
     // start syncing again
     this.state.drop(['Exception', 'Scheduled'])
     this.state.add('Reading')
@@ -343,12 +347,16 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   pending_requests = 0
 
   // Extracts labels from text
-  getLabelsFromText(text: string): { text: string; labels: string[] } {
+  getLabelsFromText(
+    text: string,
+    skip_statuses = false
+  ): { text: string; labels: string[] } {
     const labels = new Set<string>()
     for (const label of this.config.labels) {
       // TODO type guards
       const { symbol, name, prefix } = label
       if (!symbol) continue
+      if (prefix == '!S/' && skip_statuses) continue
       const query = label.shortcut || '[\\w-\\d]+'
       let matched
       // TODO lack of look behinds, use some magic...
@@ -381,11 +389,14 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     for (const [label, data] of Object.entries(record.labels)) {
       if (!data.active) continue
       if (skip.includes(label)) continue
+      // skip status labels completely
+      if (/^!S\//.test(label)) continue
       const short = this.labelToShortcut(label)
       if (short && !record.title.includes(short)) {
         labels.push(short)
       }
     }
+    labels = _.sortBy(labels)
     return labels.length ? ' ' + labels.join(' ') : ''
   }
 
@@ -437,7 +448,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     if (c == MAX) {
       this.log(`MERGE LIMIT EXCEEDED`)
     }
-    this.log(`SYNCED after ${c} round(s)`)
+    this.log(`MERGED after ${c} round(s)`)
     return []
   }
 

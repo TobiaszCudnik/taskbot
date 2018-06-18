@@ -220,7 +220,7 @@ export default class GTasksListSync extends SyncReader<
     for (const task of this.getTasks()) {
       const record = this.getFromDB(task)
       if (!record) {
-        const new_record = this.toDB(task)
+        const new_record = this.createRecord(task)
         this.log('change')
         this.verbose('new record:\n %O', new_record)
         this.root.data.insert(new_record)
@@ -252,9 +252,9 @@ export default class GTasksListSync extends SyncReader<
       .data()[0]
   }
 
-  toDB(task: Task): DBRecord {
+  createRecord(task: Task): DBRecord {
     const id = this.gtasks.toGmailID(task)
-    const text_labels = this.root.getLabelsFromText(task.title)
+    const text_labels = this.root.getLabelsFromText(task.title, true)
     const record: DBRecord = {
       title: text_labels.text,
       content: this.getContent(task.notes),
@@ -291,10 +291,10 @@ export default class GTasksListSync extends SyncReader<
   }
 
   updateTextLabels(record: DBRecord, new_title: string) {
-    const text_labels = this.root.getLabelsFromText(new_title)
+    const text_labels = this.root.getLabelsFromText(new_title, true)
     const old_title =
       record.title + this.root.getRecordLabelsAsText(record, this.config)
-    const text_labels_old = this.root.getLabelsFromText(old_title)
+    const text_labels_old = this.root.getLabelsFromText(old_title, true)
     if (old_title != new_title) {
       record.title = text_labels.text
       this.applyLabels(record, {

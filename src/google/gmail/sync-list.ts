@@ -84,7 +84,7 @@ export default class GmailListSync extends SyncReader<
         gmail_id: this.toDBID(thread.id)
       })
       if (!record) {
-        const new_record = this.toDB(thread)
+        const new_record = this.createRecord(thread)
         this.log('change')
         this.verbose('new record:\n %O', new_record)
         this.root.data.insert(new_record)
@@ -140,8 +140,7 @@ export default class GmailListSync extends SyncReader<
     return changed ? [changed] : []
   }
 
-  // TODO rename to createRecord
-  toDB(thread: google.gmail.v1.Thread): DBRecord {
+  createRecord(thread: google.gmail.v1.Thread): DBRecord {
     const me = this.root.config.google.username
     const from = this.gmail.getThreadAuthor(thread)
     const to = this.gmail.getThreadAddressee(thread)
@@ -161,7 +160,9 @@ export default class GmailListSync extends SyncReader<
     // by yourself
     if (labels_from_thread.includes('INBOX') && self_sent) {
       this.applyLabels(record, {
-        add: this.root.getLabelsFromText(record.title).labels
+        add: this.root.getLabelsFromText(
+          this.gmail.getTitleFromThread(thread, false)
+        ).labels
       })
     }
     return record
@@ -172,6 +173,7 @@ export default class GmailListSync extends SyncReader<
     return (<any>source).id ? (<any>source).id : source
   }
 
+  // TODO merge with FetchingOrphans
   mergeRecord(thread: Thread, record: DBRecord): boolean {
     // TODO clone only in debug
     const before = clone(record)
@@ -181,7 +183,7 @@ export default class GmailListSync extends SyncReader<
       parseInt(thread.historyId, 10)
     )
     if (thread_update_time <= record.updated) {
-      // TODO check resolve conflict? since the last sync
+      // TODO check for conflicts to resolve? since the last sync
       return false
     }
     record.updated = thread_update_time
