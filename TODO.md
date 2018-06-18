@@ -5,12 +5,11 @@
 ## Milestone 1:
 
 * make RestartingNetwork work
-* support deleting and moving to trash
-  * when label:trash in gmail
-    * ignore syncing
-    * mark as completed in gtasks
+  * kill all the active connections, release the semaphore
+* support deleting
   * when deleted from gtasks and not found in any other lists
     * add label:Trash
+    * remove from the DB (to avoid orphan threads logic)
   * when deleted from gmail, delete from gtasks
     * deleted from gmail means - exists in gtasks and has an email ref
     * but the email no longer exists
@@ -28,7 +27,7 @@
       * per user
       * per connection
       * per server
-* on HeartBeat reset - kill all the active connections, release the semaphore
+  * replace `userId: 'me'` in all gmail queries
 * push logs to a log service
   * OR rotate file logs
 * results limit
@@ -39,7 +38,7 @@
 
 ## TODO
 
-* removed orphaned tasks
+* replace async-map with Promise.all(array.map(async ...))
 * change logger names
   * 'gtasks' -> 'gtasks-root', 'google' -> 'google-root'
 * auto create the logs dir
@@ -72,6 +71,10 @@
 
 ## Optimizations
 
+* SyncList dedicated to Orphaned Threads
+  * monitor when they disappear from the query
+  * merge changes in
+  * query by IDs, one result, compare the history ID, inherit from SyncList
 * route requests through several apps to bypass quota limits
 * clone records for diffing only in the debug mode
 * use etags in patch requests in gtasks
