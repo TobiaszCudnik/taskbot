@@ -13,10 +13,17 @@ build-watch:
 	node_modules/.bin/tsc --watch
 
 start:
-	DEBUG=root DEBUG_FILE=1 node src/app.js
+	DEBUG=root,\*-error DEBUG_FILE=1 node src/app.js
 
 start-am:
-	DEBUG=\*-error,requests-verbose,root,gmail,gtasks,record-diffs \
+	DEBUG=\*-error,requests-verbose,root,gmail,gtasks,record-diffs,\*-am,gmail-verbose,gtasks-verbose \
+		DEBUG_FILE=1 \
+		DEBUG_AM=1 \
+		node --inspect \
+		src/app.js
+
+start-verbose:
+	DEBUG=\*-error,\*-verbose,root,gmail,gtasks,record-diffs \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node --inspect \
@@ -50,6 +57,12 @@ debug-list-next:
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node --inspect-brk src/app.js
+
+debug-gmail:
+	DEBUG=record-diffs,google,gmail,gmail-verbose,\*-errors,gtasks \
+		DEBUG_FILE=1 \
+		DEBUG_AM=1 \
+		node --inspect src/app.js
 
 format:
 	prettier --config package.json --write *.ts
