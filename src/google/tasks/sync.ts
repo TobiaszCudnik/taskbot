@@ -445,10 +445,12 @@ export default class GTasksSync extends SyncWriter<
       const records = <DBRecord[]>(<any>this.root.data.where(
         sync.config.db_query
       ))
-      await map(records, async record => {
+      await map(records, async (record: DBRecord) => {
         const task_id = _.findKey(record.gtasks_ids, id => id == sync.list.id)
         // omit tasks who are already on the list
         if (task_id) return
+        // omit tasks marked for deletion
+        if (record.to_delete) return
         const params = {
           tasklist: sync.list.id,
           fields: 'id',

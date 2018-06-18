@@ -244,30 +244,36 @@ export default class GTasksListSync extends SyncReader<
     )
     for (const task of deleted) {
       this.log(`Task '${task.title}' deleted in GTasks`)
-
-      // TODO process deleted tasks
-      // - seen previously
-      // - gone now
-      // - having an existing record
+      const record = this.getFromDB(task)
+      if (!record) continue
+      if (record.gtasks_ids) {
+        delete record.gtasks_ids[task.id]
+      }
+      // mark records without any existing task as pending deletion
+      // TODO doesnt work
+      if (!record.gtasks_ids || !Object.keys(record.gtasks_ids).length) {
+        this.log(`Marking record '${task.title}' to deletion`)
+        record.to_delete = true
+      }
     }
     return changed ? [changed] : []
   }
 
   // TODO try to make it in one query, indexes
-  getFromDB(task) {
+  getFromDB(task: Task): DBRecord | null {
     const id = this.gtasks.toGmailID(task)
     if (id) {
       const record = this.root.data.findOne({ gmail_id: id })
       if (record) return record
     }
-    // return this.root.data.findOne({tasks_ids: { [task.id]: { $exists: true } }})
-    return this.root.data
+    const ret = this.root.data
       .chain()
       .where((obj: DBRecord) => {
         return Boolean(obj.gtasks_ids && obj.gtasks_ids[task.id])
       })
       .limit(1)
-      .data()[0]
+      .data()
+    return ret[0] || null
   }
 
   createRecord(task: Task): DBRecord {

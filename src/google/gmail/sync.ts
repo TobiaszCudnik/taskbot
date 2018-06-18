@@ -211,6 +211,7 @@ export default class GmailSync
     }
     const abort = this.state.getAbort('Writing')
     await Promise.all([
+      this.processThreadsToDelete(abort),
       this.processThreadsToAdd(abort),
       this.processThreadsToModify(abort)
     ])
@@ -306,6 +307,28 @@ export default class GmailSync
         )
         Object.assign(label, resource)
       }
+    })
+  }
+
+  async processThreadsToDelete(abort: () => boolean): Promise<void[]> {
+    // TODO fake cast, wrong d.ts, missing lokijs fields
+    const to_delete = <DBRecord[]>(<any>this.root.data.find({
+      to_delete: true
+    })).filter((record: DBRecord) => Boolean(record.gmail_id))
+    // TODO mark as Dirty only queries related by labels
+    if (to_delete.length) {
+      this.subs.lists.forEach(sub => sub.query.state.add('Dirty'))
+      this.log(`Deleting ${to_delete.length} threads`)
+    }
+    return await map(to_delete, async (record: DBRecord) => {
+      // Delete from gmail by moving to Trash
+      await this.modifyLabels(record.gmail_id, ['TRASH'], [], abort)
+      // Delete from the global gmail cache
+      await this.threads.delete(record.gmail_id)
+      // TODO delete also from all the matching lists?
+      delete record.gmail_id
+      // TODO update in bulk
+      this.root.data.update(record)
     })
   }
 
@@ -519,7 +542,7 @@ export default class GmailSync
   ): Promise<string | null> {
     await this.createLabelsIfMissing(labels, abort)
     this.log(`Creating thread '${subject}' (${labels.join(', ')})`)
-    const message = await this.api.req(
+    const ret = await this.api.req(
       this.api.users.messages.insert,
       {
         userId: 'me',
@@ -532,9 +555,9 @@ export default class GmailSync
       abort,
       false
     )
-    // TODO handle no message
-    this.verbose(`New thread ID - '${message.threadId}'`)
-    return message.threadId
+    // TODO handle no ret
+    this.verbose(`New thread ID - '${ret.threadId}'`)
+    return ret.threadId
   }
 
   createEmail(subject: string): TRawEmail {
