@@ -67,6 +67,10 @@ export interface DBRecord {
   labels: { [index: string]: DBRecordLabel }
   // different task ids per list
   gtasks_ids?: { [task_id: string]: string }
+  // marks the record for deletion
+  to_delete?: boolean
+  // TODO maybe store as gmail_lists[id] = boolean instead?
+  gmail_orphan?: boolean
 }
 
 export type DBRecordID = string
@@ -237,6 +241,8 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
 
   WritingDone_state() {
     super.WritingDone_state()
+    // remove records pending for removal from the DB
+    this.root.data.chain().find({ to_delete: true }).remove()
     // TODO show how many sources were actually synced
     this.log(
       `SYNC DONE:\nRead: ${this.last_read_time.asSeconds()}sec\n` +

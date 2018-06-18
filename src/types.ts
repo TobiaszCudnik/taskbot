@@ -74,6 +74,7 @@ export type IConfig = {
     max_results: number
     included_labels: RegExp[]
     domain: string
+    orphans_freq_min: number
   }
   exception_delay: number
   exception_flood_delay: number

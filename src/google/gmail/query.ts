@@ -188,12 +188,12 @@ export default class GmailQuery {
     if (abort()) return
 
     // ensure all the requested threads were downloaded
-    // TODO retry the missing ones?
     if (threads && threads.every(thread => Boolean(thread))) {
       this.history_id_synced = history_id
       this.threads = threads
       this.state.add('MsgsFetched')
     } else {
+      // TODO retry the missing ones
       this.log('[FetchingMsgs] no results or some missing')
     }
   }

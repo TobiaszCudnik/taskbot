@@ -159,29 +159,40 @@ export default class GmailSync
     // TODO GC the orphaned threads after some time
     const records_without_threads = <DBRecord[]>(<any>this.root.data.where(
       (r: DBRecord) => {
-        return r.gmail_id && !this.threads.get(r.gmail_id)
+        return (r.gmail_id && !this.threads.get(r.gmail_id)) || r.gmail_orphan
       }
     ))
     this.log_verbose(
       `Processing ${records_without_threads.length} orphaned threads`
     )
     await map(records_without_threads, async (record: DBRecord) => {
-      let thread
-      try {
-        thread = await this.fetchThread(record.gmail_id, abort)
-      } catch {
-        // thread doesnt exist
-        this.log_verbose(
-          `Thread '${
-            this.getTitleFromThread(thread).length
-          }' doesn't exist, removing record.gmail_id`
-        )
-        delete record.gmail_id
-        this.root.data.update(record)
-        return
+      let thread = this.threads.get(record.gmail_id)
+      // TODO time to config
+      const too_old = moment()
+        .subtract(this.config.gmail.orphans_freq_min || 5, 'minutes')
+        .unix()
+      // @ts-ignore `fetched` is set manually
+      if (!thread || thread.fetched < too_old) {
+        let refreshed
+        try {
+          refreshed = await this.fetchThread(record.gmail_id, abort)
+        } catch {
+          if (thread) {
+            this.threads.delete(thread.id)
+          }
+          // thread doesnt exist
+          this.log_verbose(
+            `Thread '${record.gmail_id}' doesn't exist, removing the task`
+          )
+          delete record.gmail_id
+          record.to_delete = true
+          this.root.data.update(record)
+          return
+        }
+        thread = refreshed
       }
       // TODO OMG WHAT HAVE I DONE !!!1111!!1
-      // TODO extract as GmailMergeMixin or GmailReader
+      // TODO extract as GmailMergeMixin or GmailReader or OrphanedThreadsList
       const context = Object.create(this)
       context.gmail = this
       GmailListSync.prototype.mergeRecord.call(context, thread, record)
@@ -302,7 +313,7 @@ export default class GmailSync
     // TODO fake cast, wrong d.ts, missing lokijs fields
     const new_threads = <DBRecord[]>(<any>this.root.data.find({
       gmail_id: undefined
-    }))
+    })).filter((record: DBRecord) => !record.to_delete)
     // TODO mark as Dirty only queries related by labels
     if (new_threads.length) {
       this.subs.lists.forEach(sub => sub.query.state.add('Dirty'))
@@ -329,6 +340,7 @@ export default class GmailSync
               thread.id
             } '${this.getTitleFromThread(thread)}'`
           )
+          return [thread.id, [], []]
         }
         // TODO time of write (and latter reading) should not update
         //   record.updated?

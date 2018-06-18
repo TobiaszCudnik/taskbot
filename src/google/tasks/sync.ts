@@ -141,6 +141,7 @@ export default class GTasksSync extends SyncWriter<
     }
     const abort = this.state.getAbort('Writing')
     // get and modify tasks
+    await this.processTasksToDelete(abort)
     await this.processTasksToModify(abort)
     await this.processTasksToAdd(abort)
     this.state.add('WritingDone')
@@ -315,6 +316,35 @@ export default class GTasksSync extends SyncWriter<
           await this.modifyTask(task, sync.list, patch, abort)
           sync.state.add('Dirty')
         }
+      })
+    })
+  }
+
+  processTasksToDelete(abort: () => boolean) {
+    return map(this.subs.lists, async (sync: GTasksListSync) => {
+      await map(sync.getTasks(), async task => {
+        const db_res = this.root.data
+          .chain()
+          .where((record: DBRecord) => {
+            // TODO implement gtasks_hidden_ids
+            return Boolean(
+              record.gtasks_ids &&
+                record.gtasks_ids[task.id] &&
+                record.to_delete
+            )
+          })
+          .limit(1)
+          .data()
+        if (!db_res[0]) return
+        const record: DBRecord = db_res[0]
+        delete record.gtasks_ids[task.id]
+        const children = sync.getChildren(task.id)
+        // remove children, if any
+        await map(children.all_tasks, async t =>
+          this.deleteTask(t, sync.list, abort)
+        )
+        await this.deleteTask(task, sync.list, abort)
+        sync.tasks.items = _.without(sync.tasks.items, task)
       })
     })
   }

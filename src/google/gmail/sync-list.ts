@@ -133,8 +133,10 @@ export default class GmailListSync extends SyncReader<
       // option 1 - re-download the thread while reading
       // option 2 - delete the thread and expect the main sync re-downloads it
       // option 3 - apply the label changes on the local thread object
-      this.gmail.threads.delete(record.gmail_id)
+      // option 4 - mark as an orphan an let FetchingOrphans handle it
+      // this.gmail.threads.delete(record.gmail_id)
       this.printRecordDiff(before, record, 'threads to close')
+      record.gmail_orphan = true
       return record
     })
     return changed ? [changed] : []

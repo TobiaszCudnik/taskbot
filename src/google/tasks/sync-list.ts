@@ -49,6 +49,7 @@ export default class GTasksListSync extends SyncReader<
 > {
   state: AsyncMachine<TStates, IBind, IEmit>
   tasks: ITasks | null
+  prev_tasks: ITasks | null
   // TODO theres no other etags?
   etags: {
     tasks: string | null
@@ -124,6 +125,7 @@ export default class GTasksListSync extends SyncReader<
         this.etags.tasks = res.headers['etag']
         this.etags.tasks_reqs = 0
       }
+      this.prev_tasks = this.tasks
       this.tasks = list
     }
 
@@ -141,9 +143,16 @@ export default class GTasksListSync extends SyncReader<
 
   // return a filtered list of tasks
   getTasks(): Task[] {
-    return this.tasks
-      ? this.tasks.items.filter(t => !t.parent && t.title && t.title[0] != '-')
-      : []
+    return this.tasks ? this.tasks.items.filter(this.tasksFilter) : []
+  }
+
+  // return a filtered list of tasks
+  getPrevTasks(): Task[] {
+    return this.prev_tasks ? this.prev_tasks.items.filter(this.tasksFilter) : []
+  }
+
+  private tasksFilter(task: Task) {
+    return !task.parent && task.title && task.title[0] != '-'
   }
 
   shouldRead() {
@@ -228,8 +237,19 @@ export default class GTasksListSync extends SyncReader<
         changed++
       }
     }
-    // remove
-    // TODO mark record to be hidden using gtasks_hidden_ids
+    const deleted = _.differenceBy(
+      this.getPrevTasks(),
+      this.getTasks(),
+      t => t.id
+    )
+    for (const task of deleted) {
+      this.log(`Task '${task.title}' deleted in GTasks`)
+
+      // TODO process deleted tasks
+      // - seen previously
+      // - gone now
+      // - having an existing record
+    }
     return changed ? [changed] : []
   }
 
