@@ -50,7 +50,8 @@ const config: IConfig = {
       /^INBOX$/,
       /^UNREAD$/
     ],
-    domain: 'mail.google.com'
+    domain: 'mail.google.com',
+    orphans_freq_min: 5
   },
   exception_delay: 5,
   exception_flood_delay: 10 * 60,
