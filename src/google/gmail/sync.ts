@@ -1,4 +1,5 @@
 import { machine } from 'asyncmachine'
+import { TAbortFunction } from 'asyncmachine/types'
 import * as debug from 'debug'
 import * as google from 'googleapis'
 import * as _ from 'lodash'
@@ -110,6 +111,7 @@ export default class GmailSync
   }
   verbose = debug('gmail-verbose')
   included_labels = this.root.config.gmail.included_labels
+  labels_to_fetch: string[]
 
   constructor(root: RootSync, public auth: Auth) {
     super(root.config, root)
@@ -147,6 +149,12 @@ export default class GmailSync
       this.state.add('FetchingOrphans')
     }
     return false
+  }
+
+  ReadingDone_state() {
+    // get new labels while merging
+    this.labels_to_fetch = []
+    return super.ReadingDone_state()
   }
 
   // Checks if the referenced thread ID is:
@@ -211,6 +219,7 @@ export default class GmailSync
     }
     const abort = this.state.getAbort('Writing')
     await Promise.all([
+      this.processLabelsToFetch(abort),
       this.processThreadsToDelete(abort),
       this.processThreadsToAdd(abort),
       this.processThreadsToModify(abort)
@@ -288,7 +297,7 @@ export default class GmailSync
     await this.createLabelsIfMissing(labels, abort)
   }
 
-  async assertLabelsColors(abort) {
+  async assertLabelsColors(abort: TAbortFunction) {
     await map(this.labels, async (label: Label) => {
       const def = this.root.getLabelDefinition(label.name)
       if (!def || !def.colors) return
@@ -308,6 +317,25 @@ export default class GmailSync
         Object.assign(label, resource)
       }
     })
+  }
+
+  async processLabelsToFetch(abort: TAbortFunction) {
+    if (this.labels_to_fetch.length) {
+      this.log(`Processing ${this.labels_to_fetch.length} unknown labels`)
+    }
+    await Promise.all(
+      this.labels_to_fetch.map(async id => {
+        const res = await await this.api.req(
+          this.api.users.labels.get,
+          { userId: 'me', id, fields: 'id,name,color' },
+          abort,
+          false
+        )
+        this.labels.push(res)
+      })
+    )
+    this.labels_to_fetch = []
+    await this.assertLabelsColors(abort)
   }
 
   async processThreadsToDelete(abort: () => boolean): Promise<void[]> {
@@ -427,7 +455,7 @@ export default class GmailSync
         this.history_ids[0].time
   }
 
-  getLabelId(label: string): string {
+  getLabelID(label: string): string {
     const gmail_label = this.labels.find(
       gmail_label => gmail_label.name.toLowerCase() == label.toLowerCase()
     )
@@ -446,8 +474,8 @@ export default class GmailSync
     abort?: () => boolean
   ): Promise<boolean> {
     await this.createLabelsIfMissing(add_labels, abort)
-    let add_label_ids = add_labels.map(l => this.getLabelId(l))
-    let remove_label_ids = remove_labels.map(l => this.getLabelId(l))
+    let add_label_ids = add_labels.map(l => this.getLabelID(l))
+    let remove_label_ids = remove_labels.map(l => this.getLabelID(l))
     let thread = this.getThread(thread_id, true)
 
     let title = thread
@@ -549,7 +577,7 @@ export default class GmailSync
         fields: 'threadId',
         resource: {
           raw: this.createEmail(subject),
-          labelIds: labels.map(l => this.getLabelId(l))
+          labelIds: labels.map(l => this.getLabelID(l))
         }
       },
       abort,
@@ -579,7 +607,7 @@ export default class GmailSync
     if (!this.state.is('LabelsFetched')) {
       throw new Error('Labels not fetched')
     }
-    const id = this.getLabelId(label_name)
+    const id = this.getLabelID(label_name)
     // if (!id) {
     //   throw new Error(`Label ${label_name} doesn't exist`)
     // }
@@ -591,8 +619,10 @@ export default class GmailSync
     for (const msg of thread.messages) {
       for (const id of msg.labelIds) {
         const name = this.getLabelName(id)
-        if (!filter || this.included_labels.some(f => !!f.exec(name))) {
-          labels.add(this.getLabelName(id))
+        if (!name) {
+          this.labels_to_fetch.push(id)
+        } else if (!filter || this.included_labels.some(f => !!f.exec(name))) {
+          labels.add(name)
         }
       }
     }
@@ -600,7 +630,7 @@ export default class GmailSync
   }
 
   async createLabelsIfMissing(labels: string[], abort?) {
-    const no_id = labels.filter(l => !this.getLabelId(l))
+    const no_id = labels.filter(name => !this.getLabelID(name))
     return map(no_id, async name => {
       const def = this.root.getLabelDefinition(name)
       const gmail_def = def ? this.labelDefToGmailDef(def) : null

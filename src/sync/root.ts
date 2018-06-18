@@ -452,7 +452,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
       }
     } while (changes.length && ++c < MAX)
     if (c == MAX) {
-      this.log(`MERGE LIMIT EXCEEDED`)
+      this.log_error(`MERGE LIMIT EXCEEDED`)
     }
     this.log(`MERGED after ${c} round(s)`)
     return []
