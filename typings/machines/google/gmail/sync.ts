@@ -313,72 +313,6 @@ export interface ITransitions {
 }
 
 // ----- ----- ----- ----- -----
-// STATE: Writing
-// ----- ----- ----- ----- -----
-
-/** machine.bind('Writing', (param1, param2) => {}) */
-export interface IBind extends IBindBase {
-  (
-    event: 'Writing_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'Writing_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
-}
-
-/** machine.emit('Writing', param1, param2) */
-export interface IEmit extends IEmitBase {
-  (event: 'Writing_enter' /*, param1: any?, param2: any? */): boolean | void
-  (event: 'Writing_state' /*, param1: any?, param2: any? */): boolean | void
-}
-
-/** Method declarations */
-export interface ITransitions {
-  Writing_enter /* param1: any?, param2: any? */?(): boolean | void
-  Writing_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
-}
-
-// ----- ----- ----- ----- -----
-// STATE: WritingDone
-// ----- ----- ----- ----- -----
-
-/** machine.bind('WritingDone', (param1, param2) => {}) */
-export interface IBind extends IBindBase {
-  (
-    event: 'WritingDone_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'WritingDone_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
-}
-
-/** machine.emit('WritingDone', param1, param2) */
-export interface IEmit extends IEmitBase {
-  (event: 'WritingDone_enter' /*, param1: any?, param2: any? */): boolean | void
-  (event: 'WritingDone_state' /*, param1: any?, param2: any? */): boolean | void
-}
-
-/** Method declarations */
-export interface ITransitions {
-  WritingDone_enter /* param1: any?, param2: any? */?(): boolean | void
-  WritingDone_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
-}
-
-// ----- ----- ----- ----- -----
 // STATE: RestartingNetwork
 // ----- ----- ----- ----- -----
 
@@ -447,6 +381,72 @@ export interface IEmit extends IEmitBase {
 export interface ITransitions {
   NetworkRestarted_enter /* param1: any?, param2: any? */?(): boolean | void
   NetworkRestarted_state /* param1: any?, param2: any? */?():
+    | boolean
+    | void
+    | Promise<boolean | void>
+}
+
+// ----- ----- ----- ----- -----
+// STATE: Writing
+// ----- ----- ----- ----- -----
+
+/** machine.bind('Writing', (param1, param2) => {}) */
+export interface IBind extends IBindBase {
+  (
+    event: 'Writing_enter',
+    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
+    context?: Object
+  ): this
+  (
+    event: 'Writing_state',
+    listener: () => /* param1: any?, param2: any? */ any,
+    context?: Object
+  ): this
+}
+
+/** machine.emit('Writing', param1, param2) */
+export interface IEmit extends IEmitBase {
+  (event: 'Writing_enter' /*, param1: any?, param2: any? */): boolean | void
+  (event: 'Writing_state' /*, param1: any?, param2: any? */): boolean | void
+}
+
+/** Method declarations */
+export interface ITransitions {
+  Writing_enter /* param1: any?, param2: any? */?(): boolean | void
+  Writing_state /* param1: any?, param2: any? */?():
+    | boolean
+    | void
+    | Promise<boolean | void>
+}
+
+// ----- ----- ----- ----- -----
+// STATE: WritingDone
+// ----- ----- ----- ----- -----
+
+/** machine.bind('WritingDone', (param1, param2) => {}) */
+export interface IBind extends IBindBase {
+  (
+    event: 'WritingDone_enter',
+    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
+    context?: Object
+  ): this
+  (
+    event: 'WritingDone_state',
+    listener: () => /* param1: any?, param2: any? */ any,
+    context?: Object
+  ): this
+}
+
+/** machine.emit('WritingDone', param1, param2) */
+export interface IEmit extends IEmitBase {
+  (event: 'WritingDone_enter' /*, param1: any?, param2: any? */): boolean | void
+  (event: 'WritingDone_state' /*, param1: any?, param2: any? */): boolean | void
+}
+
+/** Method declarations */
+export interface ITransitions {
+  WritingDone_enter /* param1: any?, param2: any? */?(): boolean | void
+  WritingDone_state /* param1: any?, param2: any? */?():
     | boolean
     | void
     | Promise<boolean | void>
@@ -728,10 +728,10 @@ export interface ITransitions {
   Enabled_Reading?(): boolean | void
   Enabled_ReadingDone?(): boolean | void
   Enabled_QuotaExceeded?(): boolean | void
-  Enabled_Writing?(): boolean | void
-  Enabled_WritingDone?(): boolean | void
   Enabled_RestartingNetwork?(): boolean | void
   Enabled_NetworkRestarted?(): boolean | void
+  Enabled_Writing?(): boolean | void
+  Enabled_WritingDone?(): boolean | void
   Enabled_FetchingLabels?(): boolean | void
   Enabled_LabelsFetched?(): boolean | void
   Enabled_FetchingHistoryId?(): boolean | void
@@ -751,10 +751,10 @@ export interface ITransitions {
   Initializing_Reading?(): boolean | void
   Initializing_ReadingDone?(): boolean | void
   Initializing_QuotaExceeded?(): boolean | void
-  Initializing_Writing?(): boolean | void
-  Initializing_WritingDone?(): boolean | void
   Initializing_RestartingNetwork?(): boolean | void
   Initializing_NetworkRestarted?(): boolean | void
+  Initializing_Writing?(): boolean | void
+  Initializing_WritingDone?(): boolean | void
   Initializing_FetchingLabels?(): boolean | void
   Initializing_LabelsFetched?(): boolean | void
   Initializing_FetchingHistoryId?(): boolean | void
@@ -774,10 +774,10 @@ export interface ITransitions {
   Ready_Reading?(): boolean | void
   Ready_ReadingDone?(): boolean | void
   Ready_QuotaExceeded?(): boolean | void
-  Ready_Writing?(): boolean | void
-  Ready_WritingDone?(): boolean | void
   Ready_RestartingNetwork?(): boolean | void
   Ready_NetworkRestarted?(): boolean | void
+  Ready_Writing?(): boolean | void
+  Ready_WritingDone?(): boolean | void
   Ready_FetchingLabels?(): boolean | void
   Ready_LabelsFetched?(): boolean | void
   Ready_FetchingHistoryId?(): boolean | void
@@ -797,10 +797,10 @@ export interface ITransitions {
   ConfigSet_Reading?(): boolean | void
   ConfigSet_ReadingDone?(): boolean | void
   ConfigSet_QuotaExceeded?(): boolean | void
-  ConfigSet_Writing?(): boolean | void
-  ConfigSet_WritingDone?(): boolean | void
   ConfigSet_RestartingNetwork?(): boolean | void
   ConfigSet_NetworkRestarted?(): boolean | void
+  ConfigSet_Writing?(): boolean | void
+  ConfigSet_WritingDone?(): boolean | void
   ConfigSet_FetchingLabels?(): boolean | void
   ConfigSet_LabelsFetched?(): boolean | void
   ConfigSet_FetchingHistoryId?(): boolean | void
@@ -820,10 +820,10 @@ export interface ITransitions {
   SubsReady_Reading?(): boolean | void
   SubsReady_ReadingDone?(): boolean | void
   SubsReady_QuotaExceeded?(): boolean | void
-  SubsReady_Writing?(): boolean | void
-  SubsReady_WritingDone?(): boolean | void
   SubsReady_RestartingNetwork?(): boolean | void
   SubsReady_NetworkRestarted?(): boolean | void
+  SubsReady_Writing?(): boolean | void
+  SubsReady_WritingDone?(): boolean | void
   SubsReady_FetchingLabels?(): boolean | void
   SubsReady_LabelsFetched?(): boolean | void
   SubsReady_FetchingHistoryId?(): boolean | void
@@ -843,10 +843,10 @@ export interface ITransitions {
   SubsInited_Reading?(): boolean | void
   SubsInited_ReadingDone?(): boolean | void
   SubsInited_QuotaExceeded?(): boolean | void
-  SubsInited_Writing?(): boolean | void
-  SubsInited_WritingDone?(): boolean | void
   SubsInited_RestartingNetwork?(): boolean | void
   SubsInited_NetworkRestarted?(): boolean | void
+  SubsInited_Writing?(): boolean | void
+  SubsInited_WritingDone?(): boolean | void
   SubsInited_FetchingLabels?(): boolean | void
   SubsInited_LabelsFetched?(): boolean | void
   SubsInited_FetchingHistoryId?(): boolean | void
@@ -866,10 +866,10 @@ export interface ITransitions {
   Reading_Any?(): boolean | void
   Reading_ReadingDone?(): boolean | void
   Reading_QuotaExceeded?(): boolean | void
-  Reading_Writing?(): boolean | void
-  Reading_WritingDone?(): boolean | void
   Reading_RestartingNetwork?(): boolean | void
   Reading_NetworkRestarted?(): boolean | void
+  Reading_Writing?(): boolean | void
+  Reading_WritingDone?(): boolean | void
   Reading_FetchingLabels?(): boolean | void
   Reading_LabelsFetched?(): boolean | void
   Reading_FetchingHistoryId?(): boolean | void
@@ -889,10 +889,10 @@ export interface ITransitions {
   ReadingDone_Reading?(): boolean | void
   ReadingDone_Any?(): boolean | void
   ReadingDone_QuotaExceeded?(): boolean | void
-  ReadingDone_Writing?(): boolean | void
-  ReadingDone_WritingDone?(): boolean | void
   ReadingDone_RestartingNetwork?(): boolean | void
   ReadingDone_NetworkRestarted?(): boolean | void
+  ReadingDone_Writing?(): boolean | void
+  ReadingDone_WritingDone?(): boolean | void
   ReadingDone_FetchingLabels?(): boolean | void
   ReadingDone_LabelsFetched?(): boolean | void
   ReadingDone_FetchingHistoryId?(): boolean | void
@@ -912,10 +912,10 @@ export interface ITransitions {
   QuotaExceeded_Reading?(): boolean | void
   QuotaExceeded_ReadingDone?(): boolean | void
   QuotaExceeded_Any?(): boolean | void
-  QuotaExceeded_Writing?(): boolean | void
-  QuotaExceeded_WritingDone?(): boolean | void
   QuotaExceeded_RestartingNetwork?(): boolean | void
   QuotaExceeded_NetworkRestarted?(): boolean | void
+  QuotaExceeded_Writing?(): boolean | void
+  QuotaExceeded_WritingDone?(): boolean | void
   QuotaExceeded_FetchingLabels?(): boolean | void
   QuotaExceeded_LabelsFetched?(): boolean | void
   QuotaExceeded_FetchingHistoryId?(): boolean | void
@@ -926,52 +926,6 @@ export interface ITransitions {
   QuotaExceeded_Exception?(): boolean | void
   QuotaExceeded_exit?(): boolean | void
   QuotaExceeded_end?(): boolean | void | Promise<boolean | void>
-  Writing_Enabled?(): boolean | void
-  Writing_Initializing?(): boolean | void
-  Writing_Ready?(): boolean | void
-  Writing_ConfigSet?(): boolean | void
-  Writing_SubsReady?(): boolean | void
-  Writing_SubsInited?(): boolean | void
-  Writing_Reading?(): boolean | void
-  Writing_ReadingDone?(): boolean | void
-  Writing_QuotaExceeded?(): boolean | void
-  Writing_Any?(): boolean | void
-  Writing_WritingDone?(): boolean | void
-  Writing_RestartingNetwork?(): boolean | void
-  Writing_NetworkRestarted?(): boolean | void
-  Writing_FetchingLabels?(): boolean | void
-  Writing_LabelsFetched?(): boolean | void
-  Writing_FetchingHistoryId?(): boolean | void
-  Writing_HistoryIdFetched?(): boolean | void
-  Writing_InitialHistoryIdFetched?(): boolean | void
-  Writing_FetchingOrphans?(): boolean | void
-  Writing_OrphansFetched?(): boolean | void
-  Writing_Exception?(): boolean | void
-  Writing_exit?(): boolean | void
-  Writing_end?(): boolean | void | Promise<boolean | void>
-  WritingDone_Enabled?(): boolean | void
-  WritingDone_Initializing?(): boolean | void
-  WritingDone_Ready?(): boolean | void
-  WritingDone_ConfigSet?(): boolean | void
-  WritingDone_SubsReady?(): boolean | void
-  WritingDone_SubsInited?(): boolean | void
-  WritingDone_Reading?(): boolean | void
-  WritingDone_ReadingDone?(): boolean | void
-  WritingDone_QuotaExceeded?(): boolean | void
-  WritingDone_Writing?(): boolean | void
-  WritingDone_Any?(): boolean | void
-  WritingDone_RestartingNetwork?(): boolean | void
-  WritingDone_NetworkRestarted?(): boolean | void
-  WritingDone_FetchingLabels?(): boolean | void
-  WritingDone_LabelsFetched?(): boolean | void
-  WritingDone_FetchingHistoryId?(): boolean | void
-  WritingDone_HistoryIdFetched?(): boolean | void
-  WritingDone_InitialHistoryIdFetched?(): boolean | void
-  WritingDone_FetchingOrphans?(): boolean | void
-  WritingDone_OrphansFetched?(): boolean | void
-  WritingDone_Exception?(): boolean | void
-  WritingDone_exit?(): boolean | void
-  WritingDone_end?(): boolean | void | Promise<boolean | void>
   RestartingNetwork_Enabled?(): boolean | void
   RestartingNetwork_Initializing?(): boolean | void
   RestartingNetwork_Ready?(): boolean | void
@@ -981,10 +935,10 @@ export interface ITransitions {
   RestartingNetwork_Reading?(): boolean | void
   RestartingNetwork_ReadingDone?(): boolean | void
   RestartingNetwork_QuotaExceeded?(): boolean | void
-  RestartingNetwork_Writing?(): boolean | void
-  RestartingNetwork_WritingDone?(): boolean | void
   RestartingNetwork_Any?(): boolean | void
   RestartingNetwork_NetworkRestarted?(): boolean | void
+  RestartingNetwork_Writing?(): boolean | void
+  RestartingNetwork_WritingDone?(): boolean | void
   RestartingNetwork_FetchingLabels?(): boolean | void
   RestartingNetwork_LabelsFetched?(): boolean | void
   RestartingNetwork_FetchingHistoryId?(): boolean | void
@@ -1004,10 +958,10 @@ export interface ITransitions {
   NetworkRestarted_Reading?(): boolean | void
   NetworkRestarted_ReadingDone?(): boolean | void
   NetworkRestarted_QuotaExceeded?(): boolean | void
-  NetworkRestarted_Writing?(): boolean | void
-  NetworkRestarted_WritingDone?(): boolean | void
   NetworkRestarted_RestartingNetwork?(): boolean | void
   NetworkRestarted_Any?(): boolean | void
+  NetworkRestarted_Writing?(): boolean | void
+  NetworkRestarted_WritingDone?(): boolean | void
   NetworkRestarted_FetchingLabels?(): boolean | void
   NetworkRestarted_LabelsFetched?(): boolean | void
   NetworkRestarted_FetchingHistoryId?(): boolean | void
@@ -1018,6 +972,52 @@ export interface ITransitions {
   NetworkRestarted_Exception?(): boolean | void
   NetworkRestarted_exit?(): boolean | void
   NetworkRestarted_end?(): boolean | void | Promise<boolean | void>
+  Writing_Enabled?(): boolean | void
+  Writing_Initializing?(): boolean | void
+  Writing_Ready?(): boolean | void
+  Writing_ConfigSet?(): boolean | void
+  Writing_SubsReady?(): boolean | void
+  Writing_SubsInited?(): boolean | void
+  Writing_Reading?(): boolean | void
+  Writing_ReadingDone?(): boolean | void
+  Writing_QuotaExceeded?(): boolean | void
+  Writing_RestartingNetwork?(): boolean | void
+  Writing_NetworkRestarted?(): boolean | void
+  Writing_Any?(): boolean | void
+  Writing_WritingDone?(): boolean | void
+  Writing_FetchingLabels?(): boolean | void
+  Writing_LabelsFetched?(): boolean | void
+  Writing_FetchingHistoryId?(): boolean | void
+  Writing_HistoryIdFetched?(): boolean | void
+  Writing_InitialHistoryIdFetched?(): boolean | void
+  Writing_FetchingOrphans?(): boolean | void
+  Writing_OrphansFetched?(): boolean | void
+  Writing_Exception?(): boolean | void
+  Writing_exit?(): boolean | void
+  Writing_end?(): boolean | void | Promise<boolean | void>
+  WritingDone_Enabled?(): boolean | void
+  WritingDone_Initializing?(): boolean | void
+  WritingDone_Ready?(): boolean | void
+  WritingDone_ConfigSet?(): boolean | void
+  WritingDone_SubsReady?(): boolean | void
+  WritingDone_SubsInited?(): boolean | void
+  WritingDone_Reading?(): boolean | void
+  WritingDone_ReadingDone?(): boolean | void
+  WritingDone_QuotaExceeded?(): boolean | void
+  WritingDone_RestartingNetwork?(): boolean | void
+  WritingDone_NetworkRestarted?(): boolean | void
+  WritingDone_Writing?(): boolean | void
+  WritingDone_Any?(): boolean | void
+  WritingDone_FetchingLabels?(): boolean | void
+  WritingDone_LabelsFetched?(): boolean | void
+  WritingDone_FetchingHistoryId?(): boolean | void
+  WritingDone_HistoryIdFetched?(): boolean | void
+  WritingDone_InitialHistoryIdFetched?(): boolean | void
+  WritingDone_FetchingOrphans?(): boolean | void
+  WritingDone_OrphansFetched?(): boolean | void
+  WritingDone_Exception?(): boolean | void
+  WritingDone_exit?(): boolean | void
+  WritingDone_end?(): boolean | void | Promise<boolean | void>
   FetchingLabels_Enabled?(): boolean | void
   FetchingLabels_Initializing?(): boolean | void
   FetchingLabels_Ready?(): boolean | void
@@ -1027,10 +1027,10 @@ export interface ITransitions {
   FetchingLabels_Reading?(): boolean | void
   FetchingLabels_ReadingDone?(): boolean | void
   FetchingLabels_QuotaExceeded?(): boolean | void
-  FetchingLabels_Writing?(): boolean | void
-  FetchingLabels_WritingDone?(): boolean | void
   FetchingLabels_RestartingNetwork?(): boolean | void
   FetchingLabels_NetworkRestarted?(): boolean | void
+  FetchingLabels_Writing?(): boolean | void
+  FetchingLabels_WritingDone?(): boolean | void
   FetchingLabels_Any?(): boolean | void
   FetchingLabels_LabelsFetched?(): boolean | void
   FetchingLabels_FetchingHistoryId?(): boolean | void
@@ -1050,10 +1050,10 @@ export interface ITransitions {
   LabelsFetched_Reading?(): boolean | void
   LabelsFetched_ReadingDone?(): boolean | void
   LabelsFetched_QuotaExceeded?(): boolean | void
-  LabelsFetched_Writing?(): boolean | void
-  LabelsFetched_WritingDone?(): boolean | void
   LabelsFetched_RestartingNetwork?(): boolean | void
   LabelsFetched_NetworkRestarted?(): boolean | void
+  LabelsFetched_Writing?(): boolean | void
+  LabelsFetched_WritingDone?(): boolean | void
   LabelsFetched_FetchingLabels?(): boolean | void
   LabelsFetched_Any?(): boolean | void
   LabelsFetched_FetchingHistoryId?(): boolean | void
@@ -1073,10 +1073,10 @@ export interface ITransitions {
   FetchingHistoryId_Reading?(): boolean | void
   FetchingHistoryId_ReadingDone?(): boolean | void
   FetchingHistoryId_QuotaExceeded?(): boolean | void
-  FetchingHistoryId_Writing?(): boolean | void
-  FetchingHistoryId_WritingDone?(): boolean | void
   FetchingHistoryId_RestartingNetwork?(): boolean | void
   FetchingHistoryId_NetworkRestarted?(): boolean | void
+  FetchingHistoryId_Writing?(): boolean | void
+  FetchingHistoryId_WritingDone?(): boolean | void
   FetchingHistoryId_FetchingLabels?(): boolean | void
   FetchingHistoryId_LabelsFetched?(): boolean | void
   FetchingHistoryId_Any?(): boolean | void
@@ -1096,10 +1096,10 @@ export interface ITransitions {
   HistoryIdFetched_Reading?(): boolean | void
   HistoryIdFetched_ReadingDone?(): boolean | void
   HistoryIdFetched_QuotaExceeded?(): boolean | void
-  HistoryIdFetched_Writing?(): boolean | void
-  HistoryIdFetched_WritingDone?(): boolean | void
   HistoryIdFetched_RestartingNetwork?(): boolean | void
   HistoryIdFetched_NetworkRestarted?(): boolean | void
+  HistoryIdFetched_Writing?(): boolean | void
+  HistoryIdFetched_WritingDone?(): boolean | void
   HistoryIdFetched_FetchingLabels?(): boolean | void
   HistoryIdFetched_LabelsFetched?(): boolean | void
   HistoryIdFetched_FetchingHistoryId?(): boolean | void
@@ -1119,10 +1119,10 @@ export interface ITransitions {
   InitialHistoryIdFetched_Reading?(): boolean | void
   InitialHistoryIdFetched_ReadingDone?(): boolean | void
   InitialHistoryIdFetched_QuotaExceeded?(): boolean | void
-  InitialHistoryIdFetched_Writing?(): boolean | void
-  InitialHistoryIdFetched_WritingDone?(): boolean | void
   InitialHistoryIdFetched_RestartingNetwork?(): boolean | void
   InitialHistoryIdFetched_NetworkRestarted?(): boolean | void
+  InitialHistoryIdFetched_Writing?(): boolean | void
+  InitialHistoryIdFetched_WritingDone?(): boolean | void
   InitialHistoryIdFetched_FetchingLabels?(): boolean | void
   InitialHistoryIdFetched_LabelsFetched?(): boolean | void
   InitialHistoryIdFetched_FetchingHistoryId?(): boolean | void
@@ -1142,10 +1142,10 @@ export interface ITransitions {
   FetchingOrphans_Reading?(): boolean | void
   FetchingOrphans_ReadingDone?(): boolean | void
   FetchingOrphans_QuotaExceeded?(): boolean | void
-  FetchingOrphans_Writing?(): boolean | void
-  FetchingOrphans_WritingDone?(): boolean | void
   FetchingOrphans_RestartingNetwork?(): boolean | void
   FetchingOrphans_NetworkRestarted?(): boolean | void
+  FetchingOrphans_Writing?(): boolean | void
+  FetchingOrphans_WritingDone?(): boolean | void
   FetchingOrphans_FetchingLabels?(): boolean | void
   FetchingOrphans_LabelsFetched?(): boolean | void
   FetchingOrphans_FetchingHistoryId?(): boolean | void
@@ -1165,10 +1165,10 @@ export interface ITransitions {
   OrphansFetched_Reading?(): boolean | void
   OrphansFetched_ReadingDone?(): boolean | void
   OrphansFetched_QuotaExceeded?(): boolean | void
-  OrphansFetched_Writing?(): boolean | void
-  OrphansFetched_WritingDone?(): boolean | void
   OrphansFetched_RestartingNetwork?(): boolean | void
   OrphansFetched_NetworkRestarted?(): boolean | void
+  OrphansFetched_Writing?(): boolean | void
+  OrphansFetched_WritingDone?(): boolean | void
   OrphansFetched_FetchingLabels?(): boolean | void
   OrphansFetched_LabelsFetched?(): boolean | void
   OrphansFetched_FetchingHistoryId?(): boolean | void
@@ -1188,10 +1188,10 @@ export interface ITransitions {
   Exception_Reading?(): boolean | void
   Exception_ReadingDone?(): boolean | void
   Exception_QuotaExceeded?(): boolean | void
-  Exception_Writing?(): boolean | void
-  Exception_WritingDone?(): boolean | void
   Exception_RestartingNetwork?(): boolean | void
   Exception_NetworkRestarted?(): boolean | void
+  Exception_Writing?(): boolean | void
+  Exception_WritingDone?(): boolean | void
   Exception_FetchingLabels?(): boolean | void
   Exception_LabelsFetched?(): boolean | void
   Exception_FetchingHistoryId?(): boolean | void
@@ -1214,10 +1214,10 @@ export type TStates =
   | 'Reading'
   | 'ReadingDone'
   | 'QuotaExceeded'
-  | 'Writing'
-  | 'WritingDone'
   | 'RestartingNetwork'
   | 'NetworkRestarted'
+  | 'Writing'
+  | 'WritingDone'
   | 'FetchingLabels'
   | 'LabelsFetched'
   | 'FetchingHistoryId'
@@ -1237,10 +1237,10 @@ export type TTransitions =
   | 'Enabled_Reading'
   | 'Enabled_ReadingDone'
   | 'Enabled_QuotaExceeded'
-  | 'Enabled_Writing'
-  | 'Enabled_WritingDone'
   | 'Enabled_RestartingNetwork'
   | 'Enabled_NetworkRestarted'
+  | 'Enabled_Writing'
+  | 'Enabled_WritingDone'
   | 'Enabled_FetchingLabels'
   | 'Enabled_LabelsFetched'
   | 'Enabled_FetchingHistoryId'
@@ -1260,10 +1260,10 @@ export type TTransitions =
   | 'Initializing_Reading'
   | 'Initializing_ReadingDone'
   | 'Initializing_QuotaExceeded'
-  | 'Initializing_Writing'
-  | 'Initializing_WritingDone'
   | 'Initializing_RestartingNetwork'
   | 'Initializing_NetworkRestarted'
+  | 'Initializing_Writing'
+  | 'Initializing_WritingDone'
   | 'Initializing_FetchingLabels'
   | 'Initializing_LabelsFetched'
   | 'Initializing_FetchingHistoryId'
@@ -1283,10 +1283,10 @@ export type TTransitions =
   | 'Ready_Reading'
   | 'Ready_ReadingDone'
   | 'Ready_QuotaExceeded'
-  | 'Ready_Writing'
-  | 'Ready_WritingDone'
   | 'Ready_RestartingNetwork'
   | 'Ready_NetworkRestarted'
+  | 'Ready_Writing'
+  | 'Ready_WritingDone'
   | 'Ready_FetchingLabels'
   | 'Ready_LabelsFetched'
   | 'Ready_FetchingHistoryId'
@@ -1306,10 +1306,10 @@ export type TTransitions =
   | 'ConfigSet_Reading'
   | 'ConfigSet_ReadingDone'
   | 'ConfigSet_QuotaExceeded'
-  | 'ConfigSet_Writing'
-  | 'ConfigSet_WritingDone'
   | 'ConfigSet_RestartingNetwork'
   | 'ConfigSet_NetworkRestarted'
+  | 'ConfigSet_Writing'
+  | 'ConfigSet_WritingDone'
   | 'ConfigSet_FetchingLabels'
   | 'ConfigSet_LabelsFetched'
   | 'ConfigSet_FetchingHistoryId'
@@ -1329,10 +1329,10 @@ export type TTransitions =
   | 'SubsReady_Reading'
   | 'SubsReady_ReadingDone'
   | 'SubsReady_QuotaExceeded'
-  | 'SubsReady_Writing'
-  | 'SubsReady_WritingDone'
   | 'SubsReady_RestartingNetwork'
   | 'SubsReady_NetworkRestarted'
+  | 'SubsReady_Writing'
+  | 'SubsReady_WritingDone'
   | 'SubsReady_FetchingLabels'
   | 'SubsReady_LabelsFetched'
   | 'SubsReady_FetchingHistoryId'
@@ -1352,10 +1352,10 @@ export type TTransitions =
   | 'SubsInited_Reading'
   | 'SubsInited_ReadingDone'
   | 'SubsInited_QuotaExceeded'
-  | 'SubsInited_Writing'
-  | 'SubsInited_WritingDone'
   | 'SubsInited_RestartingNetwork'
   | 'SubsInited_NetworkRestarted'
+  | 'SubsInited_Writing'
+  | 'SubsInited_WritingDone'
   | 'SubsInited_FetchingLabels'
   | 'SubsInited_LabelsFetched'
   | 'SubsInited_FetchingHistoryId'
@@ -1375,10 +1375,10 @@ export type TTransitions =
   | 'Reading_Any'
   | 'Reading_ReadingDone'
   | 'Reading_QuotaExceeded'
-  | 'Reading_Writing'
-  | 'Reading_WritingDone'
   | 'Reading_RestartingNetwork'
   | 'Reading_NetworkRestarted'
+  | 'Reading_Writing'
+  | 'Reading_WritingDone'
   | 'Reading_FetchingLabels'
   | 'Reading_LabelsFetched'
   | 'Reading_FetchingHistoryId'
@@ -1398,10 +1398,10 @@ export type TTransitions =
   | 'ReadingDone_Reading'
   | 'ReadingDone_Any'
   | 'ReadingDone_QuotaExceeded'
-  | 'ReadingDone_Writing'
-  | 'ReadingDone_WritingDone'
   | 'ReadingDone_RestartingNetwork'
   | 'ReadingDone_NetworkRestarted'
+  | 'ReadingDone_Writing'
+  | 'ReadingDone_WritingDone'
   | 'ReadingDone_FetchingLabels'
   | 'ReadingDone_LabelsFetched'
   | 'ReadingDone_FetchingHistoryId'
@@ -1421,10 +1421,10 @@ export type TTransitions =
   | 'QuotaExceeded_Reading'
   | 'QuotaExceeded_ReadingDone'
   | 'QuotaExceeded_Any'
-  | 'QuotaExceeded_Writing'
-  | 'QuotaExceeded_WritingDone'
   | 'QuotaExceeded_RestartingNetwork'
   | 'QuotaExceeded_NetworkRestarted'
+  | 'QuotaExceeded_Writing'
+  | 'QuotaExceeded_WritingDone'
   | 'QuotaExceeded_FetchingLabels'
   | 'QuotaExceeded_LabelsFetched'
   | 'QuotaExceeded_FetchingHistoryId'
@@ -1435,52 +1435,6 @@ export type TTransitions =
   | 'QuotaExceeded_Exception'
   | 'QuotaExceeded_exit'
   | 'QuotaExceeded_end'
-  | 'Writing_Enabled'
-  | 'Writing_Initializing'
-  | 'Writing_Ready'
-  | 'Writing_ConfigSet'
-  | 'Writing_SubsReady'
-  | 'Writing_SubsInited'
-  | 'Writing_Reading'
-  | 'Writing_ReadingDone'
-  | 'Writing_QuotaExceeded'
-  | 'Writing_Any'
-  | 'Writing_WritingDone'
-  | 'Writing_RestartingNetwork'
-  | 'Writing_NetworkRestarted'
-  | 'Writing_FetchingLabels'
-  | 'Writing_LabelsFetched'
-  | 'Writing_FetchingHistoryId'
-  | 'Writing_HistoryIdFetched'
-  | 'Writing_InitialHistoryIdFetched'
-  | 'Writing_FetchingOrphans'
-  | 'Writing_OrphansFetched'
-  | 'Writing_Exception'
-  | 'Writing_exit'
-  | 'Writing_end'
-  | 'WritingDone_Enabled'
-  | 'WritingDone_Initializing'
-  | 'WritingDone_Ready'
-  | 'WritingDone_ConfigSet'
-  | 'WritingDone_SubsReady'
-  | 'WritingDone_SubsInited'
-  | 'WritingDone_Reading'
-  | 'WritingDone_ReadingDone'
-  | 'WritingDone_QuotaExceeded'
-  | 'WritingDone_Writing'
-  | 'WritingDone_Any'
-  | 'WritingDone_RestartingNetwork'
-  | 'WritingDone_NetworkRestarted'
-  | 'WritingDone_FetchingLabels'
-  | 'WritingDone_LabelsFetched'
-  | 'WritingDone_FetchingHistoryId'
-  | 'WritingDone_HistoryIdFetched'
-  | 'WritingDone_InitialHistoryIdFetched'
-  | 'WritingDone_FetchingOrphans'
-  | 'WritingDone_OrphansFetched'
-  | 'WritingDone_Exception'
-  | 'WritingDone_exit'
-  | 'WritingDone_end'
   | 'RestartingNetwork_Enabled'
   | 'RestartingNetwork_Initializing'
   | 'RestartingNetwork_Ready'
@@ -1490,10 +1444,10 @@ export type TTransitions =
   | 'RestartingNetwork_Reading'
   | 'RestartingNetwork_ReadingDone'
   | 'RestartingNetwork_QuotaExceeded'
-  | 'RestartingNetwork_Writing'
-  | 'RestartingNetwork_WritingDone'
   | 'RestartingNetwork_Any'
   | 'RestartingNetwork_NetworkRestarted'
+  | 'RestartingNetwork_Writing'
+  | 'RestartingNetwork_WritingDone'
   | 'RestartingNetwork_FetchingLabels'
   | 'RestartingNetwork_LabelsFetched'
   | 'RestartingNetwork_FetchingHistoryId'
@@ -1513,10 +1467,10 @@ export type TTransitions =
   | 'NetworkRestarted_Reading'
   | 'NetworkRestarted_ReadingDone'
   | 'NetworkRestarted_QuotaExceeded'
-  | 'NetworkRestarted_Writing'
-  | 'NetworkRestarted_WritingDone'
   | 'NetworkRestarted_RestartingNetwork'
   | 'NetworkRestarted_Any'
+  | 'NetworkRestarted_Writing'
+  | 'NetworkRestarted_WritingDone'
   | 'NetworkRestarted_FetchingLabels'
   | 'NetworkRestarted_LabelsFetched'
   | 'NetworkRestarted_FetchingHistoryId'
@@ -1527,6 +1481,52 @@ export type TTransitions =
   | 'NetworkRestarted_Exception'
   | 'NetworkRestarted_exit'
   | 'NetworkRestarted_end'
+  | 'Writing_Enabled'
+  | 'Writing_Initializing'
+  | 'Writing_Ready'
+  | 'Writing_ConfigSet'
+  | 'Writing_SubsReady'
+  | 'Writing_SubsInited'
+  | 'Writing_Reading'
+  | 'Writing_ReadingDone'
+  | 'Writing_QuotaExceeded'
+  | 'Writing_RestartingNetwork'
+  | 'Writing_NetworkRestarted'
+  | 'Writing_Any'
+  | 'Writing_WritingDone'
+  | 'Writing_FetchingLabels'
+  | 'Writing_LabelsFetched'
+  | 'Writing_FetchingHistoryId'
+  | 'Writing_HistoryIdFetched'
+  | 'Writing_InitialHistoryIdFetched'
+  | 'Writing_FetchingOrphans'
+  | 'Writing_OrphansFetched'
+  | 'Writing_Exception'
+  | 'Writing_exit'
+  | 'Writing_end'
+  | 'WritingDone_Enabled'
+  | 'WritingDone_Initializing'
+  | 'WritingDone_Ready'
+  | 'WritingDone_ConfigSet'
+  | 'WritingDone_SubsReady'
+  | 'WritingDone_SubsInited'
+  | 'WritingDone_Reading'
+  | 'WritingDone_ReadingDone'
+  | 'WritingDone_QuotaExceeded'
+  | 'WritingDone_RestartingNetwork'
+  | 'WritingDone_NetworkRestarted'
+  | 'WritingDone_Writing'
+  | 'WritingDone_Any'
+  | 'WritingDone_FetchingLabels'
+  | 'WritingDone_LabelsFetched'
+  | 'WritingDone_FetchingHistoryId'
+  | 'WritingDone_HistoryIdFetched'
+  | 'WritingDone_InitialHistoryIdFetched'
+  | 'WritingDone_FetchingOrphans'
+  | 'WritingDone_OrphansFetched'
+  | 'WritingDone_Exception'
+  | 'WritingDone_exit'
+  | 'WritingDone_end'
   | 'FetchingLabels_Enabled'
   | 'FetchingLabels_Initializing'
   | 'FetchingLabels_Ready'
@@ -1536,10 +1536,10 @@ export type TTransitions =
   | 'FetchingLabels_Reading'
   | 'FetchingLabels_ReadingDone'
   | 'FetchingLabels_QuotaExceeded'
-  | 'FetchingLabels_Writing'
-  | 'FetchingLabels_WritingDone'
   | 'FetchingLabels_RestartingNetwork'
   | 'FetchingLabels_NetworkRestarted'
+  | 'FetchingLabels_Writing'
+  | 'FetchingLabels_WritingDone'
   | 'FetchingLabels_Any'
   | 'FetchingLabels_LabelsFetched'
   | 'FetchingLabels_FetchingHistoryId'
@@ -1559,10 +1559,10 @@ export type TTransitions =
   | 'LabelsFetched_Reading'
   | 'LabelsFetched_ReadingDone'
   | 'LabelsFetched_QuotaExceeded'
-  | 'LabelsFetched_Writing'
-  | 'LabelsFetched_WritingDone'
   | 'LabelsFetched_RestartingNetwork'
   | 'LabelsFetched_NetworkRestarted'
+  | 'LabelsFetched_Writing'
+  | 'LabelsFetched_WritingDone'
   | 'LabelsFetched_FetchingLabels'
   | 'LabelsFetched_Any'
   | 'LabelsFetched_FetchingHistoryId'
@@ -1582,10 +1582,10 @@ export type TTransitions =
   | 'FetchingHistoryId_Reading'
   | 'FetchingHistoryId_ReadingDone'
   | 'FetchingHistoryId_QuotaExceeded'
-  | 'FetchingHistoryId_Writing'
-  | 'FetchingHistoryId_WritingDone'
   | 'FetchingHistoryId_RestartingNetwork'
   | 'FetchingHistoryId_NetworkRestarted'
+  | 'FetchingHistoryId_Writing'
+  | 'FetchingHistoryId_WritingDone'
   | 'FetchingHistoryId_FetchingLabels'
   | 'FetchingHistoryId_LabelsFetched'
   | 'FetchingHistoryId_Any'
@@ -1605,10 +1605,10 @@ export type TTransitions =
   | 'HistoryIdFetched_Reading'
   | 'HistoryIdFetched_ReadingDone'
   | 'HistoryIdFetched_QuotaExceeded'
-  | 'HistoryIdFetched_Writing'
-  | 'HistoryIdFetched_WritingDone'
   | 'HistoryIdFetched_RestartingNetwork'
   | 'HistoryIdFetched_NetworkRestarted'
+  | 'HistoryIdFetched_Writing'
+  | 'HistoryIdFetched_WritingDone'
   | 'HistoryIdFetched_FetchingLabels'
   | 'HistoryIdFetched_LabelsFetched'
   | 'HistoryIdFetched_FetchingHistoryId'
@@ -1628,10 +1628,10 @@ export type TTransitions =
   | 'InitialHistoryIdFetched_Reading'
   | 'InitialHistoryIdFetched_ReadingDone'
   | 'InitialHistoryIdFetched_QuotaExceeded'
-  | 'InitialHistoryIdFetched_Writing'
-  | 'InitialHistoryIdFetched_WritingDone'
   | 'InitialHistoryIdFetched_RestartingNetwork'
   | 'InitialHistoryIdFetched_NetworkRestarted'
+  | 'InitialHistoryIdFetched_Writing'
+  | 'InitialHistoryIdFetched_WritingDone'
   | 'InitialHistoryIdFetched_FetchingLabels'
   | 'InitialHistoryIdFetched_LabelsFetched'
   | 'InitialHistoryIdFetched_FetchingHistoryId'
@@ -1651,10 +1651,10 @@ export type TTransitions =
   | 'FetchingOrphans_Reading'
   | 'FetchingOrphans_ReadingDone'
   | 'FetchingOrphans_QuotaExceeded'
-  | 'FetchingOrphans_Writing'
-  | 'FetchingOrphans_WritingDone'
   | 'FetchingOrphans_RestartingNetwork'
   | 'FetchingOrphans_NetworkRestarted'
+  | 'FetchingOrphans_Writing'
+  | 'FetchingOrphans_WritingDone'
   | 'FetchingOrphans_FetchingLabels'
   | 'FetchingOrphans_LabelsFetched'
   | 'FetchingOrphans_FetchingHistoryId'
@@ -1674,10 +1674,10 @@ export type TTransitions =
   | 'OrphansFetched_Reading'
   | 'OrphansFetched_ReadingDone'
   | 'OrphansFetched_QuotaExceeded'
-  | 'OrphansFetched_Writing'
-  | 'OrphansFetched_WritingDone'
   | 'OrphansFetched_RestartingNetwork'
   | 'OrphansFetched_NetworkRestarted'
+  | 'OrphansFetched_Writing'
+  | 'OrphansFetched_WritingDone'
   | 'OrphansFetched_FetchingLabels'
   | 'OrphansFetched_LabelsFetched'
   | 'OrphansFetched_FetchingHistoryId'
@@ -1697,10 +1697,10 @@ export type TTransitions =
   | 'Exception_Reading'
   | 'Exception_ReadingDone'
   | 'Exception_QuotaExceeded'
-  | 'Exception_Writing'
-  | 'Exception_WritingDone'
   | 'Exception_RestartingNetwork'
   | 'Exception_NetworkRestarted'
+  | 'Exception_Writing'
+  | 'Exception_WritingDone'
   | 'Exception_FetchingLabels'
   | 'Exception_LabelsFetched'
   | 'Exception_FetchingHistoryId'
@@ -1737,10 +1737,10 @@ export interface IJSONStates {
   Reading: IState
   ReadingDone: IState
   QuotaExceeded: IState
-  Writing: IState
-  WritingDone: IState
   RestartingNetwork: IState
   NetworkRestarted: IState
+  Writing: IState
+  WritingDone: IState
   FetchingLabels: IState
   LabelsFetched: IState
   FetchingHistoryId: IState

@@ -312,6 +312,80 @@ export interface ITransitions {
     | Promise<boolean | void>
 }
 
+// ----- ----- ----- ----- -----
+// STATE: RestartingNetwork
+// ----- ----- ----- ----- -----
+
+/** machine.bind('RestartingNetwork', (param1, param2) => {}) */
+export interface IBind extends IBindBase {
+  (
+    event: 'RestartingNetwork_enter',
+    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
+    context?: Object
+  ): this
+  (
+    event: 'RestartingNetwork_state',
+    listener: () => /* param1: any?, param2: any? */ any,
+    context?: Object
+  ): this
+}
+
+/** machine.emit('RestartingNetwork', param1, param2) */
+export interface IEmit extends IEmitBase {
+  (event: 'RestartingNetwork_enter' /*, param1: any?, param2: any? */):
+    | boolean
+    | void
+  (event: 'RestartingNetwork_state' /*, param1: any?, param2: any? */):
+    | boolean
+    | void
+}
+
+/** Method declarations */
+export interface ITransitions {
+  RestartingNetwork_enter /* param1: any?, param2: any? */?(): boolean | void
+  RestartingNetwork_state /* param1: any?, param2: any? */?():
+    | boolean
+    | void
+    | Promise<boolean | void>
+}
+
+// ----- ----- ----- ----- -----
+// STATE: NetworkRestarted
+// ----- ----- ----- ----- -----
+
+/** machine.bind('NetworkRestarted', (param1, param2) => {}) */
+export interface IBind extends IBindBase {
+  (
+    event: 'NetworkRestarted_enter',
+    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
+    context?: Object
+  ): this
+  (
+    event: 'NetworkRestarted_state',
+    listener: () => /* param1: any?, param2: any? */ any,
+    context?: Object
+  ): this
+}
+
+/** machine.emit('NetworkRestarted', param1, param2) */
+export interface IEmit extends IEmitBase {
+  (event: 'NetworkRestarted_enter' /*, param1: any?, param2: any? */):
+    | boolean
+    | void
+  (event: 'NetworkRestarted_state' /*, param1: any?, param2: any? */):
+    | boolean
+    | void
+}
+
+/** Method declarations */
+export interface ITransitions {
+  NetworkRestarted_enter /* param1: any?, param2: any? */?(): boolean | void
+  NetworkRestarted_state /* param1: any?, param2: any? */?():
+    | boolean
+    | void
+    | Promise<boolean | void>
+}
+
 // ----- ----- -----
 // GENERAL TYPES
 // ----- ----- -----
@@ -327,6 +401,8 @@ export interface ITransitions {
   Enabled_Reading?(): boolean | void
   Enabled_ReadingDone?(): boolean | void
   Enabled_QuotaExceeded?(): boolean | void
+  Enabled_RestartingNetwork?(): boolean | void
+  Enabled_NetworkRestarted?(): boolean | void
   Enabled_Exception?(): boolean | void
   Enabled_exit?(): boolean | void
   Enabled_end?(): boolean | void | Promise<boolean | void>
@@ -339,6 +415,8 @@ export interface ITransitions {
   Initializing_Reading?(): boolean | void
   Initializing_ReadingDone?(): boolean | void
   Initializing_QuotaExceeded?(): boolean | void
+  Initializing_RestartingNetwork?(): boolean | void
+  Initializing_NetworkRestarted?(): boolean | void
   Initializing_Exception?(): boolean | void
   Initializing_exit?(): boolean | void
   Initializing_end?(): boolean | void | Promise<boolean | void>
@@ -351,6 +429,8 @@ export interface ITransitions {
   Ready_Reading?(): boolean | void
   Ready_ReadingDone?(): boolean | void
   Ready_QuotaExceeded?(): boolean | void
+  Ready_RestartingNetwork?(): boolean | void
+  Ready_NetworkRestarted?(): boolean | void
   Ready_Exception?(): boolean | void
   Ready_exit?(): boolean | void
   Ready_end?(): boolean | void | Promise<boolean | void>
@@ -363,6 +443,8 @@ export interface ITransitions {
   ConfigSet_Reading?(): boolean | void
   ConfigSet_ReadingDone?(): boolean | void
   ConfigSet_QuotaExceeded?(): boolean | void
+  ConfigSet_RestartingNetwork?(): boolean | void
+  ConfigSet_NetworkRestarted?(): boolean | void
   ConfigSet_Exception?(): boolean | void
   ConfigSet_exit?(): boolean | void
   ConfigSet_end?(): boolean | void | Promise<boolean | void>
@@ -375,6 +457,8 @@ export interface ITransitions {
   SubsReady_Reading?(): boolean | void
   SubsReady_ReadingDone?(): boolean | void
   SubsReady_QuotaExceeded?(): boolean | void
+  SubsReady_RestartingNetwork?(): boolean | void
+  SubsReady_NetworkRestarted?(): boolean | void
   SubsReady_Exception?(): boolean | void
   SubsReady_exit?(): boolean | void
   SubsReady_end?(): boolean | void | Promise<boolean | void>
@@ -387,6 +471,8 @@ export interface ITransitions {
   SubsInited_Reading?(): boolean | void
   SubsInited_ReadingDone?(): boolean | void
   SubsInited_QuotaExceeded?(): boolean | void
+  SubsInited_RestartingNetwork?(): boolean | void
+  SubsInited_NetworkRestarted?(): boolean | void
   SubsInited_Exception?(): boolean | void
   SubsInited_exit?(): boolean | void
   SubsInited_end?(): boolean | void | Promise<boolean | void>
@@ -399,6 +485,8 @@ export interface ITransitions {
   Reading_Any?(): boolean | void
   Reading_ReadingDone?(): boolean | void
   Reading_QuotaExceeded?(): boolean | void
+  Reading_RestartingNetwork?(): boolean | void
+  Reading_NetworkRestarted?(): boolean | void
   Reading_Exception?(): boolean | void
   Reading_exit?(): boolean | void
   Reading_end?(): boolean | void | Promise<boolean | void>
@@ -411,6 +499,8 @@ export interface ITransitions {
   ReadingDone_Reading?(): boolean | void
   ReadingDone_Any?(): boolean | void
   ReadingDone_QuotaExceeded?(): boolean | void
+  ReadingDone_RestartingNetwork?(): boolean | void
+  ReadingDone_NetworkRestarted?(): boolean | void
   ReadingDone_Exception?(): boolean | void
   ReadingDone_exit?(): boolean | void
   ReadingDone_end?(): boolean | void | Promise<boolean | void>
@@ -423,9 +513,39 @@ export interface ITransitions {
   QuotaExceeded_Reading?(): boolean | void
   QuotaExceeded_ReadingDone?(): boolean | void
   QuotaExceeded_Any?(): boolean | void
+  QuotaExceeded_RestartingNetwork?(): boolean | void
+  QuotaExceeded_NetworkRestarted?(): boolean | void
   QuotaExceeded_Exception?(): boolean | void
   QuotaExceeded_exit?(): boolean | void
   QuotaExceeded_end?(): boolean | void | Promise<boolean | void>
+  RestartingNetwork_Enabled?(): boolean | void
+  RestartingNetwork_Initializing?(): boolean | void
+  RestartingNetwork_Ready?(): boolean | void
+  RestartingNetwork_ConfigSet?(): boolean | void
+  RestartingNetwork_SubsReady?(): boolean | void
+  RestartingNetwork_SubsInited?(): boolean | void
+  RestartingNetwork_Reading?(): boolean | void
+  RestartingNetwork_ReadingDone?(): boolean | void
+  RestartingNetwork_QuotaExceeded?(): boolean | void
+  RestartingNetwork_Any?(): boolean | void
+  RestartingNetwork_NetworkRestarted?(): boolean | void
+  RestartingNetwork_Exception?(): boolean | void
+  RestartingNetwork_exit?(): boolean | void
+  RestartingNetwork_end?(): boolean | void | Promise<boolean | void>
+  NetworkRestarted_Enabled?(): boolean | void
+  NetworkRestarted_Initializing?(): boolean | void
+  NetworkRestarted_Ready?(): boolean | void
+  NetworkRestarted_ConfigSet?(): boolean | void
+  NetworkRestarted_SubsReady?(): boolean | void
+  NetworkRestarted_SubsInited?(): boolean | void
+  NetworkRestarted_Reading?(): boolean | void
+  NetworkRestarted_ReadingDone?(): boolean | void
+  NetworkRestarted_QuotaExceeded?(): boolean | void
+  NetworkRestarted_RestartingNetwork?(): boolean | void
+  NetworkRestarted_Any?(): boolean | void
+  NetworkRestarted_Exception?(): boolean | void
+  NetworkRestarted_exit?(): boolean | void
+  NetworkRestarted_end?(): boolean | void | Promise<boolean | void>
   Exception_Enabled?(): boolean | void
   Exception_Initializing?(): boolean | void
   Exception_Ready?(): boolean | void
@@ -435,6 +555,8 @@ export interface ITransitions {
   Exception_Reading?(): boolean | void
   Exception_ReadingDone?(): boolean | void
   Exception_QuotaExceeded?(): boolean | void
+  Exception_RestartingNetwork?(): boolean | void
+  Exception_NetworkRestarted?(): boolean | void
   Exception_exit?(): boolean | void
   Exception_end?(): boolean | void | Promise<boolean | void>
 }
@@ -450,6 +572,8 @@ export type TStates =
   | 'Reading'
   | 'ReadingDone'
   | 'QuotaExceeded'
+  | 'RestartingNetwork'
+  | 'NetworkRestarted'
 
 /** All the transition names */
 export type TTransitions =
@@ -462,6 +586,8 @@ export type TTransitions =
   | 'Enabled_Reading'
   | 'Enabled_ReadingDone'
   | 'Enabled_QuotaExceeded'
+  | 'Enabled_RestartingNetwork'
+  | 'Enabled_NetworkRestarted'
   | 'Enabled_Exception'
   | 'Enabled_exit'
   | 'Enabled_end'
@@ -474,6 +600,8 @@ export type TTransitions =
   | 'Initializing_Reading'
   | 'Initializing_ReadingDone'
   | 'Initializing_QuotaExceeded'
+  | 'Initializing_RestartingNetwork'
+  | 'Initializing_NetworkRestarted'
   | 'Initializing_Exception'
   | 'Initializing_exit'
   | 'Initializing_end'
@@ -486,6 +614,8 @@ export type TTransitions =
   | 'Ready_Reading'
   | 'Ready_ReadingDone'
   | 'Ready_QuotaExceeded'
+  | 'Ready_RestartingNetwork'
+  | 'Ready_NetworkRestarted'
   | 'Ready_Exception'
   | 'Ready_exit'
   | 'Ready_end'
@@ -498,6 +628,8 @@ export type TTransitions =
   | 'ConfigSet_Reading'
   | 'ConfigSet_ReadingDone'
   | 'ConfigSet_QuotaExceeded'
+  | 'ConfigSet_RestartingNetwork'
+  | 'ConfigSet_NetworkRestarted'
   | 'ConfigSet_Exception'
   | 'ConfigSet_exit'
   | 'ConfigSet_end'
@@ -510,6 +642,8 @@ export type TTransitions =
   | 'SubsReady_Reading'
   | 'SubsReady_ReadingDone'
   | 'SubsReady_QuotaExceeded'
+  | 'SubsReady_RestartingNetwork'
+  | 'SubsReady_NetworkRestarted'
   | 'SubsReady_Exception'
   | 'SubsReady_exit'
   | 'SubsReady_end'
@@ -522,6 +656,8 @@ export type TTransitions =
   | 'SubsInited_Reading'
   | 'SubsInited_ReadingDone'
   | 'SubsInited_QuotaExceeded'
+  | 'SubsInited_RestartingNetwork'
+  | 'SubsInited_NetworkRestarted'
   | 'SubsInited_Exception'
   | 'SubsInited_exit'
   | 'SubsInited_end'
@@ -534,6 +670,8 @@ export type TTransitions =
   | 'Reading_Any'
   | 'Reading_ReadingDone'
   | 'Reading_QuotaExceeded'
+  | 'Reading_RestartingNetwork'
+  | 'Reading_NetworkRestarted'
   | 'Reading_Exception'
   | 'Reading_exit'
   | 'Reading_end'
@@ -546,6 +684,8 @@ export type TTransitions =
   | 'ReadingDone_Reading'
   | 'ReadingDone_Any'
   | 'ReadingDone_QuotaExceeded'
+  | 'ReadingDone_RestartingNetwork'
+  | 'ReadingDone_NetworkRestarted'
   | 'ReadingDone_Exception'
   | 'ReadingDone_exit'
   | 'ReadingDone_end'
@@ -558,9 +698,39 @@ export type TTransitions =
   | 'QuotaExceeded_Reading'
   | 'QuotaExceeded_ReadingDone'
   | 'QuotaExceeded_Any'
+  | 'QuotaExceeded_RestartingNetwork'
+  | 'QuotaExceeded_NetworkRestarted'
   | 'QuotaExceeded_Exception'
   | 'QuotaExceeded_exit'
   | 'QuotaExceeded_end'
+  | 'RestartingNetwork_Enabled'
+  | 'RestartingNetwork_Initializing'
+  | 'RestartingNetwork_Ready'
+  | 'RestartingNetwork_ConfigSet'
+  | 'RestartingNetwork_SubsReady'
+  | 'RestartingNetwork_SubsInited'
+  | 'RestartingNetwork_Reading'
+  | 'RestartingNetwork_ReadingDone'
+  | 'RestartingNetwork_QuotaExceeded'
+  | 'RestartingNetwork_Any'
+  | 'RestartingNetwork_NetworkRestarted'
+  | 'RestartingNetwork_Exception'
+  | 'RestartingNetwork_exit'
+  | 'RestartingNetwork_end'
+  | 'NetworkRestarted_Enabled'
+  | 'NetworkRestarted_Initializing'
+  | 'NetworkRestarted_Ready'
+  | 'NetworkRestarted_ConfigSet'
+  | 'NetworkRestarted_SubsReady'
+  | 'NetworkRestarted_SubsInited'
+  | 'NetworkRestarted_Reading'
+  | 'NetworkRestarted_ReadingDone'
+  | 'NetworkRestarted_QuotaExceeded'
+  | 'NetworkRestarted_RestartingNetwork'
+  | 'NetworkRestarted_Any'
+  | 'NetworkRestarted_Exception'
+  | 'NetworkRestarted_exit'
+  | 'NetworkRestarted_end'
   | 'Exception_Enabled'
   | 'Exception_Initializing'
   | 'Exception_Ready'
@@ -570,6 +740,8 @@ export type TTransitions =
   | 'Exception_Reading'
   | 'Exception_ReadingDone'
   | 'Exception_QuotaExceeded'
+  | 'Exception_RestartingNetwork'
+  | 'Exception_NetworkRestarted'
   | 'Exception_exit'
   | 'Exception_end'
 
@@ -599,5 +771,7 @@ export interface IJSONStates {
   Reading: IState
   ReadingDone: IState
   QuotaExceeded: IState
+  RestartingNetwork: IState
+  NetworkRestarted: IState
   Exception?: IState
 }
