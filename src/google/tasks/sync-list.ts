@@ -302,9 +302,7 @@ export default class GTasksListSync extends SyncReader<
 
   getContent(content: string): string {
     const regex = new RegExp(
-      `\\n?\\bEmail: ${regexEscape(
-        this.root.subs.google.subs.tasks.email_url
-      )}[\\w-]+\\b`
+      `\\n?\\bEmail: ${regexEscape(this.gtasks.email_url)}[\\w-]+\\b`
     )
     return (
       (content || '')
