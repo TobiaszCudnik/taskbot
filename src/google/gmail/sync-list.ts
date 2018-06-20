@@ -10,7 +10,8 @@ import {
   IJSONStates,
   TStates,
   IBindBase,
-  IEmitBase
+  IEmitBase,
+  ITransitions
 } from '../../../typings/machines/google/gmail/sync-list'
 import RootSync, { DBRecord } from '../../sync/root'
 import { SyncReader, sync_reader_state } from '../../sync/reader'
@@ -27,12 +28,9 @@ export const sync_state: IJSONStates = {
 
 type GmailAPI = google.gmail.v1.Gmail
 type DBCollection = LokiCollection<DBRecord>
-export default class GmailListSync extends SyncReader<
-  IListConfig,
-  TStates,
-  IBind,
-  IEmit
-> {
+export default class GmailListSync
+  extends SyncReader<IListConfig, TStates, IBind, IEmit>
+  implements ITransitions {
   state: AsyncMachine<TStates, IBind, IEmit>
   query: GmailQuery
   verbose = debug(this.state.id(true) + '-verbose')
@@ -61,6 +59,12 @@ export default class GmailListSync extends SyncReader<
     await this.query.state.when('MsgsFetched')
     if (abort()) return
     this.state.add('ReadingDone')
+  }
+
+  RestartingNetwork_state() {
+    // drop the download states
+    this.query.state.drop(['FetchingThreads', 'FetchingMsgs'])
+    super.RestartingNetwork_state()
   }
 
   // ----- -----

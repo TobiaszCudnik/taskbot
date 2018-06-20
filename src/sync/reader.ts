@@ -40,7 +40,20 @@ export const sync_reader_state: IJSONStates = {
     drop: ['Reading']
   },
 
-  QuotaExceeded: {}
+  QuotaExceeded: {},
+
+  RestartingNetwork: {
+    drop: [
+      'NetworkRestarted',
+      'Reading',
+      'ReadingDone',
+      'Writing',
+      'WritingDone'
+    ]
+  },
+  NetworkRestarted: {
+    drop: ['RestartingNetwork']
+  }
 }
 export type TSyncState = AsyncMachine<TStates, IBind, IEmit>
 
@@ -53,13 +66,15 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
   active_requests: number
   // config: IConfig | null
   config: GConfig
-  sub_states_inbound: [GStates | TStates, GStates | TStates][] = [
-    ['ReadingDone', 'ReadingDone'],
-    ['Ready', 'SubsReady']
+  sub_states_inbound: [GStates | TStates, GStates | TStates, PipeFlags][] = [
+    ['ReadingDone', 'ReadingDone', PipeFlags.FINAL],
+    ['Ready', 'SubsReady', PipeFlags.FINAL],
+    ['NetworkRestarted', 'NetworkRestarted', PipeFlags.FINAL]
   ]
-  sub_states_outbound: [GStates | TStates, GStates | TStates][] = [
-    ['Reading', 'Reading'],
-    ['Enabled', 'Enabled']
+  sub_states_outbound: [GStates | TStates, GStates | TStates, PipeFlags][] = [
+    ['Reading', 'Reading', PipeFlags.NEGOTIATION_ENTER | PipeFlags.FINAL_EXIT],
+    ['Enabled', 'Enabled', PipeFlags.NEGOTIATION_ENTER | PipeFlags.FINAL_EXIT],
+    ['RestartingNetwork', 'RestartingNetwork', PipeFlags.FINAL]
   ]
   subs: {
     [index: string]: any
@@ -93,13 +108,21 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
   }
 
   get subs_flat(): SyncReader<GConfig, GStates, GBind, GEmit>[] {
-    let ret = []
+    const ret = []
     for (const sub of Object.values(this.subs)) {
       if (Array.isArray(sub)) {
         ret.push(...sub)
       } else {
         ret.push(sub)
       }
+    }
+    return ret
+  }
+
+  get subs_all(): SyncReader<GConfig, GStates, GBind, GEmit>[] {
+    const ret = []
+    for (const sub of this.subs_flat) {
+      ret.push(sub, ...sub.subs_all)
     }
     return ret
   }
@@ -129,6 +152,14 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
   // ----- -----
   // Transitions
   // ----- -----
+
+  RestartingNetwork_state() {
+    this.state.add('NetworkRestarted')
+  }
+
+  NetworkRestarted_enter() {
+    return this.subs_flat.every(sync => sync.state.is('NetworkRestarted'))
+  }
 
   // TODO extract google specific code to GoogleAPIMixin
   Exception_enter(err, ...rest): boolean {
@@ -215,7 +246,8 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
       this.ReadingDone_enter() &&
       !(
         this.state.to().includes('Reading') ||
-        this.state.to().includes('Writing')
+        this.state.to().includes('Writing') ||
+        this.state.to().includes('RestartingNetwork')
       )
     return !keep_reading_done
   }
@@ -246,17 +278,12 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
   bindToSubs() {
     for (const sync of this.subs_flat) {
       // inbound
-      for (const [source, target] of this.sub_states_inbound) {
-        sync.state.pipe(source, this.state, target)
+      for (const [source, target, flags] of this.sub_states_inbound) {
+        sync.state.pipe(source, this.state, target, flags)
       }
       // outbound
-      for (const [source, target] of this.sub_states_outbound) {
-        this.state.pipe(
-          source,
-          sync.state,
-          target,
-          PipeFlags.NEGOTIATION_ENTER | PipeFlags.FINAL_EXIT
-        )
+      for (const [source, target, flags] of this.sub_states_outbound) {
+        this.state.pipe(source, sync.state, target, flags)
       }
     }
   }

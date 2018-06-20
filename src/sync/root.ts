@@ -1,4 +1,5 @@
 import { machine } from 'asyncmachine'
+import { QueueRowFields, StateChangeTypes } from 'asyncmachine/types'
 import { Semaphore } from 'await-semaphore'
 import 'colors'
 import * as debug from 'debug'
@@ -6,7 +7,7 @@ import * as delay from 'delay'
 import * as diff from 'diff'
 import * as regexEscape from 'escape-string-regexp'
 import * as http from 'http'
-import { sortedIndex } from 'lodash'
+import { sortedIndex, reverse } from 'lodash'
 import * as Loki from 'lokijs'
 import * as moment from 'moment'
 import { promisifyArray } from 'typed-promisify-tob'
@@ -48,7 +49,7 @@ export const sync_state: IJSONStates = {
     add: ['Reading']
   },
   DBReady: { auto: true },
-  Exception: { drop: ['Reading', 'Writing'] },
+  Exception: { multi: true, drop: ['Reading', 'Writing'] },
   HeartBeat: {},
   Scheduled: {}
 }
@@ -111,12 +112,16 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   logger: Logger
 
   // seconds
+  // TODO to the config
   read_timeout = 2 * 60
   // seconds
+  // TODO to the config
   write_timeout = 2 * 60
   // seconds
-  heartbeat_freq = 60
+  heartbeat_freq = 10
   restarts_count = 0
+
+  network_errors = ['EADDRNOTAVAIL', 'ETIMEDOUT']
 
   constructor(config: IConfig) {
     super(config)
@@ -134,19 +139,27 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   HeartBeat_state() {
     const now = moment().unix()
     const is = state => this.state.is(state)
+    if (is('RestartingNetwork')) {
+      // TODO timeout
+      this.state.drop('HeartBeat')
+      return
+    }
     // TODO this can leak
     const restart = this.state.addByListener('RestartingNetwork')
     if (this.state.not(['Reading', 'Writing', 'Scheduled'])) {
+      this.logStates('Before restart')
       restart('None of the action states is set')
     } else if (
       is('Reading') &&
       this.last_read_start.unix() + this.read_timeout < now
     ) {
+      this.logStates('Before restart')
       restart('Reading timeout')
     } else if (
       is('Writing') &&
       this.last_write_start.unix() + this.write_timeout < now
     ) {
+      this.logStates('Before restart')
       restart('Writing timeout')
     }
     this.state.drop('HeartBeat')
@@ -156,14 +169,27 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   async RestartingNetwork_state(reason: string) {
     this.restarts_count++
     this.semaphore = new Semaphore(this.max_active_requests)
-    this.log(`HeartBeat, restarting because of - '${reason}'`)
-    this.logStates('Before restart')
-    this.state.drop(['Exception', 'Reading', 'Writing'])
-    await this.state.whenNot(['Exception', 'Reading', 'Writing'])
-    this.logStates('After drop')
-    this.state.add('Reading')
-    await this.state.when('Reading')
+    this.log(`RestartingNetwork, reason - '${reason}'`)
+    this.state.drop('Exception')
+  }
+
+  async NetworkRestarted_state() {
+    this.log('Network restart completed')
+    // drop the state manually everywhere
+    const subs = [this, ...this.subs_all]
+    this.log_verbose('Dropping NetworkRestarted everywhere')
+    for (const sub of reverse(subs)) {
+      sub.state.drop('NetworkRestarted')
+      await sub.state.whenNot('NetworkRestarted')
+    }
     this.logStates('After restart')
+
+    // pick the correct delay
+    const delay = this.isExceptionFlood()
+      ? this.config.exception_flood_delay
+      : this.config.exception_delay
+
+    this.state.add('Scheduled', delay)
   }
 
   Exception_enter() {
@@ -174,6 +200,14 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   async Exception_state(err: Error) {
     this.log_error('ERROR: %O', err)
     this.exceptions.push(moment().unix())
+    // Exception is a multi state, handle one at-a-time
+    if (this.state.from().includes('Exception')) return
+    // @ts-ignore
+    if (err.code && this.network_errors.includes(err.code)) {
+      this.logStates('Before restart')
+      this.state.add('RestartingNetwork', 'Network error')
+      return
+    }
 
     // pick the correct delay
     const delay = this.isExceptionFlood()
@@ -193,6 +227,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     }
     // start syncing again
     this.state.drop(['Exception', 'Scheduled'])
+    this.log('Scheduled adds Reading')
     this.state.add('Reading')
   }
 
@@ -242,7 +277,10 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   WritingDone_state() {
     super.WritingDone_state()
     // remove records pending for removal from the DB
-    this.root.data.chain().find({ to_delete: true }).remove()
+    this.root.data
+      .chain()
+      .find({ to_delete: true })
+      .remove()
     // TODO show how many sources were actually synced
     this.log(
       `SYNC DONE:\nRead: ${this.last_read_time.asSeconds()}sec\n` +

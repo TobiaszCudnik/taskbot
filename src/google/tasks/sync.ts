@@ -1,4 +1,4 @@
-import { machine } from 'asyncmachine'
+import { machine, PipeFlags } from 'asyncmachine'
 import { TAbortFunction } from 'asyncmachine/types'
 import * as debug from 'debug'
 import * as google from 'googleapis'
@@ -16,7 +16,8 @@ import {
   IJSONStates,
   TStates,
   IBindBase,
-  IEmitBase
+  IEmitBase,
+  ITransitions
 } from '../../../typings/machines/google/tasks/sync'
 import GC from '../../sync/gc'
 import RootSync, { DBRecord } from '../../sync/root'
@@ -68,12 +69,9 @@ export type TaskTree = {
   completed: boolean
 }
 
-export default class GTasksSync extends SyncWriter<
-  IConfig,
-  TStates,
-  IBind,
-  IEmit
-> {
+export default class GTasksSync
+  extends SyncWriter<IConfig, TStates, IBind, IEmit>
+  implements ITransitions {
   state: AsyncMachine<TStates, IBind, IEmit>
   etags: {
     task_lists: string | null
@@ -83,9 +81,10 @@ export default class GTasksSync extends SyncWriter<
   api: TasksAPI
   // @ts-ignore
   sub_states_outbound = [
-    ['Reading', 'Reading'],
-    ['Enabled', 'Enabled'],
-    ['QuotaExceeded', 'QuotaExceeded']
+    ['Reading', 'Reading', PipeFlags.FINAL],
+    ['Enabled', 'Enabled', PipeFlags.FINAL],
+    ['QuotaExceeded', 'QuotaExceeded', PipeFlags.FINAL],
+    ['RestartingNetwork', 'RestartingNetwork', PipeFlags.FINAL],
   ]
   lists: google.tasks.v1.TaskList[]
   subs: {

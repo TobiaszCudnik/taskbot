@@ -4,15 +4,11 @@
 
 ## Milestone 1:
 
-* colors should be added when a new label has been discovered
-  * this includes added via #hashtags and via gmail
-  * currently colors are set only on the start
-  * requires pub sub
-  * temp solution is pooling for changes every X minutes
-    * pool via a history query
 * make RestartingNetwork work
   * kill all the active connections, release the semaphore
   * dont pipe RestartingNetwork, traverse sub syncs and drop the action states
+  * code: 'EADDRNOTAVAIL'
+  * code: 'ETIMEDOUT'
 * sync multiple users
   * work on the same quota
   * connection manager
@@ -79,6 +75,7 @@
 * use keep alive in google auth
 * gmail
   * pubsub instead of pulling
+    * https://mixmax.com/blog/adventures-in-the-gmail-pubsub-api
   * OR track own gmail changes and DONT re-fetch
 * mark gmail queries as Dirty based on related labels
 * check if all the requests use the 'fields' limits

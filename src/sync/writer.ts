@@ -31,10 +31,7 @@ export const sync_writer_state: IJSONStates = {
   },
   ReadingDone: {
     drop: ['Reading', 'Writing', 'WritingDone']
-  },
-
-  RestartingNetwork: { drop: ['NetworkRestarted'] },
-  NetworkRestarted: { drop: ['RestartingNetwork'] }
+  }
 }
 // TODO consider moving to a separate file?
 export abstract class SyncWriter<GConfig, GStates, GBind, GEmit>
@@ -92,12 +89,6 @@ export abstract class SyncWriter<GConfig, GStates, GBind, GEmit>
     )
   }
 
-  NetworkRestarted_enter() {
-    return this.subs_flat_writers.every(sync =>
-      sync.state.is('NetworkRestarted')
-    )
-  }
-
   // ----- -----
   // Methods
   // ----- -----
@@ -111,18 +102,11 @@ export abstract class SyncWriter<GConfig, GStates, GBind, GEmit>
     for (const sync of this.subs_flat_writers) {
       // inbound
       sync.state.pipe('WritingDone', this.state_writer)
-      sync.state.pipe('NetworkRestarted', this.state_writer)
       // outbound
       this.state_writer.pipe(
         'Writing',
         sync.state,
         'Writing',
-        PipeFlags.NEGOTIATION_ENTER | PipeFlags.FINAL_EXIT
-      )
-      this.state_writer.pipe(
-        'RestartingNetwork',
-        sync.state,
-        'RestartingNetwork',
         PipeFlags.NEGOTIATION_ENTER | PipeFlags.FINAL_EXIT
       )
     }

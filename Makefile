@@ -40,9 +40,9 @@ start-inspect:
 start-am-heartbeat:
 	@echo 'Start with expressive logging for HeartBeat with the --inspect flag'
 	# requests-verbose,
-	DEBUG=root\*,gtasks,\*-am \
+	DEBUG=root\*,gmail,gtasks,\*-am,\*-error,gmail-query-next\* \
 		DEBUG_FILE=1 \
-		DEBUG_AM=1 \
+		DEBUG_AM=3 \
 		node --inspect src/app.js
 		#node --inspect-brk src/app.js
 
@@ -53,13 +53,14 @@ debug:
 	DEBUG=root DEBUG_FILE=1 node --inspect-brk src/app.js
 
 debug-list-next:
-	DEBUG=record-diffs,google,gmail,gtasks,gmail-query-next,gmail-list-next,gtasks-list-next \
+	DEBUG=record-diffs,google,gmail,gtasks,gmail-query-next\*,gmail-list-next\*,gtasks-list-next\*,\*-error \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
-		node --inspect-brk src/app.js
+		node --inspect src/app.js
+		#node --inspect-brk src/app.js
 
 debug-gmail:
-	DEBUG=record-diffs,google,gmail,gmail-verbose,\*-errors,gtasks \
+	DEBUG=record-diffs,google,gmail,gmail-verbose,\*-error,gtasks \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node --inspect src/app.js
