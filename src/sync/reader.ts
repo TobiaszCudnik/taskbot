@@ -16,11 +16,10 @@ import {
   ITransitions
 } from '../../typings/machines/sync/reader'
 import { machineLogToDebug } from '../utils'
-import Logger, { log_fn } from '../logger'
+import Logger, { log_fn } from '../app/logger'
 import RootSync, { DBRecord } from './root'
 
 export { IState }
-
 export const sync_reader_state: IJSONStates = {
   Enabled: {},
 
@@ -43,13 +42,7 @@ export const sync_reader_state: IJSONStates = {
   QuotaExceeded: {},
 
   RestartingNetwork: {
-    drop: [
-      'NetworkRestarted',
-      'Reading',
-      'ReadingDone',
-      'Writing',
-      'WritingDone'
-    ]
+    drop: ['NetworkRestarted', 'Reading', 'ReadingDone']
   },
   NetworkRestarted: {
     drop: ['RestartingNetwork']

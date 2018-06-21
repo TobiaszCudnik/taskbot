@@ -9,8 +9,7 @@ import {
 } from '../../typings/machines/sync/writer'
 import { SyncReader, sync_reader_state } from './reader'
 import * as moment from 'moment'
-
-export type TSyncStateWriter = AsyncMachine<TStates, IBind, IEmit>
+import * as merge from 'deepmerge'
 
 export { IState }
 export const sync_writer_state: IJSONStates = {
@@ -31,8 +30,14 @@ export const sync_writer_state: IJSONStates = {
   },
   ReadingDone: {
     drop: ['Reading', 'Writing', 'WritingDone']
-  }
+  },
+
+  RestartingNetwork: merge(sync_reader_state.RestartingNetwork, {
+    drop: ['Writing', 'WritingDone']
+  })
 }
+export type TSyncStateWriter = AsyncMachine<TStates, IBind, IEmit>
+
 // TODO consider moving to a separate file?
 export abstract class SyncWriter<GConfig, GStates, GBind, GEmit>
   extends SyncReader<GConfig, GStates, GBind, GEmit>
