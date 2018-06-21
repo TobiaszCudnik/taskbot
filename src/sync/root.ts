@@ -219,7 +219,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
 
   async Scheduled_state(wait: number) {
     const abort = this.state.getAbort('Scheduled')
-    this.log(`Waiting for ${wait}sec...`)
+    this.log_verbose(`Waiting for ${wait}sec...`)
     await delay(wait * SEC)
     if (abort()) {
       this.log('Scheduled aborted')
@@ -227,7 +227,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     }
     // start syncing again
     this.state.drop(['Exception', 'Scheduled'])
-    this.log('Scheduled adds Reading')
+    this.log_verbose('Scheduled adds Reading')
     this.state.add('Reading')
   }
 
@@ -267,7 +267,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   ReadingDone_state() {
     super.ReadingDone_state()
     this.merge()
-    this.log(`DB read in ${this.last_read_time.asSeconds()}sec`)
+    this.log_verbose(`DB read in ${this.last_read_time.asSeconds()}sec`)
     if (debug.enabled('db-diffs')) {
       this.printDBDiffs()
     }
@@ -492,7 +492,9 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     if (c == MAX) {
       this.log_error(`MERGE LIMIT EXCEEDED`)
     }
-    this.log(`MERGED after ${c} round(s)`)
+    if (c) {
+      this.log(`MERGED after ${c} round(s)`)
+    }
     return []
   }
 

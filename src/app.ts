@@ -69,8 +69,8 @@ async function exit() {
     .sortBy()
     .value()
     .join('\n  ')
-  console.log('Loggers:\n  ', loggers)
-  console.log(`Restarts count: ${root.restarts_count}`)
+  console.log('\nLoggers:\n ', loggers)
+  console.log(`\nRestarts count: ${root.restarts_count}`)
   exit_printed = true
   process.exit()
 }
