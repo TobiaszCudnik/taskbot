@@ -67,7 +67,11 @@ export default class GmailQuery {
       sync_state
     ).id('Gmail/query: ' + this.name))
     this.state.setTarget(this)
-    this.log = this.gmail.root.logger.createLogger(this.state.id(true))
+
+    const logger_name = this.state.id(true) + ':' + gmail.root.user.id
+    this.log = this.gmail.root.logger.createLogger(logger_name)
+
+    // TODO avoid globals
     if (process.env['DEBUG_AM'] || global.am_network) {
       machineLogToDebug(this.state)
       if (global.am_network) {

@@ -37,7 +37,7 @@ export default class Logger {
   }
 
   createLogger(name, level: level = 'info'): log_fn {
-    const suffix = level == 'info' ? '' : '-' + level
+    const suffix = '-' + level
     const terminal = debug(name + suffix)
     return (...msgs) => {
       msgs[0] = (msgs[0] && msgs[0].toString()) || ''

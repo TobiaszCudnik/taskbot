@@ -13,24 +13,24 @@ build-watch:
 	node_modules/.bin/tsc --watch
 
 start:
-	DEBUG=root,\*-error DEBUG_FILE=1 node src/app/app.js
+	DEBUG=root:\*-info,\*-error DEBUG_FILE=1 node src/app/app.js
 
 start-am:
-	DEBUG=\*-error,requests-verbose,root,gmail,gtasks,record-diffs,\*-am,gmail-verbose,gtasks-verbose \
+	DEBUG=\*-error,connections-verbose,root:\*-info,gmail-root,gtasks-root,record-diffs,\*-am,gmail-verbose,gtasks-verbose \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node --inspect \
 		src/app/app.js
 
 start-verbose:
-	DEBUG=\*-error,\*-verbose,root,gmail,gtasks,record-diffs \
+	DEBUG=\*-error,\*-verbose,root:\*-info,gmail-root,gtasks-root,record-diffs \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node --inspect \
 		src/app/app.js
 
 start-ami:
-	DEBUG=root,gmail,gtasks DEBUG_FILE=1 DEBUG_AMI=1 DEBUG_AM=1 \
+	DEBUG=root:\*-info,gmail-root,gtasks DEBUG_FILE=1 DEBUG_AMI=1 DEBUG_AM=1 \
 		node --inspect src/app/app.js
 		#node --inspect-brk src/app/app.js
 
@@ -39,8 +39,8 @@ start-inspect:
 
 start-am-heartbeat:
 	@echo 'Start with expressive logging for HeartBeat with the --inspect flag'
-	# requests-verbose,
-	DEBUG=root\*,gmail,gtasks,\*-am,\*-error,gmail-query-next\* \
+	# connections-verbose,
+	DEBUG=root\*,gmail-root,gtasks-root,\*-am,\*-error,gmail-query-next\* \
 		DEBUG_FILE=1 \
 		DEBUG_AM=3 \
 		node --inspect src/app/app.js
@@ -53,14 +53,14 @@ debug:
 	DEBUG=root DEBUG_FILE=1 node --inspect-brk src/app/app.js
 
 debug-list-next:
-	DEBUG=record-diffs,google,gmail,gtasks,gmail-query-next\*,gmail-list-next\*,gtasks-list-next\*,\*-error \
+	DEBUG=record-diffs,google,gmail-root,gtasks-root,gmail-query-next\*,gmail-list-next\*,gtasks-list-next\*,\*-error \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node --inspect src/app/app.js
 		#node --inspect-brk src/app/app.js
 
 debug-gmail:
-	DEBUG=record-diffs,google,gmail,gmail-verbose,\*-error,gtasks \
+	DEBUG=record-diffs,google,gmail-root,gmail-verbose,\*-error,gtasks \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node --inspect src/app/app.js

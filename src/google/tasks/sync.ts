@@ -196,7 +196,7 @@ export default class GTasksSync extends SyncWriter<
   // ----- -----
 
   getState() {
-    return machine(sync_state).id('GTasks')
+    return machine(sync_state).id('GTasks-root')
   }
 
   /**
@@ -231,7 +231,7 @@ export default class GTasksSync extends SyncWriter<
     // @ts-ignore
     params.auth = this.auth.client
     return await this.root.connections.req(
-      this.root.user.username,
+      this.root.user,
       'gtasks.' + method_name,
       method,
       params,

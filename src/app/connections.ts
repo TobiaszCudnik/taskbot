@@ -2,7 +2,7 @@ import { Semaphore } from 'await-semaphore'
 import * as http from 'http'
 import { promisifyArray } from 'typed-promisify-tob/index'
 import * as google from 'googleapis'
-import { IConfig } from '../types'
+import { IConfig, TConfigGoogleUserAuth } from '../types'
 import { log_fn, default as Logger } from './logger'
 
 /**
@@ -82,7 +82,7 @@ export default class Connections {
 
   // TODO take abort() as the second param
   async req<A, T, T2>(
-    username: string,
+    user: TConfigGoogleUserAuth,
     method_name: string,
     method: (arg: A, cb: (err: any, res: T, res2: T2) => void) => void,
     params: A,
@@ -91,7 +91,7 @@ export default class Connections {
     options?: object
   ): Promise<[T, T2] | null>
   async req<A, T>(
-    username: string,
+    user: TConfigGoogleUserAuth,
     method_name: string,
     method: (arg: A, cb: (err: any, res: T) => void) => void,
     params: A,
@@ -100,7 +100,7 @@ export default class Connections {
     options?: object
   ): Promise<T | null>
   async req<A, T>(
-    username: string,
+    user: TConfigGoogleUserAuth,
     method_name: string,
     method: (arg: A, cb: (err: any, res: T) => void) => void,
     params: A,
@@ -108,20 +108,23 @@ export default class Connections {
     return_array: boolean,
     options?: object
   ): Promise<any> {
+    const prefix = `[${user.username}] `
     this.pending_requests_global++
-    this.pending_requests_user[username]++
-    const release_user = await this.semaphore_user[username].acquire()
+    this.pending_requests_user[user.username]++
+    const release_user = await this.semaphore_user[user.username].acquire()
     const release_global = await this.semaphore_global.acquire()
     this.pending_requests_global--
-    this.pending_requests_user[username]--
+    this.pending_requests_user[user.username]--
     if (abort && abort()) {
-      this.log_error(`Request '${method_name}' aborted by the abort() function`)
+      this.log_error(
+        `${prefix} Request '${method_name}' aborted by the abort() function`
+      )
       release_global()
       release_user()
       return return_array ? [null, null] : null
     }
     this.active_requests_global++
-    this.active_requests_user[username]++
+    this.active_requests_user[user.username]++
 
     let params_log = null
     if (!params) {
@@ -133,7 +136,9 @@ export default class Connections {
       params_log.method_name = method_name
     }
     this.log_verbose(
-      `REQUEST '${method_name}' (${this.active_requests_global} active):\n%O`,
+      `${prefix} REQUEST '${method_name}' (${
+        this.active_requests_global
+      } active):\n%O`,
       params_log
     )
     // TODO googleapis specific code should be in google/sync.ts
@@ -152,18 +157,17 @@ export default class Connections {
     } catch (e) {
       // attach the request body
       e.params = params_log
-      // TODO include the method name
       throw e
     } finally {
       release_global()
       release_user()
       this.active_requests_global--
-      this.active_requests_user[username]--
+      this.active_requests_user[user.username]--
       this.executed_requests_global++
-      this.executed_requests_user[username]++
+      this.executed_requests_user[user.username]++
     }
     this.log_verbose(
-      `request finished (${this.pending_requests_global} pending)`
+      `${prefix} request finished (${this.pending_requests_global} pending)`
     )
 
     return return_array ? ret : ret[0]

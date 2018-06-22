@@ -15,6 +15,7 @@ import {
   IEmitBase,
   ITransitions
 } from '../../typings/machines/sync/reader'
+import { TConfigGoogleUserAuth } from '../types'
 import { machineLogToDebug } from '../utils'
 import Logger, { log_fn } from '../app/logger'
 import RootSync, { DBRecord } from './root'
@@ -58,7 +59,6 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
   get state_reader(): TSyncState {
     return this.state
   }
-  active_requests: number
   // config: IConfig | null
   config: GConfig
   sub_states_inbound: [GStates | TStates, GStates | TStates, PipeFlags][] = [
@@ -122,12 +122,14 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
     return ret
   }
 
-  constructor(config, root?: RootSync | Logger) {
+  // TODO fix the params
+  constructor(config, root?: RootSync | Logger, user?: TConfigGoogleUserAuth) {
     this.config = config
     // required for this.initLoggers()
     if (root instanceof Logger) {
       this.root = <RootSync>(<any>this)
       this.root.logger = root
+      this.root.user = user
     } else {
       this.root = root
     }
@@ -339,7 +341,7 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
 
   // TODO extract to a mixin
   initLoggers() {
-    let name = this.state.id(true)
+    let name = this.state.id(true) + ':' + this.root.user.id
 
     this.log = this.root.logger.createLogger(name)
     this.log_verbose = this.root.logger.createLogger(name, 'verbose')

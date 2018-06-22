@@ -130,8 +130,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     logger: Logger,
     public connections: Connections
   ) {
-    super(config, logger)
-    this.user = user
+    super(config, logger, user)
     this.log(`Starting the sync service for user ${user.id}: ${user.username}`)
     connections.addUser(user.username)
     // HeartBeat scheduler
