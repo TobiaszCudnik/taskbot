@@ -142,7 +142,7 @@ declare module 'googleapis' {
             }
             labels: {
               create: (
-                parameters: { userId: string; fields?: string },
+                parameters: { userId: string; fields?: string, resource: Label },
                 callback: (
                   error: any,
                   body: Label,
@@ -174,7 +174,8 @@ declare module 'googleapis' {
                 ) => void
               ) => Request
               patch: (
-                parameters: { id: string; userId: string; fields?: string },
+                parameters: { id: string; userId: string; fields?: string,
+                resource: Label},
                 callback: (
                   error: any,
                   body: Label,
@@ -324,7 +325,7 @@ declare module 'googleapis' {
                 parameters: {
                   format?: string
                   id: string
-                  metadataHeaders?: string
+                  metadataHeaders?: string | string[]
                   userId: string
                   fields?: string
                 },
@@ -665,6 +666,7 @@ declare module 'googleapis' {
                 updatedMin?: string
                 fields?: string
                 etag?: string
+                headers?: {[header: string]: string}
               },
               callback: (
                 error: any,
