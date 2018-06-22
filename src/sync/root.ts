@@ -21,8 +21,9 @@ import {
   IEmitBase,
   ITransitions
 } from '../../typings/machines/sync/root'
+import Connections from '../app/connections'
 import GoogleSync from '../google/sync'
-import { IConfig, ILabelDefinition, IListConfig } from '../types'
+import { TConfig, ILabelDefinition, IListConfig } from '../types'
 import GC from './gc'
 import LabelFilterSync from './label-filter'
 import Logger from '../app/logger'
@@ -82,20 +83,14 @@ export interface DBRecordLabel {
   active: boolean
 }
 
-export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
-  implements ITransitions {
+export default class RootSync extends SyncWriter<TConfig, TStates, IBind, IEmit>
+// TODO type the machine types
+// implements ITransitions
+{
   state: AsyncMachine<TStates, IBind, IEmit>
   subs: { google: GoogleSync; label_filters: LabelFilterSync[] }
-
-  max_active_requests = 5
-  semaphore = new Semaphore(this.max_active_requests)
-  active_requests = 0
-  executed_requests: number
-
   db: Loki
   data: DB
-  // @ts-ignore
-  log_requests = this.logger.createLogger('requests', 'verbose')
 
   exceptions: number[] = []
   exceptions_gc = new GC('gtasks', this.exceptions)
@@ -121,10 +116,20 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   restarts_count = 0
 
   network_errors = ['EADDRNOTAVAIL', 'ETIMEDOUT']
+  username: string
 
-  constructor(config: IConfig) {
-    super(config)
-    this.log('Starting the sync service...')
+  constructor(
+    config: TConfig,
+    username: string,
+    // assigned in /sync/reader.ts
+    logger: Logger,
+    public connections: Connections
+  ) {
+    super(config, logger)
+    this.username = username
+    connections.addUser(username)
+    debugger
+    this.log(`Starting the sync service for user '${this.username}'`)
     // HeartBeat scheduler
     setInterval(() => {
       this.state.add('HeartBeat')
@@ -167,7 +172,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   // TODO kill all the active requests
   async RestartingNetwork_state(reason: string) {
     this.restarts_count++
-    this.semaphore = new Semaphore(this.max_active_requests)
+    this.connections.restartNetwork()
     this.log(`RestartingNetwork, reason - '${reason}'`)
     this.state.drop('Exception')
   }
@@ -315,79 +320,6 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     const index = sortedIndex(this.exceptions, min_range)
     return this.exceptions.length - index > 100
   }
-
-  // TODO take abort() as the second param
-  async req<A, T, T2>(
-    method: (arg: A, cb: (err: any, res: T, res2: T2) => void) => void,
-    params: A,
-    abort: (() => boolean) | null | undefined,
-    returnArray: true,
-    options?: object
-  ): Promise<[T, T2] | null>
-  async req<A, T>(
-    method: (arg: A, cb: (err: any, res: T) => void) => void,
-    params: A,
-    abort: (() => boolean) | null | undefined,
-    returnArray: false,
-    options?: object
-  ): Promise<T | null>
-  async req<A, T>(
-    method: (arg: A, cb: (err: any, res: T) => void) => void,
-    params: A,
-    abort: (() => boolean) | null | undefined,
-    return_array: boolean,
-    options?: object
-  ): Promise<any> {
-    this.pending_requests++
-    let release = await this.semaphore.acquire()
-    this.pending_requests--
-    if (abort && abort()) {
-      this.log_verbose('Request aborted by the abort() function')
-      release()
-      return return_array ? [null, null] : null
-    }
-    this.active_requests++
-
-    if (!params) {
-      params = {} as A
-    }
-    this.log_requests(`REQUEST (${this.active_requests} active):\n%O`, {
-      // @ts-ignore
-      ...params,
-      auth: 'REMOVED'
-    })
-    // TODO googleapis specific code should be in google/sync.ts
-    let ret
-    try {
-      // @ts-ignore
-      ret = await promisifyArray(method)(params, options)
-      const res: http.IncomingMessage = ret[1]
-      const was2xx = res && res.statusCode.toString().match(/^2/)
-      const wasNoContent = res && res.statusMessage == 'No Content'
-      if (was2xx && ret[0] === undefined && !wasNoContent) {
-        throw Error('Empty response on 2xx')
-      } else if (ret[1] === undefined && ret[0] === undefined) {
-        throw Error('Response and body empty')
-      }
-    } catch (e) {
-      // attach the request body
-      e.params = {
-        // @ts-ignore
-        ...params,
-        auth: 'REMOVED'
-      }
-      // TODO include the method name
-      throw e
-    } finally {
-      release()
-      this.active_requests--
-      this.executed_requests++
-    }
-    this.log_verbose(`request finished (${this.pending_requests} pending)`)
-
-    return return_array ? ret : ret[0]
-  }
-  pending_requests = 0
 
   // Extracts labels from text
   getLabelsFromText(

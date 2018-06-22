@@ -57,18 +57,9 @@ export interface ILabelDefinition3 {
   shortcut?: string
 }
 
-export type IConfig = {
+export type TConfig = {
   repl_port: number
-  google: {
-    scopes: string[]
-    username?: string
-    // settings.credentials.ts
-    client_id?: string
-    client_secret?: string
-    redirect_url?: string
-    access_token?: string
-    refresh_token?: string
-  }
+  google: TConfigGoogle
   gmail: {
     // TODO
     max_results: number
@@ -89,6 +80,23 @@ export type IConfig = {
   label_filters: ILabelFilter[]
   sync_frequency: number
   lists: IListConfig[]
+}
+
+export type TConfigGoogle = {
+  scopes: string[]
+  // settings.credentials.ts
+  client_id?: string
+  client_secret?: string
+  redirect_url?: string
+  users?: {
+    [username: string]: TConfigGoogleUserAuth
+  }
+  // /settings.credentials.ts
+}
+
+export type TConfigGoogleUserAuth = {
+  access_token: string
+  refresh_token: string
 }
 
 export type TRawEmail = string

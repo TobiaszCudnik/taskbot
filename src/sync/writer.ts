@@ -39,9 +39,15 @@ export const sync_writer_state: IJSONStates = {
 export type TSyncStateWriter = AsyncMachine<TStates, IBind, IEmit>
 
 // TODO consider moving to a separate file?
-export abstract class SyncWriter<GConfig, GStates, GBind, GEmit>
-  extends SyncReader<GConfig, GStates, GBind, GEmit>
-  implements ITransitions {
+export abstract class SyncWriter<
+  GConfig,
+  GStates,
+  GBind,
+  GEmit
+> extends SyncReader<GConfig, GStates, GBind, GEmit>
+// TODO type machine types
+// implements ITransitions
+{
   get state_writer(): TSyncStateWriter {
     return this.state
   }

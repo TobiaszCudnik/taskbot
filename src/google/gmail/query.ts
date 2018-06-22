@@ -10,7 +10,7 @@ import {
   IJSONStates,
   TStates
 } from '../../../typings/machines/google/gmail/query'
-import { log_fn } from '../../logger'
+import { log_fn } from '../../app/logger'
 import { machineLogToDebug } from '../../utils'
 import GmailSync from './sync'
 
@@ -127,7 +127,8 @@ export default class GmailQuery {
         params.pageToken = prevRes.nextPageToken
       }
 
-      let list = await this.gmail.api.req(
+      let list = await this.gmail.req(
+        'users.threads.list',
         this.gmail.api.users.threads.list,
         params,
         abort,

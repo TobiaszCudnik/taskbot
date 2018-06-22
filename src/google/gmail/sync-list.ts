@@ -28,9 +28,15 @@ export const sync_state: IJSONStates = {
 
 type GmailAPI = google.gmail.v1.Gmail
 type DBCollection = LokiCollection<DBRecord>
-export default class GmailListSync
-  extends SyncReader<IListConfig, TStates, IBind, IEmit>
-  implements ITransitions {
+export default class GmailListSync extends SyncReader<
+  IListConfig,
+  TStates,
+  IBind,
+  IEmit
+>
+// TODO type machine types
+// implements ITransitions
+{
   state: AsyncMachine<TStates, IBind, IEmit>
   query: GmailQuery
   verbose = debug(this.state.id(true) + '-verbose')
@@ -147,7 +153,7 @@ export default class GmailListSync
   }
 
   createRecord(thread: google.gmail.v1.Thread): DBRecord {
-    const me = this.root.config.google.username
+    const me = this.root.username
     const from = this.gmail.getThreadAuthor(thread)
     const to = this.gmail.getThreadAddressee(thread)
     const self_sent = from == me && to == me

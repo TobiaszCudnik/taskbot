@@ -6,9 +6,9 @@
 /.DS_Store
 /src/**.js
 /test/**.js
-/settings.js
-/settings.d.ts
-/settings.js.map
+/config.js
+/config.d.ts
+/config.js.map
 /src/**/*.js
 /src/**/*.d.ts
 /src/**/*.js.map
@@ -17,7 +17,7 @@
 /test/**/*.js.map
 /build/
 .DS_Store
-/settings.credentials.*
+/config-credentials.*
 /error.log
 /combined.log
 /snapshot-exception.json

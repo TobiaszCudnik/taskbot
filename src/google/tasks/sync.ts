@@ -22,17 +22,12 @@ import {
 import GC from '../../sync/gc'
 import RootSync, { DBRecord } from '../../sync/root'
 import { sync_writer_state, SyncWriter } from '../../sync/writer'
-import { IConfig } from '../../types'
+import { TConfig } from '../../types'
 import Auth from '../auth'
 import GTasksListSync, { Task, TaskList } from './sync-list'
 import * as regexEscape from 'escape-string-regexp'
 
 const SEC = 1000
-
-// TODO tmp
-export interface TasksAPI extends google.tasks.v1.Tasks {
-  req(method, params, abort, ret_array): Promise<any>
-}
 
 export const sync_state: IJSONStates = {
   ...sync_writer_state,
@@ -69,22 +64,28 @@ export type TaskTree = {
   completed: boolean
 }
 
-export default class GTasksSync
-  extends SyncWriter<IConfig, TStates, IBind, IEmit>
-  implements ITransitions {
+export default class GTasksSync extends SyncWriter<
+  TConfig,
+  TStates,
+  IBind,
+  IEmit
+>
+// TODO type machine types
+// implements ITransitions
+{
   state: AsyncMachine<TStates, IBind, IEmit>
   etags: {
     task_lists: string | null
   } = {
     task_lists: null
   }
-  api: TasksAPI
+  api: google.tasks.v1.Tasks
   // @ts-ignore
   sub_states_outbound = [
     ['Reading', 'Reading', PipeFlags.FINAL],
     ['Enabled', 'Enabled', PipeFlags.FINAL],
     ['QuotaExceeded', 'QuotaExceeded', PipeFlags.FINAL],
-    ['RestartingNetwork', 'RestartingNetwork', PipeFlags.FINAL],
+    ['RestartingNetwork', 'RestartingNetwork', PipeFlags.FINAL]
   ]
   lists: google.tasks.v1.TaskList[]
   subs: {
@@ -118,23 +119,16 @@ export default class GTasksSync
 
   constructor(root: RootSync, public auth: Auth) {
     super(root.config, root)
-    this.initAPIClient()
+    this.api = this.root.connections.apis.gtasks
   }
 
   // ----- -----
   // Transitions
   // ----- -----
 
-  RestartingNetwork_state() {
-    this.initAPIClient()
-    this.state.add('NetworkRestarted')
-  }
-
   async Writing_state() {
     super.Writing_state()
-    // TODO check if temporary IDs work
     if (process.env['DRY']) {
-      // TODO list expected changes
       this.state.add('WritingDone')
       return
     }
@@ -161,7 +155,14 @@ export default class GTasksSync
     let [list, res]: [
       google.tasks.v1.TaskLists,
       http.IncomingMessage
-    ] = await this.api.req(this.api.tasklists.list, params, abort, true)
+    ] = await this.req(
+      'tasklists.list',
+      this.api.tasklists.list,
+      // @ts-ignore
+      params,
+      abort,
+      true
+    )
     if (abort()) return
     if (res.statusCode !== 304) {
       this.log('[FETCHED] tasks lists')
@@ -198,26 +199,57 @@ export default class GTasksSync
     return machine(sync_state).id('GTasks')
   }
 
-  initAPIClient() {
-    if (this.api) {
-      // TODO dispose
-    }
-    this.api = <TasksAPI>google.tasks('v1')
-    this.api = Object.create(this.api)
-    this.api.req = async (method, params, abort, ret_array, options = {}) => {
-      this.requests.push(moment().unix())
-      params.auth = this.auth.client
-      return await this.root.req(method, params, abort, ret_array, {
+  /**
+   * Request decorator
+   * TODO extract as a GoogleRequestMixin
+   */
+  async req<A, T, T2>(
+    method_name: string,
+    method: (arg: A, cb: (err: any, res: T, res2: T2) => void) => void,
+    params: A,
+    abort: (() => boolean) | null | undefined,
+    returnArray: true,
+    options?: object
+  ): Promise<[T, T2] | null>
+  async req<A, T>(
+    method_name: string,
+    method: (arg: A, cb: (err: any, res: T) => void) => void,
+    params: A,
+    abort: (() => boolean) | null | undefined,
+    returnArray: false,
+    options?: object
+  ): Promise<T | null>
+  async req<A, T>(
+    method_name: string,
+    method: (arg: A, cb: (err: any, res: T) => void) => void,
+    params: A,
+    abort: (() => boolean) | null | undefined,
+    return_array: boolean,
+    options?: object
+  ): Promise<any> {
+    this.requests.push(moment().unix())
+    // @ts-ignore
+    params.auth = this.auth.client
+    return await this.root.connections.req(
+      this.root.username,
+      'gtasks.' + method_name,
+      method,
+      params,
+      abort,
+      // @ts-ignore
+      return_array,
+      {
         forever: true,
         ...options
-      })
-    }
+      }
+    )
   }
 
   async createTaskLists(names, abort: TAbortFunction) {
     await map(names, async name => {
       this.log(`Creating a new list tasklist '${name}'`)
-      await this.api.req(
+      await this.req(
+        'tasklists.insert',
         this.api.tasklists.insert,
         { resource: { title: name } },
         abort,
@@ -378,7 +410,8 @@ export default class GTasksSync
         // @ts-ignore
         params.previous = previous_sibling_id
       }
-      const res = await this.api.req(
+      const res = await this.req(
+        'tasks.insert',
         this.api.tasks.insert,
         params,
         abort,
@@ -412,7 +445,7 @@ export default class GTasksSync
       fields: ''
     }
     this.log(`Updating task '${task.title}' in '${list.title}'\n%O`, patch)
-    await this.api.req(this.api.tasks.patch, params, abort, true)
+    await this.req('tasks.patch', this.api.tasks.patch, params, abort, true)
   }
 
   async deleteTask(task: Task, list: TaskList, abort: () => boolean) {
@@ -421,7 +454,13 @@ export default class GTasksSync
       tasklist: list.id,
       task: task.id
     }
-    return await this.api.req(this.api.tasks.delete, params, abort, true)
+    return await this.req(
+      'tasks.delete',
+      this.api.tasks.delete,
+      params,
+      abort,
+      true
+    )
   }
 
   getListByID(id: string): GTasksListSync {
@@ -461,7 +500,8 @@ export default class GTasksSync
           }
         }
         this.log(`Adding a new task '${record.title}' to '${sync.list.title}'`)
-        const res = await this.api.req(
+        const res = await this.req(
+          'tasks.insert',
           this.api.tasks.insert,
           params,
           abort,

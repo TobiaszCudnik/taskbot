@@ -89,7 +89,8 @@ export default class GTasksListSync extends SyncReader<
     super.Reading_state()
     const quota = this.gtasks.short_quota_usage
     const abort = this.state.getAbort('Reading')
-    const [list, res] = await this.gtasks.api.req(
+    const [list, res] = await this.gtasks.req(
+      'api.tasks.list',
       this.gtasks.api.tasks.list,
       {
         tasklist: this.list.id,
@@ -122,6 +123,7 @@ export default class GTasksListSync extends SyncReader<
       }
       // preserve the request counter per etag
       if (this.etags.tasks != res.headers['etag']) {
+        // @ts-ignore
         this.etags.tasks = res.headers['etag']
         this.etags.tasks_reqs = 0
       }

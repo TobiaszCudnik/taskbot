@@ -21,7 +21,7 @@ import {
 import GC from '../../sync/gc'
 import RootSync, { DBRecord } from '../../sync/root'
 import { sync_writer_state, SyncWriter } from '../../sync/writer'
-import { IConfig, ILabelDefinition, TRawEmail } from '../../types'
+import { TConfig, ILabelDefinition, TRawEmail } from '../../types'
 import Auth from '../auth'
 ///<reference path="../../../node_modules/typed-promisify-tob/index.ts"/>
 import { Thread } from './query'
@@ -91,17 +91,18 @@ export const sync_state: IJSONStates = {
   })
 }
 
-// TODO tmp
-export interface GmailAPI extends google.gmail.v1.Gmail {
-  req(method, params, abort, ret_array): Promise<any>
-}
-
 export type Label = google.gmail.v1.Label
-export default class GmailSync
-  extends SyncWriter<IConfig, TStates, IBind, IEmit>
-  implements ITransitions {
+export default class GmailSync extends SyncWriter<
+  TConfig,
+  TStates,
+  IBind,
+  IEmit
+>
+// TODO type machine types
+// implements ITransitions
+{
   state: AsyncMachine<TStates, IBind, IEmit>
-  api: GmailAPI
+  api: google.gmail.v1.Gmail
   history_id_timeout = 1
   history_id_latest: number | null
   last_sync_time: number
@@ -119,17 +120,12 @@ export default class GmailSync
 
   constructor(root: RootSync, public auth: Auth) {
     super(root.config, root)
-    this.initAPIClient()
+    this.api = this.root.connections.apis.gmail
   }
 
   // ----- -----
   // Transitions
   // ----- -----
-
-  RestartingNetwork_state() {
-    this.initAPIClient()
-    this.state.add('NetworkRestarted')
-  }
 
   SubsInited_state() {
     this.subs = {
@@ -233,7 +229,8 @@ export default class GmailSync
 
   async FetchingLabels_state() {
     let abort = this.state.getAbort('FetchingLabels')
-    let res = await this.api.req(
+    let res = await this.req(
+      'users.labels.list',
       this.api.users.labels.list,
       { userId: 'me', fields: 'labels(id,name,color)' },
       abort,
@@ -256,7 +253,8 @@ export default class GmailSync
 
   async FetchingHistoryId_state(abort?: () => boolean) {
     this.log('[FETCH] history ID')
-    let response = await this.api.req(
+    let response = await this.req(
+      'users.getProfile',
       this.api.users.getProfile,
       {
         userId: 'me',
@@ -280,16 +278,49 @@ export default class GmailSync
     return machine(sync_state).id('Gmail')
   }
 
-  initAPIClient() {
-    if (this.api) {
-      // TODO dispose
-    }
-    this.api = <GmailAPI>google.gmail('v1')
-    this.api = Object.create(this.api)
-    this.api.req = async (a, params, c, d) => {
-      params.auth = this.auth.client
-      return await this.root.req(a, params, c, d, { forever: true })
-    }
+  /**
+   * Request decorator
+   * TODO extract as a GoogleRequestMixin
+   */
+  async req<A, T, T2>(
+    method_name: string,
+    method: (arg: A, cb: (err: any, res: T, res2: T2) => void) => void,
+    params: A,
+    abort: (() => boolean) | null | undefined,
+    returnArray: true,
+    options?: object
+  ): Promise<[T, T2] | null>
+  async req<A, T>(
+    method_name: string,
+    method: (arg: A, cb: (err: any, res: T) => void) => void,
+    params: A,
+    abort: (() => boolean) | null | undefined,
+    returnArray: false,
+    options?: object
+  ): Promise<T | null>
+  async req<A, T>(
+    method_name: string,
+    method: (arg: A, cb: (err: any, res: T) => void) => void,
+    params: A,
+    abort: (() => boolean) | null | undefined,
+    return_array: boolean,
+    options?: object
+  ): Promise<any> {
+    // @ts-ignore
+    params.auth = this.auth.client
+    return await this.root.connections.req(
+      this.root.username,
+      'gmail.' + method_name,
+      method,
+      params,
+      abort,
+      // @ts-ignore
+      return_array,
+      {
+        forever: true,
+        ...options
+      }
+    )
   }
 
   async assertPredefinedLabelsExist(abort?) {
@@ -312,9 +343,14 @@ export default class GmailSync
       ) {
         this.log(`Setting colors for label '${label.name}'`)
         const resource = this.labelDefToGmailDef(def)
-        let res = await this.api.req(
+        let res = await this.req(
+          'users.labels.patch',
           this.api.users.labels.patch,
-          { userId: 'me', id: label.id, resource },
+          {
+            userId: 'me',
+            id: label.id,
+            resource
+          },
           abort,
           false
         )
@@ -329,7 +365,8 @@ export default class GmailSync
     }
     await Promise.all(
       this.labels_to_fetch.map(async id => {
-        const res = await await this.api.req(
+        const res = await await this.req(
+          'users.labels.get',
           this.api.users.labels.get,
           { userId: 'me', id, fields: 'id,name,color' },
           abort,
@@ -497,7 +534,8 @@ export default class GmailSync
 
     this.log(log_msg)
 
-    let ret = await this.api.req(
+    let ret = await this.req(
+      'users.threads.modify',
       this.api.users.threads.modify,
       {
         id: thread_id,
@@ -531,7 +569,8 @@ export default class GmailSync
     abort?: () => boolean
   ): Promise<google.gmail.v1.Thread | null> {
     // TODO limit the max msgs amount
-    let thread = await this.api.req(
+    let thread = await this.req(
+      'users.threads.get',
       this.api.users.threads.get,
       {
         id,
@@ -546,6 +585,8 @@ export default class GmailSync
     if (!thread) {
       throw Error('Missing thread')
     }
+    // memorize the time the resource was fetched
+    // @ts-ignore
     thread.fetched = moment().unix()
     this.threads.set(thread.id, thread)
 
@@ -574,7 +615,8 @@ export default class GmailSync
   ): Promise<string | null> {
     await this.createLabelsIfMissing(labels, abort)
     this.log(`Creating thread '${subject}' (${labels.join(', ')})`)
-    const ret = await this.api.req(
+    const ret = await this.req(
+      'users.messages.insert',
       this.api.users.messages.insert,
       {
         userId: 'me',
@@ -594,8 +636,8 @@ export default class GmailSync
 
   createEmail(subject: string): TRawEmail {
     let email = [
-      `From: ${this.config.google.username} <${this.config.google.username}>s`,
-      `To: ${this.config.google.username}`,
+      `From: ${this.root.username} <${this.root.username}>s`,
+      `To: ${this.root.username}`,
       'Content-type: text/html;charset=utf-8',
       'MIME-Version: 1.0',
       `Subject: ${subject}`
@@ -639,7 +681,8 @@ export default class GmailSync
       const def = this.root.getLabelDefinition(name)
       const gmail_def = def ? this.labelDefToGmailDef(def) : null
       this.log(`Creating a new label '${name}'`)
-      const res = await this.api.req(
+      const res = await this.req(
+        'users.labels.create',
         this.api.users.labels.create,
         {
           userId: 'me',

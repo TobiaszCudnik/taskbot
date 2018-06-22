@@ -1,14 +1,11 @@
 ## Bugs
 
-* out-of-memory after 2 days on default sync freqs
+* emails in inbox (unread ones)
+  * when changed a status AND archived simultaneously
+  * go back to the inbox
 
 ## Milestone 1:
 
-* make RestartingNetwork work
-  * kill all the active connections, release the semaphore
-  * dont pipe RestartingNetwork, traverse sub syncs and drop the action states
-  * code: 'EADDRNOTAVAIL'
-  * code: 'ETIMEDOUT'
 * sync multiple users
   * work on the same quota
   * connection manager
@@ -20,16 +17,17 @@
   * replace `userId: 'me'` in all gmail queries
 * push logs to a log service
   * OR rotate file logs
+* deploy on App Engine standard
+  * `make deploy`
 * results limit
   * gtasks paging support
   * max limit of results per query/gtask list
-* handle deleted labels   
-* include payload in request-related errors
+* handle deleted labels
 * include the endpoint in the requests log
+* file log is missing entries
 
 ## TODO
 
-* replace async-map with Promise.all(array.map(async ...))
 * change logger names
   * 'gtasks' -> 'gtasks-root', 'google' -> 'google-root'
 * auto create the logs dir
@@ -88,6 +86,8 @@
 
 ## Refactor
 
+* move from `typings` to `@types`
+* replace async-map with Promise.all(array.map(async ...))
 * merge GC and time array into a single TimeArray class
 * make (root) requests generic (instead of google-specific)
 * rename settings to config

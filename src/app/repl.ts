@@ -1,14 +1,14 @@
-import { Logger } from 'ami-logger/remote'
+import { TAsyncMachine } from 'asyncmachine'
 import * as net from 'net'
 import * as repl from 'repl'
 import { REPLServer } from 'repl'
-import RootSync from './sync/root'
+import RootSync from '../sync/root'
 
 export { REPLServer }
 
 export default function create(
   root: RootSync,
-  init_am_inspector: (machines?: any[]) => Logger,
+  init_am_inspector: (machines?: TAsyncMachine[]) => void,
   port = 5001
 ) {
   root.log(`Starting REPL on ${port}`)

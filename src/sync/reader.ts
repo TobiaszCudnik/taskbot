@@ -51,7 +51,9 @@ export const sync_reader_state: IJSONStates = {
 export type TSyncState = AsyncMachine<TStates, IBind, IEmit>
 
 export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
-  implements ITransitions {
+// TODO type the machine types
+// implements ITransitions
+{
   state: AsyncMachine<any, any, any>
   get state_reader(): TSyncState {
     return this.state
@@ -120,12 +122,12 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
     return ret
   }
 
-  constructor(config, root?: RootSync) {
+  constructor(config, root?: RootSync | Logger) {
     this.config = config
-    // config and ConfigSet force us to do this here
-    if (!root) {
+    // required for this.initLoggers()
+    if (root instanceof Logger) {
       this.root = <RootSync>(<any>this)
-      this.root.logger = new Logger()
+      this.root.logger = root
     } else {
       this.root = root
     }
@@ -139,14 +141,15 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
         global.am_network.addMachine(this.state_reader)
       }
     }
-    this.state_reader.add('ConfigSet', config)
+    // set config on the next tick
+    this.state_reader.addNext('ConfigSet', config)
   }
 
   // ----- -----
   // Transitions
   // ----- -----
 
-  RestartingNetwork_state() {
+  RestartingNetwork_state(reason?: string) {
     this.state.add('NetworkRestarted')
   }
 
@@ -334,6 +337,7 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
     return machines
   }
 
+  // TODO extract to a mixin
   initLoggers() {
     let name = this.state.id(true)
 

@@ -15,7 +15,7 @@ export type level = 'info' | 'verbose' | 'error'
 export type log_fn = (...msg: any[]) => void
 
 export default class Logger {
-  winston: winston.Winston
+  winston: winston.Logger
 
   // TODO read from env.DEBUG
   constructor() {

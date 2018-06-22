@@ -11,7 +11,7 @@ import {
 } from '../../typings/machines/google/sync'
 import RootSync from '../sync/root'
 import { sync_writer_state, SyncWriter } from '../sync/writer'
-import { IConfig } from '../types'
+import { TConfig } from '../types'
 import Auth from './auth'
 import GmailSync from './gmail/sync'
 import GTasksSync from './tasks/sync'
@@ -31,7 +31,7 @@ export const sync_state: IJSONStates = {
 }
 
 export default class GoogleSync extends SyncWriter<
-  IConfig,
+  TConfig,
   TStates,
   IBind,
   IEmit
@@ -45,7 +45,7 @@ export default class GoogleSync extends SyncWriter<
 
   constructor(root: RootSync) {
     super(root.config, root)
-    this.auth = new Auth(root.config)
+    this.auth = new Auth(root.config.google, root.username)
   }
 
   // ----- -----

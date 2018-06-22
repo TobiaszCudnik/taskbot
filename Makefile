@@ -13,29 +13,29 @@ build-watch:
 	node_modules/.bin/tsc --watch
 
 start:
-	DEBUG=root,\*-error DEBUG_FILE=1 node src/app.js
+	DEBUG=root,\*-error DEBUG_FILE=1 node src/app/app.js
 
 start-am:
 	DEBUG=\*-error,requests-verbose,root,gmail,gtasks,record-diffs,\*-am,gmail-verbose,gtasks-verbose \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node --inspect \
-		src/app.js
+		src/app/app.js
 
 start-verbose:
 	DEBUG=\*-error,\*-verbose,root,gmail,gtasks,record-diffs \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node --inspect \
-		src/app.js
+		src/app/app.js
 
 start-ami:
 	DEBUG=root,gmail,gtasks DEBUG_FILE=1 DEBUG_AMI=1 DEBUG_AM=1 \
-		node --inspect src/app.js
-		#node --inspect-brk src/app.js
+		node --inspect src/app/app.js
+		#node --inspect-brk src/app/app.js
 
 start-inspect:
-	DEBUG=root node --inspect src/app.js
+	DEBUG=root node --inspect src/app/app.js
 
 start-am-heartbeat:
 	@echo 'Start with expressive logging for HeartBeat with the --inspect flag'
@@ -43,27 +43,27 @@ start-am-heartbeat:
 	DEBUG=root\*,gmail,gtasks,\*-am,\*-error,gmail-query-next\* \
 		DEBUG_FILE=1 \
 		DEBUG_AM=3 \
-		node --inspect src/app.js
-		#node --inspect-brk src/app.js
+		node --inspect src/app/app.js
+		#node --inspect-brk src/app/app.js
 
 clear-logs:
 	rm logs/*
 
 debug:
-	DEBUG=root DEBUG_FILE=1 node --inspect-brk src/app.js
+	DEBUG=root DEBUG_FILE=1 node --inspect-brk src/app/app.js
 
 debug-list-next:
 	DEBUG=record-diffs,google,gmail,gtasks,gmail-query-next\*,gmail-list-next\*,gtasks-list-next\*,\*-error \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
-		node --inspect src/app.js
-		#node --inspect-brk src/app.js
+		node --inspect src/app/app.js
+		#node --inspect-brk src/app/app.js
 
 debug-gmail:
 	DEBUG=record-diffs,google,gmail,gmail-verbose,\*-error,gtasks \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
-		node --inspect src/app.js
+		node --inspect src/app/app.js
 
 format:
 	prettier --config package.json --write *.ts

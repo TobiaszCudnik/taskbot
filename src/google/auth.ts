@@ -7,7 +7,7 @@ import {
   IState,
   TStates
 } from '../../typings/machines/google/auth'
-import { IConfig } from '../types'
+import { TConfig, TConfigGoogle, TConfigGoogleUserAuth } from '../types'
 import { machineLogToDebug } from '../utils'
 
 export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
@@ -24,7 +24,6 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
     drop: ['RefreshingToken']
   }
 
-  // TODO (by supporting an error state?)
   Ready: IState = {
     auto: true,
     require: ['TokenRefreshed']
@@ -35,12 +34,18 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
   }
 
   client: any
-  settings: IConfig
+  config: TConfigGoogle
+  username: string
 
-  constructor(config: IConfig) {
+  get config_user(): TConfigGoogleUserAuth {
+    return this.config.users[this.username]
+  }
+
+  constructor(config: TConfigGoogle, username: string) {
     super(null, false)
     // google.options({ params: { quotaUser: 'user123@example.com' } });
-    this.settings = config
+    this.config = config
+    this.username = username
     this.register(
       'Ready',
       'CredentialsSet',
@@ -48,6 +53,7 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
       'TokenRefreshed'
     )
     this.id('Auth')
+    // TODO avoid globals
     if (process.env['DEBUG_AM'] || global.am_network) {
       machineLogToDebug(this)
       if (global.am_network) {
@@ -56,21 +62,25 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
     }
     // TODO missing type
     this.client = new (<any>google).auth.OAuth2(
-      config.google.client_id,
-      config.google.client_secret,
-      config.google.redirect_url
+      config.client_id,
+      config.client_secret,
+      config.redirect_url
     )
-    if (config.google.access_token && config.google.refresh_token) {
-      this.add('CredentialsSet')
+    if (this.config_user.access_token && this.config_user.refresh_token) {
+      this.add(
+        'CredentialsSet',
+        this.config_user.access_token,
+        this.config_user.refresh_token
+      )
     } else {
       throw new Error('not-implemented')
     }
   }
 
-  CredentialsSet_state() {
+  CredentialsSet_state(access_token: string, refresh_token: string) {
     this.client.credentials = {
-      access_token: this.settings.google.access_token,
-      refresh_token: this.settings.google.refresh_token
+      access_token: access_token,
+      refresh_token: refresh_token
     }
   }
 
