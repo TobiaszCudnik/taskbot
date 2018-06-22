@@ -22,7 +22,7 @@ import {
 import GC from '../../sync/gc'
 import RootSync, { DBRecord } from '../../sync/root'
 import { sync_writer_state, SyncWriter } from '../../sync/writer'
-import { TConfig } from '../../types'
+import { IConfig } from '../../types'
 import Auth from '../auth'
 import GTasksListSync, { Task, TaskList } from './sync-list'
 import * as regexEscape from 'escape-string-regexp'
@@ -65,7 +65,7 @@ export type TaskTree = {
 }
 
 export default class GTasksSync extends SyncWriter<
-  TConfig,
+  IConfig,
   TStates,
   IBind,
   IEmit
@@ -231,7 +231,7 @@ export default class GTasksSync extends SyncWriter<
     // @ts-ignore
     params.auth = this.auth.client
     return await this.root.connections.req(
-      this.root.username,
+      this.root.user.username,
       'gtasks.' + method_name,
       method,
       params,

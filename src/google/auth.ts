@@ -7,7 +7,7 @@ import {
   IState,
   TStates
 } from '../../typings/machines/google/auth'
-import { TConfig, TConfigGoogle, TConfigGoogleUserAuth } from '../types'
+import { IConfig, IConfigGoogle, TConfigGoogleUserAuth } from '../types'
 import { machineLogToDebug } from '../utils'
 
 export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
@@ -34,18 +34,14 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
   }
 
   client: any
-  config: TConfigGoogle
-  username: string
+  config: IConfigGoogle
+  user: TConfigGoogleUserAuth
 
-  get config_user(): TConfigGoogleUserAuth {
-    return this.config.users[this.username]
-  }
-
-  constructor(config: TConfigGoogle, username: string) {
+  constructor(config: IConfigGoogle, user: TConfigGoogleUserAuth) {
     super(null, false)
     // google.options({ params: { quotaUser: 'user123@example.com' } });
     this.config = config
-    this.username = username
+    this.user = user
     this.register(
       'Ready',
       'CredentialsSet',
@@ -66,11 +62,11 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
       config.client_secret,
       config.redirect_url
     )
-    if (this.config_user.access_token && this.config_user.refresh_token) {
+    if (this.user.access_token && this.user.refresh_token) {
       this.add(
         'CredentialsSet',
-        this.config_user.access_token,
-        this.config_user.refresh_token
+        this.user.access_token,
+        this.user.refresh_token
       )
     } else {
       throw new Error('not-implemented')

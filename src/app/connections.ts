@@ -2,7 +2,7 @@ import { Semaphore } from 'await-semaphore'
 import * as http from 'http'
 import { promisifyArray } from 'typed-promisify-tob/index'
 import * as google from 'googleapis'
-import { TConfig } from '../types'
+import { IConfig } from '../types'
 import { log_fn, default as Logger } from './logger'
 
 /**
@@ -35,7 +35,7 @@ export default class Connections {
     gmail?: google.gmail.v1.Gmail
   } = {}
 
-  constructor(config: TConfig, public logger: Logger) {
+  constructor(public logger: Logger) {
     this.initLoggers()
     this.restartNetwork()
   }
@@ -57,7 +57,7 @@ export default class Connections {
     )
   }
 
-  addUser(username) {
+  addUser(username: string) {
     this.initUser(username)
     this.active_requests_user[username] = 0
     this.executed_requests_user[username] = 0

@@ -21,7 +21,7 @@ import {
 import GC from '../../sync/gc'
 import RootSync, { DBRecord } from '../../sync/root'
 import { sync_writer_state, SyncWriter } from '../../sync/writer'
-import { TConfig, ILabelDefinition, TRawEmail } from '../../types'
+import { IConfig, ILabelDefinition, TRawEmail } from '../../types'
 import Auth from '../auth'
 ///<reference path="../../../node_modules/typed-promisify-tob/index.ts"/>
 import { Thread } from './query'
@@ -93,7 +93,7 @@ export const sync_state: IJSONStates = {
 
 export type Label = google.gmail.v1.Label
 export default class GmailSync extends SyncWriter<
-  TConfig,
+  IConfig,
   TStates,
   IBind,
   IEmit
@@ -309,7 +309,7 @@ export default class GmailSync extends SyncWriter<
     // @ts-ignore
     params.auth = this.auth.client
     return await this.root.connections.req(
-      this.root.username,
+      this.root.user.username,
       'gmail.' + method_name,
       method,
       params,

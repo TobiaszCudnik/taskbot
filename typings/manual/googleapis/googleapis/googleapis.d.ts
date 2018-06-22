@@ -3,7 +3,7 @@
 // Definitions by: Robby Cornelissen <https://github.com/procrastinatos/>
 // Definitions: https://github.com/procrastinatos/google-api-node-tsd
 
-/// <reference path="../../../globals/node/index.d.ts" />
+/// <reference types="node" />
 
 declare module 'googleapis' {
   var google: GoogleApis

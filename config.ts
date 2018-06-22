@@ -1,5 +1,5 @@
 import { DBRecord } from './src/sync/root'
-import { TConfig } from './src/types'
+import { IConfigBase } from './src/types'
 import * as _ from 'lodash'
 
 // TODO move functions to /src/sync/label-filter.ts
@@ -31,7 +31,7 @@ function checkLabel(
   return matches
 }
 
-const config: TConfig = {
+const config: IConfigBase = {
   repl_port: 5002,
   google: {
     scopes: [

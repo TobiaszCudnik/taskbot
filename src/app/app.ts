@@ -11,12 +11,12 @@ import settings_credentials from '../settings.credentials'
 import * as deepmerge from 'deepmerge'
 import create_repl from './repl'
 import RootSync from '../sync/root'
-import { TConfig } from '../types'
+import { IConfig } from '../types'
 // import * as os from 'os'
 import * as _ from 'lodash'
 
 let root: RootSync
-const settings: TConfig = <any>deepmerge(settings_base, settings_credentials)
+const config: IConfig = <any>deepmerge(settings_base, settings_credentials)
 
 // TODO make it less global
 function init_am_inspector(machines?: TAsyncMachine[]) {
@@ -53,9 +53,9 @@ process.on('exit', exit)
 console.log('Starting the sync service...')
 // TODO APP CLASS
 const logger = new Logger()
-const connections = new Connections(settings, logger)
-for (const username of Object.keys(settings.google.users)) {
-  root = new RootSync(settings, username, logger, connections)
+const connections = new Connections(logger)
+for (const user of config.google.users) {
+  root = new RootSync(config, user, logger, connections)
   // jump out of this tick
   root.state.addNext('Enabled')
 }
