@@ -309,7 +309,7 @@ export default class GmailSync extends SyncWriter<
     // @ts-ignore
     params.auth = this.auth.client
     return await this.root.connections.req(
-      this.root.user,
+      this.root.config.google.username,
       'gmail.' + method_name,
       method,
       params,
@@ -636,8 +636,8 @@ export default class GmailSync extends SyncWriter<
 
   createEmail(subject: string): TRawEmail {
     let email = [
-      `From: ${this.root.user.username} <${this.root.user.username}>s`,
-      `To: ${this.root.user.username}`,
+      `From: ${this.root.config.google.username} <${this.root.config.google.username}>s`,
+      `To: ${this.root.config.google.username}`,
       'Content-type: text/html;charset=utf-8',
       'MIME-Version: 1.0',
       `Subject: ${subject}`

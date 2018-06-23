@@ -45,7 +45,7 @@ export default class GoogleSync extends SyncWriter<
 
   constructor(root: RootSync) {
     super(root.config, root)
-    this.auth = new Auth(root.config.google, root.user)
+    this.auth = new Auth(root.config.google)
   }
 
   // ----- -----

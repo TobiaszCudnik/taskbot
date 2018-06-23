@@ -57,7 +57,7 @@ export interface ILabelDefinition3 {
   shortcut?: string
 }
 
-export interface IConfig extends IConfigBase {
+export interface IConfig extends IConfigBase, TConfigCredentials {
   google: IConfigGoogle
 }
 
@@ -92,7 +92,9 @@ export interface IConfigGoogle
     IConfigGoogleCredentials {}
 
 export type TConfigCredentials = {
-  id?: number
+  user?: {
+    id: number
+  }
   sync_frequency_multi?: number
   google: IConfigGoogleCredentials
 }

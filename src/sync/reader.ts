@@ -15,7 +15,6 @@ import {
   IEmitBase,
   ITransitions
 } from '../../typings/machines/sync/reader'
-import { TConfigGoogleUserAuth } from '../types'
 import { machineLogToDebug } from '../utils'
 import Logger, { log_fn } from '../app/logger'
 import RootSync, { DBRecord } from './root'
@@ -123,13 +122,12 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
   }
 
   // TODO fix the params
-  constructor(config, root?: RootSync | Logger, user?: TConfigGoogleUserAuth) {
+  constructor(config, root?: RootSync | Logger) {
     this.config = config
     // required for this.initLoggers()
     if (root instanceof Logger) {
       this.root = <RootSync>(<any>this)
       this.root.logger = root
-      this.root.user = user
     } else {
       this.root = root
     }
@@ -342,7 +340,7 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
 
   // TODO extract to a mixin
   initLoggers() {
-    let name = this.state.id(true) + ':' + this.root.user.id
+    let name = this.state.id(true) + ':' + this.root.config.user.id
 
     this.log = this.root.logger.createLogger(name)
     this.log_verbose = this.root.logger.createLogger(name, 'verbose')

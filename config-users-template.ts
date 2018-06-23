@@ -2,7 +2,9 @@ import { TConfigCredentials } from './src/types'
 
 const config: TConfigCredentials[] = [
   {
-    id: 1,
+    user: {
+      id: 1
+    },
     google: {
       username: '@gmail.com',
       access_token: '',

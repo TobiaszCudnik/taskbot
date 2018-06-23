@@ -16,7 +16,7 @@ import { IConfig } from '../types'
 import * as _ from 'lodash'
 
 const syncs: RootSync[] = []
-const config: IConfig = <any>deepmerge(settings_base, settings_credentials)
+const config: IConfig = <any>merge(config_base, config_credentials)
 
 // TODO make it less global
 function init_am_inspector(machines?: TAsyncMachine[]) {
@@ -54,8 +54,9 @@ console.log('Starting the sync service...')
 // TODO APP CLASS
 const logger = new Logger()
 const connections = new Connections(logger)
-for (const user of config.google.users) {
-  const sync = new RootSync(config, user, logger, connections)
+for (const user of users) {
+  const config_user = merge(config, user)
+  const sync = new RootSync(config_user, logger, connections)
   // jump out of this tick
   sync.state.addNext('Enabled')
   syncs.push(sync)
@@ -77,15 +78,15 @@ async function exit() {
     console.log(`Saved a snapshot to logs/snapshot.json`)
   }
   for (const sync of syncs) {
-    console.log(`\nUser ${sync.user.id}: ${sync.user.username}`)
+    console.log(`\nUser ${sync.config.user.id}: ${sync.config.google.username}`)
     for (const machine of sync.getMachines()) {
       console.log(machine.statesToString(true))
     }
-    console.log(`User ${sync.user.id}: ${sync.user.username}`)
+    console.log(`User ${sync.config.user.id}: ${sync.config.google.username}`)
     if (sync.data) {
       console.log(sync.data.toString())
     }
-    console.log(`\nUser ${sync.user.id}: ${sync.user.username}`)
+    console.log(`\nUser ${sync.config.user.id}: ${sync.config.google.username}`)
     console.log(`Restarts count: ${sync.restarts_count}`)
   }
   // TODO mark which loggers are enabled

@@ -3,7 +3,7 @@ import * as http from 'http'
 import { promisifyArray } from 'typed-promisify-tob/index'
 import * as google from 'googleapis'
 import GC from '../sync/gc'
-import { IConfig, TConfigGoogleUserAuth } from '../types'
+import { IConfig } from '../types'
 import { log_fn, default as Logger } from './logger'
 
 /**
@@ -92,7 +92,7 @@ export default class Connections {
 
   // TODO take abort() as the second param
   async req<A, T, T2>(
-    user: TConfigGoogleUserAuth,
+    username: string,
     method_name: string,
     method: (arg: A, cb: (err: any, res: T, res2: T2) => void) => void,
     params: A,
@@ -101,7 +101,7 @@ export default class Connections {
     options?: object
   ): Promise<[T, T2] | null>
   async req<A, T>(
-    user: TConfigGoogleUserAuth,
+    username: string,
     method_name: string,
     method: (arg: A, cb: (err: any, res: T) => void) => void,
     params: A,
@@ -110,7 +110,7 @@ export default class Connections {
     options?: object
   ): Promise<T | null>
   async req<A, T>(
-    user: TConfigGoogleUserAuth,
+    username: string,
     method_name: string,
     method: (arg: A, cb: (err: any, res: T) => void) => void,
     params: A,
@@ -118,13 +118,13 @@ export default class Connections {
     return_array: boolean,
     options?: object
   ): Promise<any> {
-    const prefix = `[${user.username}] `
+    const prefix = `[${username}] `
     this.pending_requests_global++
-    this.pending_requests_user[user.username]++
-    const release_user = await this.semaphore_user[user.username].acquire()
+    this.pending_requests_user[username]++
+    const release_user = await this.semaphore_user[username].acquire()
     const release_global = await this.semaphore_global.acquire()
     this.pending_requests_global--
-    this.pending_requests_user[user.username]--
+    this.pending_requests_user[username]--
     if (abort && abort()) {
       this.log_error(
         `${prefix} Request '${method_name}' aborted by the abort() function`
@@ -134,7 +134,7 @@ export default class Connections {
       return return_array ? [null, null] : null
     }
     this.active_requests_global++
-    this.active_requests_user[user.username]++
+    this.active_requests_user[username]++
 
     let params_log = null
     if (!params) {
@@ -175,9 +175,9 @@ export default class Connections {
       release_global()
       release_user()
       this.active_requests_global--
-      this.active_requests_user[user.username]--
+      this.active_requests_user[username]--
       this.executed_requests_global++
-      this.executed_requests_user[user.username]++
+      this.executed_requests_user[username]++
     }
     this.log_verbose(
       `${prefix} request finished (${this.pending_requests_global} pending)`

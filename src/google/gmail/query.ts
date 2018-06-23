@@ -68,7 +68,7 @@ export default class GmailQuery {
     ).id('Gmail/query: ' + this.name))
     this.state.setTarget(this)
 
-    const logger_name = this.state.id(true) + ':' + gmail.root.user.id
+    const logger_name = this.state.id(true) + ':' + gmail.root.config.user.id
     this.log = this.gmail.root.logger.createLogger(logger_name)
 
     // TODO avoid globals

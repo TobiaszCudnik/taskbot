@@ -23,12 +23,7 @@ import {
 } from '../../typings/machines/sync/root'
 import Connections from '../app/connections'
 import GoogleSync from '../google/sync'
-import {
-  IConfig,
-  ILabelDefinition,
-  IListConfig,
-  TConfigGoogleUserAuth
-} from '../types'
+import { IConfig, ILabelDefinition, IListConfig } from '../types'
 import GC from './gc'
 import LabelFilterSync from './label-filter'
 import Logger from '../app/logger'
@@ -121,18 +116,21 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   restarts_count = 0
 
   network_errors = ['EADDRNOTAVAIL', 'ETIMEDOUT']
-  user: TConfigGoogleUserAuth
 
   constructor(
     config: IConfig,
-    user: TConfigGoogleUserAuth,
     // assigned in /sync/reader.ts
     logger: Logger,
     public connections: Connections
   ) {
-    super(config, logger, user)
-    this.log(`Starting the sync service for user ${user.id}: ${user.username}`)
-    connections.addUser(user.username)
+    super(config, logger)
+    const username = config.google.username
+    this.log(
+      `Starting the sync service for user ${config.user.id}: ${
+        config.google.username
+      }`
+    )
+    connections.addUser(username)
     // HeartBeat scheduler
     setInterval(() => {
       this.state.add('HeartBeat')
