@@ -176,9 +176,12 @@ export default class GTasksListSync extends SyncReader<
       return false
     }
     const since_last_read = moment.duration(moment().diff(this.last_read_start))
-    const sync_frequency =
+    let sync_frequency =
       (this.config.sync_frequency || {}).gtasks ||
       this.gtasks.config.gtasks.sync_frequency
+    if (this.root.user.sync_frequency) {
+      sync_frequency += this.root.user.sync_frequency
+    }
     if (sync_frequency && since_last_read.asSeconds() < sync_frequency) {
       this.verbose(`Reading skipped - max frequency exceeded`)
       return false
