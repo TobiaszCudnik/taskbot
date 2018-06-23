@@ -2,6 +2,7 @@ import { Semaphore } from 'await-semaphore'
 import * as http from 'http'
 import { promisifyArray } from 'typed-promisify-tob/index'
 import * as google from 'googleapis'
+import GC from '../sync/gc'
 import { IConfig, TConfigGoogleUserAuth } from '../types'
 import { log_fn, default as Logger } from './logger'
 
@@ -31,9 +32,17 @@ export default class Connections {
   log_verbose: log_fn
 
   apis: {
-    gtasks?: google.tasks.v1.Tasks
-    gmail?: google.gmail.v1.Gmail
-  } = {}
+    gtasks: google.tasks.v1.Tasks | null
+    gmail: google.gmail.v1.Gmail | null
+  } = {
+    gtasks: null,
+    gmail: null
+  }
+
+  // Request log used to calculate the quota (API wide)
+  // TODO extract TimeArray
+  requests: { gtasks: number[] } = { gtasks: [] }
+  requests_gc = new GC('gtasks', this.requests.gtasks)
 
   constructor(public logger: Logger) {
     this.initLoggers()

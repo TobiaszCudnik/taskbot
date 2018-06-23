@@ -98,20 +98,17 @@ export default class GTasksSync extends SyncWriter<
     gmail_id: string
     children: TaskTree[]
   }[]
-  verbose = debug('gtasks-verbose')
-  // TODO extract TimeArray
-  requests: number[] = []
-  requests_gc = new GC('gtasks', this.requests)
   // remaining quota, range between 0 (full limit) to 1 (none left)
   get short_quota_usage(): number {
+    const requests = this.root.connections.requests.gtasks
     const i = _.sortedIndex(
-      this.requests,
+      requests,
       moment()
         .subtract(100, 'seconds')
         .unix()
     )
     return roundTo(
-      (this.requests.length - i) / this.config.gtasks.request_quota_100,
+      (requests.length - i) / this.config.gtasks.request_quota_100,
       2
     )
   }
@@ -227,7 +224,7 @@ export default class GTasksSync extends SyncWriter<
     return_array: boolean,
     options?: object
   ): Promise<any> {
-    this.requests.push(moment().unix())
+    this.root.connections.requests.gtasks.push(moment().unix())
     // @ts-ignore
     params.auth = this.auth.client
     return await this.root.connections.req(
