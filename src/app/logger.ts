@@ -3,6 +3,7 @@
 import * as debug from 'debug'
 import * as winston from 'winston'
 import * as printf from 'printf'
+import { LoggingWinston as StackDriver } from '@google-cloud/logging-winston'
 
 // @ts-ignore
 const { combine, timestamp } = winston.format
@@ -19,6 +20,15 @@ export default class Logger {
 
   // TODO read from env.DEBUG
   constructor() {
+    const transports = process.env.PROD
+      ? [
+          new winston.transports.File({
+            filename: 'logs/error.log',
+            level: 'error'
+          }),
+          new winston.transports.File({ filename: 'logs/combined.log' })
+        ]
+      : [new StackDriver()]
     // @ts-ignore
     this.winston = winston.createLogger({
       level: 'verbose',
@@ -26,13 +36,7 @@ export default class Logger {
       // format: winston.format.json(),
       // format: winston.format.simple(),
       format: combine(timestamp(), winston_format),
-      transports: [
-        new winston.transports.File({
-          filename: 'logs/error.log',
-          level: 'error'
-        }),
-        new winston.transports.File({ filename: 'logs/combined.log' })
-      ]
+      transports
     })
   }
 
