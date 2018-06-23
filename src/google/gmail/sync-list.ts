@@ -67,10 +67,10 @@ export default class GmailListSync extends SyncReader<
     this.state.add('ReadingDone')
   }
 
-  RestartingNetwork_state() {
+  Restarting_state() {
     // drop the download states
     this.query.state.drop(['FetchingThreads', 'FetchingMsgs'])
-    super.RestartingNetwork_state()
+    super.Restarting_state()
   }
 
   // ----- -----

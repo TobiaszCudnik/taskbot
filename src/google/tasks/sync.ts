@@ -85,7 +85,7 @@ export default class GTasksSync extends SyncWriter<
     ['Reading', 'Reading', PipeFlags.FINAL],
     ['Enabled', 'Enabled', PipeFlags.FINAL],
     ['QuotaExceeded', 'QuotaExceeded', PipeFlags.FINAL],
-    ['RestartingNetwork', 'RestartingNetwork', PipeFlags.FINAL]
+    ['Restarting', 'Restarting', PipeFlags.FINAL]
   ]
   lists: google.tasks.v1.TaskList[]
   subs: {

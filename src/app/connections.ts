@@ -41,6 +41,7 @@ export default class Connections {
   }
 
   restartNetwork() {
+    // TODO dispose existing resources
     for (const username of Object.keys(this.semaphore_user)) {
       this.initUser(username)
     }
@@ -131,9 +132,12 @@ export default class Connections {
       params = {} as A
     } else {
       // @ts-ignore
-      params_log = { ...params }
+      params_log = { method_name, ...params }
       delete params_log.auth
-      params_log.method_name = method_name
+      if (params_log.headers) {
+        params_log.headers = { ...params_log.headers }
+        delete params_log.headers['Authorization']
+      }
     }
     this.log_verbose(
       `${prefix} REQUEST '${method_name}' (${

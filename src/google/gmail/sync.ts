@@ -86,7 +86,7 @@ export const sync_state: IJSONStates = {
     drop: ['FetchingOrphans', 'Reading']
   },
 
-  RestartingNetwork: merge(sync_writer_state.RestartingNetwork, {
+  Restarting: merge(sync_writer_state.Restarting, {
     drop: ['FetchingHistoryId']
   })
 }

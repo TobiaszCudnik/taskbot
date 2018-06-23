@@ -120,7 +120,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   heartbeat_freq = 10
   restarts_count = 0
 
-  network_errors = ['EADDRNOTAVAIL', 'ETIMEDOUT']
+  network_errors = ['EADDRNOTAVAIL', 'ETIMEDOUT', /* Backend Error */ 500]
   user: TConfigGoogleUserAuth
 
   constructor(
@@ -146,13 +146,13 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   HeartBeat_state() {
     const now = moment().unix()
     const is = state => this.state.is(state)
-    if (is('RestartingNetwork')) {
+    if (is('Restarting')) {
       // TODO timeout
       this.state.drop('HeartBeat')
       return
     }
     // TODO this can leak
-    const restart = this.state.addByListener('RestartingNetwork')
+    const restart = this.state.addByListener('Restarting')
     if (this.state.not(['Reading', 'Writing', 'Scheduled'])) {
       this.logStates('Before restart')
       restart('None of the action states is set')
@@ -173,21 +173,20 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   }
 
   // TODO kill all the active requests
-  async RestartingNetwork_state(reason: string) {
+  async Restarting_state(reason: string) {
     this.restarts_count++
-    this.connections.restartNetwork()
-    this.log(`RestartingNetwork, reason - '${reason}'`)
+    this.log(`Restarting, reason - '${reason}'`)
     this.state.drop('Exception')
   }
 
-  async NetworkRestarted_state() {
-    this.log('Network restart completed')
+  async Restarted_state() {
+    this.log('Restart completed')
     // drop the state manually everywhere
-    const subs = [this, ...this.subs_all]
-    this.log_verbose('Dropping NetworkRestarted everywhere')
-    for (const sub of reverse(subs)) {
-      sub.state.drop('NetworkRestarted')
-      await sub.state.whenNot('NetworkRestarted')
+    const sub_syncs = [this, ...this.subs_all]
+    this.log_verbose('Dropping Restarted everywhere')
+    for (const sync of reverse(sub_syncs)) {
+      sync.state.drop('Restarted')
+      await sync.state.whenNot('Restarted')
     }
     this.logStates('After restart')
 
@@ -207,21 +206,19 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   async Exception_state(err: Error) {
     this.log_error('ERROR: %O', err)
     this.exceptions.push(moment().unix())
+
     // Exception is a multi state, handle one at-a-time
     if (this.state.from().includes('Exception')) return
+
+    // Restart the network in case of a network error
+    // TODO type the err (http request, google api request)
     // @ts-ignore
     if (err.code && this.network_errors.includes(err.code)) {
-      this.logStates('Before restart')
-      this.state.add('RestartingNetwork', 'Network error')
-      return
+      this.connections.restartNetwork()
     }
 
-    // pick the correct delay
-    const delay = this.isExceptionFlood()
-      ? this.config.exception_flood_delay
-      : this.config.exception_delay
-
-    this.state.add('Scheduled', delay)
+    this.logStates('Before restart')
+    this.state.add('Restarting', 'Network error')
   }
 
   async Scheduled_state(wait: number) {

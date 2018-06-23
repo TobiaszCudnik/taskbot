@@ -32,7 +32,7 @@ export const sync_writer_state: IJSONStates = {
     drop: ['Reading', 'Writing', 'WritingDone']
   },
 
-  RestartingNetwork: merge(sync_reader_state.RestartingNetwork, {
+  Restarting: merge(sync_reader_state.Restarting, {
     drop: ['Writing', 'WritingDone']
   })
 }

@@ -42,11 +42,11 @@ export const sync_reader_state: IJSONStates = {
 
   QuotaExceeded: {},
 
-  RestartingNetwork: {
-    drop: ['NetworkRestarted', 'Reading', 'ReadingDone']
+  Restarting: {
+    drop: ['Restarted', 'Reading', 'ReadingDone']
   },
-  NetworkRestarted: {
-    drop: ['RestartingNetwork']
+  Restarted: {
+    drop: ['Restarting']
   }
 }
 export type TSyncState = AsyncMachine<TStates, IBind, IEmit>
@@ -64,12 +64,12 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
   sub_states_inbound: [GStates | TStates, GStates | TStates, PipeFlags][] = [
     ['ReadingDone', 'ReadingDone', PipeFlags.FINAL],
     ['Ready', 'SubsReady', PipeFlags.FINAL],
-    ['NetworkRestarted', 'NetworkRestarted', PipeFlags.FINAL]
+    ['Restarted', 'Restarted', PipeFlags.FINAL]
   ]
   sub_states_outbound: [GStates | TStates, GStates | TStates, PipeFlags][] = [
     ['Reading', 'Reading', PipeFlags.NEGOTIATION_ENTER | PipeFlags.FINAL_EXIT],
     ['Enabled', 'Enabled', PipeFlags.NEGOTIATION_ENTER | PipeFlags.FINAL_EXIT],
-    ['RestartingNetwork', 'RestartingNetwork', PipeFlags.FINAL]
+    ['Restarting', 'Restarting', PipeFlags.FINAL]
   ]
   subs: {
     [index: string]: any
@@ -151,12 +151,12 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
   // Transitions
   // ----- -----
 
-  RestartingNetwork_state(reason?: string) {
-    this.state.add('NetworkRestarted')
+  Restarting_state(reason?: string) {
+    this.state.add('Restarted')
   }
 
-  NetworkRestarted_enter() {
-    return this.subs_flat.every(sync => sync.state.is('NetworkRestarted'))
+  Restarted_enter() {
+    return this.subs_flat.every(sync => sync.state.is('Restarted'))
   }
 
   // TODO extract google specific code to GoogleAPIMixin
@@ -245,7 +245,7 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
       !(
         this.state.to().includes('Reading') ||
         this.state.to().includes('Writing') ||
-        this.state.to().includes('RestartingNetwork')
+        this.state.to().includes('Restarting')
       )
     return !keep_reading_done
   }
