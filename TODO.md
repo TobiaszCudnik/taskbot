@@ -1,20 +1,28 @@
 ## Bugs
 
+* new P/* labels added in gmail dont appear in gtasks descriptions
+  * service restart required
+* after starting the service for 2 users
+  * `connections-error [gtd.box.sandbox@gmail.com] Request 'gtasks.api.tasks.list' aborted by the abort() function +0ms`
 * emails in inbox (unread ones)
   * when changed a status AND archived simultaneously
   * go back to the inbox
 
 ## Milestone 1:
 
+* single-user config
+  * merge-in the credentials
 * sync multiple users
   * work on the same quota
   * connection manager
-    * reuse the API clients (support the RestartingNetwork state)
-    * time based requests limits
-      * per user
-      * per connection
-      * per server
-  * replace `userId: 'me'` in all gmail queries
+  * per user frequency multipliers
+    * eg user Foo has a free tier and his internal quota multi is 0.3
+      * that makes eg gtasks.sync_freq \* 0.3 = 3 times less frequent sync
+* consider unifying hashtags
+  * ^foo into #r-foo
+  * *foo into #l-foo
+  * duplicates may be a problem
+  * not the action tags - !na is fine
 * push logs to a log service
   * OR rotate file logs
 * deploy on App Engine standard
