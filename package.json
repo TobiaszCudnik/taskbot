@@ -5,8 +5,7 @@
   "description": "GTD Bot service.",
   "contributors": [],
   "scripts": {
-    "start": "make run",
-    "test": "make test"
+    "start": "make start"
   },
   "repository": {
     "type": "git",

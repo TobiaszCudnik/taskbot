@@ -331,6 +331,7 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
     this.log(msg)
   }
 
+  // TODO merge with subs_all
   getMachines() {
     const machines = [this.state]
     for (const sub of this.subs_flat) {

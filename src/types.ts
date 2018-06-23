@@ -62,6 +62,7 @@ export interface IConfig extends IConfigBase {
 }
 
 export interface IConfigBase {
+  sync_frequency_multi?: number
   repl_port: number
   google: IConfigGoogleBase
   gmail: {
@@ -91,26 +92,24 @@ export interface IConfigGoogle
     IConfigGoogleCredentials {}
 
 export type TConfigCredentials = {
+  id?: number
+  sync_frequency_multi?: number
   google: IConfigGoogleCredentials
 }
 
 export interface IConfigGoogleCredentials {
-  client_id: string
-  client_secret: string
-  redirect_url: string
-  users: TConfigGoogleUserAuth[]
+  // app
+  client_id?: string
+  client_secret?: string
+  redirect_url?: string
+  // user
+  username?: string
+  access_token?: string
+  refresh_token?: string
 }
 
 export interface IConfigGoogleBase {
   scopes: string[]
-}
-
-export type TConfigGoogleUserAuth = {
-  id: number
-  username: string
-  access_token: string
-  refresh_token: string
-  sync_frequency?: number
 }
 
 export type TRawEmail = string

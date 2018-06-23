@@ -120,7 +120,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   heartbeat_freq = 10
   restarts_count = 0
 
-  network_errors = ['EADDRNOTAVAIL', 'ETIMEDOUT', /* Backend Error */ 500]
+  network_errors = ['EADDRNOTAVAIL', 'ETIMEDOUT']
   user: TConfigGoogleUserAuth
 
   constructor(
@@ -172,7 +172,6 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     this.state.drop('HeartBeat')
   }
 
-  // TODO kill all the active requests
   async Restarting_state(reason: string) {
     this.restarts_count++
     this.log(`Restarting, reason - '${reason}'`)
