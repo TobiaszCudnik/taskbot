@@ -15,7 +15,7 @@ import { IConfig } from '../types'
 // import * as os from 'os'
 import * as _ from 'lodash'
 
-let root: RootSync
+const syncs: RootSync[] = []
 const config: IConfig = <any>deepmerge(settings_base, settings_credentials)
 
 // TODO make it less global
@@ -55,9 +55,10 @@ console.log('Starting the sync service...')
 const logger = new Logger()
 const connections = new Connections(logger)
 for (const user of config.google.users) {
-  root = new RootSync(config, user, logger, connections)
+  const sync = new RootSync(config, user, logger, connections)
   // jump out of this tick
-  root.state.addNext('Enabled')
+  sync.state.addNext('Enabled')
+  syncs.push(sync)
 }
 // TODO /APP CLASS
 
@@ -75,21 +76,28 @@ async function exit() {
     await global.am_logger.dispose()
     console.log(`Saved a snapshot to logs/snapshot.json`)
   }
-  for (const machine of root.getMachines()) {
-    console.log(machine.statesToString(true))
+  for (const sync of syncs) {
+    console.log(`\nUser ${sync.user.id}: ${sync.user.username}`)
+    for (const machine of sync.getMachines()) {
+      console.log(machine.statesToString(true))
+    }
+    console.log(`User ${sync.user.id}: ${sync.user.username}`)
+    if (sync.data) {
+      console.log(sync.data.toString())
+    }
+    console.log(`\nUser ${sync.user.id}: ${sync.user.username}`)
+    console.log(`Restarts count: ${sync.restarts_count}`)
   }
-  if (root.data) {
-    console.log(root.data.toString())
-  }
+  // TODO mark which loggers are enabled
+  // TODO rename user_id to * and dont output same loggers for every user
   const loggers = _(debug.instances)
-    .map(logger => logger.namespace)
+    .map(logger => logger.namespace.replace(/:\d+-/, ':*-'))
     .concat('record-diffs')
     .uniq()
     .sortBy()
     .value()
     .join('\n  ')
   console.log('\nLoggers:\n ', loggers)
-  console.log(`\nRestarts count: ${root.restarts_count}`)
   exit_printed = true
   process.exit()
 }
