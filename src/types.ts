@@ -110,6 +110,7 @@ export type TConfigGoogleUserAuth = {
   username: string
   access_token: string
   refresh_token: string
+  sync_frequency?: number
 }
 
 export type TRawEmail = string
