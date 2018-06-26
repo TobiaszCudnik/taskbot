@@ -13,26 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const credentials = require('../../../settings.credentials').default
+const credentials = require('../../../config-credentials').default
+const config = require('../../../config').default
 
 var readline = require('readline')
 
 var google = require('googleapis')
 var OAuth2Client = google.auth.OAuth2
-var plus = google.plus('v1')
-
-// Client ID and client secret are available at
-// https://code.google.com/apis/console
-var REDIRECT_URL = 'http://local.me/oauth2callback'
-var SCOPES = [
-  'https://www.googleapis.com/auth/tasks',
-  'https://www.googleapis.com/auth/gmail.modify'
-]
 
 var oauth2Client = new OAuth2Client(
-  credentials.client_id,
-  credentials.client_secret,
-  REDIRECT_URL
+  credentials.google.client_id,
+  credentials.google.client_secret,
+  credentials.google.redirect_url
 )
 
 var rl = readline.createInterface({
@@ -43,7 +35,7 @@ var rl = readline.createInterface({
 // generate consent page url
 var url = oauth2Client.generateAuthUrl({
   access_type: 'offline', // will return a refresh token
-  scope: SCOPES
+  scope: config.google.scopes
 })
 
 console.log('Visit the url: ', url + '&approval_prompt=force')

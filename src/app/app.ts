@@ -14,7 +14,7 @@ import RootSync from '../sync/root'
 import { IConfig } from '../types'
 // import * as os from 'os'
 import * as _ from 'lodash'
-import server from './server'
+import server from '../server/server'
 
 const syncs: RootSync[] = []
 const config: IConfig = <any>merge(config_base, config_credentials)
@@ -54,7 +54,7 @@ process.on('exit', exit)
 console.log('Starting the sync service...')
 // TODO APP CLASS
 const logger = new Logger()
-server()
+server(config)
 const connections = new Connections(logger)
 for (const user of users) {
   const config_user = merge(config, user)
@@ -84,7 +84,8 @@ async function exit() {
     for (const machine of sync.getMachines()) {
       console.log(machine.statesToString(true))
     }
-    if (sync.data) {
+    const data = sync.data.toString()
+    if (data.trim()) {
       console.log(`User ${sync.config.user.id}: ${sync.config.google.username}`)
       console.log(sync.data.toString())
     }
