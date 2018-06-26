@@ -20,7 +20,7 @@ export default class Logger {
 
   // TODO read from env.DEBUG
   constructor() {
-    const transports = process.env.PROD
+    const transports = !process.env['PROD']
       ? [
           new winston.transports.File({
             filename: 'logs/error.log',
