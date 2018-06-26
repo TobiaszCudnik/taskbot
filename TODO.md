@@ -10,23 +10,6 @@
 
 ## Milestone 1:
 
-* single-user config
-  * merge-in the credentials
-* sync multiple users
-  * work on the same quota
-  * connection manager
-  * per user frequency multipliers
-    * eg user Foo has a free tier and his internal quota multi is 0.3
-      * that makes eg gtasks.sync_freq \* 0.3 = 3 times less frequent sync
-* consider unifying hashtags
-  * ^foo into #r-foo
-  * *foo into #l-foo
-  * duplicates may be a problem
-  * not the action tags - !na is fine
-* push logs to a log service
-  * OR rotate file logs
-* deploy on App Engine standard
-  * `make deploy`
 * results limit
   * gtasks paging support
   * max limit of results per query/gtask list
@@ -36,8 +19,11 @@
 
 ## TODO
 
-* change logger names
-  * 'gtasks' -> 'gtasks-root', 'google' -> 'google-root'
+* consider unifying hashtags
+  * ^foo into #r-foo
+  * *foo into #l-foo
+  * duplicates may be a problem
+  * not the action tags - !na is fine
 * auto create the logs dir
 * show the origin of a finished request in root::req
 * check if `(#tag)` works

@@ -52,6 +52,9 @@ start-am-heartbeat:
 clear-logs:
 	rm logs/*
 
+deploy:
+	gcloud app deploy
+
 debug:
 	DEBUG=root DEBUG_FILE=1 node --inspect-brk src/app/app.js
 
