@@ -5,7 +5,7 @@
   "description": "GTD Bot service.",
   "contributors": [],
   "scripts": {
-    "start": "make start"
+    "start": "make start-prod"
   },
   "repository": {
     "type": "git",
@@ -24,9 +24,9 @@
     "service"
   ],
   "dependencies": {
+    "@google-cloud/logging-winston": "^0.9.0",
     "ami-logger": "^0.3.22",
-    "async": "^2.6.0",
-    "asyncmachine": "^3.3.0",
+    "asyncmachine": "^3.4.0",
     "await-semaphore": "^0.1.3",
     "colors": "^1.2.5",
     "dateformat": "^1.0.12",
@@ -40,12 +40,11 @@
     "internet-timestamp": "0.0.1",
     "lodash": "^4.17.10",
     "lokijs": "^1.5.4",
-    "lucene-query-parser": "^1.2.0",
-    "lucene-queryparser": "^3.0.0",
     "moment": "^2.22.1",
     "moment-timezone": "^0.5.17",
     "printf": "^0.2.5",
     "round-to": "^2.0.0",
+    "server": "^1.0.18",
     "source-map-support": "^0.5.6",
     "supports-color": "^5.4.0",
     "suspend": "^0.7.0",
@@ -58,8 +57,11 @@
     "node": ">=0.8"
   },
   "devDependencies": {
+    "@types/lokijs": "^1.5.2",
+    "@types/moment": "^2.13.0",
+    "@types/moment-timezone": "^0.5.6",
     "@types/node": "^10.3.4",
-    "husky": "^0.14.3",
+    "@types/lodash": "^4.14.110",
     "prettier": "^1.12.1",
     "typescript": "^2.8.3"
   },
