@@ -98,7 +98,8 @@ export default class Connections {
     params: A,
     abort: (() => boolean) | null | undefined,
     returnArray: true,
-    options?: object
+    options?: object,
+    retries?: number
   ): Promise<[T, T2] | null>
   async req<A, T>(
     username: string,
@@ -107,7 +108,8 @@ export default class Connections {
     params: A,
     abort: (() => boolean) | null | undefined,
     returnArray: false,
-    options?: object
+    options?: object,
+    retries?: number
   ): Promise<T | null>
   async req<A, T>(
     username: string,
@@ -116,72 +118,78 @@ export default class Connections {
     params: A,
     abort: (() => boolean) | null | undefined,
     return_array: boolean,
-    options?: object
+    options?: object,
+    retries = 3
   ): Promise<any> {
-    const prefix = `[${username}] `
-    this.pending_requests_global++
-    this.pending_requests_user[username]++
-    const release_user = await this.semaphore_user[username].acquire()
-    const release_global = await this.semaphore_global.acquire()
-    this.pending_requests_global--
-    this.pending_requests_user[username]--
-    if (abort && abort()) {
-      this.log_error(
-        `${prefix} Request '${method_name}' aborted by the abort() function`
-      )
-      release_global()
-      release_user()
-      return return_array ? [null, null] : null
-    }
-    this.active_requests_global++
-    this.active_requests_user[username]++
-
-    let params_log = null
-    if (!params) {
-      params = {} as A
-    } else {
-      // @ts-ignore
-      params_log = { method_name, ...params }
-      delete params_log.auth
-      if (params_log.headers) {
-        params_log.headers = { ...params_log.headers }
-        delete params_log.headers['Authorization']
-      }
-    }
-    this.log_verbose(
-      `${prefix} REQUEST '${method_name}' (${
-        this.active_requests_global
-      } active):\n%O`,
-      params_log
-    )
-    // TODO googleapis specific code should be in google/sync.ts
     let ret
-    try {
-      // @ts-ignore
-      ret = await promisifyArray(method)(params, options)
-      const res: http.IncomingMessage = ret[1]
-      const was2xx = res && res.statusCode.toString().match(/^2/)
-      const wasNoContent = res && res.statusMessage == 'No Content'
-      if (was2xx && ret[0] === undefined && !wasNoContent) {
-        throw Error('Empty response on 2xx')
-      } else if (ret[1] === undefined && ret[0] === undefined) {
-        throw Error('Response and body empty')
+    for (let try_n = 1; try_n <= retries; try_n++) {
+      const prefix = `[${username}] `
+      this.pending_requests_global++
+      this.pending_requests_user[username]++
+      const release_user = await this.semaphore_user[username].acquire()
+      const release_global = await this.semaphore_global.acquire()
+      this.pending_requests_global--
+      this.pending_requests_user[username]--
+      if (abort && abort()) {
+        this.log_error(
+          `${prefix} Request '${method_name}' aborted by the abort() function`
+        )
+        release_global()
+        release_user()
+        return return_array ? [null, null] : null
       }
-    } catch (e) {
-      // attach the request body
-      e.params = params_log
-      throw e
-    } finally {
-      release_global()
-      release_user()
-      this.active_requests_global--
-      this.active_requests_user[username]--
-      this.executed_requests_global++
-      this.executed_requests_user[username]++
+      this.active_requests_global++
+      this.active_requests_user[username]++
+
+      let params_log = null
+      if (!params) {
+        params = {} as A
+      } else {
+        // @ts-ignore
+        params_log = { method_name, ...params }
+        delete params_log.auth
+        if (params_log.headers) {
+          params_log.headers = { ...params_log.headers }
+          delete params_log.headers['Authorization']
+        }
+      }
+      this.log_verbose(
+        `${prefix} REQUEST '${method_name}' (${
+          this.active_requests_global
+        } active):\n%O`,
+        params_log
+      )
+      // TODO googleapis specific code should be in google/sync.ts
+      try {
+        // @ts-ignore
+        ret = await promisifyArray(method)(params, options)
+        const res: http.IncomingMessage = ret[1]
+        const was2xx = res && res.statusCode.toString().match(/^2/)
+        const wasNoContent = res && res.statusMessage == 'No Content'
+        if (was2xx && ret[0] === undefined && !wasNoContent) {
+          throw Error('Empty response on 2xx')
+        } else if (ret[1] === undefined && ret[0] === undefined) {
+          throw Error('Response and body empty')
+        }
+      } catch (e) {
+        // retry on backend errors only
+        if (try_n == retries || !e.code || e.code.toString()[0] != '5') {
+          // attach the request body
+          e.params = params_log
+          throw e
+        }
+      } finally {
+        release_global()
+        release_user()
+        this.active_requests_global--
+        this.active_requests_user[username]--
+        this.executed_requests_global++
+        this.executed_requests_user[username]++
+      }
+      this.log_verbose(
+        `${prefix} request finished (${this.pending_requests_global} pending)`
+      )
     }
-    this.log_verbose(
-      `${prefix} request finished (${this.pending_requests_global} pending)`
-    )
 
     return return_array ? ret : ret[0]
   }
