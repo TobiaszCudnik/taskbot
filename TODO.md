@@ -7,15 +7,23 @@
 * emails in inbox (unread ones)
   * when changed a status AND archived simultaneously
   * go back to the inbox
+* leaks 42mb per hour for 2 users
 
 ## Milestone 1:
 
+* encrypt sensitive info in the logs with MD5 hashes
+  * switchable in the config
 * results limit
   * gtasks paging support
   * max limit of results per query/gtask list
 * handle deleted labels
-* include the endpoint in the requests log
 * file log is missing entries
+
+## Milestone 1.2
+* user signup
+  * delete per-user-logs when deleting an account
+* store users in Cloud Datastore
+  * local emulator for development
 
 ## TODO
 
@@ -88,7 +96,6 @@
 
 ## Milestone 2
 
-* customizable gmail domain
 * multi user mode for syncing gtasks lists only
   * usecase: share a google tasks list with someone
   * sharing lists via the project tag eg P/groceries
