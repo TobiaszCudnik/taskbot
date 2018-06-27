@@ -1,4 +1,5 @@
-STATES_TYPES_BIN = node_modules/asyncmachine/bin/am-types.js
+AM_TYPES_BIN = node_modules/asyncmachine/bin/am-types.js
+SHOWDOWN_BIN = node_modules/showdown/bin/showdown.js
 
 compile:
 	node_modules/.bin/tsc --pretty --noEmit
@@ -51,6 +52,10 @@ start-am-heartbeat:
 
 clear-logs:
 	rm logs/*
+	
+site:
+	$(SHOWDOWN_BIN) makehtml \
+		-i static/privacy-policy.md -o static/privacy-policy-output.html
 
 deploy:
 	gcloud app deploy
@@ -82,28 +87,28 @@ am-types:
 	mkdir -p typings/machines/google/gmail
 	mkdir -p typings/machines/google/tasks
 
-	$(STATES_TYPES_BIN) src/sync/reader.js -e sync_reader_state \
+	$(AM_TYPES_BIN) src/sync/reader.js -e sync_reader_state \
 		-o typings/machines/sync/reader.ts
-	$(STATES_TYPES_BIN) src/sync/writer.js -e sync_writer_state \
+	$(AM_TYPES_BIN) src/sync/writer.js -e sync_writer_state \
 		-o typings/machines/sync/writer.ts
-	$(STATES_TYPES_BIN) src/sync/root.js -e sync_state \
+	$(AM_TYPES_BIN) src/sync/root.js -e sync_state \
 		-o typings/machines/sync/root.ts
 
-	$(STATES_TYPES_BIN) src/google/sync.js -e sync_state \
+	$(AM_TYPES_BIN) src/google/sync.js -e sync_state \
 		-o typings/machines/google/sync.ts
-	$(STATES_TYPES_BIN) src/google/auth.json \
+	$(AM_TYPES_BIN) src/google/auth.json \
 		-o typings/machines/google/auth.ts
 
-	$(STATES_TYPES_BIN) src/google/tasks/sync.js -e sync_state \
+	$(AM_TYPES_BIN) src/google/tasks/sync.js -e sync_state \
 		-o typings/machines/google/tasks/sync.ts
-	$(STATES_TYPES_BIN) src/google/tasks/sync-list.js -e sync_state \
+	$(AM_TYPES_BIN) src/google/tasks/sync-list.js -e sync_state \
 		-o typings/machines/google/tasks/sync-list.ts
 
-	$(STATES_TYPES_BIN) src/google/gmail/sync-list.js -e sync_state \
+	$(AM_TYPES_BIN) src/google/gmail/sync-list.js -e sync_state \
 		-o typings/machines/google/gmail/sync-list.ts
-	$(STATES_TYPES_BIN) src/google/gmail/sync.js -e sync_state \
+	$(AM_TYPES_BIN) src/google/gmail/sync.js -e sync_state \
 		-o typings/machines/google/gmail/sync.ts
-	$(STATES_TYPES_BIN) src/google/gmail/query.js -e sync_state \
+	$(AM_TYPES_BIN) src/google/gmail/query.js -e sync_state \
 		-o typings/machines/google/gmail/query.ts
 
 npmi:

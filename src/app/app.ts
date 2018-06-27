@@ -54,7 +54,7 @@ process.on('exit', exit)
 console.log('Starting the sync service...')
 // TODO APP CLASS
 const logger = new Logger()
-server(config)
+server(config, logger)
 const connections = new Connections(logger)
 for (const user of users) {
   const config_user = merge(config, user)

@@ -22,4 +22,5 @@ typings/
 .idea
 wiki
 /test/
-/dev
+/dev/playground
+/dev/typedoc

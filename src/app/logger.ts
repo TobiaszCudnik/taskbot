@@ -29,12 +29,10 @@ export default class Logger {
           new winston.transports.File({ filename: 'logs/combined.log' })
         ]
       : [new StackDriver()]
+
     // @ts-ignore
     this.winston = winston.createLogger({
       level: 'verbose',
-      // @ts-ignore
-      // format: winston.format.json(),
-      // format: winston.format.simple(),
       format: combine(timestamp(), winston_format),
       transports
     })

@@ -1,36 +1,53 @@
 // @ts-ignore
-import { OAuth2Client } from 'googleapis'
+import { auth } from 'googleapis'
 import { reply } from 'server'
+import { IConfig } from '../types'
 
-const { redirect, send } = reply
+const { redirect, send, status } = reply
 
 let client
 
-function getClient(ctx) {
+function getClient(ctx): object {
   if (client) return client
+  const config: IConfig = ctx.config
 
-  client = new OAuth2Client(
-    ctx.config.credentials.google.client_id,
-    ctx.config.credentials.google.client_secret,
-    ctx.config.credentials.google.redirect_url
+  client = new auth.OAuth2(
+    config.google.client_id,
+    config.google.client_secret,
+    config.google.redirect_url
   )
+  return client
 }
 
+// /google/login
 export function login(ctx) {
+  ctx.logger('/google/login')
+
+  // @ts-ignore
   const url = getClient(ctx).generateAuthUrl({
-    access_type: 'offline', // will return a refresh token
+    // will return a refresh token
+    access_type: 'offline',
     scope: ctx.config.google.scopes
   })
-  redirect(url + '&approval_prompt=force')
+  return redirect(url + '&approval_prompt=force')
 }
 
-export function callback(ctx) {
+// /google/login/callback
+export async function callback(ctx) {
+  ctx.logger('/google/login/callback')
+
   if (!ctx.query.code) {
-    send('No token')
+    return status(400).send('No token')
   }
   // request access token
-  getClient(ctx).getToken(ctx.query.code, function(err, tokens) {
-    if (err) console.error(err)
-    send(tokens)
-  })
+  // TODO merge with the email address and user ID
+  const tokens = await new Promise(resolve =>
+    // @ts-ignore
+    getClient(ctx).getToken(ctx.query.code, function(err, tokens) {
+      if (err) console.error(err)
+      resolve(tokens)
+    })
+  )
+  ctx.logger('tokens fetched')
+  return send(tokens)
 }
