@@ -14,7 +14,7 @@ build-watch:
 	node_modules/.bin/tsc --watch
 
 start:
-	DEBUG=root:\*-info,\*-error DEBUG_FILE=1 node src/app/app.js
+	DEBUG=root:\*-info,\*-error,http-server-info DEBUG_FILE=1 node src/app/app.js
 
 start-prod:
 	PROD=1 DEBUG=root:\*-info,\*-error DEBUG_FILE=1 node src/app/app.js
@@ -58,7 +58,10 @@ site:
 		-i static/privacy-policy.md -o static/privacy-policy-output.html
 
 deploy:
-	gcloud app deploy
+	# test
+	gcloud app deploy app.yaml --version=test
+	# sudo apt-get install mc fish htop
+	#gcloud app deploy
 
 debug:
 	DEBUG=root DEBUG_FILE=1 node --inspect-brk src/app/app.js
