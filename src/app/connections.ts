@@ -92,7 +92,7 @@ export default class Connections {
 
   // TODO take abort() as the second param
   async req<A, T, T2>(
-    username: string,
+    username: number,
     method_name: string,
     method: (arg: A, cb: (err: any, res: T, res2: T2) => void) => void,
     params: A,
@@ -102,7 +102,7 @@ export default class Connections {
     retries?: number
   ): Promise<[T, T2] | null>
   async req<A, T>(
-    username: string,
+    username: number,
     method_name: string,
     method: (arg: A, cb: (err: any, res: T) => void) => void,
     params: A,
@@ -112,7 +112,7 @@ export default class Connections {
     retries?: number
   ): Promise<T | null>
   async req<A, T>(
-    username: string,
+    user_id: number,
     method_name: string,
     method: (arg: A, cb: (err: any, res: T) => void) => void,
     params: A,
@@ -123,38 +123,41 @@ export default class Connections {
   ): Promise<any> {
     let ret
     for (let try_n = 1; try_n <= retries; try_n++) {
-      const prefix = `[${username}] `
+      // TODO keep username as a part of json (logger API)
+      const prefix = `[${user_id}] `
       this.pending_requests_global++
-      this.pending_requests_user[username]++
-      const release_user = await this.semaphore_user[username].acquire()
+      this.pending_requests_user[user_id]++
+      const release_user = await this.semaphore_user[user_id].acquire()
       const release_global = await this.semaphore_global.acquire()
       this.pending_requests_global--
-      this.pending_requests_user[username]--
+      this.pending_requests_user[user_id]--
       if (abort && abort()) {
         this.log_error(
-          `${prefix} Request '${method_name}' aborted by the abort() function`
+          `${prefix} '${method_name}' aborted by the abort() function`
         )
         release_global()
         release_user()
         return return_array ? [null, null] : null
       }
       this.active_requests_global++
-      this.active_requests_user[username]++
+      this.active_requests_user[user_id]++
 
       let params_log = null
       if (!params) {
         params = {} as A
-      } else {
-        // @ts-ignore
-        params_log = { method_name, ...params }
-        delete params_log.auth
-        if (params_log.headers) {
-          params_log.headers = { ...params_log.headers }
-          delete params_log.headers['Authorization']
-        }
       }
+      // @ts-ignore
+      params_log = { method_name, ...params }
+      delete params_log.auth
+      if (params_log.headers) {
+        params_log.headers = { ...params_log.headers }
+        delete params_log.headers['Authorization']
+      }
+      params_log.user_id = user_id
+      params_log.try = try_n
+      // TODO include all the statistics in params_log
       this.log_verbose(
-        `${prefix} REQUEST '${method_name}' (${
+        `${prefix} '${method_name}' (${try_n} try | ${
           this.active_requests_global
         } active):\n%O`,
         params_log
@@ -182,16 +185,16 @@ export default class Connections {
         release_global()
         release_user()
         this.active_requests_global--
-        this.active_requests_user[username]--
+        this.active_requests_user[user_id]--
         this.executed_requests_global++
-        this.executed_requests_user[username]++
+        this.executed_requests_user[user_id]++
       }
       this.log_verbose(
         `${prefix} request finished (${this.pending_requests_global} pending)`
       )
-    }
 
-    return return_array ? ret : ret[0]
+      return return_array ? ret : ret[0]
+    }
   }
 
   // TODO implement LoggerMixin

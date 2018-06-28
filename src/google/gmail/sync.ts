@@ -309,7 +309,7 @@ export default class GmailSync extends SyncWriter<
     // @ts-ignore
     params.auth = this.auth.client
     return await this.root.connections.req(
-      this.root.config.google.username,
+      this.root.config.user.id,
       'gmail.' + method_name,
       method,
       params,

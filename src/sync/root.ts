@@ -132,9 +132,11 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     )
     connections.addUser(username)
     // HeartBeat scheduler
-    setInterval(() => {
+    const hb = () => {
       this.state.add('HeartBeat')
-    }, this.heartbeat_freq * SEC)
+      setTimeout(hb, this.heartbeat_freq * SEC)
+    }
+    setTimeout(hb, this.heartbeat_freq * SEC)
   }
 
   // ----- -----

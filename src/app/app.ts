@@ -106,4 +106,4 @@ async function exit() {
   process.exit()
 }
 
-// create_repl(root, init_am_inspector, settings.repl_port)
+create_repl(syncs, connections, logger, init_am_inspector, config.repl_port)

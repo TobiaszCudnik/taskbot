@@ -228,7 +228,7 @@ export default class GTasksSync extends SyncWriter<
     // @ts-ignore
     params.auth = this.auth.client
     return await this.root.connections.req(
-      this.root.config.google.username,
+      this.root.config.user.id,
       'gtasks.' + method_name,
       method,
       params,
