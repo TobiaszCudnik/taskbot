@@ -41,15 +41,19 @@ export default class Logger {
   }
 
   createLogger(name: string | TLoggerName, level: level = 'info'): log_fn {
-    let labels
+    let base_labels: TLoggerName
+    let name2: string
     if (typeof name == 'string') {
-      labels = { name }
+      base_labels = { name }
+      name2 = name
     } else {
-      labels = name
-      name = `${name.name}:${name.user_id}`
+      base_labels = { ...name }
+      name2 = `${base_labels.name}:${base_labels.user_id}`
     }
-    name += '-' + level
-    const terminal = debug(name)
+    const name_level = name2 + '-' + level
+    console.log(`Creating logger ${name_level}`)
+    // keep level in the name only for the console logger
+    const terminal = debug(name_level)
     return (...msgs) => {
       // First msg has to be a string
       msgs[0] = (msgs[0] && msgs[0].toString()) || ''
@@ -59,24 +63,33 @@ export default class Logger {
       }
       // optional file logging
       if (!process.env['DEBUG_FILE']) return
+      // const labels = { ...base_labels }
       // TODO a very bad way to add user_id to labels from json msgs
-      for (const msg of msgs.slice(1)) {
-        if (msg && msg['user_id']) {
-          labels.user_id = msg.user_id
-          break
-        }
-      }
-      this.winston.log({
-        labels,
-        label: name,
+      // TODO broken by
+      //   https://github.com/googleapis/nodejs-logging-winston/issues/85
+      // for (const msg of msgs.slice(1)) {
+      //   if (msg && msg['user_id']) {
+      //     labels.user_id = msg.user_id
+      //     break
+      //   }
+      // }
+      let log_data = {
+        // labels,
+        labels: base_labels,
         message: process.env['PROD'] ? msgs : printf(...msgs),
         level
-      })
+      }
+      // provide `label` only for local (file) transports
+      if (!process.env['PROD']) {
+        // @ts-ignore
+        log_data.label = name2
+      }
+      this.winston.log(log_data)
     }
   }
 }
 
 export type TLoggerName = {
   name: string
-  user_id: number
+  user_id?: number
 }

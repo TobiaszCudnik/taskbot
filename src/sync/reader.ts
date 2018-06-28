@@ -344,10 +344,12 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
 
   // TODO extract to a mixin
   initLoggers() {
-    const name = {
-      name: this.state.id(true),
-      user_id: this.root.config.user.id
-    }
+    // TODO https://github.com/googleapis/nodejs-logging-winston/issues/85
+    // const name = {
+    //   name: this.state.id(true),
+    //   user_id: this.root.config.user.id
+    // }
+    const name = `${this.state.id(true)}:${this.root.config.user.id}`
     this.log = this.root.logger.createLogger(name)
     this.log_verbose = this.root.logger.createLogger(name, 'verbose')
     this.log_error = this.root.logger.createLogger(name, 'error')

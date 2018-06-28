@@ -207,11 +207,7 @@ export default class Connections {
         this.executed_requests_global++
         this.executed_requests_user[user_id]++
       }
-      this.log_verbose(
-        `${method_name} request finished`,
-        params_log,
-        this.getReqsStats()
-      )
+      this.log_verbose(`${method_name} request finished`)
 
       return return_array ? ret : ret[0]
     }
