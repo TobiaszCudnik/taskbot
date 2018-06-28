@@ -13,6 +13,7 @@ const winston_format = winston.format.printf(info => {
 export type level = 'info' | 'verbose' | 'error'
 export type log_fn = (...msg: any[]) => void
 
+// TODO  Split to ProdLogger and DevLogger
 // TODO fix all the process.env['PROD'] and env['DEBUG_FILE']
 export default class Logger {
   winston: winston.Logger
@@ -50,18 +51,24 @@ export default class Logger {
     name += '-' + level
     const terminal = debug(name)
     return (...msgs) => {
+      // First msg has to be a string
       msgs[0] = (msgs[0] && msgs[0].toString()) || ''
-      if (!process.env['PROD']) {
+      // dont log to console on PROD, except for errors
+      if (!process.env['PROD'] || level == 'error') {
         terminal(...msgs)
       }
       // optional file logging
       if (!process.env['DEBUG_FILE']) return
-      // TODO very bad way to add user_id to labels
-      if (msgs[1] && msgs[1].user_id) {
-        labels.user_id = msgs[1].user_id
+      // TODO a very bad way to add user_id to labels from json msgs
+      for (const msg of msgs.slice(1)) {
+        if (msg && msg['user_id']) {
+          labels.user_id = msg.user_id
+          break
+        }
       }
       this.winston.log({
         labels,
+        label: name,
         message: process.env['PROD'] ? msgs : printf(...msgs),
         level
       })
@@ -70,6 +77,6 @@ export default class Logger {
 }
 
 export type TLoggerName = {
-  name: string,
+  name: string
   user_id: number
 }

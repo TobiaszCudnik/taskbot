@@ -75,7 +75,11 @@ export default class GmailQuery {
 
     // TODO avoid globals
     if (process.env['DEBUG_AM'] || global.am_network) {
-      machineLogToDebug(this.state)
+      machineLogToDebug(
+        gmail.root.logger,
+        this.state,
+        gmail.root.config.user.id
+      )
       if (global.am_network) {
         global.am_network.addMachine(this.state)
       }

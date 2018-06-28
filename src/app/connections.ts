@@ -51,27 +51,31 @@ export default class Connections {
 
   restartNetwork() {
     // TODO dispose existing resources
-    for (const username of Object.keys(this.semaphore_user)) {
-      this.initUser(username)
+    for (const user_id of Object.keys(this.semaphore_user)) {
+      this.initUser(Number(user_id))
     }
     this.semaphore_global = new Semaphore(
       this.config_max_active_requests_global
     )
+    // re-init APIs
     this.initGTasksAPI()
     this.initGmailAPI()
+    // re-init reqs stats
+    this.active_requests_global = 0
+    this.pending_requests_global = 0
   }
 
-  initUser(username: string) {
-    this.semaphore_user[username] = new Semaphore(
+  initUser(user_id: number) {
+    this.semaphore_user[user_id] = new Semaphore(
       this.config_max_active_requests_user
     )
   }
 
-  addUser(username: string) {
-    this.initUser(username)
-    this.active_requests_user[username] = 0
-    this.executed_requests_user[username] = 0
-    this.pending_requests_user[username] = 0
+  addUser(user_id: number) {
+    this.initUser(user_id)
+    this.active_requests_user[user_id] = 0
+    this.executed_requests_user[user_id] = 0
+    this.pending_requests_user[user_id] = 0
   }
 
   initGTasksAPI() {
@@ -122,45 +126,59 @@ export default class Connections {
     retries = 3
   ): Promise<any> {
     let ret
+    // prepare a version of params for logging
+    let params_log = null
+    if (!params) {
+      params = {} as A
+    }
+    // @ts-ignore
+    params_log = { method_name, ...params }
+    delete params_log.auth
+    if (params_log.headers) {
+      params_log.headers = { ...params_log.headers }
+      delete params_log.headers['Authorization']
+    }
+    params_log.user_id = user_id
+    // called if the call gets aborted
+    const aborted = (release_user, release_global?) => {
+      this.log_error(
+        `${method_name} aborted by the abort() function`,
+        params_log,
+        this.getReqsStats()
+      )
+      // release semaphores
+      release_user()
+      if (release_global) release_global()
+      // dec the stats
+      this.pending_requests_global--
+      this.pending_requests_user[user_id]--
+
+      return return_array ? [null, null] : null
+    }
+    // run the query with retries
     for (let try_n = 1; try_n <= retries; try_n++) {
       // TODO keep username as a part of json (logger API)
-      const prefix = `[${user_id}] `
       this.pending_requests_global++
       this.pending_requests_user[user_id]++
       const release_user = await this.semaphore_user[user_id].acquire()
+      if (abort && abort()) {
+        return aborted(release_user)
+      }
       const release_global = await this.semaphore_global.acquire()
+      if (abort && abort()) {
+        return aborted(release_user, release_global)
+      }
+      // stats
       this.pending_requests_global--
       this.pending_requests_user[user_id]--
-      if (abort && abort()) {
-        this.log_error(
-          `${prefix} '${method_name}' aborted by the abort() function`
-        )
-        release_global()
-        release_user()
-        return return_array ? [null, null] : null
-      }
       this.active_requests_global++
       this.active_requests_user[user_id]++
-
-      let params_log = null
-      if (!params) {
-        params = {} as A
-      }
-      // @ts-ignore
-      params_log = { method_name, ...params }
-      delete params_log.auth
-      if (params_log.headers) {
-        params_log.headers = { ...params_log.headers }
-        delete params_log.headers['Authorization']
-      }
-      params_log.user_id = user_id
       params_log.try = try_n
-      // TODO include all the statistics in params_log
+      // log everything we know
       this.log_verbose(
-        `${prefix} '${method_name}' (${try_n} try | ${
-          this.active_requests_global
-        } active):\n%O`,
-        params_log
+        `${method_name} (${try_n}):\nParams: %O\nStats: %O`,
+        params_log,
+        this.getReqsStats()
       )
       // TODO googleapis specific code should be in google/sync.ts
       try {
@@ -190,10 +208,21 @@ export default class Connections {
         this.executed_requests_user[user_id]++
       }
       this.log_verbose(
-        `${prefix} request finished (${this.pending_requests_global} pending)`
+        `${method_name} request finished`,
+        params_log,
+        this.getReqsStats()
       )
 
       return return_array ? ret : ret[0]
+    }
+  }
+
+  getReqsStats() {
+    return {
+      active_requests_global: this.active_requests_global,
+      active_requests_user: this.active_requests_user,
+      executed_requests_global: this.executed_requests_global,
+      executed_requests_user: this.executed_requests_user
     }
   }
 

@@ -7,9 +7,11 @@ import {
   IState,
   TStates
 } from '../../typings/machines/google/auth'
+import Logger from '../app/logger'
 import { IConfig, IConfigGoogle } from '../types'
 import { machineLogToDebug } from '../utils'
 
+// TODO add logging
 export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
   CredentialsSet: IState = {}
 
@@ -36,7 +38,7 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
   client: any
   config: IConfigGoogle
 
-  constructor(config: IConfigGoogle) {
+  constructor(config: IConfigGoogle, user_id: number, logger: Logger) {
     super(null, false)
     // google.options({ params: { quotaUser: 'user123@example.com' } });
     this.config = config
@@ -49,7 +51,7 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
     this.id('Auth')
     // TODO avoid globals
     if (process.env['DEBUG_AM'] || global.am_network) {
-      machineLogToDebug(this)
+      machineLogToDebug(logger, this, user_id)
       if (global.am_network) {
         global.am_network.addMachine(this)
       }

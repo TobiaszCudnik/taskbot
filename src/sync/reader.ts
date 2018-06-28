@@ -136,7 +136,11 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
     this.state.setTarget(this)
     this.state_reader.add('Initializing')
     if (process.env['DEBUG_AM'] || global.am_network) {
-      machineLogToDebug(this.state_reader)
+      machineLogToDebug(
+        this.root.logger,
+        this.state_reader,
+        this.root.config.user.id
+      )
       if (global.am_network) {
         global.am_network.addMachine(this.state_reader)
       }

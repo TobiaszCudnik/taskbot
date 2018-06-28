@@ -124,13 +124,12 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     public connections: Connections
   ) {
     super(config, logger)
-    const username = config.google.username
     this.log(
       `Starting the sync service for user ${config.user.id}: ${
         config.google.username
       }`
     )
-    connections.addUser(username)
+    connections.addUser(config.user.id)
     // HeartBeat scheduler
     const hb = () => {
       this.state.add('HeartBeat')
@@ -203,18 +202,11 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
 
   // TODO react on specific exception types
   async Exception_state(err: Error) {
-    this.log_error('ERROR: %O', err)
+    this.log_error('ERROR: %O', err, { user_id: this.config.user.id })
     this.exceptions.push(moment().unix())
 
     // Exception is a multi state, handle one at-a-time
     if (this.state.from().includes('Exception')) return
-
-    // Restart the network in case of a network error
-    // TODO type the err (http request, google api request)
-    // @ts-ignore
-    if (err.code && this.network_errors.includes(err.code)) {
-      this.connections.restartNetwork()
-    }
 
     this.logStates('Before restart')
     this.state.add('Restarting', 'Network error')

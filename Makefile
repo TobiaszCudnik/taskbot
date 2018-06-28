@@ -17,10 +17,10 @@ start:
 	DEBUG=root:\*-info,\*-error,http-server-info DEBUG_FILE=1 node src/app/app.js
 
 start-prod:
-	PROD=1 DEBUG=root:\*-info,\*-error DEBUG_FILE=1 node src/app/app.js
+	PROD=1 DEBUG=root:\*-info,\*-error DEBUG_FILE=1 DEBUG_AM=1 node src/app/app.js
 
 start-am:
-	DEBUG=\*-error,connections-verbose,root:\*-info,gmail-root,gtasks-root,record-diffs,\*-am,gmail-verbose,gtasks-verbose \
+	DEBUG=\*-error,connections-verbose,root:\*-info,gmail-root,gtasks-root,record-diffs,\*-am \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node --inspect \

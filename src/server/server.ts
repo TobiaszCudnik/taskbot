@@ -43,6 +43,8 @@ export default async function(config, logger: Logger) {
       })
     ],
     ctx => {
+      // dont log health checks
+      if (ctx.url == '/_ah/health') return
       logger_info('GET %s %s', ctx.res.statusCode, ctx.url)
     }
   )
