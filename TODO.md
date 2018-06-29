@@ -1,35 +1,68 @@
 ## Bugs
 
-* new P/* labels added in gmail dont appear in gtasks descriptions
+* cant add status labels in google tasks
+  * adding `!w` to a google task in `!Next` doesnt move the task
+  * adding `!e` to a google task in `!Waiting` doesnt complete the task
+    * should work for lists without query matches `!e !f`
+  * force only 1 status label at a time
+* http server leaks 42mb per hour for 2 users
+  * StackDrivers also may
+    * `Warning: connect.session() MemoryStore is not`
+    * check memory usage on GAE without the StackDriver transport
+* new P/\* labels added in gmail dont appear in gtasks descriptions
   * service restart required
 * after starting the service for 2 users
-  * `connections-error [gtd.box.sandbox@gmail.com] Request 'gtasks.api.tasks.list' aborted by the abort() function +0ms`
+  * `connections-error [gtd...@gmail.com] Request 'gtasks.api.tasks.list' aborted by the abort() function +0ms`
 * emails in inbox (unread ones)
   * when changed a status AND archived simultaneously
   * go back to the inbox
-* leaks 42mb per hour for 2 users
 
 ## Milestone 1:
 
+* `T/task` and `A/answer` labels
+  * add `T/refresh-next` to refresh the `s-next-action` list
+  * `A/quota-exceeded` pops up if the user ran out of quota
+    * that included both users-internal and the global quota
+* support gtasks force-refresh via add-n-remove a status label (in gmail)
+  * requires re-reading dirty lists after read-merge sequence
+    * Merge as a state
+  * mark task lists as dirty based on label queries after a gmail change
+  * per-user per-api internal quota
+  * per-user ip to skip 100 per user quota
+* reduce gtasks per-list refresh freq to 10 mins
 * encrypt sensitive info in the logs with MD5 hashes
-  * switchable in the config
+  * only for PROD
+  * salt
 * results limit
   * gtasks paging support
   * max limit of results per query/gtask list
-* handle deleted labels
-* file log is missing entries
+* handle deleted labels (from gmail)
+* user signup (password protected)
+  * collect the ip
+* users admin panel
+  * enable / disable syncing per user
+  * enable / disable logging per user
+  * activate user accounts
+  * sync per api in the last 1h, 24h
 
 ## Milestone 1.2
-* user signup
-  * delete per-user-logs when deleting an account
+
+* separate service for the website on GAE std
+* logger
+  _ ability to turn on debug per specific user
+  _ handle errors from winston
+* delete per-user-logs when deleting an account
 * store users in Cloud Datastore
   * local emulator for development
 
 ## TODO
 
+* store history ID times per user in the DB
+  * helps with first-start merge to compare dates
 * consider unifying hashtags
   * ^foo into #r-foo
-  * *foo into #l-foo
+  * \*foo into #l-foo
+  * or switch the symbols to \*ref, ^loc
   * duplicates may be a problem
   * not the action tags - !na is fine
 * auto create the logs dir
@@ -62,6 +95,8 @@
 
 ## Optimizations
 
+* custom docker image
+  * https://lugassy.net/accelerate-optimize-your-google-app-engine-deployments-9358414f80f6
 * SyncList dedicated to Orphaned Threads
   * monitor when they disappear from the query
   * merge changes in

@@ -11,8 +11,8 @@ Real time Gmail to Google Tasks sync and a GTD workflow manager.
 * Label types
   * `Status` - `S/Action`, `!a`
   * `Project` - `P/groceries`, `#groceries`
-  * `Reference` - `R/document`, *document
-  * `Location` - `L/home`, `^home`
+  * `Reference` - `R/document`, `^document`
+  * `Location` - `L/home`, `*home`
 * Auto label colors
 * multi user support
 * quota calculation and throttling
