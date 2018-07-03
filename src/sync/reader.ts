@@ -39,6 +39,9 @@ export const sync_reader_state: IJSONStates = {
     drop: ['Reading']
   },
 
+  Cached: {},
+  Dirty: { drop: ['Cached'] },
+
   QuotaExceeded: {},
 
   Restarting: {
@@ -101,7 +104,8 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
     return check
   }
 
-  get subs_flat(): SyncReader<GConfig, GStates, GBind, GEmit>[] {
+  // TODO use SyncReader<unknown,
+  get subs_flat(): SyncReader<any, TStates, IBind, IEmit>[] {
     const ret = []
     for (const sub of Object.values(this.subs)) {
       if (Array.isArray(sub)) {
@@ -113,7 +117,8 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
     return ret
   }
 
-  get subs_all(): SyncReader<GConfig, GStates, GBind, GEmit>[] {
+  // TODO use SyncReader<unknown,
+  get subs_all(): SyncReader<any, TStates, IBind, IEmit>[] {
     const ret = []
     for (const sub of this.subs_flat) {
       ret.push(sub, ...sub.subs_all)
@@ -240,17 +245,18 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
     return this.subs_flat.every(sync => sync.state.is('ReadingDone'))
   }
 
-  ReadingDone_exit() {
-    // prevent queued pipe mutations to switch ReadingDone back and forth
-    const keep_reading_done =
-      this.ReadingDone_enter() &&
-      !(
-        this.state.to().includes('Reading') ||
-        this.state.to().includes('Writing') ||
-        this.state.to().includes('Restarting')
-      )
-    return !keep_reading_done
-  }
+  // TODO check if still needed with queue duplicates detection
+  // ReadingDone_exit() {
+  //   // prevent queued pipe mutations to switch ReadingDone back and forth
+  //   const keep_reading_done =
+  //     this.ReadingDone_enter() &&
+  //     !(
+  //       this.state.to().includes('Reading') ||
+  //       this.state.to().includes('Writing') ||
+  //       this.state.to().includes('Restarting')
+  //     )
+  //   return !keep_reading_done
+  // }
 
   ReadingDone_state() {
     this.last_read_end = moment()

@@ -1,3 +1,4 @@
+import * as assert from 'assert'
 import { machine } from 'asyncmachine'
 import { Semaphore } from 'await-semaphore'
 import 'colors'
@@ -27,8 +28,10 @@ import { IConfig, ILabelDefinition, IListConfig } from '../types'
 import GC from './gc'
 import LabelFilterSync from './label-filter'
 import Logger from '../app/logger'
-import { sync_writer_state, SyncWriter } from './writer'
+import { SyncReader, sync_reader_state } from './reader'
+import { SyncWriter, sync_writer_state } from './writer'
 import * as _ from 'lodash'
+import { TStates as TReaderStates } from '../../typings/machines/sync/reader'
 
 // TODO move to utils.ts
 const SEC = 1000
@@ -54,7 +57,7 @@ export const sync_state: IJSONStates = {
   Scheduled: {}
 }
 
-export type DB = LokiCollection<DBRecord>
+export type DB = Loki.Collection<DBRecord>
 
 /**
  * Local DB record format.
@@ -209,7 +212,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     if (this.state.from().includes('Exception')) return
 
     this.logStates('Before restart')
-    this.state.add('Restarting', 'Network error')
+    this.state.add('Restarting', 'Exception')
   }
 
   async Scheduled_state(wait: number) {
@@ -259,9 +262,19 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     this.bindToSubs()
   }
 
-  ReadingDone_state() {
+  async ReadingDone_state() {
     super.ReadingDone_state()
     this.merge()
+    // if any of the readers is marked as Dirty by other ones, re-read
+    if (this.subs_all.some(s => s.state.is('Dirty'))) {
+      this.log('Re-reading because at least one list is Dirty')
+      // forcefully drop the done state because Reading is negotiable
+      await this.subs_all.map(async (sync) => {
+        sync.state.drop('ReadingDone')
+        await sync.state.whenNot('ReadingDone')
+      })
+      return this.state.add('Reading')
+    }
     this.log_verbose(`DB read in ${this.last_read_time.asSeconds()}sec`)
     if (debug.enabled('db-diffs')) {
       this.printDBDiffs()
@@ -391,6 +404,40 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
         return def
       }
     }
+  }
+
+  markListsAsDirty(
+    origin: SyncReader<any, TReaderStates, any, any>,
+    record: DBRecord,
+    before?: DBRecord
+  ) {
+    assert(record, 'Record required')
+    const id = origin.state.id(true)
+    this.log(`Record change from ${id}, marking related lists as Dirty`)
+    // TODO in case we have `before` marking lists for `record` isnt necessary
+    //   as it means the record has been moved
+    let lists = this.getListsForRecord(record)
+    if (before) {
+      lists.push(...this.getListsForRecord(before))
+      lists = _.uniq(lists)
+    }
+    lists = _.without(lists, origin)
+    lists.forEach(l => l.state.add('Dirty'))
+  }
+
+  getListsForRecord(
+    record: DBRecord
+  ): SyncReader<IListConfig, TReaderStates, any, any>[] {
+    assert(record, 'Record required')
+    const ret = []
+    for (let list of this.subs_all) {
+      if (list instanceof SyncWriter) continue
+      list = list as SyncReader<IListConfig, TReaderStates, any, any>
+      if (!list.config.db_query(record)) continue
+
+      ret.push(list)
+    }
+    return ret
   }
 
   // TODO call.update() on all the changed records (to rebuild the indexes?)

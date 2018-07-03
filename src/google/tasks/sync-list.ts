@@ -32,14 +32,7 @@ export interface ITasks {
   nextPageToken: string
 }
 
-export const sync_state: IJSONStates = {
-  ...sync_reader_state,
-
-  Cached: {},
-  Dirty: { drop: ['Cached'] },
-
-  QuotaExceeded: { drop: ['Reading'] }
-}
+export const sync_state: IJSONStates = sync_reader_state
 
 export default class GTasksListSync extends SyncReader<
   IListConfig,
@@ -66,7 +59,6 @@ export default class GTasksListSync extends SyncReader<
     }
     return this.gtasks.lists.find(l => l.title == this.config.name)
   }
-  verbose = debug(this.state.id(true) + '-verbose')
 
   constructor(config: IListConfig, root: RootSync, public gtasks: GTasksSync) {
     super(config, root)
@@ -157,33 +149,43 @@ export default class GTasksListSync extends SyncReader<
     return !task.parent && task.title && task.title[0] != '-'
   }
 
+  // TODO extract to ListSyncFreq
   shouldRead() {
     if (!this.list) {
       this.log(`List doesn't exist, skipping reading`)
       return false
     }
+    if (this.state.is('QuotaExceeded')) {
+      this.log(`QuotaExceeded, skipping reading`)
+      return false
+    }
     if (this.state.is('Dirty') || !this.last_read_end) {
-      this.verbose(`Forced read - Dirty`)
+      this.log_verbose(`Forced read - Dirty`)
       return true
     }
+    // TODO check users internal quota to avoid too many dirty refreshes
     // Reuse the previous version if running out of quota and data is expected
     // to be the same
     // TODO move to the config
     if (this.gtasks.short_quota_usage >= 0.25) {
-      this.verbose(
+      this.log_verbose(
         `Reading skipped - short quota is ${this.gtasks.short_quota_usage}`
       )
       return false
     }
     const since_last_read = moment.duration(moment().diff(this.last_read_start))
     let sync_frequency =
-      (this.config.sync_frequency || {}).gtasks ||
-      this.gtasks.config.gtasks.sync_frequency
+      this.gtasks.config.gtasks.sync_frequency ||
+      this.gtasks.config.sync_frequency
+    const list_multi = (this.config.sync_frequency || {}).gtasks_multi
+    if (list_multi) {
+      sync_frequency *= list_multi
+    }
     if (this.root.config.sync_frequency_multi) {
       sync_frequency *= this.root.config.sync_frequency_multi
     }
     if (sync_frequency && since_last_read.asSeconds() < sync_frequency) {
-      this.verbose(`Reading skipped - max frequency exceeded`)
+      this.log_verbose(`Reading skipped - max frequency exceeded`)
       return false
     }
     return true
@@ -234,7 +236,7 @@ export default class GTasksListSync extends SyncReader<
       if (!record) {
         const new_record = this.createRecord(task)
         this.log('change')
-        this.verbose('new record:\n %O', new_record)
+        this.log_verbose('new record:\n %O', new_record)
         this.root.data.insert(new_record)
         changed++
       } else if (this.mergeRecord(task, record)) {

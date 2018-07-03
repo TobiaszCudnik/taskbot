@@ -16,19 +16,21 @@
 * emails in inbox (unread ones)
   * when changed a status AND archived simultaneously
   * go back to the inbox
+* restart after an exception doesnt kick in
 
 ## Milestone 1:
 
+* support gtasks force-refresh via add-n-remove a status label (in gmail)
+  * per-user per-api internal quota
+    * quota to avoid too many dirty refreshes
+  * count gtasks short quota per user
+  * per-user ip to skip 100 per user quota
+    * needed?
+  * check how it works with deleting (and orphan threads)
 * `T/task` and `A/answer` labels
   * add `T/refresh-next` to refresh the `s-next-action` list
   * `A/quota-exceeded` pops up if the user ran out of quota
-    * that included both users-internal and the global quota
-* support gtasks force-refresh via add-n-remove a status label (in gmail)
-  * requires re-reading dirty lists after read-merge sequence
-    * Merge as a state
-  * mark task lists as dirty based on label queries after a gmail change
-  * per-user per-api internal quota
-  * per-user ip to skip 100 per user quota
+    * that included both users-internal and the global quotas
 * reduce gtasks per-list refresh freq to 10 mins
 * encrypt sensitive info in the logs with MD5 hashes
   * only for PROD
@@ -57,6 +59,9 @@
 
 ## TODO
 
+* implement Dirty states for gtask lists
+  * create/modify Record
+  * remove from list
 * store history ID times per user in the DB
   * helps with first-start merge to compare dates
 * consider unifying hashtags

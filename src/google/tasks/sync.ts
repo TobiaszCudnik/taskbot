@@ -100,6 +100,7 @@ export default class GTasksSync extends SyncWriter<
   }[]
   // remaining quota, range between 0 (full limit) to 1 (none left)
   get short_quota_usage(): number {
+    // TODO quota should be per user
     const requests = this.root.connections.requests.gtasks
     const i = _.sortedIndex(
       requests,
@@ -108,7 +109,7 @@ export default class GTasksSync extends SyncWriter<
         .unix()
     )
     return roundTo(
-      (requests.length - i) / this.config.gtasks.request_quota_100,
+      (requests.length - i) / this.config.gtasks.request_quota_100_user,
       2
     )
   }
@@ -193,7 +194,7 @@ export default class GTasksSync extends SyncWriter<
   // ----- -----
 
   getState() {
-    return machine(sync_state).id('GTasks-root')
+    return machine(sync_state).id('GTasks/root')
   }
 
   /**

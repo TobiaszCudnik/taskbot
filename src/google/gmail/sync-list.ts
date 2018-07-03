@@ -2,6 +2,8 @@ import { machine } from 'asyncmachine'
 import { debug } from 'debug'
 import * as clone from 'deepcopy'
 import * as google from 'googleapis'
+import * as loki from 'lokijs'
+import * as moment from 'moment'
 // Machine types
 import {
   AsyncMachine,
@@ -27,7 +29,7 @@ export const sync_state: IJSONStates = {
 }
 
 type GmailAPI = google.gmail.v1.Gmail
-type DBCollection = LokiCollection<DBRecord>
+type DBCollection = loki.Collection<DBRecord>
 export default class GmailListSync extends SyncReader<
   IListConfig,
   TStates,
@@ -58,11 +60,15 @@ export default class GmailListSync extends SyncReader<
   // ----- -----
 
   async Reading_state() {
+    if (!this.shouldRead()) {
+      return this.state.add('ReadingDone')
+    }
     super.Reading_state()
     const abort = this.state.getAbort('Reading')
     this.query.state.add('FetchingThreads')
     // TODO pipe?
     await this.query.state.when('MsgsFetched')
+    this.state.drop('Dirty')
     if (abort()) return
     this.state.add('ReadingDone')
   }
@@ -77,8 +83,35 @@ export default class GmailListSync extends SyncReader<
   // Methods
   // ----- -----
 
+  // @ts-ignore
   getState() {
     return machine(sync_state).id('Gmail/list: ' + this.config.name)
+  }
+
+  // TODO extract to ListSyncFreq
+  shouldRead() {
+    if (this.state.is('Dirty') || !this.last_read_end) {
+      this.log_verbose(`Forced read - Dirty`)
+      return true
+    }
+    // TODO check users internal quota to avoid too many dirty refreshes
+    // TODO check per user short_quota
+    // TODO check global short_quota
+    const since_last_read = moment.duration(moment().diff(this.last_read_start))
+    let sync_frequency =
+      this.gmail.config.gmail.sync_frequency || this.gmail.config.sync_frequency
+    const list_multi = (this.config.sync_frequency || {}).gmail_multi
+    if (list_multi) {
+      sync_frequency *= list_multi
+    }
+    if (this.root.config.sync_frequency_multi) {
+      sync_frequency *= this.root.config.sync_frequency_multi
+    }
+    if (sync_frequency && since_last_read.asSeconds() < sync_frequency) {
+      this.log_verbose(`Reading skipped - max frequency exceeded`)
+      return false
+    }
+    return true
   }
 
   // read the current list and add to the DB
@@ -112,7 +145,7 @@ export default class GmailListSync extends SyncReader<
     if (this.config.writers && this.config.writers.length == 1) {
       return changed ? [changed] : []
     }
-    // remove
+    // REMOVE (from this list)
     // query the db for the current list where IDs arent present locally
     // and apply the exit label changes
     // TODO use an index
@@ -147,13 +180,14 @@ export default class GmailListSync extends SyncReader<
       // this.gmail.threads.delete(record.gmail_id)
       this.printRecordDiff(before, record, 'threads to close')
       record.gmail_orphan = true
+      this.root.markListsAsDirty(this, record, before)
       return record
     })
     return changed ? [changed] : []
   }
 
   createRecord(thread: google.gmail.v1.Thread): DBRecord {
-    const me = this.root.username
+    const me = this.root.config.google.username
     const from = this.gmail.getThreadAuthor(thread)
     const to = this.gmail.getThreadAddressee(thread)
     const self_sent = from == me && to == me
@@ -177,6 +211,7 @@ export default class GmailListSync extends SyncReader<
         ).labels
       })
     }
+    this.root.markListsAsDirty(this, record)
     return record
   }
 
@@ -208,6 +243,10 @@ export default class GmailListSync extends SyncReader<
     })
     // TODO confirm if unnecessary
     // this.applyLabels(record, this.config.enter)
+    this.root.markListsAsDirty(this, record, before)
+    //   getListsForRecord(before).map( list => list.state.add('Dirty')
+    // automatically skip lists which were recently refreshed
+    //   define a refresh-buffer in the config
     this.printRecordDiff(before, record)
     return true
   }

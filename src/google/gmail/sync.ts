@@ -114,7 +114,6 @@ export default class GmailSync extends SyncWriter<
   subs: {
     lists: GmailListSync[]
   }
-  verbose = debug('gmail-verbose')
   included_labels = this.root.config.gmail.included_labels
   labels_to_fetch: string[]
 
@@ -165,11 +164,9 @@ export default class GmailSync extends SyncWriter<
     const abort = this.state.getAbort('FetchingOrphans')
     // TODO fake cast, wrong d.ts, missing lokijs fields
     // TODO GC the orphaned threads after some time
-    const records_without_threads = <DBRecord[]>(<any>this.root.data.where(
-      (r: DBRecord) => {
-        return (r.gmail_id && !this.threads.get(r.gmail_id)) || r.gmail_orphan
-      }
-    ))
+    const records_without_threads = this.root.data.where((r: DBRecord) => {
+      return (r.gmail_id && !this.threads.get(r.gmail_id)) || r.gmail_orphan
+    })
     this.log_verbose(
       `Processing ${records_without_threads.length} orphaned threads`
     )
@@ -275,7 +272,7 @@ export default class GmailSync extends SyncWriter<
   // ----- -----
 
   getState() {
-    return machine(sync_state).id('GMail-root')
+    return machine(sync_state).id('GMail/root')
   }
 
   /**
@@ -380,13 +377,13 @@ export default class GmailSync extends SyncWriter<
   }
 
   async processThreadsToDelete(abort: () => boolean): Promise<void[]> {
-    // TODO fake cast, wrong d.ts, missing lokijs fields
-    const to_delete = <DBRecord[]>(<any>this.root.data.find({
-      to_delete: true
-    })).filter((record: DBRecord) => Boolean(record.gmail_id))
-    // TODO mark as Dirty only queries related by labels
+    const to_delete = this.root.data
+      .find({
+        to_delete: true
+      })
+      .filter((record: DBRecord) => Boolean(record.gmail_id))
+
     if (to_delete.length) {
-      this.subs.lists.forEach(sub => sub.query.state.add('Dirty'))
       this.log(`Deleting ${to_delete.length} threads`)
     }
     return await map(to_delete, async (record: DBRecord) => {
@@ -402,13 +399,13 @@ export default class GmailSync extends SyncWriter<
   }
 
   async processThreadsToAdd(abort: () => boolean): Promise<void[]> {
-    // TODO fake cast, wrong d.ts, missing lokijs fields
-    const new_threads = <DBRecord[]>(<any>this.root.data.find({
-      gmail_id: undefined
-    })).filter((record: DBRecord) => !record.to_delete)
-    // TODO mark as Dirty only queries related by labels
+    const new_threads = this.root.data
+      .find({
+        gmail_id: undefined
+      })
+      .filter((record: DBRecord) => !record.to_delete)
+
     if (new_threads.length) {
-      this.subs.lists.forEach(sub => sub.query.state.add('Dirty'))
       this.log(`Creating ${new_threads.length} new threads`)
     }
     return await map(new_threads, async (record: DBRecord) => {
@@ -424,8 +421,8 @@ export default class GmailSync extends SyncWriter<
 
   async processThreadsToModify(abort: () => boolean): Promise<void[]> {
     const diff_threads = [...this.threads.values()]
-      .map(thread => {
-        const record = this.root.data.findOne({ gmail_id: thread.id })
+      .map((thread: Thread) => {
+        const record: DBRecord = this.root.data.findOne({ gmail_id: thread.id })
         if (!record) {
           this.log_error(
             `Missing record for the thread ${
@@ -451,10 +448,8 @@ export default class GmailSync extends SyncWriter<
       })
       .filter(([id, add, remove]) => add.length || remove.length)
 
-    // TODO mark as Dirty only queries related by labels
     if (diff_threads.length) {
       this.log(`Modifying ${diff_threads.length} new threads`)
-      this.subs.lists.forEach(sub => sub.query.state.add('Dirty'))
     }
     return await map(diff_threads, async ([id, add, remove]) => {
       await this.modifyLabels(id, add, remove, abort)
@@ -636,7 +631,9 @@ export default class GmailSync extends SyncWriter<
 
   createEmail(subject: string): TRawEmail {
     let email = [
-      `From: ${this.root.config.google.username} <${this.root.config.google.username}>s`,
+      `From: ${this.root.config.google.username} <${
+        this.root.config.google.username
+      }>s`,
       `To: ${this.root.config.google.username}`,
       'Content-type: text/html;charset=utf-8',
       'MIME-Version: 1.0',

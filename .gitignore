@@ -28,6 +28,6 @@
 /typings/machines/**/**.d.ts
 /logs/
 /wiki/
-/site/privacy-policy-output.html
+/static/privacy-policy-output.html
 /package-lock.json
 /wiki/cost.md

@@ -51,16 +51,27 @@ const config: IConfigBase = {
       /^UNREAD$/
     ],
     domain: 'mail.google.com',
-    orphans_freq_min: 5
+    orphans_freq_min: 5,
+    // per user
+    request_quota_100: 2_000_000,
+    request_quota_100_user: 25_000,
+    // global
+    request_quota_day: 1_000_000_000,
   },
+  // TODO group exception settings
   exception_delay: 5,
   exception_flood_delay: 10 * 60,
   gtasks: {
-    request_quota_100: 500,
-    request_quota_day: 50000,
+    // per user
+    request_quota_100_user: 500,
+    // global
+    request_quota_day: 50_000,
     quota_exceeded_delay: 50,
-    sync_frequency: 10
+    // seconds
+    sync_frequency: 10*60
   },
+  // seconds
+  sync_frequency: 1,
   labels: [
     {
       symbol: '!',
@@ -147,7 +158,6 @@ const config: IConfigBase = {
       }
     }
   ],
-  sync_frequency: 1,
   label_filters: [
     {
       name: 'newest status removes other ones',
@@ -177,10 +187,7 @@ const config: IConfigBase = {
       db_query: r => Boolean(hasLabel(r, 'INBOX') && hasLabel(r, 'UNREAD')),
       enter: {},
       exit: {},
-      writers: ['gmail'],
-      sync_frequency: {
-        gtasks: 5
-      }
+      writers: ['gmail']
     },
     {
       name: '!Next',
@@ -195,7 +202,7 @@ const config: IConfigBase = {
         remove: ['!S/Next Action']
       },
       sync_frequency: {
-        gtasks: 5
+        gtasks_multi: 0.5
       }
     },
     {
@@ -211,7 +218,7 @@ const config: IConfigBase = {
         remove: ['!S/Pending']
       },
       sync_frequency: {
-        gtasks: 20
+        gtasks_multi: 1.5
       }
     },
     {
@@ -240,7 +247,7 @@ const config: IConfigBase = {
         remove: ['!S/Some day']
       },
       sync_frequency: {
-        gtasks: 20
+        gtasks_multi: 2
       }
     }
   ]

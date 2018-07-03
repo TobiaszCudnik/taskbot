@@ -20,7 +20,7 @@ start-prod:
 	PROD=1 DEBUG=root:\*-info,\*-error DEBUG_FILE=1 DEBUG_AM=1 node src/app/app.js
 
 start-am:
-	DEBUG=\*-error,connections-verbose,root:\*-info,gmail-root,gtasks-root,record-diffs,\*-am \
+	DEBUG=\*-error,connections-verbose,root:\*-info,gmail-root,gtasks-root,record-diffs,\*-am:\* \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node --inspect \

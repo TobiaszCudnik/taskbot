@@ -86,7 +86,9 @@ async function exit() {
     }
     const data = sync.data.toString()
     if (data.trim()) {
-      console.log(`User ${sync.config.user.id}: ${sync.config.google.username}`)
+      console.log(
+        `\nUser ${sync.config.user.id}: ${sync.config.google.username}`
+      )
       console.log(sync.data.toString())
     }
     console.log(`\nUser ${sync.config.user.id}: ${sync.config.google.username}`)

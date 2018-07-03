@@ -51,7 +51,7 @@ export default class Logger {
       name2 = `${base_labels.name}:${base_labels.user_id}`
     }
     const name_level = name2 + '-' + level
-    console.log(`Creating logger ${name_level}`)
+    // console.log(`Creating logger ${name_level}`)
     // keep level in the name only for the console logger
     const terminal = debug(name_level)
     return (...msgs) => {

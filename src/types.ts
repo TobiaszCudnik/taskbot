@@ -22,7 +22,8 @@ export interface IListConfig {
   writers?: string[]
   // seconds
   sync_frequency?: {
-    gtasks?: number
+    gtasks_multi?: number
+    gmail_multi?: number
   }
 }
 
@@ -71,11 +72,16 @@ export interface IConfigBase {
     included_labels: RegExp[]
     domain: string
     orphans_freq_min: number
+    request_quota_100_user: number
+    request_quota_100: number
+    request_quota_day: number
+    // seconds
+    sync_frequency: number
   }
   exception_delay: number
   exception_flood_delay: number
   gtasks: {
-    request_quota_100: number
+    request_quota_100_user: number
     request_quota_day: number
     quota_exceeded_delay: number
     // seconds
