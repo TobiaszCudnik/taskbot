@@ -27,7 +27,7 @@ export default class LabelFilterSync extends SyncReader<
   }
 
   Reading_state() {
-    this.state.add('ReadingDone')
+    this.state.addNext('ReadingDone')
   }
 
   getState() {

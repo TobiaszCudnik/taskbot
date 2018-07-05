@@ -64,6 +64,7 @@ export default class GmailListSync extends SyncReader<
       return this.state.addNext('ReadingDone')
     }
     super.Reading_state()
+    this.root.last_sync_reads++
     const abort = this.state.getAbort('Reading')
     this.query.state.add('FetchingThreads')
     // TODO pipe?
@@ -177,6 +178,7 @@ export default class GmailListSync extends SyncReader<
       changed++
       this.log('change')
       // TODO clone only in debug
+      this.root.markListsAsDirty(this, record)
       const before = clone(record)
       // remove enter labels, as the thread left the query
       this.applyLabels(record, { remove: this.config.enter.add })
@@ -188,7 +190,6 @@ export default class GmailListSync extends SyncReader<
       // this.gmail.threads.delete(record.gmail_id)
       this.printRecordDiff(before, record, 'threads to close')
       record.gmail_orphan = true
-      this.root.markListsAsDirty(this, record, before)
       return record
     })
     return changed ? [changed] : []
@@ -241,6 +242,7 @@ export default class GmailListSync extends SyncReader<
       // TODO check for conflicts to resolve? since the last sync
       return false
     }
+    this.root.markListsAsDirty(this, record)
     record.updated = thread_update_time
     // TODO content from emails
     // apply labels from gmail
@@ -251,7 +253,6 @@ export default class GmailListSync extends SyncReader<
     })
     // TODO confirm if unnecessary
     // this.applyLabels(record, this.config.enter)
-    this.root.markListsAsDirty(this, record, before)
     //   getListsForRecord(before).map( list => list.state.add('Dirty')
     // automatically skip lists which were recently refreshed
     //   define a refresh-buffer in the config
