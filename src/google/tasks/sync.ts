@@ -4,6 +4,7 @@ import * as debug from 'debug'
 import * as google from 'googleapis'
 import * as http from 'http'
 import * as _ from 'lodash'
+import { Moment } from 'moment'
 import * as moment from 'moment'
 import * as delay from 'delay'
 import * as roundTo from 'round-to'
@@ -93,12 +94,17 @@ export default class GTasksSync extends SyncWriter<
   }
   // @ts-ignore
   subs_flat: GTasksListSync[]
+  // TODO ideally loose this
   children_to_move: {
     list_id: string
     gmail_id: string
     children: TaskTree[]
   }[]
-  // remaining quota, range between 0 (full limit) to 1 (none left)
+  // internal user sync quota per day, range between 0 (full limit) to
+  email_url = `https://${this.root.config.gmail.domain}/mail/u/0/#all/`
+  reads_today_last_reset: Moment = null
+  reads_today = 0
+
   get short_quota_usage(): number {
     // TODO quota should be per user
     const requests = this.root.connections.requests.gtasks
@@ -108,12 +114,29 @@ export default class GTasksSync extends SyncWriter<
         .subtract(100, 'seconds')
         .unix()
     )
-    return roundTo(
-      (requests.length - i) / this.config.gtasks.request_quota_100_user,
-      2
+    return Math.min(
+      1,
+      roundTo(
+        (requests.length - i) / this.config.gtasks.request_quota_100_user,
+        2
+      )
     )
   }
-  email_url = `https://${this.root.config.gmail.domain}/mail/u/0/#all/`
+
+  // remaining quota, range between 0 (full limit) to 1 (none left)
+  // 1 (none left)
+  get user_quota(): number {
+    const now = moment().tz('America/Los_Angeles')
+    let last_reset = this.reads_today_last_reset
+    // reset once per day (in the timezone of the quota)
+    if (!last_reset || last_reset.diff(now, 'days')) {
+      this.reads_today = 0
+      this.reads_today_last_reset = moment()
+        .tz('America/Los_Angeles')
+        .startOf('day')
+    }
+    return Math.min(1, roundTo(this.reads_today / this.calculateQuota(), 2))
+  }
 
   constructor(root: RootSync, public auth: Auth) {
     super(root.config, root)
@@ -228,6 +251,10 @@ export default class GTasksSync extends SyncWriter<
     this.root.connections.requests.gtasks.push(moment().unix())
     // @ts-ignore
     params.auth = this.auth.client
+    // check the internal per-user quota
+    if (this.user_quota == 1) {
+      this.state.add('QuotaExceeded')
+    }
     return await this.root.connections.req(
       this.root.config.user.id,
       'gtasks.' + method_name,
@@ -473,6 +500,18 @@ export default class GTasksSync extends SyncWriter<
       .filter(sync => sync.config.name != name)
       .find(sync => sync.config.db_query(record))
     return list ? list.list.id : false
+  }
+
+  // amount of sync reads (not requests) per day
+  // TODO make it a mixin, add to Gmail
+  calculateQuota() {
+    const day = 24 * 60 * 60
+    let estimated = 0
+    for (const sync of this.subs_flat) {
+      estimated += day / sync.sync_frequency
+    }
+    // at least 100 syncs per day
+    return Math.max(100, estimated * 1.5)
   }
 
   processTasksToAdd(abort: () => boolean) {

@@ -80,6 +80,7 @@ export default class GTasksListSync extends SyncReader<
     }
     super.Reading_state()
     this.root.last_sync_reads++
+    this.gtasks.reads_today++
     const quota = this.gtasks.short_quota_usage
     const abort = this.state.getAbort('Reading')
     const [list, res] = await this.gtasks.req(
@@ -175,6 +176,16 @@ export default class GTasksListSync extends SyncReader<
       return false
     }
     const since_last_read = moment.duration(moment().diff(this.last_read_start))
+    const sync_frequency = this.sync_frequency
+    if (sync_frequency && since_last_read.asSeconds() < sync_frequency) {
+      this.log_verbose(`Reading skipped - max frequency exceeded`)
+      return false
+    }
+    return true
+  }
+
+  // Returns the number of seconds between reads
+  get sync_frequency(): number {
     let sync_frequency =
       this.gtasks.config.gtasks.sync_frequency ||
       this.gtasks.config.sync_frequency
@@ -185,11 +196,7 @@ export default class GTasksListSync extends SyncReader<
     if (this.root.config.sync_frequency_multi) {
       sync_frequency *= this.root.config.sync_frequency_multi
     }
-    if (sync_frequency && since_last_read.asSeconds() < sync_frequency) {
-      this.log_verbose(`Reading skipped - max frequency exceeded`)
-      return false
-    }
-    return true
+    return sync_frequency
   }
 
   /**

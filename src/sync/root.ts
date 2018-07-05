@@ -268,7 +268,10 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     super.ReadingDone_state()
     this.merge()
     // if any of the readers is marked as Dirty by other ones, re-read
-    if (this.subs_all.some(s => s.state.is('Dirty'))) {
+    const should_reread = this.subs_all.some(
+      s => s.state.is('Dirty') && s.state.not('QuotaExceeded')
+    )
+    if (should_reread) {
       this.log('Re-reading because at least one list is Dirty')
       // forcefully drop the done state because Reading is negotiable
       await this.subs_all.map(async sync => {
@@ -294,6 +297,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     // TODO show how many sources were actually synced
     this.log(
       `SYNC DONE (${this.last_sync_reads} reads):\n` +
+        `Quota: GT ${this.subs.google.subs.tasks.user_quota}\n` +
         `Read: ${this.last_read_time.asSeconds()}sec\n` +
         `Write: ${this.last_write_time.asSeconds()}sec`
     )
