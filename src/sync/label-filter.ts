@@ -21,6 +21,11 @@ export default class LabelFilterSync extends SyncReader<
 > {
   state: AsyncMachine<TStates, IBind, IEmit>
 
+  Dirty_enter() {
+    // label filters can never be dirty, as its not an actual list
+    return false
+  }
+
   Reading_state() {
     this.state.add('ReadingDone')
   }

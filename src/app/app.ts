@@ -81,9 +81,7 @@ async function exit() {
   }
   for (const sync of syncs) {
     console.log(`\nUser ${sync.config.user.id}: ${sync.config.google.username}`)
-    for (const machine of sync.getMachines()) {
-      console.log(machine.statesToString(true))
-    }
+    console.log(sync.getMachines())
     const data = sync.data.toString()
     if (data.trim()) {
       console.log(

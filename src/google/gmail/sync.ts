@@ -83,6 +83,8 @@ export const sync_state: IJSONStates = {
   },
   OrphansFetched: {
     add: ['ReadingDone'],
+    // TODO check if this doesnt prevent refreshing orphaned threads
+    require: ['ReadingDone'],
     drop: ['FetchingOrphans', 'Reading']
   },
 
@@ -624,8 +626,7 @@ export default class GmailSync extends SyncWriter<
       abort,
       false
     )
-    // TODO handle no ret
-    this.verbose(`New thread ID - '${ret.threadId}'`)
+    this.log_verbose(`New thread ID - '${ret.threadId}'`)
     return ret.threadId
   }
 

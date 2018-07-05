@@ -61,7 +61,7 @@ export default class GmailListSync extends SyncReader<
 
   async Reading_state() {
     if (!this.shouldRead()) {
-      return this.state.add('ReadingDone')
+      return this.state.addNext('ReadingDone')
     }
     super.Reading_state()
     const abort = this.state.getAbort('Reading')
@@ -90,6 +90,11 @@ export default class GmailListSync extends SyncReader<
 
   // TODO extract to ListSyncFreq
   shouldRead() {
+    if (!this.daily_quota_ok) {
+      this.state.drop('Dirty')
+      this.log_error('Skipping sync because of API daily quota')
+      return false
+    }
     if (this.state.is('Dirty') || !this.last_read_end) {
       this.log_verbose(`Forced read - Dirty`)
       return true
@@ -100,13 +105,16 @@ export default class GmailListSync extends SyncReader<
     const since_last_read = moment.duration(moment().diff(this.last_read_start))
     let sync_frequency =
       this.gmail.config.gmail.sync_frequency || this.gmail.config.sync_frequency
+    // list freq multiplier
     const list_multi = (this.config.sync_frequency || {}).gmail_multi
     if (list_multi) {
       sync_frequency *= list_multi
     }
+    // per-user freq multiplier
     if (this.root.config.sync_frequency_multi) {
       sync_frequency *= this.root.config.sync_frequency_multi
     }
+    // reject if frequency got exceeded
     if (sync_frequency && since_last_read.asSeconds() < sync_frequency) {
       this.log_verbose(`Reading skipped - max frequency exceeded`)
       return false

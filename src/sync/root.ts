@@ -148,29 +148,29 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   HeartBeat_state() {
     const now = moment().unix()
     const is = state => this.state.is(state)
-    if (is('Restarting')) {
-      // TODO timeout
-      this.state.drop('HeartBeat')
-      return
-    }
-    // TODO this can leak
-    const restart = this.state.addByListener('Restarting')
-    if (this.state.not(['Reading', 'Writing', 'Scheduled'])) {
-      this.logStates('Before restart')
-      restart('None of the action states is set')
-    } else if (
-      is('Reading') &&
-      this.last_read_start.unix() + this.read_timeout < now
-    ) {
-      this.logStates('Before restart')
-      restart('Reading timeout')
-    } else if (
-      is('Writing') &&
-      this.last_write_start.unix() + this.write_timeout < now
-    ) {
-      this.logStates('Before restart')
-      restart('Writing timeout')
-    }
+    // if (is('Restarting')) {
+    //   // TODO timeout
+    //   this.state.drop('HeartBeat')
+    //   return
+    // }
+    // // TODO this can leak
+    // const restart = this.state.addByListener('Restarting')
+    // if (this.state.not(['Reading', 'Writing', 'Scheduled'])) {
+    //   this.logStates('Before restart')
+    //   restart('None of the action states is set')
+    // } else if (
+    //   is('Reading') &&
+    //   this.last_read_start.unix() + this.read_timeout < now
+    // ) {
+    //   this.logStates('Before restart')
+    //   restart('Reading timeout')
+    // } else if (
+    //   is('Writing') &&
+    //   this.last_write_start.unix() + this.write_timeout < now
+    // ) {
+    //   this.logStates('Before restart')
+    //   restart('Writing timeout')
+    // }
     this.state.drop('HeartBeat')
   }
 
@@ -269,7 +269,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     if (this.subs_all.some(s => s.state.is('Dirty'))) {
       this.log('Re-reading because at least one list is Dirty')
       // forcefully drop the done state because Reading is negotiable
-      await this.subs_all.map(async (sync) => {
+      await this.subs_all.map(async sync => {
         sync.state.drop('ReadingDone')
         await sync.state.whenNot('ReadingDone')
       })
@@ -309,10 +309,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     if (msg) {
       this.log_verbose(msg)
     }
-    let states = ''
-    for (const machine of this.getMachines()) {
-      states += machine.statesToString(include_inactive)
-    }
+    let states = this.getMachines(include_inactive)
     this.log_verbose(states)
   }
 

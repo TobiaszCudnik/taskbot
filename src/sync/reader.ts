@@ -229,14 +229,6 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
     return this.subs_flat.every(sync => sync.state.is('Ready'))
   }
 
-  Reading_enter() {
-    if (!this.daily_quota_ok) {
-      this.log_error('Skipping sync because of quota')
-      this.state.add('ReadingDone')
-      return false
-    }
-  }
-
   Reading_state() {
     this.last_read_start = moment()
   }
@@ -339,13 +331,10 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
     this.log(msg)
   }
 
-  // TODO merge with subs_all
-  getMachines() {
+  getMachines(inactive_states = true): string {
     const machines = [this.state]
-    for (const sub of this.subs_flat) {
-      machines.push(...sub.getMachines())
-    }
-    return machines
+    machines.push(...this.subs_all.map(sync => sync.state))
+    return machines.map(m => m.statesToString(inactive_states)).join('\n')
   }
 
   // TODO extract to a mixin

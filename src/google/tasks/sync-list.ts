@@ -76,7 +76,7 @@ export default class GTasksListSync extends SyncReader<
 
   async Reading_state() {
     if (!this.shouldRead()) {
-      return this.state.add('ReadingDone')
+      return this.state.addNext('ReadingDone')
     }
     super.Reading_state()
     const quota = this.gtasks.short_quota_usage
