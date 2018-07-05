@@ -1,3 +1,4 @@
+import LabelFilterSync from './src/sync/label-filter'
 import { DBRecord, default as RootSync } from './src/sync/root'
 import { IConfigBase } from './src/types'
 import * as _ from 'lodash'
@@ -44,8 +45,8 @@ const config: IConfigBase = {
     max_results: 300,
     included_labels: [
       /^!S\/[\w\s-]+$/,
-      /^!T\/[\w\s-]+$/,
-      /^A\/[\w\s-]+$/,
+      /^!T\/[\w\s-/]+$/,
+      /^M\/[\w\s-/]+$/,
       /^P\/[\w\s-]+$/,
       /^R\/[\w\s-]+$/,
       /^L\/[\w\s-]+$/,
@@ -161,7 +162,7 @@ const config: IConfigBase = {
     },
     {
       prefix: '!T/',
-      name: 'sync-gtasks',
+      name: 'Sync GTasks',
       colors: {
         bg: '#b9e4d0',
         fg: '#000000'
@@ -169,7 +170,7 @@ const config: IConfigBase = {
     },
     {
       prefix: '!T/',
-      name: 'sync-gtasks-next',
+      name: 'Sync GTasks/Next',
       colors: {
         bg: '#b9e4d0',
         fg: '#000000'
@@ -177,7 +178,7 @@ const config: IConfigBase = {
     },
     {
       prefix: '!T/',
-      name: 'sync-gtasks-pending',
+      name: 'Sync GTasks/Pending',
       colors: {
         bg: '#b9e4d0',
         fg: '#000000'
@@ -185,7 +186,7 @@ const config: IConfigBase = {
     },
     {
       prefix: '!T/',
-      name: 'sync-gtasks-someday',
+      name: 'Sync GTasks/Some Day',
       colors: {
         bg: '#b9e4d0',
         fg: '#000000'
@@ -193,14 +194,15 @@ const config: IConfigBase = {
     },
     {
       prefix: '!T/',
-      name: 'sync-gtasks-actions',
+      name: 'Sync GTasks/Actions',
       colors: {
         bg: '#b9e4d0',
         fg: '#000000'
       }
     },
     {
-      prefix: 'M/gtasks-quota-exceeded',
+      prefix: 'M/',
+      name: 'GTasks/Quota Exceeded',
       colors: {
         bg: '#b9e4d0',
         fg: '#000000'
@@ -210,9 +212,9 @@ const config: IConfigBase = {
   label_filters: [
     {
       name: 'newest status removes other ones',
-      // only the ones who used to have one
+      // match all records with at least 2 status labels
       db_query: r => hasLabel(r, /!S\/.+/) > 1,
-      modify(r: DBRecord) {
+      modify(this: LabelFilterSync, r: DBRecord) {
         let newest: { label: string; date: number } = null
         const remove = []
         for (const [label, data] of Object.entries(r.labels)) {
@@ -232,36 +234,41 @@ const config: IConfigBase = {
     },
     {
       name: 'task labels',
-      // only the ones who used to have one
-      db_query: r => hasLabel(r, /!T\/.+/) > 1,
-      modify(r: DBRecord) {
+      db_query: r => Boolean(hasLabel(r, /!T\/.+/)),
+      modify(this: LabelFilterSync, r: DBRecord) {
         const remove = []
         const add = new Set<string>()
-        const root: RootSync = this
         for (const [label, data] of Object.entries(r.labels)) {
           if (!data.active || !/!T\/.+/.test(label)) continue
+
+          // remove every task label, even the unmatched ones
           remove.push(label)
+
           let match
+          this.log_verbose(`Matching task label '${label}'`)
+
           // sync gtasks
-          match = label.match(/\/sync-gtasks/)
-          if (label.match(/\/sync-gtasks(.+?)$/)) {
-            const name = match[1] ? match[1].replace(/^-/, '') : null
-            for (const list of root.subs.google.subs.tasks.subs.lists) {
+          match = label.match(/\/Sync GTasks(\/.+?)$/)
+          if (match) {
+            const name = match[1]
+              ? (match[1] as string).replace('/', '').toLowerCase()
+              : null
+            this.log(`Executing task label '${label}' (${name})`)
+            for (const list of this.root.subs.google.subs.tasks.subs.lists) {
               const list_name = list.config.name.replace('!', '').toLowerCase()
 
               if (name && list_name != name) continue
               // force refresh
-              list.state.add('Dirty')
+              if (list.state.is('QuotaExceeded')) {
+                add.add('M/GTasks Quota Exceeded')
+              } else {
+                list.state.add('Dirty')
+              }
             }
-          }
-          // 404
-          if (!match) {
-            add.add('M/task-unknown')
           }
         }
         return {
           add: [...add],
-          // remove all the task labels
           remove
         }
       }

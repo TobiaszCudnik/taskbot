@@ -297,7 +297,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     // TODO show how many sources were actually synced
     this.log(
       `SYNC DONE (${this.last_sync_reads} reads):\n` +
-        `Quota: GT ${this.subs.google.subs.tasks.user_quota}\n` +
+        `Usage: T/${this.subs.google.subs.tasks.user_quota}\n` +
         `Read: ${this.last_read_time.asSeconds()}sec\n` +
         `Write: ${this.last_write_time.asSeconds()}sec`
     )

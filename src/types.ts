@@ -1,10 +1,14 @@
 import { DBRecord } from './sync/root'
 
+export type TModifyLabels = {
+  add?: string[]
+  remove?: string[]
+}
+
 export interface ILabelFilter {
   name: string
   db_query(r: DBRecord): boolean
-  add?(r: DBRecord): string[]
-  modify?(r: DBRecord): string[]
+  modify?(r: DBRecord): TModifyLabels
 }
 
 export interface IListConfig {

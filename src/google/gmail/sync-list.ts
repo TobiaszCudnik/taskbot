@@ -242,20 +242,28 @@ export default class GmailListSync extends SyncReader<
       // TODO check for conflicts to resolve? since the last sync
       return false
     }
-    this.root.markListsAsDirty(this, record)
     record.updated = thread_update_time
     // TODO content from emails
     // apply labels from gmail
     const thread_labels = this.gmail.getLabelsFromThread(thread)
+    const record_labels = Object.entries(record.labels)
+      .filter(([name, label]) => label.active)
+      .map(([name, label]) => name)
+    const to_remove = _.difference(record_labels, thread_labels)
+    const to_add = _.difference(thread_labels, record_labels)
+
+    // mark as dirty only if theres a change
+    if (to_add.length || to_remove.length) {
+      this.root.markListsAsDirty(this, record)
+    }
+
     this.applyLabels(record, {
-      add: thread_labels,
-      remove: _.difference(Object.keys(record.labels), thread_labels)
+      add: to_add,
+      remove: to_remove
     })
     // TODO confirm if unnecessary
     // this.applyLabels(record, this.config.enter)
     //   getListsForRecord(before).map( list => list.state.add('Dirty')
-    // automatically skip lists which were recently refreshed
-    //   define a refresh-buffer in the config
     this.printRecordDiff(before, record)
     return true
   }
@@ -279,9 +287,9 @@ export default class GmailListSync extends SyncReader<
     )
   }
 
-  getMachines() {
-    const machines = super.getMachines()
-    machines.push(this.query.state)
+  getMachines(include_inactive = true) {
+    let machines = super.getMachines(include_inactive)
+    machines += this.query.state.statesToString(include_inactive)
     return machines
   }
 }

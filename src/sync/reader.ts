@@ -15,6 +15,7 @@ import {
   IEmitBase,
   ITransitions
 } from '../../typings/machines/sync/reader'
+import { TModifyLabels } from '../types'
 import { machineLogToDebug } from '../utils'
 import Logger, { log_fn } from '../app/logger'
 import RootSync, { DBRecord } from './root'
@@ -286,7 +287,7 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
     }
   }
 
-  applyLabels(record: DBRecord, labels: { add?: string[]; remove?: string[] }) {
+  applyLabels(record: DBRecord, labels: TModifyLabels) {
     record.labels = record.labels || {}
     for (const label of labels.remove || []) {
       // update the time only when something changes

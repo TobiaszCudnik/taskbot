@@ -479,13 +479,10 @@ export default class GTasksSync extends SyncWriter<
       tasklist: list.id,
       task: task.id
     }
-    return await this.req(
-      'tasks.delete',
-      this.api.tasks.delete,
-      params,
-      abort,
-      true
-    )
+    await this.req('tasks.delete', this.api.tasks.delete, params, abort, true)
+    // delete from cache
+    const cache = this.getListByID(list.id).tasks
+    cache.items = cache.items.filter(t => t.id != task.id)
   }
 
   getListByID(id: string): GTasksListSync {

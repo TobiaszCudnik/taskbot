@@ -36,16 +36,17 @@ export default class LabelFilterSync extends SyncReader<
 
   merge(): number[] {
     let count = 0
-    const records = <DBRecord[]>(<any>this.root.data.where(
-      this.config.db_query
-    ))
-    for (const r of records) {
-      const before = clone(r)
-      const labels = this.config.modify ? this.config.modify(r) : []
-      this.log(`Changing labels for '${r.title}'`)
-      this.applyLabels(r, modify)
-      r.updated = moment().unix()
-      this.printRecordDiff(before, r)
+    const records = this.root.data.where(this.config.db_query)
+    if (records.length) {
+      this.log(`${records.length} matches`)
+    }
+    for (const record of records) {
+      const before = clone(record)
+      const labels = this.config.modify.call(this.root, record)
+      this.log(`Changing labels for '${record.title}'`)
+      this.applyLabels(record, labels)
+      record.updated = moment().unix()
+      this.printRecordDiff(before, record)
       count++
     }
     return count ? [count] : []
