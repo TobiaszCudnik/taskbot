@@ -41,10 +41,9 @@ export default class LabelFilterSync extends SyncReader<
     ))
     for (const r of records) {
       const before = clone(r)
-      const add = this.config.add ? this.config.add(r) : []
-      const remove = this.config.remove ? this.config.remove(r) : []
+      const labels = this.config.modify ? this.config.modify(r) : []
       this.log(`Changing labels for '${r.title}'`)
-      this.applyLabels(r, { add, remove })
+      this.applyLabels(r, modify)
       r.updated = moment().unix()
       this.printRecordDiff(before, r)
       count++

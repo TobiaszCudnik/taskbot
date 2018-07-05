@@ -4,7 +4,7 @@ export interface ILabelFilter {
   name: string
   db_query(r: DBRecord): boolean
   add?(r: DBRecord): string[]
-  remove?(r: DBRecord): string[]
+  modify?(r: DBRecord): string[]
 }
 
 export interface IListConfig {

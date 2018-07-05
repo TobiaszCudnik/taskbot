@@ -1,4 +1,4 @@
-import { DBRecord } from './src/sync/root'
+import { DBRecord, default as RootSync } from './src/sync/root'
 import { IConfigBase } from './src/types'
 import * as _ from 'lodash'
 
@@ -44,6 +44,8 @@ const config: IConfigBase = {
     max_results: 300,
     included_labels: [
       /^!S\/[\w\s-]+$/,
+      /^!T\/[\w\s-]+$/,
+      /^A\/[\w\s-]+$/,
       /^P\/[\w\s-]+$/,
       /^R\/[\w\s-]+$/,
       /^L\/[\w\s-]+$/,
@@ -56,7 +58,7 @@ const config: IConfigBase = {
     request_quota_100: 2_000_000,
     request_quota_100_user: 25_000,
     // global
-    request_quota_day: 1_000_000_000,
+    request_quota_day: 1_000_000_000
   },
   // TODO group exception settings
   exception_delay: 5,
@@ -68,7 +70,7 @@ const config: IConfigBase = {
     request_quota_day: 50_000,
     quota_exceeded_delay: 50,
     // seconds
-    sync_frequency: 10*60
+    sync_frequency: 10 * 60
   },
   // seconds
   sync_frequency: 1,
@@ -156,6 +158,53 @@ const config: IConfigBase = {
         bg: '#b9e4d0',
         fg: '#000000'
       }
+    },
+    {
+      prefix: '!T/',
+      name: 'sync-gtasks',
+      colors: {
+        bg: '#b9e4d0',
+        fg: '#000000'
+      }
+    },
+    {
+      prefix: '!T/',
+      name: 'sync-gtasks-next',
+      colors: {
+        bg: '#b9e4d0',
+        fg: '#000000'
+      }
+    },
+    {
+      prefix: '!T/',
+      name: 'sync-gtasks-pending',
+      colors: {
+        bg: '#b9e4d0',
+        fg: '#000000'
+      }
+    },
+    {
+      prefix: '!T/',
+      name: 'sync-gtasks-someday',
+      colors: {
+        bg: '#b9e4d0',
+        fg: '#000000'
+      }
+    },
+    {
+      prefix: '!T/',
+      name: 'sync-gtasks-actions',
+      colors: {
+        bg: '#b9e4d0',
+        fg: '#000000'
+      }
+    },
+    {
+      prefix: 'M/gtasks-quota-exceeded',
+      colors: {
+        bg: '#b9e4d0',
+        fg: '#000000'
+      }
     }
   ],
   label_filters: [
@@ -163,7 +212,7 @@ const config: IConfigBase = {
       name: 'newest status removes other ones',
       // only the ones who used to have one
       db_query: r => hasLabel(r, /!S\/.+/) > 1,
-      remove(r: DBRecord) {
+      modify(r: DBRecord) {
         let newest: { label: string; date: number } = null
         const remove = []
         for (const [label, data] of Object.entries(r.labels)) {
@@ -176,7 +225,45 @@ const config: IConfigBase = {
             }
           }
         }
-        return _.without(remove, newest.label)
+        return {
+          remove: _.without(remove, newest.label)
+        }
+      }
+    },
+    {
+      name: 'task labels',
+      // only the ones who used to have one
+      db_query: r => hasLabel(r, /!T\/.+/) > 1,
+      modify(r: DBRecord) {
+        const remove = []
+        const add = new Set<string>()
+        const root: RootSync = this
+        for (const [label, data] of Object.entries(r.labels)) {
+          if (!data.active || !/!T\/.+/.test(label)) continue
+          remove.push(label)
+          let match
+          // sync gtasks
+          match = label.match(/\/sync-gtasks/)
+          if (label.match(/\/sync-gtasks(.+?)$/)) {
+            const name = match[1] ? match[1].replace(/^-/, '') : null
+            for (const list of root.subs.google.subs.tasks.subs.lists) {
+              const list_name = list.config.name.replace('!', '').toLowerCase()
+
+              if (name && list_name != name) continue
+              // force refresh
+              list.state.add('Dirty')
+            }
+          }
+          // 404
+          if (!match) {
+            add.add('M/task-unknown')
+          }
+        }
+        return {
+          add: [...add],
+          // remove all the task labels
+          remove
+        }
       }
     }
   ],
@@ -206,7 +293,7 @@ const config: IConfigBase = {
       }
     },
     {
-      name: '!Waiting',
+      name: '!Pending',
       gmail_query: 'label:!s-pending',
       db_query: r => Boolean(hasLabel(r, '!S/Pending')),
       enter: {
