@@ -1,6 +1,6 @@
 import LabelFilterSync from './src/sync/label-filter'
 import { DBRecord, default as RootSync } from './src/sync/root'
-import { IConfigBase } from './src/types'
+import { IConfig, IConfigBase } from './src/types'
 import * as _ from 'lodash'
 
 // TODO move functions to /src/sync/label-filter.ts
@@ -209,6 +209,7 @@ const config: IConfigBase = {
       }
     }
   ],
+  // TODO move those to /src/label-filters na ref the names here
   label_filters: [
     {
       name: 'newest status removes other ones',
@@ -275,14 +276,17 @@ const config: IConfigBase = {
     }
   ],
   lists: [
-    {
+    (config: IConfig) => ({
       name: 'inbox-labels',
-      gmail_query: 'in:inbox label:unread from:me to:me',
+      // query unread self emails in the inbox
+      gmail_query: `in:inbox label:unread from:${config.google.username} to:${
+        config.google.username
+      }`,
       db_query: r => Boolean(hasLabel(r, 'INBOX') && hasLabel(r, 'UNREAD')),
       enter: {},
       exit: {},
       writers: ['gmail']
-    },
+    }),
     {
       name: '!Next',
       gmail_query: 'label:!s-next-action',

@@ -1,6 +1,5 @@
 import { machine } from 'asyncmachine'
 import { TAbortFunction } from 'asyncmachine/types'
-import * as debug from 'debug'
 import * as google from 'googleapis'
 import * as _ from 'lodash'
 import * as delay from 'delay'

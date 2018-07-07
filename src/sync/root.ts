@@ -5,6 +5,7 @@ import 'colors'
 import * as debug from 'debug'
 import * as delay from 'delay'
 import * as diff from 'diff'
+import * as clone from 'deepcopy'
 import * as regexEscape from 'escape-string-regexp'
 import * as http from 'http'
 import { sortedIndex, reverse } from 'lodash'
@@ -141,6 +142,16 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
       setTimeout(hb, this.heartbeat_freq * SEC)
     }
     setTimeout(hb, this.heartbeat_freq * SEC)
+  }
+
+  init(config: IConfig) {
+    // shallow copy the config
+    this.config = {...config}
+    // parse lazy list configs
+    this.config.lists = this.config.lists.map(
+      list => (_.isFunction(list) ? list(this.config) : list)
+    )
+    debugger
   }
 
   // ----- -----

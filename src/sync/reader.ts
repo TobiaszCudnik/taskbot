@@ -128,8 +128,8 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
   }
 
   // TODO fix the params
-  constructor(config, root?: RootSync | Logger) {
-    this.config = config
+  constructor(config: GConfig, root?: RootSync | Logger) {
+    this.init(config)
     // required for this.initLoggers()
     if (root instanceof Logger) {
       this.root = <RootSync>(<any>this)
@@ -152,7 +152,11 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
       }
     }
     // set config on the next tick
-    this.state_reader.addNext('ConfigSet', config)
+    this.state_reader.addNext('ConfigSet', this.config)
+  }
+
+  init(config: GConfig) {
+    this.config = config
   }
 
   // ----- -----
