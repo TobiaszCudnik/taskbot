@@ -151,7 +151,6 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     this.config.lists = this.config.lists.map(
       list => (_.isFunction(list) ? list(this.config) : list)
     )
-    debugger
   }
 
   // ----- -----
