@@ -1,5 +1,10 @@
 ## Bugs
 
+* closing a task in gtasks doesnt add `S/Finished`
+  * sometime it does
+* react to `code: 'ECONNRESET'`
+* labels added to the task as #name for non-existing labels arent added to gmail
+  * they get created tho
 * cant add status labels in google tasks
   * adding `!w` to a google task in `!Next` doesnt move the task
   * adding `!e` to a google task in `!Waiting` doesnt complete the task
@@ -9,7 +14,7 @@
   * StackDrivers also may
     * `Warning: connect.session() MemoryStore is not`
     * check memory usage on GAE without the StackDriver transport
-* new P/\* labels added in gmail dont appear in gtasks descriptions
+* new `P/` labels added in gmail dont appear in gtasks descriptions
   * service restart required
 * after starting the service for 2 users
   * `connections-error [gtd...@gmail.com] Request 'gtasks.api.tasks.list' aborted by the abort() function +0ms`
@@ -17,9 +22,25 @@
   * when changed a status AND archived simultaneously
   * go back to the inbox
 * restart after an exception doesnt kick in
+* when checking initial labels compare using the normalized form
+* in case of a color conflict
+  * try to remove custom colors (scan and compare)
+  * avoid updating the color (continue using the users one)
 
 ## Milestone 1:
 
+* demo account Bd97w5sPfoqb
+* hide `!T/` labels from the label list
+* two-way label sync, based on a hash of prev labels
+* single `!S` label marking every monitored email
+  * quickly see all the gtd emails
+* viewing an email triggers a Dirty update
+  * detect real changes, keep them in `last_read`, `last_update`
+    * mark related lists as Dirty only when updating `last_update`
+* apply the change manually on the internal readers' data structs
+  * to avoid impossible re-reads in case of too frequent syncs
+  * the change is applied, but the system cant get new data to confirm this
+  * trust the HTTP response codes
 * support gtasks force-refresh via add-n-remove a status label (in gmail)
   * per-user per-api internal quota
     * quota to avoid too many dirty refreshes
@@ -27,10 +48,13 @@
   * per-user ip to skip 100 per user quota
     * needed?
   * check how it works with deleting (and orphan threads)
-* `T/task` and `A/answer` labels
-  * add `T/refresh-next` to refresh the `s-next-action` list
-  * `A/quota-exceeded` pops up if the user ran out of quota
+  * introduce Dirty
+* `!T/task` and `A/answer` labels
+  * add `!T/sync-gtasks-next` to sync the `s-next-action` list in GTasks
+  * `A/gtasks-quota-exceeded` pops up if the user ran out of quota
     * that included both users-internal and the global quotas
+    * should appear for the same email as the `!T/` request
+    * and auto-removed after a certain amount of time
 * reduce gtasks per-list refresh freq to 10 mins
 * encrypt sensitive info in the logs with MD5 hashes
   * only for PROD
@@ -56,9 +80,20 @@
 * delete per-user-logs when deleting an account
 * store users in Cloud Datastore
   * local emulator for development
+* switching config options by setting label on the welcome email
+  * `TaskBot Welcomes! Config by labels`
 
 ## TODO
 
+* dont re-order non-status labels, keep them in the text
+* scrape email content to a new task
+  * all the links
+  * snippet
+* 'download task' task command
+  * dumps all the description and children (with descs) into a new self-email
+  * sends to the thread with the label
+  * detect empty descs and ignore
+  * OR downloads to an editable draft
 * implement Dirty states for gtask lists
   * create/modify Record
   * remove from list
