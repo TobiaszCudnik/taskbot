@@ -34,28 +34,18 @@
 * two-way label sync, based on a hash of prev labels
 * single `!S` label marking every monitored email
   * quickly see all the gtd emails
-* viewing an email triggers a Dirty update
-  * detect real changes, keep them in `last_read`, `last_update`
-    * mark related lists as Dirty only when updating `last_update`
 * apply the change manually on the internal readers' data structs
   * to avoid impossible re-reads in case of too frequent syncs
   * the change is applied, but the system cant get new data to confirm this
   * trust the HTTP response codes
-* support gtasks force-refresh via add-n-remove a status label (in gmail)
-  * per-user per-api internal quota
-    * quota to avoid too many dirty refreshes
-  * count gtasks short quota per user
-  * per-user ip to skip 100 per user quota
-    * needed?
-  * check how it works with deleting (and orphan threads)
-  * introduce Dirty
+* per-user ip to skip 100 per user quota
+* check how it works with deleting (and orphan threads)
 * `!T/task` and `A/answer` labels
   * add `!T/sync-gtasks-next` to sync the `s-next-action` list in GTasks
   * `A/gtasks-quota-exceeded` pops up if the user ran out of quota
     * that included both users-internal and the global quotas
     * should appear for the same email as the `!T/` request
     * and auto-removed after a certain amount of time
-* reduce gtasks per-list refresh freq to 10 mins
 * encrypt sensitive info in the logs with MD5 hashes
   * only for PROD
   * salt
