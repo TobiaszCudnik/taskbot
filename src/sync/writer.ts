@@ -16,21 +16,19 @@ export const sync_writer_state: IJSONStates = {
   // inherit the SyncReader
   ...sync_reader_state,
 
-  Writing: {
-    drop: ['WritingDone', 'Reading', 'ReadingDone'],
-    require: ['Enabled', 'Ready']
-  },
-  WritingDone: {
-    drop: ['Writing', 'Reading', 'ReadingDone']
-  },
+  Writing: merge(sync_reader_state.Reading, {
+    drop: ['WritingDone']
+  }),
+  WritingDone: merge(sync_reader_state.Reading, {
+    drop: ['Writing']
+  }),
 
-  Reading: {
-    drop: ['ReadingDone', 'Writing', 'WritingDone'],
-    require: ['Enabled', 'Ready']
-  },
-  ReadingDone: {
-    drop: ['Reading', 'Writing', 'WritingDone']
-  },
+  Reading: merge(sync_reader_state.Reading, {
+    drop: ['Writing', 'WritingDone']
+  }),
+  ReadingDone: merge(sync_reader_state.ReadingDone, {
+    drop: ['Writing', 'WritingDone']
+  }),
 
   Restarting: merge(sync_reader_state.Restarting, {
     drop: ['Writing', 'WritingDone']

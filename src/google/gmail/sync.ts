@@ -321,6 +321,13 @@ export default class GmailSync extends SyncWriter<
     )
   }
 
+  getListByName(name: string): GmailListSync {
+    return this.subs.lists.find(
+      (sync: GmailListSync) =>
+        sync.config.name.toLocaleLowerCase() == name.toLocaleLowerCase()
+    )
+  }
+
   async assertPredefinedLabelsExist(abort?) {
     const labels = []
     for (const def of this.config.labels) {
@@ -694,6 +701,7 @@ export default class GmailSync extends SyncWriter<
         false
       )
       this.labels.push(res)
+      return res
     })
   }
 

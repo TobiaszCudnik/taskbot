@@ -53,7 +53,10 @@ export const sync_state: IJSONStates = {
     add: ['Reading']
   },
   DBReady: { auto: true },
-  Exception: { multi: true, drop: ['Reading', 'Writing'] },
+  Exception: {
+    multi: true,
+    drop: ['Reading', 'Writing']
+  },
   HeartBeat: {},
   Scheduled: {}
 }
@@ -146,7 +149,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
 
   init(config: IConfig) {
     // shallow copy the config
-    this.config = {...config}
+    this.config = { ...config }
     // parse lazy list configs
     this.config.lists = this.config.lists.map(
       list => (_.isFunction(list) ? list(this.config) : list)

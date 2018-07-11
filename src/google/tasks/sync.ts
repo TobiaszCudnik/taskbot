@@ -489,6 +489,12 @@ export default class GTasksSync extends SyncWriter<
     return this.subs_flat.find(sync => sync.list.id == id)
   }
 
+  getListByName(name: string): GTasksListSync {
+    return this.subs_flat.find(
+      sync => sync.list.title.toLocaleLowerCase() == name.toLocaleLowerCase()
+    )
+  }
+
   /**
    * Returns the ID of the list where the task is uncompleted.
    */
