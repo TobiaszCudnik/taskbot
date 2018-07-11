@@ -70,7 +70,11 @@ export interface DBRecord {
   gmail_id?: DBRecordID
   title: string
   content: string
-  updated: number
+  updated: {
+    gtasks: number | null
+    // history ID
+    gmail_hid: number | null
+  }
   parent?: DBRecordID
   labels: { [index: string]: DBRecordLabel }
   // different task ids per list

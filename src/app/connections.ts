@@ -3,7 +3,6 @@ import * as http from 'http'
 import { promisifyArray } from 'typed-promisify-tob/index'
 import * as google from 'googleapis'
 import GC from '../sync/gc'
-import { IConfig } from '../types'
 import { log_fn, default as Logger } from './logger'
 
 /**

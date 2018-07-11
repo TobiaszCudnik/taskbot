@@ -1,5 +1,5 @@
 import { machine } from 'asyncmachine'
-import { debug } from 'debug'
+import * as debug from 'debug'
 import * as clone from 'deepcopy'
 import * as google from 'googleapis'
 import * as loki from 'lokijs'
@@ -52,7 +52,7 @@ export default class GmailListSync extends SyncReader<
       true
     )
     // this.query.state.add('Enabled')
-    this.state.pipe('Enabled', this.query.state)
+    this.state.pipe(['Enabled', 'Dirty'], this.query.state)
   }
 
   // ----- -----
@@ -169,8 +169,7 @@ export default class GmailListSync extends SyncReader<
         // only not seen in this sync so far
         !ids.includes(this.toLocalID(record)) &&
         // only ones updated earlier than this query
-        record.updated <
-          this.gmail.timeFromHistoryID(this.query.history_id_synced)
+        record.updated.gmail_hid < this.query.history_id_synced
       )
     }
     // TODO indexes - dont update here, update in the top merge
@@ -206,7 +205,10 @@ export default class GmailListSync extends SyncReader<
       title: title,
       content: self_sent ? '' : `From ${from}\n`,
       labels: {},
-      updated: this.gmail.timeFromHistoryID(parseInt(thread.historyId, 10))
+      updated: {
+        gmail_hid: parseInt(thread.historyId, 10),
+        gtasks: null
+      }
     }
     // apply labels from gmail
     const labels_from_thread = this.gmail.getLabelsFromThread(thread)
@@ -230,19 +232,19 @@ export default class GmailListSync extends SyncReader<
   }
 
   // TODO merge with FetchingOrphans
+  // TODO support duplicating in case of a conflict ???
+  //   or send a new email in the thread?
+  //   if sending a new thread, resolve conflicts properly with other sources
+  //   introduce a universal conflict resolution pattern?
   mergeRecord(thread: Thread, record: DBRecord): boolean {
     // TODO clone only in debug
     const before = clone(record)
-    // TODO support duplicating in case of a conflict ???
-    //   or send a new email in the thread?
-    let thread_update_time = this.gmail.timeFromHistoryID(
-      parseInt(thread.historyId, 10)
-    )
-    if (thread_update_time <= record.updated) {
+    const hid = parseInt(thread.historyId, 10)
+    if (hid < record.updated.gmail_hid) {
       // TODO check for conflicts to resolve? since the last sync
       return false
     }
-    record.updated = thread_update_time
+    record.updated.gmail_hid = hid
     // TODO content from emails
     // apply labels from gmail
     const thread_labels = this.gmail.getLabelsFromThread(thread)

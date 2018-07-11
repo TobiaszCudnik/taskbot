@@ -87,7 +87,7 @@ async function exit() {
       console.log(
         `\nUser ${sync.config.user.id}: ${sync.config.google.username}`
       )
-      console.log(sync.data.toString())
+      console.log(data)
     }
     console.log(`\nUser ${sync.config.user.id}: ${sync.config.google.username}`)
     console.log(`Restarts count: ${sync.restarts_count}`)

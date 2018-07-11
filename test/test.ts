@@ -1,5 +1,4 @@
 ///<reference path="../typings/index.d.ts"/>
-
 import { promisifyArray } from 'typed-promisify-tob/index'
 import Connections from '../src/app/connections'
 import Logger from '../src/app/logger'
@@ -13,6 +12,7 @@ import GTasksSync from '../src/google/tasks/sync'
 import { TaskList } from '../src/google/tasks/sync-list'
 import RootSync from '../src/sync/root'
 import * as _ from 'lodash'
+import * as debug from 'debug'
 
 let gtasks: google.tasks.v1.Tasks
 let gmail: google.gmail.v1.Gmail
@@ -20,6 +20,7 @@ let auth: Auth
 let sync: RootSync
 let gmail_sync: GmailSync
 let gtasks_sync: GTasksSync
+const logger = debug('tests')
 
 jest.setTimeout(15 * 1000)
 beforeAll(initTest)
@@ -88,7 +89,7 @@ describe('gmail', function() {
     it('syncs label changes', async function() {
       // console.dir(labels)
       // assign the new labels
-      console.log('modifying')
+      console.log('adding dummy labels')
       await req('gmail.users.threads.modify', {
         id: sync.data.data[0].gmail_id,
         userId: 'me',
@@ -98,6 +99,7 @@ describe('gmail', function() {
           // removeLabelIds: remove_label_ids
         }
       })
+      // debugger
       await sync_next(true, false)
       const res = await list_tasklist()
       // assert the result
@@ -162,8 +164,10 @@ async function initTest() {
   const ready_state = sync.state.get('Ready')
   // disable auto start
   ready_state.add = _.without(ready_state.add, 'Reading')
+  // jump to the next tick
   await delay(0)
   // assign apis
+  debugger
   gtasks = connections.apis.gtasks
   gmail = connections.apis.gmail
   // wait for the google auth
@@ -185,11 +189,18 @@ async function initTest() {
 }
 
 async function req(method: string, params = {}, options = {}) {
-  console.log('req', method, params)
+  logger(`req ${method}:\n%O`, params)
+  // @ts-ignore
   params.auth = auth.client
   // prevent JIT from shadowing those
+  // @ts-ignore
   void (gmail, gtasks)
   // console.log(method)
+  // @ts-ignore
+  options = {
+    forever: true,
+    options
+  }
   return await promisifyArray(eval(method))(params, options)
 }
 

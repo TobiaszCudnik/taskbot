@@ -298,7 +298,10 @@ export default class GTasksListSync extends SyncReader<
       title: text_labels.text,
       content: this.getContent(task.notes),
       labels: {},
-      updated: moment(task.updated).unix(),
+      updated: {
+        gtasks: moment(task.updated).unix(),
+        gmail_hid: null
+      },
       gtasks_ids: {
         [task.id]: this.list.id
       }
@@ -341,12 +344,9 @@ export default class GTasksListSync extends SyncReader<
     }
   }
 
+  // TODO support duplicating in case of a conflict ???
   mergeRecord(task: Task, record: DBRecord): boolean {
     const before = clone(record)
-    // TODO support duplicating in case of a conflict ???
-    //   or send a new email in the thread?
-    //   if sending a new thread, resolve conflicts properly with other sources
-    //   introduce a universal conflict resolution pattern?
     const task_updated = moment(task.updated).unix()
     // apply title labels on the initial record's sync
     let text_labels_updated = false
@@ -358,13 +358,13 @@ export default class GTasksListSync extends SyncReader<
     // add to the gtasks id map
     record.gtasks_ids = record.gtasks_ids || {}
     record.gtasks_ids[task.id] = this.list.id
-    if (task_updated <= record.updated) {
+    if (task_updated <= record.updated.gtasks) {
       // TODO check resolve conflict? since the last sync
       this.printRecordDiff(before, record)
       return false
     }
     // update the record with changes from gtasks
-    record.updated = task_updated
+    record.updated.gtasks = task_updated
     if (!text_labels_updated) {
       this.updateTextLabels(record, task.title)
     }
