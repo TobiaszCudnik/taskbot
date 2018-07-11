@@ -5,10 +5,12 @@ import Connections from '../src/app/connections'
 import Logger from '../src/app/logger'
 import { getConfig } from '../src/app/config'
 import * as google from 'googleapis'
+import * as delay from 'delay'
 import users from '../config-users'
 import Auth from '../src/google/auth'
 import GmailSync from '../src/google/gmail/sync'
 import GTasksSync from '../src/google/tasks/sync'
+import { TaskList } from '../src/google/tasks/sync-list'
 import RootSync from '../src/sync/root'
 import * as _ from 'lodash'
 
@@ -19,14 +21,16 @@ let sync: RootSync
 let gmail_sync: GmailSync
 let gtasks_sync: GTasksSync
 
-jest.setTimeout(10 * 1000)
+jest.setTimeout(15 * 1000)
 beforeAll(initTest)
+afterAll(print_db)
 
 // DEBUG=root\*-info,gtasks-list-next\*,gmail-list-next\* DEBUG_AM=2
 describe('gmail', function() {
   it.skip('should create the labels', function() {})
   it.skip('should set colors of existing labels', function() {})
   it.skip('auto add text labels for new self emails', function() {})
+  it.skip('refreshes on Dirty', function() {})
 
   describe.skip('db', function() {})
 
@@ -42,10 +46,14 @@ describe('gmail', function() {
     function label_id(name) {
       return gmail_sync.getLabelID(name)
     }
-    async function sync_next() {
+    async function sync_next(gmail_dirty = true, gtasks_dirty = true) {
       // start a selective sync
-      tasklist.state.add('Dirty')
-      query.state.add('Dirty')
+      if (gtasks_dirty) {
+        tasklist.state.add('Dirty')
+      }
+      if (gmail_dirty) {
+        query.state.add('Dirty')
+      }
       sync.state.add('Reading')
       await sync.state.when('WritingDone')
     }
@@ -63,7 +71,7 @@ describe('gmail', function() {
       // create a new thread
       await gmail_sync.createThread('test 1', ['!S/Next Action'])
       console.log('email sent')
-      await sync_next()
+      await sync_next(true, false)
       // get directly from the API
       const res = await list_tasklist()
       // assert the result
@@ -80,6 +88,7 @@ describe('gmail', function() {
     it('syncs label changes', async function() {
       // console.dir(labels)
       // assign the new labels
+      console.log('modifying')
       await req('gmail.users.threads.modify', {
         id: sync.data.data[0].gmail_id,
         userId: 'me',
@@ -89,7 +98,7 @@ describe('gmail', function() {
           // removeLabelIds: remove_label_ids
         }
       })
-      await sync_next()
+      await sync_next(true, false)
       const res = await list_tasklist()
       // assert the result
       const record = {
@@ -110,6 +119,7 @@ describe('gmail', function() {
 describe('gtasks', function() {
   it.skip('should create the lists', function() {})
   it.skip('should cache with etags', function() {})
+  it.skip('refreshes on Dirty', function() {})
 
   describe.skip('db', function() {})
 
@@ -135,6 +145,11 @@ describe.skip('sync', function() {
 // FUNCTIONS
 // ----- ----- -----
 
+function print_db() {
+  if (!sync.data) return
+  console.log(sync.data.toString())
+}
+
 async function initTest() {
   // init sync
   const logger = new Logger()
@@ -147,17 +162,21 @@ async function initTest() {
   const ready_state = sync.state.get('Ready')
   // disable auto start
   ready_state.add = _.without(ready_state.add, 'Reading')
-  sync.state.addNext('Enabled')
-  await sync.state.when('Ready')
+  await delay(0)
   // assign apis
   gtasks = connections.apis.gtasks
-  gtasks_sync = sync.subs.google.subs.tasks
   gmail = connections.apis.gmail
-  gmail_sync = sync.subs.google.subs.gmail
+  // wait for the google auth
+  await sync.subs.google.auth.when('Ready')
   auth = sync.subs.google.auth
-  // prepare to start
-  // delete all the old emails
+  // delete all the data
   await truncate_gmail()
+  await truncate_gtasks()
+  // init the engine
+  sync.state.addNext('Enabled')
+  await sync.state.when('Ready')
+  gmail_sync = sync.subs.google.subs.gmail
+  gtasks_sync = sync.subs.google.subs.tasks
   // trigger sync
   sync.state.add('Reading')
   console.log('connected')
@@ -166,6 +185,7 @@ async function initTest() {
 }
 
 async function req(method: string, params = {}, options = {}) {
+  console.log('req', method, params)
   params.auth = auth.client
   // prevent JIT from shadowing those
   void (gmail, gtasks)
@@ -173,7 +193,7 @@ async function req(method: string, params = {}, options = {}) {
   return await promisifyArray(eval(method))(params, options)
 }
 
-async function clean(query) {
+async function cleanup_gmail(query) {
   const [body, res] = await req('gmail.users.threads.list', {
     maxResults: 1000,
     q: query,
@@ -190,9 +210,25 @@ async function clean(query) {
   )
 }
 
-async function truncate_gmail() {
+async function truncate_gtasks() {
+  // get all the lists
+  const [body, res] = await req('gtasks.tasklists.list', {})
+  const lists = body.items || []
+  // delete every list
   await Promise.all(
-    ['label:all', 'label:trash'].map(async query => await clean(query))
+    lists.map(async (list: TaskList) => {
+      // skip the default one
+      if (list.title == 'My Tasks') return
+      await req('gtasks.tasklists.delete', { tasklist: list.id })
+    })
+  )
+  console.log('removed all tasks')
+}
+
+async function truncate_gmail() {
+  // TODO remove labels
+  await Promise.all(
+    ['label:all', 'label:trash'].map(async query => await cleanup_gmail(query))
   )
   console.log('removed all emails')
 }
