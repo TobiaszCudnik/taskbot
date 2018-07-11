@@ -400,7 +400,10 @@ export default class GTasksSync extends SyncWriter<
           this.deleteTask(t, sync.list, abort)
         )
         await this.deleteTask(task, sync.list, abort)
+        // update the local cache manually
         sync.tasks.items = _.without(sync.tasks.items, task)
+        // mark as dirty to force re-read
+        sync.state.add('Dirty')
       })
     })
   }

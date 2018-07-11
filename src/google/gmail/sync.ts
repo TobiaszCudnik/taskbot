@@ -401,6 +401,9 @@ export default class GmailSync extends SyncWriter<
       await this.threads.delete(record.gmail_id)
       // TODO delete also from all the matching lists?
       delete record.gmail_id
+      // mark touched lists as Dirty to trigger a re-read
+      // @ts-ignore
+      this.root.markListsAsDirty(this, record)
       // TODO update in bulk
       this.root.data.update(record)
     })
@@ -423,6 +426,9 @@ export default class GmailSync extends SyncWriter<
       const id = await this.createThread(record.title, labels, abort)
       record.gmail_id = id
       this.root.data.update(record)
+      // mark touched lists as Dirty to trigger a re-read
+      // @ts-ignore
+      this.root.markListsAsDirty(this, record)
       await this.fetchThread(id, abort)
     })
   }
@@ -430,7 +436,7 @@ export default class GmailSync extends SyncWriter<
   async processThreadsToModify(abort: () => boolean): Promise<void[]> {
     const diff_threads = [...this.threads.values()]
       .map((thread: Thread) => {
-        const record: DBRecord = this.root.data.findOne({ gmail_id: thread.id })
+        const record: DBRecord = this.getRecordByGmailID(thread.id)
         if (!record) {
           this.log_error(
             `Missing record for the thread ${
@@ -451,10 +457,15 @@ export default class GmailSync extends SyncWriter<
             return !data.active ? this.threadHasLabel(thread, name) : false
           })
           .map(([name, data]) => name)
-        // TODO changed content -> new email in the thread
+        if (!add.length && !remove.length) {
+          return null
+        }
+        // mark touched lists as Dirty to trigger a re-read
+        // @ts-ignore
+        this.root.markListsAsDirty(this, record)
         return [thread.id, add, remove]
       })
-      .filter(([id, add, remove]) => add.length || remove.length)
+      .filter(i => i)
 
     if (diff_threads.length) {
       this.log(`Modifying ${diff_threads.length} new threads`)
@@ -462,6 +473,10 @@ export default class GmailSync extends SyncWriter<
     return await map(diff_threads, async ([id, add, remove]) => {
       await this.modifyLabels(id, add, remove, abort)
     })
+  }
+
+  getRecordByGmailID(id: string) {
+    return this.root.data.findOne({ gmail_id: id })
   }
 
   isHistoryIdValid() {
