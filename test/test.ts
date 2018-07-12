@@ -9,7 +9,7 @@ import users from '../config-users'
 import Auth from '../src/google/auth'
 import GmailSync from '../src/google/gmail/sync'
 import GTasksSync from '../src/google/tasks/sync'
-import { TaskList } from '../src/google/tasks/sync-list'
+import GTasksListSync, { TaskList } from '../src/google/tasks/sync-list'
 import RootSync from '../src/sync/root'
 import * as _ from 'lodash'
 import * as debug from 'debug'
@@ -28,62 +28,97 @@ beforeAll(initTest)
 afterAll(print_db)
 
 // DEBUG=root\*-info,gtasks-list-next\*,gmail-list-next\* DEBUG_AM=2
+// DEBUG=tests,\*-am\*,\*-error DEBUG_AM=2
+// DEBUG=tests,\*-error,record-diffs,db-diffs,connections-\*,root\*-info DEBUG_FILE=1 node_modules/jest/bin/jest.js
 describe('gmail', function() {
+  beforeAll(async function() {
+    // TODO cleanup at the beginning
+    await gmail_sync.createLabelsIfMissing(['P/label_1', 'P/label_2'])
+  })
+  function label_id(name) {
+    const id = gmail_sync.getLabelID(name)
+    assert(id, `Label '${name}' doesnt exist`)
+    return id
+  }
+  async function sync_list(
+    gmail_dirty = true,
+    gtasks_dirty = true,
+    name = '!next'
+  ) {
+    // start a selective sync
+    if (gtasks_dirty) {
+      gtasks_sync.getListByName(name).state.add('Dirty')
+    }
+    if (gmail_dirty) {
+      gmail_sync.getListByName(name).state.add('Dirty')
+    }
+    sync.state.add('Reading')
+    await sync.state.when('WritingDone')
+  }
+  async function list_tasklist(name = '!next') {
+    const [body, res] = await req('gtasks.tasks.list', {
+      maxResults: 1000,
+      tasklist: gtasks_sync.getListByName(name).list.id,
+      fields: 'etag,items(id,title,notes,updated,etag,status,parent)',
+      showHidden: false
+    })
+    return body
+  }
+
   it.skip('should create the labels', function() {})
   it.skip('should set colors of existing labels', function() {})
-  it.skip('auto add text labels for new self emails', function() {})
   it.skip('refreshes on Dirty', function() {})
 
-  describe.skip('db', function() {})
+  describe('db', function() {
+    it('auto add text labels for new self emails', async function() {
+      await gmail_sync.createThread(
+        'auto-label-test-1 !na *location_1 ^reference_1'
+      )
+      log('email sent')
+      await sync_list(true, false, 'inbox-labels')
+      expect(sync.data.data).toHaveLength(1)
+      const record = sync.data.data[0]
+      expect(Object.keys(record.labels)).toContain('!S/Next Action')
+      expect(Object.keys(record.labels)).toContain('R/reference_1')
+      expect(Object.keys(record.labels)).toContain('L/location_1')
+    })
+  })
+
+  async function reset() {
+    // clear all the APIs
+    await Promise.all([
+      truncate_gmail(),
+      // TODO loop over the lists from conig
+      truncate_gtasks_list('!next'),
+      truncate_gtasks_list('!actions')
+    ])
+    // clear the local DB
+    sync.data.clear()
+    sync.subs.google.subs.gmail.threads.clear()
+    for (const list of sync.subs.google.subs.tasks.subs.lists) {
+      list.tasks = null
+    }
+    for (const list of sync.subs.google.subs.gmail.subs.lists) {
+      list.query.threads = []
+    }
+    await delay(1000)
+  }
 
   describe('gtasks', function() {
-    // ref to the !next TaskListSync
-    let tasklist
-    let query
-    // ID of the initial email (thread)
     let thread_id
-    beforeAll(async function() {
-      tasklist = gtasks_sync.getListByName('!next')
-      query = gmail_sync.getListByName('!next')
-      // TODO cleanup at the beginning
-      await gmail_sync.createLabelsIfMissing(['P/label_1', 'P/label_2'])
-    })
-    function label_id(name) {
-      const id = gmail_sync.getLabelID(name)
-      assert(id, `Label '${name}' doesnt exist`)
-      return id
-    }
-    async function sync_next(gmail_dirty = true, gtasks_dirty = true) {
-      // start a selective sync
-      if (gtasks_dirty) {
-        tasklist.state.add('Dirty')
-      }
-      if (gmail_dirty) {
-        query.state.add('Dirty')
-      }
-      sync.state.add('Reading')
-      await sync.state.when('WritingDone')
-    }
-    async function list_tasklist(name = '!next') {
-      const [body, res] = await req('gtasks.tasks.list', {
-        maxResults: 1000,
-        tasklist: gtasks_sync.getListByName(name).list.id,
-        fields: 'etag,items(id,title,notes,updated,etag,status,parent)',
-        showHidden: false
-      })
-      return body
-    }
-
+    beforeAll(reset)
     it('syncs new threads', async function() {
       // create a new thread
-      thread_id = await gmail_sync.createThread('test 1', ['!S/Next Action'])
+      thread_id = await gmail_sync.createThread('gmail-gtask-1', [
+        '!S/Next Action'
+      ])
       log('email sent')
-      await sync_next(true, false)
+      await sync_list(true, false)
       // get directly from the API
       const res = await list_tasklist()
       // assert the result
       const record = {
-        title: 'test 1',
+        title: 'gmail-gtask-1',
         status: 'needsAction'
       }
       expect(res.items).toHaveLength(1)
@@ -105,19 +140,17 @@ describe('gmail', function() {
           // removeLabelIds: remove_label_ids
         }
       })
-      await sync_next(true, false)
+      await sync_list(true, false)
       const list = await list_tasklist()
       // assert the result
       const record = {
-        title: 'test 1 #label_1 #label_2',
+        title: 'gmail-gtask-1 #label_1 #label_2',
         status: 'needsAction'
       }
       expect(list.items).toHaveLength(1)
       expect(list.items[0]).toMatchObject(record)
     })
 
-    // env DEBUG=tests,\*-am\*,\*-error DEBUG_AM=2
-    // env DEBUG=tests,\*-error,record-diffs,db-diffs,connections-\*,root\*-info DEBUG_FILE=1 node_modules/jest/bin/jest.js
     it('syncs tasks between lists', async function() {
       log('moving to !S/Action')
       debugger
@@ -129,7 +162,7 @@ describe('gmail', function() {
           addLabelIds: [label_id('!S/Action')]
         }
       })
-      await sync_next(true, false)
+      await sync_list(true, false)
       const [list_action, list_next] = await Promise.all([
         list_tasklist('!actions'),
         list_tasklist('!next')
@@ -156,7 +189,7 @@ describe('gmail', function() {
           addLabelIds: [label_id('!S/Finished')]
         }
       })
-      await sync_next(true, false)
+      await sync_list(true, false)
       const [list_action, list_next] = await Promise.all([
         list_tasklist('!actions'),
         list_tasklist('!next')
@@ -172,7 +205,7 @@ describe('gmail', function() {
       expect(list_action.items[0]).toMatchObject(record)
     })
 
-    it.skip('triggers pulling with a label', async function() {})
+    it.skip(`triggers a sync with '!T/Sync GTasks'`, async function() {})
   })
 })
 
@@ -262,6 +295,7 @@ async function req(method: string, params = {}, options = {}) {
     forever: true,
     options
   }
+  // @ts-ignore
   return await promisifyArray(eval(method))(params, options)
 }
 
@@ -292,6 +326,26 @@ async function truncate_gtasks() {
       // skip the default one
       if (list.title == 'My Tasks') return
       await req('gtasks.tasklists.delete', { tasklist: list.id })
+    })
+  )
+  log('removed all tasks')
+}
+
+async function truncate_gtasks_list(name = '!next') {
+  const list = gtasks_sync.getListByName(name)
+  assert(list, `list doesn't exist`)
+  // get all the lists
+  const [body, res] = await req('gtasks.tasks.list', {
+    tasklist: list.list.id
+  })
+  const lists = body.items || []
+  // delete every list
+  await Promise.all(
+    lists.map(async (task: TaskList) => {
+      await req('gtasks.tasks.delete', {
+        tasklist: list.list.id,
+        task: task.id
+      })
     })
   )
   log('removed all tasks')

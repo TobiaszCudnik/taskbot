@@ -629,7 +629,7 @@ export default class GmailSync extends SyncWriter<
    */
   async createThread(
     subject: string,
-    labels: string[],
+    labels: string[] = ['UNREAD', 'INBOX'],
     abort?: () => boolean
   ): Promise<string | null> {
     await this.createLabelsIfMissing(labels, abort)

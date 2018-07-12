@@ -83,7 +83,7 @@ export default class GTasksListSync extends SyncReader<
     this.gtasks.reads_today++
     const quota = this.gtasks.short_quota_usage
     const abort = this.state.getAbort('Reading')
-    const [list, res] = await this.gtasks.req(
+    const req_ret = await this.gtasks.req(
       'api.tasks.list',
       this.gtasks.api.tasks.list,
       {
@@ -102,6 +102,9 @@ export default class GTasksListSync extends SyncReader<
       abort,
       true
     )
+    if (!req_ret)
+      debugger
+    const [list, res] = req_ret
 
     if (abort()) return
 
