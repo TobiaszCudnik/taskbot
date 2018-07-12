@@ -27,7 +27,11 @@ jest.setTimeout(15 * 1000)
 beforeAll(initTest)
 afterAll(print_db)
 beforeAll(async function() {
-  await gmail_sync.createLabelsIfMissing(['P/label_1', 'P/label_2'])
+  await gmail_sync.createLabelsIfMissing([
+    'P/label_1',
+    'P/label_2',
+    'P/label_3'
+  ])
 })
 
 // DEBUG=root\*-info,gtasks-list-next\*,gmail-list-next\* DEBUG_AM=2
@@ -87,7 +91,7 @@ describe('gmail', function() {
       )
     })
 
-    it('syncs label changes', async function() {
+    it('syncs text label changes', async function() {
       // assign the new labels
       log('adding dummy labels')
       await req('gmail.users.threads.modify', {
@@ -164,6 +168,7 @@ describe('gmail', function() {
       expect(list_action.items[0]).toMatchObject(record)
     })
 
+    it.skip(`creates new labels for non-existing text labels`, async function() {})
     it.skip(`triggers a sync with '!T/Sync GTasks'`, async function() {})
   })
 })
@@ -177,10 +182,11 @@ describe('gtasks', function() {
 
   describe('gmail', function() {
     beforeAll(reset)
-    let task_id
+    let task_id_1: string
+    let thread_1: google.gmail.v1.Thread
 
     it('syncs new tasks', async function() {
-      task_id = await add_task('gtasks-gmail-1')
+      task_id_1 = await add_task('gtasks-gmail-1')
       // sync
       await sync_list(false, true)
       // assert
@@ -189,12 +195,12 @@ describe('gtasks', function() {
       for (const field of ['historyId', 'id']) {
         expect(Object.keys(list.threads[0])).toContain(field)
       }
-      const thread_1 = get_thread(list.threads[0].id)
+      thread_1 = await get_thread(list.threads[0].id)
     })
     it('syncs text labels', async function() {
       const wait = [
         add_task('gtasks-gmail-2 #label_1'),
-        patch_task(task_id, 'gtasks-gmail-1 #label_1 #label_2')
+        patch_task(task_id_1, 'gtasks-gmail-1 #label_2 #label_3')
       ]
       await Promise.all(wait)
       // sync
@@ -207,12 +213,23 @@ describe('gtasks', function() {
         get_thread(list.threads[1].id)
       ]
       const [thread_1, thread_2] = await Promise.all(load_threads)
-      expect(has_label(thread_1, 'P/label_1'))
       expect(has_label(thread_1, 'P/label_2'))
+      expect(has_label(thread_1, 'P/label_3'))
       expect(has_label(thread_2, 'P/label_1'))
     })
     it.skip('syncs tasks between lists', async function() {})
-    it.skip('syncs task completions', async function() {})
+    it('syncs task completions', async function() {
+      await patch_task(
+        task_id_1,
+        'gtasks-gmail-1 #label_1 #label_2',
+        '!next',
+        null,
+        true
+      )
+      await sync_list(false, true)
+      const refresh = await get_thread(thread_1.id)
+      expect(has_label(refresh, '!S/Finished')).toBeTruthy()
+    })
   })
 })
 
@@ -221,7 +238,7 @@ function has_label(thread: google.gmail.v1.Thread, label: string): boolean {
 }
 
 async function list_query(
-  query = ''
+  query = 'label:!s-next-action'
 ): Promise<google.gmail.v1.ListThreadsResponse> {
   const [list, res] = await req('gmail.users.threads.list', {
     maxResults: 1000,
