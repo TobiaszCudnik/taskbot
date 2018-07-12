@@ -119,7 +119,6 @@ describe('gmail', function() {
     // env DEBUG=tests,\*-am\*,\*-error DEBUG_AM=2
     // env DEBUG=tests,\*-error,record-diffs,db-diffs,connections-\*,root\*-info DEBUG_FILE=1 node_modules/jest/bin/jest.js
     it('syncs tasks between lists', async function() {
-      // assign the new labels
       log('moving to !S/Action')
       debugger
       await req('gmail.users.threads.modify', {
@@ -137,7 +136,6 @@ describe('gmail', function() {
       ])
       // assert the result
       const record = {
-        title: 'test 1 #label_1 #label_2',
         status: 'needsAction'
       }
       if (list_next.items) {
@@ -147,7 +145,32 @@ describe('gmail', function() {
       expect(list_action.items[0]).toMatchObject(record)
     })
 
-    it.skip('syncs task completions', async function() {})
+    it('syncs task completions', async function() {
+      log('moving to !S/Finished')
+      debugger
+      await req('gmail.users.threads.modify', {
+        id: thread_id,
+        userId: 'me',
+        fields: 'id',
+        resource: {
+          addLabelIds: [label_id('!S/Finished')]
+        }
+      })
+      await sync_next(true, false)
+      const [list_action, list_next] = await Promise.all([
+        list_tasklist('!actions'),
+        list_tasklist('!next')
+      ])
+      // assert the result
+      const record = {
+        status: 'completed'
+      }
+      if (list_next.items) {
+        expect(list_next.items).toHaveLength(0)
+      }
+      expect(list_action.items).toHaveLength(1)
+      expect(list_action.items[0]).toMatchObject(record)
+    })
 
     it.skip('triggers pulling with a label', async function() {})
   })
