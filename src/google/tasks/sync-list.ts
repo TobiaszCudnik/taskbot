@@ -299,6 +299,7 @@ export default class GTasksListSync extends SyncReader<
       content: this.getContent(task.notes),
       labels: {},
       updated: {
+        latest: moment(task.updated).unix(),
         gtasks: moment(task.updated).unix(),
         gmail_hid: null
       },
@@ -363,8 +364,10 @@ export default class GTasksListSync extends SyncReader<
       this.printRecordDiff(before, record)
       return false
     }
+    this.log_verbose('merging')
     // update the record with changes from gtasks
     record.updated.gtasks = task_updated
+    record.updated.latest = Math.max(record.updated.latest, task_updated)
     if (!text_labels_updated) {
       this.updateTextLabels(record, task.title)
     }

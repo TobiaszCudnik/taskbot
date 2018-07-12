@@ -71,6 +71,8 @@ export interface DBRecord {
   title: string
   content: string
   updated: {
+    // must be timestamp
+    latest: number | null
     gtasks: number | null
     // history ID
     gmail_hid: number | null

@@ -298,7 +298,7 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
       if (record.labels[label] && !record.labels[label].active) continue
       record.labels[label] = {
         active: false,
-        updated: record.updated
+        updated: record.updated.latest
       }
     }
     for (const label of labels.add || []) {
@@ -306,7 +306,7 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
       if (record.labels[label] && record.labels[label].active) continue
       record.labels[label] = {
         active: true,
-        updated: record.updated
+        updated: record.updated.latest
       }
     }
   }
@@ -329,10 +329,17 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
       msg += ` '${title}'`
     }
     msg += ` from '${this.state.id()}'\n`
-    for (const chunk of diff.diffChars(inspect(before), inspect(after))) {
+    const text_diff = diff.diffChars(
+      inspect(before, false, 3),
+      inspect(after, false, 3)
+    )
+    for (const chunk of text_diff) {
       const color = chunk.added ? 'green' : chunk.removed ? 'red' : 'white'
       msg += chunk.value[color]
     }
+    // console.log(msg)
+    // TODO tmp for jest
+    process.stdout.write(msg + '\n')
     this.log(msg)
   }
 

@@ -206,6 +206,7 @@ export default class GmailListSync extends SyncReader<
       content: self_sent ? '' : `From ${from}\n`,
       labels: {},
       updated: {
+        latest: this.gmail.timeFromHistoryID(parseInt(thread.historyId, 10)),
         gmail_hid: parseInt(thread.historyId, 10),
         gtasks: null
       }
@@ -240,11 +241,16 @@ export default class GmailListSync extends SyncReader<
     // TODO clone only in debug
     const before = clone(record)
     const hid = parseInt(thread.historyId, 10)
-    if (hid < record.updated.gmail_hid) {
+    if (hid <= record.updated.gmail_hid) {
       // TODO check for conflicts to resolve? since the last sync
       return false
     }
+    this.log_verbose('merging')
     record.updated.gmail_hid = hid
+    record.updated.latest = Math.max(
+      record.updated.latest,
+      this.gmail.timeFromHistoryID(hid)
+    )
     // TODO content from emails
     // apply labels from gmail
     const thread_labels = this.gmail.getLabelsFromThread(thread)

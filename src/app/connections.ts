@@ -29,6 +29,7 @@ export default class Connections {
   log: log_fn
   log_error: log_fn
   log_verbose: log_fn
+  log_stats: log_fn
 
   apis: {
     gtasks: google.tasks.v1.Tasks | null
@@ -174,11 +175,8 @@ export default class Connections {
       this.active_requests_user[user_id]++
       params_log.try = try_n
       // log everything we know
-      this.log_verbose(
-        `${method_name} (${try_n}):\nParams: %O\nStats: %O`,
-        params_log,
-        this.getReqsStats()
-      )
+      this.log_verbose(`${method_name} (${try_n}):\n%O`, params_log)
+      this.log_stats('Stats:\n%O', this.getReqsStats())
       // TODO googleapis specific code should be in google/sync.ts
       try {
         // @ts-ignore
@@ -228,5 +226,6 @@ export default class Connections {
     this.log = this.logger.createLogger(name)
     this.log_verbose = this.logger.createLogger(name, 'verbose')
     this.log_error = this.logger.createLogger(name, 'error')
+    this.log_stats = this.logger.createLogger(name + '-stats')
   }
 }

@@ -117,6 +117,7 @@ describe('gmail', function() {
     })
 
     // env DEBUG=tests,\*-am\*,\*-error DEBUG_AM=2
+    // env DEBUG=tests,\*-error,record-diffs,db-diffs,connections-\*,root\*-info DEBUG_FILE=1 node_modules/jest/bin/jest.js
     it('syncs tasks between lists', async function() {
       // assign the new labels
       log('moving to !S/Action')
@@ -139,7 +140,9 @@ describe('gmail', function() {
         title: 'test 1 #label_1 #label_2',
         status: 'needsAction'
       }
-      expect(list_next.items).toHaveLength(0)
+      if (list_next.items) {
+        expect(list_next.items).toHaveLength(0)
+      }
       expect(list_action.items).toHaveLength(1)
       expect(list_action.items[0]).toMatchObject(record)
     })
