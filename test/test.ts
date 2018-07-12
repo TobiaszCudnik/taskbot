@@ -13,6 +13,7 @@ import { TaskList } from '../src/google/tasks/sync-list'
 import RootSync from '../src/sync/root'
 import * as _ from 'lodash'
 import * as debug from 'debug'
+import * as assert from 'assert'
 
 let gtasks: google.tasks.v1.Tasks
 let gmail: google.gmail.v1.Gmail
@@ -20,7 +21,7 @@ let auth: Auth
 let sync: RootSync
 let gmail_sync: GmailSync
 let gtasks_sync: GTasksSync
-const logger = debug('tests')
+const log = debug('tests')
 
 jest.setTimeout(15 * 1000)
 beforeAll(initTest)
@@ -36,8 +37,11 @@ describe('gmail', function() {
   describe.skip('db', function() {})
 
   describe('gtasks', function() {
+    // ref to the !next TaskListSync
     let tasklist
     let query
+    // ID of the initial email (thread)
+    let thread_id
     beforeAll(async function() {
       tasklist = gtasks_sync.getListByName('!next')
       query = gmail_sync.getListByName('!next')
@@ -45,7 +49,9 @@ describe('gmail', function() {
       await gmail_sync.createLabelsIfMissing(['P/label_1', 'P/label_2'])
     })
     function label_id(name) {
-      return gmail_sync.getLabelID(name)
+      const id = gmail_sync.getLabelID(name)
+      assert(id, `Label '${name}' doesnt exist`)
+      return id
     }
     async function sync_next(gmail_dirty = true, gtasks_dirty = true) {
       // start a selective sync
@@ -70,8 +76,8 @@ describe('gmail', function() {
 
     it('syncs new threads', async function() {
       // create a new thread
-      await gmail_sync.createThread('test 1', ['!S/Next Action'])
-      console.log('email sent')
+      thread_id = await gmail_sync.createThread('test 1', ['!S/Next Action'])
+      log('email sent')
       await sync_next(true, false)
       // get directly from the API
       const res = await list_tasklist()
@@ -80,6 +86,7 @@ describe('gmail', function() {
         title: 'test 1',
         status: 'needsAction'
       }
+      expect(res.items).toHaveLength(1)
       expect(res.items[0]).toMatchObject(record)
       expect(res.items[0].notes).toMatch(
         '\nEmail: https://mail.google.com/mail/u/0/#all/'
@@ -87,11 +94,10 @@ describe('gmail', function() {
     })
 
     it('syncs label changes', async function() {
-      // console.dir(labels)
       // assign the new labels
-      console.log('adding dummy labels')
+      log('adding dummy labels')
       await req('gmail.users.threads.modify', {
-        id: sync.data.data[0].gmail_id,
+        id: thread_id,
         userId: 'me',
         fields: 'id',
         resource: {
@@ -99,18 +105,44 @@ describe('gmail', function() {
           // removeLabelIds: remove_label_ids
         }
       })
-      // debugger
       await sync_next(true, false)
-      const res = await list_tasklist()
+      const list = await list_tasklist()
       // assert the result
       const record = {
         title: 'test 1 #label_1 #label_2',
         status: 'needsAction'
       }
-      expect(res.items[0]).toMatchObject(record)
+      expect(list.items).toHaveLength(1)
+      expect(list.items[0]).toMatchObject(record)
     })
 
-    it.skip('syncs tasks between lists', async function() {})
+    // env DEBUG=tests,\*-am\*,\*-error DEBUG_AM=2
+    it('syncs tasks between lists', async function() {
+      // assign the new labels
+      log('moving to !S/Action')
+      debugger
+      await req('gmail.users.threads.modify', {
+        id: thread_id,
+        userId: 'me',
+        fields: 'id',
+        resource: {
+          addLabelIds: [label_id('!S/Action')]
+        }
+      })
+      await sync_next(true, false)
+      const [list_action, list_next] = await Promise.all([
+        list_tasklist('!actions'),
+        list_tasklist('!next')
+      ])
+      // assert the result
+      const record = {
+        title: 'test 1 #label_1 #label_2',
+        status: 'needsAction'
+      }
+      expect(list_next.items).toHaveLength(0)
+      expect(list_action.items).toHaveLength(1)
+      expect(list_action.items[0]).toMatchObject(record)
+    })
 
     it.skip('syncs task completions', async function() {})
 
@@ -141,6 +173,8 @@ describe.skip('sync', function() {
   it('auto starts', function() {})
   it('auto syncs', function() {})
   it('auto restarts', function() {})
+
+  describe.skip('label filters', function() {})
 })
 
 // ----- ----- -----
@@ -149,7 +183,7 @@ describe.skip('sync', function() {
 
 function print_db() {
   if (!sync.data) return
-  console.log(sync.data.toString())
+  log(sync.data.toString())
 }
 
 async function initTest() {
@@ -161,13 +195,14 @@ async function initTest() {
   config.sync_frequency = 10000 * 100
   config.gtasks.sync_frequency = 10000 * 100
   sync = new RootSync(config, logger, connections)
+  // disable heartbeat
+  sync.HeartBeat_state = () => {}
   const ready_state = sync.state.get('Ready')
   // disable auto start
   ready_state.add = _.without(ready_state.add, 'Reading')
   // jump to the next tick
   await delay(0)
   // assign apis
-  debugger
   gtasks = connections.apis.gtasks
   gmail = connections.apis.gmail
   // wait for the google auth
@@ -183,19 +218,19 @@ async function initTest() {
   gtasks_sync = sync.subs.google.subs.tasks
   // trigger sync
   sync.state.add('Reading')
-  console.log('connected')
+  log('connected')
   await sync.state.when('WritingDone')
-  console.log('initial sync OK')
+  log('initial sync OK')
 }
 
 async function req(method: string, params = {}, options = {}) {
-  logger(`req ${method}:\n%O`, params)
+  log(`req ${method}:\n%O`, params)
   // @ts-ignore
   params.auth = auth.client
   // prevent JIT from shadowing those
   // @ts-ignore
   void (gmail, gtasks)
-  // console.log(method)
+  // log(method)
   // @ts-ignore
   options = {
     forever: true,
@@ -233,7 +268,7 @@ async function truncate_gtasks() {
       await req('gtasks.tasklists.delete', { tasklist: list.id })
     })
   )
-  console.log('removed all tasks')
+  log('removed all tasks')
 }
 
 async function truncate_gmail() {
@@ -241,5 +276,5 @@ async function truncate_gmail() {
   await Promise.all(
     ['label:all', 'label:trash'].map(async query => await cleanup_gmail(query))
   )
-  console.log('removed all emails')
+  log('removed all emails')
 }

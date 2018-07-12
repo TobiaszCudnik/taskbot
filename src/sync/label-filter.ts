@@ -45,7 +45,8 @@ export default class LabelFilterSync extends SyncReader<
       const labels = this.config.modify.call(this.root, record)
       this.log(`Changing labels for '${record.title}'`)
       this.applyLabels(record, labels)
-      record.updated = moment().unix()
+      // TODO internal update field
+      // record.updated = moment().unix()
       this.printRecordDiff(before, record)
       count++
     }

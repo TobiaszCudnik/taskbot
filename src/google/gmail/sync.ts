@@ -625,6 +625,7 @@ export default class GmailSync extends SyncWriter<
 
   /**
    * TODO email content
+   * @return New thread ID
    */
   async createThread(
     subject: string,
