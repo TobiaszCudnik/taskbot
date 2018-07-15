@@ -34,7 +34,7 @@ beforeAll(async function() {
   ])
 })
 
-// DEBUG=root\*-info,gtasks-list-next\*,gmail-list-next\* DEBUG_AM=2
+// DEBUG=root\*-info,record-diffs,db-diffs,gtasks-list-next\*,gmail-list-next\* DEBUG_AM=2
 // DEBUG=tests,\*-am\*,\*-error DEBUG_AM=2
 // DEBUG=tests,\*-error,record-diffs,db-diffs,connections-\*,root\*-info DEBUG_FILE=1 node_modules/jest/bin/jest.js
 describe('gmail', function() {
@@ -248,7 +248,7 @@ describe('gtasks <=> gmail', function() {
   let task_id_1
   let thread_1
 
-  it.only('syncs label changes', async function() {
+  it('syncs label changes', async function() {
     task_id_1 = await addTask('gtasks<->gmail-1')
     // create a new thread
     // thread_id = await gmail_sync.createThread('gmail<->gtasks-2', [
@@ -270,7 +270,6 @@ describe('gtasks <=> gmail', function() {
       'P/label_3': { active: true }
     })
   })
-  it.skip('syncs completions', function() {})
   it.skip('syncs notes', function() {})
 })
 

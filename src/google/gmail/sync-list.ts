@@ -245,6 +245,13 @@ export default class GmailListSync extends SyncReader<
       // TODO check for conflicts to resolve? since the last sync
       return false
     }
+    const record_labels = Object.entries(record.labels)
+      .filter(
+        ([name, label]) =>
+          // include only labels present during the last gmail sync
+          label.active && label.updated <= this.gmail.timeFromHistoryID(hid)
+      )
+      .map(([name, label]) => name)
     this.log_verbose('merging')
     record.updated.gmail_hid = hid
     record.updated.latest = Math.max(
@@ -254,9 +261,6 @@ export default class GmailListSync extends SyncReader<
     // TODO content from emails
     // apply labels from gmail
     const thread_labels = this.gmail.getLabelsFromThread(thread)
-    const record_labels = Object.entries(record.labels)
-      .filter(([name, label]) => label.active)
-      .map(([name, label]) => name)
     const to_remove = _.difference(record_labels, thread_labels)
     const to_add = _.difference(thread_labels, record_labels)
 
