@@ -243,7 +243,62 @@ describe('gtasks', function() {
   })
 })
 
-function has_label(thread: google.gmail.v1.Thread, label: string): boolean {
+describe('gtasks <=> gmail', function() {
+  beforeAll(reset)
+  let task_id_1
+  let thread_1
+
+  it.only('syncs label changes', async function() {
+    task_id_1 = await addTask('gtasks<->gmail-1')
+    // create a new thread
+    // thread_id = await gmail_sync.createThread('gmail<->gtasks-2', [
+    //   '!S/Next Action'
+    // ])
+    await syncList(true, true)
+    thread_1 = gmail_sync.threads.values().next().value
+    // remove 1, add 2
+    let promise_tasks = patchTask(task_id_1, 'gtasks-gmail-1 #label_2')
+    // add 3
+    let promise_gmail = modifyLabels(thread_1.id, ['P/label_3'])
+    await Promise.all([promise_tasks, promise_gmail])
+    await syncList(true, true)
+    expect(sync.data.data).toHaveLength(1)
+    const record = sync.data.data[0]
+    expect(record.labels).toMatchObject({
+      '!S/Next Action': { active: true },
+      'P/label_2': { active: true },
+      'P/label_3': { active: true }
+    })
+  })
+  it.skip('syncs completions', function() {})
+  it.skip('syncs notes', function() {})
+})
+
+async function modifyLabels(
+  thread_id: string,
+  add: string[] = [],
+  remove: string[] = []
+) {
+  await req('gmail.users.threads.modify', {
+    id: thread_id,
+    userId: 'me',
+    fields: 'id',
+    resource: {
+      addLabelIds: add.map(label_id),
+      removeLabelIds: remove.map(label_id)
+    }
+  })
+}
+
+describe.skip('sync', function() {
+  it('auto starts', function() {})
+  it('auto syncs', function() {})
+  it('auto restarts', function() {})
+
+  describe.skip('label filters', function() {})
+})
+
+function hasLabel(thread: google.gmail.v1.Thread, label: string): boolean {
   return thread.messages[0].labelIds.includes(label_id(label))
 }
 
