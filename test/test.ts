@@ -58,7 +58,7 @@ describe('gmail', function() {
         'auto-label-test-1 !na *location_1 ^reference_1'
       )
       log('email sent')
-      await sync_list(true, false, 'inbox-labels')
+      await syncList(true, false, 'inbox-labels')
       expect(sync.data.data).toHaveLength(1)
       const record = sync.data.data[0]
       expect(Object.keys(record.labels)).toContain('!S/Next Action')
@@ -76,7 +76,7 @@ describe('gmail', function() {
         '!S/Next Action'
       ])
       log('email sent')
-      await sync_list(true, false)
+      await syncList(true, false)
       // get directly from the API
       const res = await list_tasklist()
       // assert the result
@@ -103,7 +103,7 @@ describe('gmail', function() {
           // removeLabelIds: remove_label_ids
         }
       })
-      await sync_list(true, false)
+      await syncList(true, false)
       const list = await list_tasklist()
       // assert the result
       const record = {
@@ -125,7 +125,7 @@ describe('gmail', function() {
           addLabelIds: [label_id('!S/Action')]
         }
       })
-      await sync_list(true, false)
+      await syncList(true, false)
       const [list_action, list_next] = await Promise.all([
         list_tasklist('!actions'),
         list_tasklist('!next')
@@ -152,7 +152,7 @@ describe('gmail', function() {
           addLabelIds: [label_id('!S/Finished')]
         }
       })
-      await sync_list(true, false)
+      await syncList(true, false)
       const [list_action, list_next] = await Promise.all([
         list_tasklist('!actions'),
         list_tasklist('!next')
@@ -186,49 +186,59 @@ describe('gtasks', function() {
     let thread_1: google.gmail.v1.Thread
 
     it('syncs new tasks', async function() {
-      task_id_1 = await add_task('gtasks-gmail-1')
+      task_id_1 = await addTask('gtasks-gmail-1')
       // sync
-      await sync_list(false, true)
+      await syncList(false, true)
       // assert
-      const list = await list_query('label:!s-next-action')
+      const list = await listQuery('label:!s-next-action')
       expect(list.threads).toHaveLength(1)
       for (const field of ['historyId', 'id']) {
         expect(Object.keys(list.threads[0])).toContain(field)
       }
       thread_1 = await get_thread(list.threads[0].id)
     })
+
     it('syncs text labels', async function() {
       const wait = [
-        add_task('gtasks-gmail-2 #label_1'),
-        patch_task(task_id_1, 'gtasks-gmail-1 #label_2 #label_3')
+        addTask('gtasks-gmail-2 #label_1'),
+        patchTask(task_id_1, 'gtasks-gmail-1 #label_2 #label_3')
       ]
       await Promise.all(wait)
       // sync
-      await sync_list(false, true)
+      await syncList(false, true)
       // assert
-      const list = await list_query('label:!s-next-action')
+      const list = await listQuery('label:!s-next-action')
       expect(list.threads).toHaveLength(2)
       const load_threads = [
         get_thread(list.threads[0].id),
         get_thread(list.threads[1].id)
       ]
       const [thread_1, thread_2] = await Promise.all(load_threads)
-      expect(has_label(thread_1, 'P/label_2'))
-      expect(has_label(thread_1, 'P/label_3'))
-      expect(has_label(thread_2, 'P/label_1'))
+      expect(hasLabel(thread_1, 'P/label_2'))
+      expect(hasLabel(thread_1, 'P/label_3'))
+      expect(hasLabel(thread_2, 'P/label_1'))
     })
-    it.skip('syncs tasks between lists', async function() {})
+
+    it.skip('syncs tasks between lists', async function() {
+      // create a new task in next
+      // sync
+      // delete the one in next, but copy the notes
+      // create another task in actions
+      // sync
+      // check if the new thread has S/Actions
+    })
+
     it('syncs task completions', async function() {
-      await patch_task(
+      await patchTask(
         task_id_1,
         'gtasks-gmail-1 #label_1 #label_2',
         '!next',
         null,
         true
       )
-      await sync_list(false, true)
+      await syncList(false, true)
       const refresh = await get_thread(thread_1.id)
-      expect(has_label(refresh, '!S/Finished')).toBeTruthy()
+      expect(hasLabel(refresh, '!S/Finished')).toBeTruthy()
     })
   })
 })
@@ -237,7 +247,7 @@ function has_label(thread: google.gmail.v1.Thread, label: string): boolean {
   return thread.messages[0].labelIds.includes(label_id(label))
 }
 
-async function list_query(
+async function listQuery(
   query = 'label:!s-next-action'
 ): Promise<google.gmail.v1.ListThreadsResponse> {
   const [list, res] = await req('gmail.users.threads.list', {
@@ -260,18 +270,6 @@ async function get_thread(id: string): Promise<google.gmail.v1.Thread> {
   })
   return body
 }
-
-describe.skip('gtasks <=> gmail', function() {
-  it('syncs label changes', function() {})
-})
-
-describe.skip('sync', function() {
-  it('auto starts', function() {})
-  it('auto syncs', function() {})
-  it('auto restarts', function() {})
-
-  describe.skip('label filters', function() {})
-})
 
 // ----- ----- -----
 // FUNCTIONS
@@ -398,7 +396,7 @@ async function truncate_gmail() {
   log('removed all emails')
 }
 
-async function sync_list(
+async function syncList(
   gmail_dirty = true,
   gtasks_dirty = true,
   name = '!next'
@@ -415,7 +413,7 @@ async function sync_list(
 }
 
 // @returns the ID of the new task
-async function add_task(
+async function addTask(
   title = '',
   list = '!next',
   notes = '',
@@ -432,7 +430,7 @@ async function add_task(
   })
   return body.id
 }
-async function patch_task(
+async function patchTask(
   id,
   title: string,
   list = '!next',
