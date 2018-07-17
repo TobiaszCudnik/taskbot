@@ -26,6 +26,7 @@
   ],
   "dependencies": {
     "@google-cloud/logging-winston": "^0.9.0",
+    "@types/debug": "0.0.30",
     "ami-logger": "^0.3.22",
     "asyncmachine": "^3.4.0",
     "await-semaphore": "^0.1.3",

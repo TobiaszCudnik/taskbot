@@ -171,38 +171,6 @@ const config: IConfigBase = {
       }
     },
     {
-      prefix: '!T/',
-      name: 'Sync GTasks/Next',
-      colors: {
-        bg: '#b9e4d0',
-        fg: '#000000'
-      }
-    },
-    {
-      prefix: '!T/',
-      name: 'Sync GTasks/Pending',
-      colors: {
-        bg: '#b9e4d0',
-        fg: '#000000'
-      }
-    },
-    {
-      prefix: '!T/',
-      name: 'Sync GTasks/Some Day',
-      colors: {
-        bg: '#b9e4d0',
-        fg: '#000000'
-      }
-    },
-    {
-      prefix: '!T/',
-      name: 'Sync GTasks/Actions',
-      colors: {
-        bg: '#b9e4d0',
-        fg: '#000000'
-      }
-    },
-    {
       prefix: 'M/',
       name: 'GTasks/Quota Exceeded',
       colors: {
@@ -253,14 +221,15 @@ const config: IConfigBase = {
           // sync gtasks
           match = label.match(/\/Sync GTasks(\/.+?)$/)
           if (match) {
-            const name = match[1]
-              ? (match[1] as string).replace('/', '').toLowerCase()
-              : null
-            this.log(`Executing task label '${label}' (${name})`)
+            // const name = match[1]
+            //   ? (match[1] as string).replace('/', '').toLowerCase()
+            //   : null
+            // this.log(`Executing task label '${label}' (${name})`)
+            this.log(`Executing task label '${label}'`)
             for (const list of this.root.subs.google.subs.tasks.subs.lists) {
               const list_name = list.config.name.replace('!', '').toLowerCase()
 
-              if (name && list_name != name) continue
+              // if (name && list_name != name) continue
               // force refresh
               if (list.state.is('QuotaExceeded')) {
                 add.add('M/GTasks Quota Exceeded')
