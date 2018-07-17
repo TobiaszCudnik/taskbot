@@ -1,68 +1,40 @@
 ## Bugs
 
-* closing a task in gtasks doesnt add `S/Finished`
-  * sometime it does
-* react to `code: 'ECONNRESET'`
-* labels added to the task as #name for non-existing labels arent added to gmail
-  * they get created tho
+* closing a task in gmail sidebar deleted the email
 * cant add status labels in google tasks
-  * adding `!w` to a google task in `!Next` doesnt move the task
-  * adding `!e` to a google task in `!Waiting` doesnt complete the task
-    * should work for lists without query matches `!e !f`
-  * force only 1 status label at a time
 * http server leaks 42mb per hour for 2 users
   * StackDrivers also may
     * `Warning: connect.session() MemoryStore is not`
     * check memory usage on GAE without the StackDriver transport
-* new `P/` labels added in gmail dont appear in gtasks descriptions
-  * service restart required
 * after starting the service for 2 users
   * `connections-error [gtd...@gmail.com] Request 'gtasks.api.tasks.list' aborted by the abort() function +0ms`
-* emails in inbox (unread ones)
-  * when changed a status AND archived simultaneously
-  * go back to the inbox
 * restart after an exception doesnt kick in
-* when checking initial labels compare using the normalized form
-* in case of a color conflict
-  * try to remove custom colors (scan and compare)
-  * avoid updating the color (continue using the users one)
 
 ## Milestone 1:
 
-* demo account Bd97w5sPfoqb
+* when checking initial labels compare using the normalized form
+* react to `code: 'ECONNRESET'`
+* handle `invalid_grant` in google auth
 * hide `!T/` labels from the label list
-* two-way label sync, based on a hash of prev labels
 * single `!S` label marking every monitored email
   * quickly see all the gtd emails
-* apply the change manually on the internal readers' data structs
-  * to avoid impossible re-reads in case of too frequent syncs
-  * the change is applied, but the system cant get new data to confirm this
-  * trust the HTTP response codes
-* per-user ip to skip 100 per user quota
-* check how it works with deleting (and orphan threads)
-* `!T/task` and `A/answer` labels
-  * add `!T/sync-gtasks-next` to sync the `s-next-action` list in GTasks
-  * `A/gtasks-quota-exceeded` pops up if the user ran out of quota
-    * that included both users-internal and the global quotas
-    * should appear for the same email as the `!T/` request
-    * and auto-removed after a certain amount of time
+* `!T/task` and `A/answer` labels auto-removed after 
+  a certain amount of time
 * encrypt sensitive info in the logs with MD5 hashes
   * only for PROD
   * salt
-* results limit
-  * gtasks paging support
-  * max limit of results per query/gtask list
-* handle deleted labels (from gmail)
 * user signup (password protected)
   * collect the ip
-* users admin panel
-  * enable / disable syncing per user
-  * enable / disable logging per user
-  * activate user accounts
-  * sync per api in the last 1h, 24h
 
 ## Milestone 1.2
 
+* in case of a color conflict
+  * try to remove custom colors (scan and compare)
+  * avoid updating the color (continue using the users one)
+* results limit
+  * gtasks paging support
+  * max limit of results per query/gtask list
+* per-user ip to skip 100 per user quota
 * separate service for the website on GAE std
 * logger
   _ ability to turn on debug per specific user
@@ -72,9 +44,17 @@
   * local emulator for development
 * switching config options by setting label on the welcome email
   * `TaskBot Welcomes! Config by labels`
+* handle google auth “error” : “invalid_grant”
+  * https://blog.timekit.io/google-oauth-invalid-grant-nightmare-and-how-to-fix-it-9f4efaf1da35
+* users admin panel
+  * enable / disable syncing per user
+  * enable / disable logging per user
+  * activate user accounts
+  * sync per api in the last 1h, 24h
 
 ## TODO
 
+* print new records on db-diffs and record=diffs
 * dont re-order non-status labels, keep them in the text
 * scrape email content to a new task
   * all the links
@@ -125,6 +105,10 @@
 
 ## Optimizations
 
+* apply the change manually on the internal readers' data structs
+  * to avoid impossible re-reads in case of too frequent syncs
+  * the change is applied, but the system cant get new data to confirm this
+  * trust the HTTP response codes
 * custom docker image
   * https://lugassy.net/accelerate-optimize-your-google-app-engine-deployments-9358414f80f6
 * SyncList dedicated to Orphaned Threads
@@ -153,6 +137,7 @@
 
 ## Refactor
 
+* google-auth-info not present on the loggers list at the end
 * move from `typings` to `@types`
 * replace async-map with Promise.all(array.map(async ...))
 * merge GC and time array into a single TimeArray class
