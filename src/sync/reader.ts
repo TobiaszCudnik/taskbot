@@ -174,7 +174,7 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
   // TODO extract google specific code to GoogleAPIMixin
   Exception_enter(err, ...rest): boolean {
     this.log_error('ERROR: %O', err)
-    if (err.errors) {
+    if (err && err.errors) {
       let quota_err = false
       for (const error of err.errors) {
         if (error.domain == 'usageLimits') {

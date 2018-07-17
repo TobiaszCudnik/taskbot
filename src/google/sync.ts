@@ -59,6 +59,7 @@ export default class GoogleSync extends SyncWriter<
     }
     this.bindToSubs()
     this.auth.pipe('Ready', this.state, 'Authenticated')
+    this.auth.pipe('Exception', this.state)
   }
 
   // ----- -----

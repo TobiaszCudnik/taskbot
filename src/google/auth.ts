@@ -48,10 +48,10 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
       'RefreshingToken',
       'TokenRefreshed'
     )
-    this.id('Auth')
+    this.id('Google Auth')
+    machineLogToDebug(logger, this, user_id)
     // TODO avoid globals
     if (process.env['DEBUG_AM'] || global.am_network) {
-      machineLogToDebug(logger, this, user_id)
       if (global.am_network) {
         global.am_network.addMachine(this)
       }
@@ -82,5 +82,14 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
 
   RefreshingToken_state() {
     return this.client.refreshAccessToken(this.addByCallback('TokenRefreshed'))
+  }
+
+  Exception_state(err) {
+    switch(err.code) {
+      case 'invalid_grant':
+        this.log('Invalid token grant')
+        // TODO redo the token
+        break;
+    }
   }
 }
