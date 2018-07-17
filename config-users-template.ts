@@ -13,4 +13,15 @@ const config: TConfigCredentials[] = [
   }
 ]
 
+export const test_user: TConfigCredentials = {
+  user: {
+    id: 1
+  },
+  google: {
+    username: '@gmail.com',
+    access_token: '',
+    refresh_token: ''
+  }
+}
+
 export default config

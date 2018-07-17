@@ -5,7 +5,7 @@ import Logger from '../src/app/logger'
 import { getConfig } from '../src/app/config'
 import * as google from 'googleapis'
 import * as delay from 'delay'
-import users from '../config-users'
+import { test_user } from '../config-users'
 import Auth from '../src/google/auth'
 import GmailSync from '../src/google/gmail/sync'
 import GTasksSync from '../src/google/tasks/sync'
@@ -338,7 +338,7 @@ async function initTest() {
   // init sync
   const logger = new Logger()
   const connections = new Connections(logger)
-  const config = getConfig(users[0])
+  const config = getConfig(test_user)
   // disable auto sync
   config.sync_frequency = 10000 * 100
   config.gtasks.sync_frequency = 10000 * 100
