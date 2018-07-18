@@ -1,7 +1,10 @@
 ## Bugs
 
+* status text-labels in gmail are broken
 * closing a task in gmail sidebar deleted the email
-* cant add status labels in google tasks
+  * threat uncompleted->completed and hidden as completion
+  * ? and unhide
+* deleted email breaks the service
 * http server leaks 42mb per hour for 2 users
   * StackDrivers also may
     * `Warning: connect.session() MemoryStore is not`
@@ -12,6 +15,9 @@
 
 ## Milestone 1:
 
+* welcome email with instructions
+  * `TaskBot Welcome Email`
+  * `!T/Sync GTasks`
 * when checking initial labels compare using the normalized form
 * react to `code: 'ECONNRESET'`
 * handle `invalid_grant` in google auth
@@ -105,6 +111,7 @@
 
 ## Optimizations
 
+* share the same http agent across all the users on the node
 * apply the change manually on the internal readers' data structs
   * to avoid impossible re-reads in case of too frequent syncs
   * the change is applied, but the system cant get new data to confirm this
