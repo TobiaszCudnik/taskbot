@@ -67,7 +67,7 @@ describe('gmail', function() {
     it('syncs new threads', async function() {
       await reset()
       // create a new thread
-      const thread_id = await gmail_sync.createThread('gmail-gtask-1', [
+      await gmail_sync.createThread('gmail-gtask-1', [
         '!S/Next Action'
       ])
       log('email sent')
@@ -138,7 +138,7 @@ describe('gmail', function() {
       expect(list_action.items[0]).toMatchObject(record)
     })
 
-    it.only('syncs task completions', async function() {
+    it('syncs task completions', async function() {
       await reset()
       const thread_id = await gmail_sync.createThread('gmail-gtask-1', [
         '!S/Next Action',
@@ -146,7 +146,7 @@ describe('gmail', function() {
         'P/project_2'
       ])
       await syncList(true, false)
-      log('moving to !S/Finished')
+      log('adding !S/Finished')
       await req('gmail.users.threads.modify', {
         id: thread_id,
         userId: 'me',
@@ -156,19 +156,13 @@ describe('gmail', function() {
         }
       })
       await syncList(true, false)
-      const [list_action, list_next] = await Promise.all([
-        listTasklist('!actions'),
-        listTasklist('!next')
-      ])
+      const list_next = await listTasklist('!next')
       // assert the result
       const record = {
         status: 'completed'
       }
-      if (list_next.items) {
-        expect(list_next.items).toHaveLength(0)
-      }
-      expect(list_action.items).toHaveLength(1)
-      expect(list_action.items[0]).toMatchObject(record)
+      expect(list_next.items).toHaveLength(1)
+      expect(list_next.items[0]).toMatchObject(record)
     })
 
     it(`creates new labels for non-existing text labels`, async function() {})
@@ -203,6 +197,7 @@ describe('gtasks', function() {
   it.skip('should cache with etags', function() {})
   it.skip('refreshes on Dirty', function() {})
   it.skip('re-adds the list in case it disappears', function() {})
+  it.skip('un-hides a task after its completion', function() {})
 
   describe('db', function() {})
 
@@ -270,7 +265,9 @@ describe('gtasks', function() {
 
     it('syncs task completions with hiding', async function() {
       await reset()
+      // create a task
       const task_id = await addTask('gtasks-gmail-1')
+      // complete and hide
       await patchTask(
         task_id,
         'gtasks-gmail-1 #project_1 #project_2',
