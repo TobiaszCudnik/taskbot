@@ -64,9 +64,8 @@ describe('gmail', function() {
   })
 
   describe('gtasks', function() {
-    beforeEach(reset)
-
     it('syncs new threads', async function() {
+      await reset()
       // create a new thread
       const thread_id = await gmail_sync.createThread('gmail-gtask-1', [
         '!S/Next Action'
@@ -88,6 +87,7 @@ describe('gmail', function() {
     })
 
     it('syncs labels to text label', async function() {
+      await reset()
       // create a new thread
       await gmail_sync.createThread('gmail-gtask-1', [
         '!S/Next Action',
@@ -106,6 +106,7 @@ describe('gmail', function() {
     })
 
     it('syncs tasks between lists', async function() {
+      await reset()
       const thread_id = await gmail_sync.createThread('gmail-gtask-1', [
         '!S/Next Action',
         'P/project_1',
@@ -137,7 +138,8 @@ describe('gmail', function() {
       expect(list_action.items[0]).toMatchObject(record)
     })
 
-    it('syncs task completions', async function() {
+    it.only('syncs task completions', async function() {
+      await reset()
       const thread_id = await gmail_sync.createThread('gmail-gtask-1', [
         '!S/Next Action',
         'P/project_1',
@@ -205,9 +207,8 @@ describe('gtasks', function() {
   describe('db', function() {})
 
   describe('gmail', function() {
-    beforeEach(reset)
-
     it('syncs new tasks', async function() {
+      await reset()
       await addTask('gtasks-gmail-1')
       // sync
       await syncList(false, true)
@@ -220,6 +221,7 @@ describe('gtasks', function() {
     })
 
     it('syncs text labels', async function() {
+      await reset()
       const wait = [
         addTask('gtasks-gmail-2 #project_1'),
         addTask('gtasks-gmail-1 #project_2 #project_3')
@@ -250,6 +252,7 @@ describe('gtasks', function() {
     })
 
     it('syncs task completions', async function() {
+      await reset()
       const task_id = await addTask('gtasks-gmail-1')
       await patchTask(
         task_id,
@@ -266,6 +269,7 @@ describe('gtasks', function() {
     })
 
     it('syncs task completions with hiding', async function() {
+      await reset()
       const task_id = await addTask('gtasks-gmail-1')
       await patchTask(
         task_id,
@@ -285,6 +289,7 @@ describe('gtasks', function() {
     })
 
     it('syncs missing threads', async function() {
+      await reset()
       // add 2 tasks
       await Promise.all([addTask('gtasks-gmail-1'), addTask('gtasks-gmail-2')])
       // sync
@@ -307,9 +312,8 @@ describe('gtasks', function() {
 })
 
 describe('gtasks <=> gmail', function() {
-  beforeEach(reset)
-
   it('syncs label changes', async function() {
+    await reset()
     const task_id_1 = await addTask('gtasks<->gmail-1')
     // create a new thread
     // thread_id = await gmail_sync.createThread('gmail<->gtasks-2', [
