@@ -17,10 +17,7 @@ export type Thread = google.gmail.v1.Thread
 
 export const sync_state: IJSONStates = {
   Enabled: {},
-  // TODO implement based on history list and label matching
-  Dirty: {
-    drop: ['MsgsFetched', 'ThreadsFetched', 'FetchingThreads', 'FetchingMsgs']
-  },
+  Dirty: {},
 
   FetchingThreads: {
     require: ['Enabled'],
@@ -51,7 +48,6 @@ export default class GmailQuery {
   // history ID from the moment of reading
   history_id_synced: number | null
   threads: Thread[] = []
-  protected previous_threads: Thread[] | null = null
 
   log: log_fn
 
@@ -160,6 +156,7 @@ export default class GmailQuery {
     if (abort()) return
 
     this.threads = results
+    this.state.drop('Dirty')
 
     if (!this.fetch_msgs) {
       this.history_id_synced = history_id
@@ -210,10 +207,12 @@ export default class GmailQuery {
 
   Dirty_state() {
     this.history_id_synced = null
-    this.state.drop('Dirty')
   }
 
   async isCached(abort: () => boolean): Promise<boolean | null> {
+    if (this.state.is('Dirty')) {
+      return false
+    }
     return this.history_id_synced
       ? await this.gmail.isCached(this.history_id_synced, abort)
       : false

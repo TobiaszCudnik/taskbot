@@ -1,3 +1,4 @@
+import { TAbortFunction } from 'asyncmachine/types'
 import * as clone from 'deepcopy'
 import * as moment from 'moment'
 // Machine types
@@ -34,7 +35,7 @@ export default class LabelFilterSync extends SyncReader<
     return super.getState().id('label-filter: ' + this.config.name)
   }
 
-  merge(): number[] {
+  async merge(abort: TAbortFunction): Promise<number[]> {
     let count = 0
     const records = this.root.data.where(this.config.db_query)
     if (records.length) {

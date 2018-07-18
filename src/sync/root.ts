@@ -1,5 +1,6 @@
 import * as assert from 'assert'
 import { machine } from 'asyncmachine'
+import { TAbortFunction } from 'asyncmachine/types'
 import { Semaphore } from 'await-semaphore'
 import 'colors'
 import * as debug from 'debug'
@@ -28,7 +29,7 @@ import GoogleSync from '../google/sync'
 import { IConfig, ILabelDefinition, IListConfig } from '../types'
 import GC from './gc'
 import LabelFilterSync from './label-filter'
-import Logger from '../app/logger'
+import Logger, { log_fn } from '../app/logger'
 import { SyncReader, sync_reader_state } from './reader'
 import { SyncWriter, sync_writer_state } from './writer'
 import * as _ from 'lodash'
@@ -127,10 +128,9 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   // seconds
   heartbeat_freq = 10
   restarts_count = 0
-
   last_sync_reads = 0
-
   network_errors = ['EADDRNOTAVAIL', 'ETIMEDOUT']
+  log_db_diff: log_fn
 
   constructor(
     config: IConfig,
@@ -139,6 +139,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     public connections: Connections
   ) {
     super(config, logger)
+    this.log_db_diff = logger.createLogger('db-diff')
     this.log(
       `Starting the sync service for user ${config.user.id}: ${
         config.google.username
@@ -151,15 +152,6 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
       setTimeout(hb, this.heartbeat_freq * SEC)
     }
     setTimeout(hb, this.heartbeat_freq * SEC)
-  }
-
-  init(config: IConfig) {
-    // shallow copy the config
-    this.config = { ...config }
-    // parse lazy list configs
-    this.config.lists = this.config.lists.map(
-      list => (_.isFunction(list) ? list(this.config) : list)
-    )
   }
 
   // ----- -----
@@ -207,7 +199,9 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     const sub_syncs = [this, ...this.subs_all]
     this.log_verbose('Dropping Restarted everywhere')
     for (const sync of reverse(sub_syncs)) {
+      // @ts-ignore TODO
       sync.state.drop('Restarted')
+      // @ts-ignore TODO
       await sync.state.whenNot('Restarted')
     }
     this.logStates('After restart')
@@ -285,7 +279,9 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
 
   async ReadingDone_state() {
     super.ReadingDone_state()
-    this.merge()
+    const abort = this.state.getAbort('ReadingDone')
+    await this.merge(abort)
+    if (abort()) return
     // if any of the readers is marked as Dirty by other ones, re-read
     const should_reread = this.subs_all.some(
       s => s.state.is('Dirty') && s.state.not('QuotaExceeded')
@@ -300,9 +296,9 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
       return this.state.add('Reading')
     }
     this.log_verbose(`DB read in ${this.last_read_time.asSeconds()}sec`)
-    if (debug.enabled('db-diffs')) {
-      this.printDBDiffs()
-    }
+    // if (debug.enabled('db-diff')) {
+    this.printDBDiffs()
+    // }
     this.state.add('Writing')
   }
 
@@ -327,6 +323,15 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   // ----- -----
   // Methods
   // ----- -----
+
+  init(config: IConfig) {
+    // shallow copy the config
+    this.config = { ...config }
+    // parse lazy list configs
+    this.config.lists = this.config.lists.map(
+      list => (_.isFunction(list) ? list(this.config) : list)
+    )
+  }
 
   getState() {
     return machine(sync_state).id('root')
@@ -459,18 +464,26 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
 
   // TODO call.update() on all the changed records (to rebuild the indexes?)
   //   do it in batch and only here
-  merge() {
+  async merge(abort: TAbortFunction): Promise<any[]> {
+    this.log_verbose('merge')
     let changes,
       c = 0
     const MAX = 10
     do {
-      changes = this.subs_flat.reduce((a, r) => {
-        const changes = r.merge()
-        if (changes) {
-          a.push(...changes)
-        }
-        return a
-      }, [])
+      changes = await this.subs_flat.reduce(
+        async (
+          prev: Promise<any[]>,
+          reader: SyncReader<any, any, any, any>
+        ) => {
+          const ret = await prev
+          const changes = await reader.merge(abort)
+          if (changes) {
+            ret.push(...changes)
+          }
+          return ret
+        },
+        Promise.resolve([])
+      )
       if (changes.length) {
         this.log('changes: %o', changes)
       }
@@ -485,6 +498,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   }
 
   printDBDiffs() {
+    this.log_db_diff('diff')
     const db = this.data.toString() + '\n'
     const gmail_sync = this.subs.google.subs.gmail
     const gmail = gmail_sync.subs.lists.map(l => l.toString()).join('\n') + '\n'
@@ -499,7 +513,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     for (const [current, previous] of dbs) {
       const db_diff = this.getDBDiff(current, previous)
       if (!db_diff) continue
-      this.log_verbose(db_diff)
+      this.log_db_diff(db_diff)
     }
     this.last_db = db
     this.last_gmail = gmail

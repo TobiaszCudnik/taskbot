@@ -18,6 +18,7 @@ import {
   ITransitions
 } from '../../../typings/machines/google/gmail/sync'
 import GC from '../../sync/gc'
+import { SyncReader } from '../../sync/reader'
 import RootSync, { DBRecord } from '../../sync/root'
 import { sync_writer_state, SyncWriter } from '../../sync/writer'
 import { IConfig, ILabelDefinition, TRawEmail } from '../../types'
@@ -157,6 +158,10 @@ export default class GmailSync extends SyncWriter<
     return super.ReadingDone_state()
   }
 
+  removeThreadFromCache(thread_id: string) {
+    this.threads.delete(thread_id)
+  }
+
   // Checks if the referenced thread ID is:
   // - downloaded
   // - existing
@@ -179,6 +184,7 @@ export default class GmailSync extends SyncWriter<
         .unix()
       // @ts-ignore `fetched` is set manually
       if (!thread || thread.fetched < too_old) {
+        this.log_verbose('re-fetching')
         let refreshed
         try {
           refreshed = await this.fetchThread(record.gmail_id, abort)
@@ -188,10 +194,14 @@ export default class GmailSync extends SyncWriter<
           }
           // thread doesnt exist
           this.log_verbose(
-            `Thread '${record.gmail_id}' doesn't exist, removing the task`
+            `Thread '${
+              record.gmail_id
+            }' doesn't exist, marking the record for deletion`
           )
           delete record.gmail_id
           record.to_delete = true
+          // @ts-ignore
+          this.root.markListsAsDirty(this, record)
           this.root.data.update(record)
           return
         }

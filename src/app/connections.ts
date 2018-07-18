@@ -189,6 +189,8 @@ export default class Connections {
         } else if (ret[1] === undefined && ret[0] === undefined) {
           throw Error('Response and body empty')
         }
+        // stop redoing
+        break
       } catch (e) {
         // retry on backend errors only
         if (try_n == retries || !e.code || e.code.toString()[0] != '5') {
@@ -205,9 +207,8 @@ export default class Connections {
         this.executed_requests_user[user_id]++
       }
       this.log_verbose(`${method_name} request finished`)
-
-      return return_array ? ret : ret[0]
     }
+    return return_array ? ret : ret[0]
   }
 
   getReqsStats() {

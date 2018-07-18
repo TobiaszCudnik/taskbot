@@ -32,6 +32,7 @@ function checkLabel(
   return matches
 }
 
+// @ts-ignore TODO
 const config: IConfigBase = {
   repl_port: 5002,
   google: {

@@ -1,5 +1,6 @@
 import AsyncMachine, { machine, PipeFlags } from 'asyncmachine'
-import debug from 'debug'
+import { TAbortFunction } from 'asyncmachine/types'
+import * as debug from 'debug'
 import * as clone from 'deepcopy'
 import * as diff from 'diff'
 import * as moment from 'moment-timezone'
@@ -270,10 +271,15 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
     return machine(sync_reader_state).id('SyncReader')
   }
 
-  merge(): any[] {
+  async merge(abort: TAbortFunction): Promise<any[]> {
+    this.log_verbose('merge')
     let ret = []
     for (const sub of this.subs_flat) {
-      ret.push(...sub.merge())
+      const sub_ret = await sub.merge(abort)
+      if (sub_ret) {
+        ret.push(...sub_ret)
+      }
+      if (abort()) return
     }
     return ret
   }
@@ -339,7 +345,7 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
     }
     // console.log(msg)
     // TODO tmp for jest
-    process.stdout.write(msg + '\n')
+    // process.stdout.write(msg + '\n')
     this.log(msg)
   }
 

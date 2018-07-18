@@ -1,4 +1,5 @@
 import { machine } from 'asyncmachine'
+import { TAbortFunction } from 'asyncmachine/types'
 import * as debug from 'debug'
 import * as clone from 'deepcopy'
 import * as google from 'googleapis'
@@ -127,7 +128,8 @@ export default class GmailListSync extends SyncReader<
   // query the DB and, compare list read time with records update time
   //   and remove labels from
   //   records in the DB but not on the list
-  merge() {
+  async merge(abort: TAbortFunction): Promise<any[]> {
+    this.log_verbose('merge')
     const ids = []
     let changed = 0
     // add / merge
@@ -175,12 +177,14 @@ export default class GmailListSync extends SyncReader<
     // TODO indexes - dont update here, update in the top merge
     this.root.data.findAndUpdate(find, (record: DBRecord) => {
       changed++
-      this.log('change')
+      this.log('new gmail orhpan record:\n%O', record)
       // TODO clone only in debug
       this.root.markListsAsDirty(this, record)
       const before = clone(record)
       // remove enter labels, as the thread left the query
       this.applyLabels(record, { remove: this.config.enter.add })
+      // assume deletion and let the orphan logic handle other cases
+      this.gmail.removeThreadFromCache(record.gmail_id)
       // TODO sync the local thread object
       // option 1 - re-download the thread while reading
       // option 2 - delete the thread and expect the main sync re-downloads it
@@ -252,7 +256,7 @@ export default class GmailListSync extends SyncReader<
           label.active && label.updated <= this.gmail.timeFromHistoryID(hid)
       )
       .map(([name, label]) => name)
-    this.log_verbose('merging')
+    this.log_verbose(`merging record ${record.gmail_id}`)
     record.updated.gmail_hid = hid
     record.updated.latest = Math.max(
       record.updated.latest,

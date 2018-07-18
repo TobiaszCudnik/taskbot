@@ -1,4 +1,5 @@
 import { machine } from 'asyncmachine'
+import { TAbortFunction } from 'asyncmachine/types'
 import * as debug from 'debug'
 import * as clone from 'deepcopy'
 import * as delay from 'delay'
@@ -102,8 +103,7 @@ export default class GTasksListSync extends SyncReader<
       abort,
       true
     )
-    if (!req_ret)
-      debugger
+    if (!req_ret) debugger
     const [list, res] = req_ret
 
     if (abort()) return
@@ -239,7 +239,8 @@ export default class GTasksListSync extends SyncReader<
     return { root_tasks, all_tasks }
   }
 
-  merge() {
+  async merge(abort: TAbortFunction) {
+    this.log_verbose('merge')
     let changed = 0
     // add / merge
     for (const task of this.getTasks()) {
@@ -255,12 +256,34 @@ export default class GTasksListSync extends SyncReader<
         changed++
       }
     }
+    // delete
     const deleted = _.differenceBy(
       this.getPrevTasks(),
       this.getTasks(),
       t => t.id
     )
     for (const task of deleted) {
+      // check if not hidden (new google's clients behavior)
+      try {
+        await this.gtasks.req(
+          'api.tasks.patch',
+          this.gtasks.api.tasks.patch,
+          {
+            tasklist: this.list.id,
+            task: task.id,
+            fields: 'id',
+            resource: {
+              hidden: false
+            }
+          },
+          abort,
+          false
+        )
+        changed++
+        this.state.add('Dirty')
+      } catch (e) {
+        // task was really deleted
+      }
       this.log(`Task '${task.title}' deleted in GTasks`)
       const record = this.getFromDB(task)
       if (!record) continue
@@ -268,7 +291,6 @@ export default class GTasksListSync extends SyncReader<
         delete record.gtasks_ids[task.id]
       }
       // mark records without any existing task as pending deletion
-      // TODO doesnt work
       if (!record.gtasks_ids || !Object.keys(record.gtasks_ids).length) {
         this.log(`Marking record '${task.title}' to deletion`)
         record.to_delete = true

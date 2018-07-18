@@ -155,9 +155,9 @@ export default class GTasksSync extends SyncWriter<
     }
     const abort = this.state.getAbort('Writing')
     // get and modify tasks
-    await this.processTasksToDelete(abort)
     await this.processTasksToModify(abort)
     await this.processTasksToAdd(abort)
+    await this.processTasksToDelete(abort)
     this.state.add('WritingDone')
   }
 
@@ -307,16 +307,22 @@ export default class GTasksSync extends SyncWriter<
   processTasksToModify(abort: () => boolean) {
     this.children_to_move = []
     return map(this.subs.lists, async (sync: GTasksListSync) => {
-      await map(sync.getTasks(), async task => {
+      await map(sync.getTasks(), async (task: Task) => {
         const db_res = <DBRecord>(<any>this.root.data
           .chain()
           .where((record: DBRecord) => {
             // TODO implement gtasks_hidden_ids
-            return Boolean(record.gtasks_ids && record.gtasks_ids[task.id])
+            return Boolean(
+              record.gtasks_ids &&
+                record.gtasks_ids[task.id]
+            )
           })
           .limit(1)
           .data())
         const record: DBRecord = db_res[0]
+        if (record.to_delete) {
+          return
+        }
         // TODO type
         const patch: any = {}
         // TODO this should wait for gmail to write
@@ -523,9 +529,10 @@ export default class GTasksSync extends SyncWriter<
   processTasksToAdd(abort: () => boolean) {
     return map(this.subs.lists, async (sync: GTasksListSync) => {
       // TODO loose the cast
-      const records = <DBRecord[]>(<any>this.root.data.where(
-        sync.config.db_query
-      ))
+      const records = this.root.data.where((record: DBRecord) => {
+        // TODO implement gtasks_hidden_ids
+        return !record.to_delete && sync.config.db_query(record)
+      })
       await map(records, async (record: DBRecord) => {
         const task_id = _.findKey(record.gtasks_ids, id => id == sync.list.id)
         // omit tasks who are already on the list

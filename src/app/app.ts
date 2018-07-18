@@ -94,6 +94,7 @@ async function exit() {
   }
   // TODO mark which loggers are enabled
   // TODO rename user_id to * and dont output same loggers for every user
+  // @ts-ignore
   const loggers = _(debug.instances)
     .map(logger => logger.namespace.replace(/:\d+-/, ':*-'))
     .concat('record-diffs')

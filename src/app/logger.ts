@@ -59,6 +59,7 @@ export default class Logger {
       msgs[0] = (msgs[0] && msgs[0].toString()) || ''
       // dont log to console on PROD, except for errors
       if (!process.env['PROD'] || level == 'error') {
+        // @ts-ignore
         terminal(...msgs)
       }
       // optional file logging
