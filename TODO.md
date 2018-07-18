@@ -1,10 +1,5 @@
 ## Bugs
 
-* status text-labels in gmail are broken
-* closing a task in gmail sidebar deleted the email
-  * threat uncompleted->completed and hidden as completion
-  * ? and unhide
-* deleted email breaks the service
 * http server leaks 42mb per hour for 2 users
   * StackDrivers also may
     * `Warning: connect.session() MemoryStore is not`
