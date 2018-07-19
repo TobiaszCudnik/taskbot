@@ -46,7 +46,7 @@ describe('gmail', function() {
   it('refreshes on Dirty', function() {})
 
   describe('db', function() {
-    it('auto add text labels for new self emails', async function() {
+    it('auto add text labels from new self emails', async function() {
       await gmail_sync.createThread(
         'auto-label-test-1 !na *location_1 ^reference_1'
       )

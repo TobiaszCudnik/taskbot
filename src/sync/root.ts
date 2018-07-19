@@ -489,16 +489,15 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
       }
     } while (changes.length && ++c < MAX)
     if (c == MAX) {
-      this.log_error(`MERGE LIMIT EXCEEDED`)
-    }
-    if (c) {
+      this.log_error(`MERGE LIMIT EXCEEDED (${c})`)
+    } else if (c) {
       this.log(`MERGED after ${c} round(s)`)
     }
     return []
   }
 
   printDBDiffs() {
-    this.log_db_diff('diff')
+    this.log_db_diff('db-diff')
     const db = this.data.toString() + '\n'
     const gmail_sync = this.subs.google.subs.gmail
     const gmail = gmail_sync.subs.lists.map(l => l.toString()).join('\n') + '\n'

@@ -257,11 +257,12 @@ export default class GTasksListSync extends SyncReader<
       }
     }
     // delete
-    const deleted = _.differenceBy(
-      this.getPrevTasks(),
-      this.getTasks(),
-      t => t.id
+    const deleted = _.uniq(
+      _.differenceBy(this.getPrevTasks(), this.getTasks(), t => t.id)
     )
+    if (deleted.length) {
+      this.log_verbose(`Checking ${deleted.length} tasks missing`)
+    }
     for (const task of deleted) {
       // check if not hidden (new google's clients behavior)
       try {
@@ -281,19 +282,22 @@ export default class GTasksListSync extends SyncReader<
         )
         changed++
         this.state.add('Dirty')
+        // add back to the cache
+        this.tasks.items.push(task)
       } catch (e) {
         // task was really deleted
-      }
-      this.log(`Task '${task.title}' deleted in GTasks`)
-      const record = this.getFromDB(task)
-      if (!record) continue
-      if (record.gtasks_ids) {
-        delete record.gtasks_ids[task.id]
-      }
-      // mark records without any existing task as pending deletion
-      if (!record.gtasks_ids || !Object.keys(record.gtasks_ids).length) {
-        this.log(`Marking record '${task.title}' to deletion`)
-        record.to_delete = true
+        this.log(`Task '${task.title}' deleted in GTasks`)
+        const record = this.getFromDB(task)
+        if (!record) continue
+        if (record.gtasks_ids) {
+          delete record.gtasks_ids[task.id]
+        }
+        // mark records without any existing task as pending deletion
+        if (!record.gtasks_ids || !Object.keys(record.gtasks_ids).length) {
+          this.log(`Marking record '${task.title}' to deletion`)
+          record.to_delete = true
+        }
+        continue
       }
     }
     return changed ? [changed] : []

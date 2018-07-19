@@ -162,6 +162,18 @@ export default class GmailSync extends SyncWriter<
     this.threads.delete(thread_id)
   }
 
+  Exception_enter(err: Error, ...params) {
+    if (
+      err &&
+      err.errors &&
+      err.errors.message[0] == 'No label add or removes specified'
+    ) {
+      // allowed error
+      return false
+    }
+    return super.Exception_enter(err, ...params)
+  }
+
   // Checks if the referenced thread ID is:
   // - downloaded
   // - existing
@@ -536,6 +548,13 @@ export default class GmailSync extends SyncWriter<
     return gmail_label && gmail_label.name
   }
 
+  /**
+   * TODO handle No label add or removes specified??
+   * @param thread_id
+   * @param add_labels
+   * @param remove_labels
+   * @param abort
+   */
   async modifyLabels(
     thread_id: string,
     add_labels: string[] = [],

@@ -168,6 +168,12 @@ export default class GmailListSync extends SyncReader<
         this.gmail.threads.get(record.gmail_id) &&
         // only from this list
         this.config.db_query(record) &&
+        this.root.config.lists.reduce((p, i) => {
+          if (i.db_query && i.db_query(record)) {
+            p++
+          }
+          return p
+        }, 0) == 1 &&
         // only not seen in this sync so far
         !ids.includes(this.toLocalID(record)) &&
         // only ones updated earlier than this query

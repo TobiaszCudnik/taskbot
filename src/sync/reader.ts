@@ -319,7 +319,7 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
 
   // TODO output to the logger, loose ID in the msg
   printRecordDiff(before, record, title = '') {
-    if (!debug.enabled('record-diffs')) {
+    if (!debug.enabled('record-diff')) {
       return
     }
     if (JSON.stringify(before) == JSON.stringify(record)) {
@@ -345,7 +345,7 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
     }
     // console.log(msg)
     // TODO tmp for jest
-    // process.stdout.write(msg + '\n')
+    process.stdout.write(msg + '\n')
     this.log(msg)
   }
 

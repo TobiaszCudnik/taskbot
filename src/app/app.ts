@@ -97,7 +97,7 @@ async function exit() {
   // @ts-ignore
   const loggers = _(debug.instances)
     .map(logger => logger.namespace.replace(/:\d+-/, ':*-'))
-    .concat('record-diffs')
+    .concat('record-diff')
     .uniq()
     .sortBy()
     .value()
