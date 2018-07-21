@@ -38,12 +38,16 @@ beforeAll(async function() {
 afterAll(print_db)
 
 export type Label = google.gmail.v1.Label
+export type Thread = google.gmail.v1.Thread
+export type Task = google.tasks.v1.Task
+export type TaskList = google.tasks.v1.TaskList
+
 // DEBUG=root\*-info,record-diffs,db-diffs,gtasks-list-next\*,gmail-list-next\* DEBUG_AM=2
 // DEBUG=tests,\*-am\*,\*-error DEBUG_AM=2
 // DEBUG=tests,\*-error,record-diffs,db-diffs,connections-\*,root\*-info DEBUG_FILE=1 node_modules/jest/bin/jest.js
 describe('gmail', function() {
   it.skip('should create the labels', function() {})
-  it.only('should sync label definitions', async function() {
+  it('should sync label definitions', async function() {
     // TODO test with missing labels
     // TODO test adding colors to existing labels
     const [list]: [google.gmail.v1.ListLabelsResponse] = await req(
@@ -215,7 +219,20 @@ describe('gmail', function() {
 })
 
 describe('gtasks', function() {
-  it.skip('should create the lists', function() {})
+  it('should create the lists', async function() {
+    const [lists]: [google.tasks.v1.TaskLists] = await req(
+      'gtasks.tasklists.list'
+    )
+    console.log('list', lists)
+    const list_names = lists.items.map(l => l.title.toLowerCase())
+    for (const list of sync.config.lists) {
+      // skip gmail-only lists
+      if (list.writers && !list.writers.includes('gtasks')) {
+        continue
+      }
+      expect(list_names).toContain(list.name.toLowerCase())
+    }
+  })
   it.skip('should cache with etags', function() {})
   it.skip('refreshes on Dirty', function() {})
   it.skip('re-adds the list in case it disappears', function() {})
@@ -415,7 +432,7 @@ async function deleteThread(thread_id: string): Promise<true> {
   return true
 }
 
-async function getThread(id: string): Promise<google.gmail.v1.Thread> {
+async function getThread(id: string): Promise<Thread> {
   const [body, res] = await req('gmail.users.threads.get', {
     id,
     userId: 'me',
