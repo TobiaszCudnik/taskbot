@@ -28,7 +28,6 @@ const log = debug('tests')
 
 jest.setTimeout(15 * 1000)
 beforeAll(initTest)
-afterAll(print_db)
 beforeAll(async function() {
   await gmail_sync.createLabelsIfMissing([
     'P/project_1',
@@ -36,14 +35,39 @@ beforeAll(async function() {
     'P/project_3'
   ])
 })
+afterAll(print_db)
 
+export type Label = google.gmail.v1.Label
 // DEBUG=root\*-info,record-diffs,db-diffs,gtasks-list-next\*,gmail-list-next\* DEBUG_AM=2
 // DEBUG=tests,\*-am\*,\*-error DEBUG_AM=2
 // DEBUG=tests,\*-error,record-diffs,db-diffs,connections-\*,root\*-info DEBUG_FILE=1 node_modules/jest/bin/jest.js
 describe('gmail', function() {
   it.skip('should create the labels', function() {})
-  it.skip('should set colors of existing labels', function() {})
-  it('refreshes on Dirty', function() {})
+  it.only('should sync label definitions', async function() {
+    // TODO test with missing labels
+    // TODO test adding colors to existing labels
+    const [list]: [google.gmail.v1.ListLabelsResponse] = await req(
+      'gmail.users.labels.list',
+      { userId: 'me' }
+    )
+    const expected = [
+      // name, bg, fg, hidden
+      ['!S/Next Action', '#fb4c2f', '#ffffff', false],
+      ['!S/Action', '#ffad47', '#ffffff', false],
+      ['!T/Sync GTasks', '#b9e4d0', '#000000', true],
+      ['P/project_1', '#a4c2f4', '#000000', false]
+    ]
+    for (const item of expected) {
+      const found = list.labels.find((l: Label) => l.name == item[0])
+      expect(found).toBeTruthy()
+      expect(found.color.backgroundColor).toEqual(item[1])
+      expect(found.color.textColor).toEqual(item[2])
+      if (item[3]) {
+        expect(found.labelListVisibility).toEqual('labelHide')
+      }
+    }
+  })
+  it.skip('refreshes on Dirty', function() {})
 
   describe('db', function() {
     it('auto add text labels from new self emails', async function() {
@@ -67,9 +91,7 @@ describe('gmail', function() {
     it('syncs new threads', async function() {
       await reset()
       // create a new thread
-      await gmail_sync.createThread('gmail-gtask-1', [
-        '!S/Next Action'
-      ])
+      await gmail_sync.createThread('gmail-gtask-1', ['!S/Next Action'])
       log('email sent')
       await syncList(true, false)
       // get directly from the API
@@ -199,7 +221,10 @@ describe('gtasks', function() {
   it.skip('re-adds the list in case it disappears', function() {})
   it.skip('un-hides a task after its completion', function() {})
 
-  describe('db', function() {})
+  describe.skip('db', function() {
+    it('syncs new tasks', async function() {})
+    it('syncs tasks removalsa', function() {})
+  })
 
   describe('gmail', function() {
     it('syncs new tasks', async function() {
@@ -305,6 +330,8 @@ describe('gtasks', function() {
       expect(query.threads).toHaveLength(1)
       expect(tasks.items).toHaveLength(1)
     })
+
+    it.skip('syncs tasks removals', function() {})
   })
 })
 
