@@ -244,7 +244,18 @@ describe('gtasks', function() {
     expect(list.last_read_end.unix()).toBeGreaterThan(last_read)
   })
 
-  it.skip('un-hides a task after its completion', function() {})
+  it('un-hides a task after its completion', async function() {
+    await h.reset()
+    const id = await h.addTask('test1')
+    await h.syncList(false, true)
+    await h.patchTask(id, {
+      hidden: true,
+      status: 'needsAction'
+    })
+    await h.syncList(false, true)
+    const task = await h.getTask(id)
+    expect(task.hidden).toBeFalsy()
+  })
 
   describe.skip('db', function() {
     it('syncs new tasks', async function() {})
