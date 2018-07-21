@@ -191,14 +191,10 @@ describe('gmail', function() {
       expect(list_next.items[0]).toMatchObject(record)
     })
 
-    it(`creates new labels for non-existing text labels`, async function() {})
     it(`triggers a sync with '!T/Sync GTasks'`, async function() {
       const list = h.gtasks_sync.getListByName('!next')
       list.state.drop('Dirty')
-      await h.gmail_sync.createThread('test', [
-        '!S/Action',
-        '!T/Sync GTasks'
-      ])
+      await h.gmail_sync.createThread('test', ['!S/Action', '!T/Sync GTasks'])
       // check if gtasks-next will be synced
       const last_read = list.last_read_end.unix()
       await h.syncList(true, false, '!actions')
@@ -316,6 +312,18 @@ describe('gtasks', function() {
       expect(h.hasLabel(thread_1, 'P/project_2'))
       expect(h.hasLabel(thread_1, 'P/project_3'))
       expect(h.hasLabel(thread_2, 'P/project_1'))
+    })
+
+    it('syncs text labels for non-existing gmail labels', async function() {
+      await h.reset()
+      await h.addTask('gtasks-gmail-2 #project_4')
+      // sync
+      await h.syncList(false, true)
+      // assert
+      const list = await h.listQuery('label:!s-next-action')
+      expect(list.threads).toHaveLength(1)
+      const thread_1 = await h.getThread(list.threads[0].id)
+      expect(h.hasLabel(thread_1, 'P/project_4'))
     })
 
     it.skip('syncs tasks between lists', async function() {
