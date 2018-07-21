@@ -28,8 +28,7 @@ afterAll(function() {
 // DEBUG=tests,\*-am\*,\*-error DEBUG_AM=2
 // DEBUG=tests,\*-error,record-diffs,db-diffs,connections-\*,root\*-info DEBUG_FILE=1 node_modules/jest/bin/jest.js
 describe('gmail', function() {
-  it.skip('should create the labels', function() {})
-  it('should sync label definitions', async function() {
+  it('should create the labels', async function() {
     // TODO test with missing labels
     // TODO test adding colors to existing labels
     const [list]: [google.gmail.v1.ListLabelsResponse] = await h.req(
@@ -54,6 +53,8 @@ describe('gmail', function() {
     }
   })
 
+  it.skip('should sync label definitions', function() {})
+
   it('refreshes on Dirty', async function() {
     await h.syncList(true, true)
     const list = h.gmail_sync.getListByName('!next')
@@ -62,7 +63,13 @@ describe('gmail', function() {
     expect(list.shouldRead()).toBeTruthy()
   })
 
-  it.skip('processes "!T/Task" labels added to any email', async function() {})
+  it.only('processes "!T/Task" labels added to any email', async function() {
+    const list = h.gtasks_sync.getListByName('!next')
+    list.state.drop('Dirty')
+    await h.gmail_sync.createThread('test', ['!T/Sync GTasks'])
+    await h.syncList(true, false)
+    expect(list.state.states_active).toContain('Dirty')
+  })
 
   describe('db', function() {
     it('auto add text labels from new self emails', async function() {
