@@ -31,23 +31,24 @@ export interface IListConfig {
   }
 }
 
-export type ILabelDefinition =
-  | ILabelDefinition1
-  | ILabelDefinition2
-  | ILabelDefinition3
+export type ILabelDefinition = ILabelDefinitionBase &
+  (ILabelDefinition1 | ILabelDefinition2 | ILabelDefinition3)
+
+export interface ILabelDefinitionBase {
+  colors?: { bg: string; fg: string }
+  hide?: true
+}
 
 export interface ILabelDefinition1 {
   symbol: string
   shortcut: string
   name: string
   prefix: string
-  colors?: { bg: string; fg: string }
 }
 
 export interface ILabelDefinition2 {
   name: string
   prefix: string
-  colors?: { bg: string; fg: string }
   // ignore errors on those
   symbol?: string
   shortcut?: string
@@ -56,7 +57,6 @@ export interface ILabelDefinition2 {
 export interface ILabelDefinition3 {
   symbol: string
   prefix: string
-  colors?: { bg: string; fg: string }
   // ignore errors on those
   name?: string
   shortcut?: string

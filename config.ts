@@ -169,7 +169,8 @@ const config: IConfigBase = {
       colors: {
         bg: '#b9e4d0',
         fg: '#000000'
-      }
+      },
+      hide: true
     },
     {
       prefix: 'M/',
@@ -177,7 +178,8 @@ const config: IConfigBase = {
       colors: {
         bg: '#b9e4d0',
         fg: '#000000'
-      }
+      },
+      hide: true
     }
   ],
   // TODO move those to /src/label-filters na ref the names here

@@ -162,10 +162,18 @@ export default class GmailSync extends SyncWriter<
     this.threads.delete(thread_id)
   }
 
+  /**
+   * TODO type the google apis error
+   * @param err
+   * @param params
+   * @constructor
+   */
   Exception_enter(err: Error, ...params) {
     if (
       err &&
+      // @ts-ignore
       err.errors &&
+      // @ts-ignore
       err.errors.message[0] == 'No label add or removes specified'
     ) {
       // allowed error
@@ -252,7 +260,7 @@ export default class GmailSync extends SyncWriter<
     let res = await this.req(
       'users.labels.list',
       this.api.users.labels.list,
-      { userId: 'me', fields: 'labels(id,name,color)' },
+      { userId: 'me', fields: 'labels(id,name,color,labelListVisibility)' },
       abort,
       false
     )
@@ -261,7 +269,7 @@ export default class GmailSync extends SyncWriter<
     await this.assertPredefinedLabelsExist(abort)
     // TODO simple hack for a mass label re-coloring
     try {
-      await this.assertLabelsColors(abort)
+      await this.syncLabels(abort)
     } catch {
       await delay(3 * SEC)
       this.state.drop('FetchingLabels')
@@ -359,18 +367,19 @@ export default class GmailSync extends SyncWriter<
     await this.createLabelsIfMissing(labels, abort)
   }
 
-  async assertLabelsColors(abort: TAbortFunction) {
+  async syncLabels(abort: TAbortFunction) {
     await map(this.labels, async (label: Label) => {
       const def = this.root.getLabelDefinition(label.name)
       if (!def || !def.colors) return
       if (
         !label.color ||
         label.color.textColor != def.colors.fg ||
-        label.color.backgroundColor != def.colors.bg
+        label.color.backgroundColor != def.colors.bg ||
+        (def.hide && label.labelListVisibility != 'labelHide')
       ) {
-        this.log(`Setting colors for label '${label.name}'`)
+        this.log(`Syncing label '${label.name}'`)
         const resource = this.labelDefToGmailDef(def)
-        let res = await this.req(
+        await this.req(
           'users.labels.patch',
           this.api.users.labels.patch,
           {
@@ -403,7 +412,7 @@ export default class GmailSync extends SyncWriter<
       })
     )
     this.labels_to_fetch = []
-    await this.assertLabelsColors(abort)
+    await this.syncLabels(abort)
   }
 
   async processThreadsToDelete(abort: () => boolean): Promise<void[]> {
@@ -752,16 +761,25 @@ export default class GmailSync extends SyncWriter<
 
   labelDefToGmailDef(
     def: ILabelDefinition
-  ): { color?: { backgroundColor: string; textColor: string } } | null {
+  ): {
+    color?: { backgroundColor: string; textColor: string }
+    labelListVisibility?: 'labelHide'
+  } | null {
+    const ret = {}
     if (def.colors) {
-      return {
+      Object.assign(ret, {
         color: {
           backgroundColor: def.colors.bg,
           textColor: def.colors.fg
         }
-      }
+      })
     }
-    return null
+    if (def.hide) {
+      Object.assign(ret, {
+        labelListVisibility: 'labelHide'
+      })
+    }
+    return Object.keys(ret).length ? ret : null
   }
 
   getTitleFromThread(
