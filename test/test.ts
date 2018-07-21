@@ -71,7 +71,13 @@ describe('gmail', function() {
       }
     }
   })
-  it.skip('refreshes on Dirty', function() {})
+  it('refreshes on Dirty', async function() {
+    await syncList(true, true)
+    const list = gmail_sync.getListByName('!next')
+    expect(list.shouldRead()).toBeFalsy()
+    list.state.add('Dirty')
+    expect(list.shouldRead()).toBeTruthy()
+  })
 
   describe('db', function() {
     it('auto add text labels from new self emails', async function() {
@@ -223,7 +229,6 @@ describe('gtasks', function() {
     const [lists]: [google.tasks.v1.TaskLists] = await req(
       'gtasks.tasklists.list'
     )
-    console.log('list', lists)
     const list_names = lists.items.map(l => l.title.toLowerCase())
     for (const list of sync.config.lists) {
       // skip gmail-only lists
@@ -234,7 +239,13 @@ describe('gtasks', function() {
     }
   })
   it.skip('should cache with etags', function() {})
-  it.skip('refreshes on Dirty', function() {})
+  it('refreshes on Dirty', async function() {
+    await syncList(true, true)
+    const list = gtasks_sync.getListByName('!next')
+    expect(list.shouldRead()).toBeFalsy()
+    list.state.add('Dirty')
+    expect(list.shouldRead()).toBeTruthy()
+  })
   it.skip('re-adds the list in case it disappears', function() {})
   it.skip('un-hides a task after its completion', function() {})
 
