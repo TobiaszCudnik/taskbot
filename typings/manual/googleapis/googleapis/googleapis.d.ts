@@ -701,27 +701,7 @@ declare module 'googleapis' {
                 task: string
                 tasklist: string
                 fields?: string
-                resource: {
-                  completed?: string | null
-                  deleted?: boolean
-                  due?: string
-                  etag?: string
-                  hidden?: boolean
-                  id?: string
-                  kind?: string
-                  links?: {
-                    description: string
-                    link: string
-                    type: string
-                  }[]
-                  notes?: string
-                  parent?: string
-                  position?: string
-                  selfLink?: string
-                  status?: string
-                  title?: string
-                  updated?: string
-                }
+                resource: Partial<Task>
               },
               callback: (
                 error: any,
@@ -756,7 +736,7 @@ declare module 'googleapis' {
           parent: string
           position: string
           selfLink: string
-          status: string
+          status: 'completed' | 'needsAction'
           title: string
           updated: string
         }

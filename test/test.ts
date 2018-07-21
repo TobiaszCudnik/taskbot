@@ -53,6 +53,7 @@ describe('gmail', function() {
       }
     }
   })
+
   it('refreshes on Dirty', async function() {
     await h.syncList(true, true)
     const list = h.gmail_sync.getListByName('!next')
@@ -60,6 +61,8 @@ describe('gmail', function() {
     list.state.add('Dirty')
     expect(list.shouldRead()).toBeTruthy()
   })
+
+  it.skip('processes "!T/Task" labels added to any email', async function() {})
 
   describe('db', function() {
     it('auto add text labels from new self emails', async function() {
@@ -296,13 +299,10 @@ describe('gtasks', function() {
     it('syncs task completions', async function() {
       await h.reset()
       const task_id = await h.addTask('gtasks-gmail-1')
-      await h.patchTask(
-        task_id,
-        'gtasks-gmail-1 #project_1 #project_2',
-        '!next',
-        null,
-        true
-      )
+      await h.patchTask(task_id, {
+        title: 'gtasks-gmail-1 #project_1 #project_2',
+        status: 'completed'
+      })
       await h.syncList(false, true)
       const data = h.sync.data.data
       expect(data).toHaveLength(1)
@@ -315,14 +315,11 @@ describe('gtasks', function() {
       // create a task
       const task_id = await h.addTask('gtasks-gmail-1')
       // complete and hide
-      await h.patchTask(
-        task_id,
-        'gtasks-gmail-1 #project_1 #project_2',
-        '!next',
-        null,
-        true,
-        true
-      )
+      await h.patchTask(task_id, {
+        title: 'gtasks-gmail-1 #project_1 #project_2',
+        status: 'completed',
+        hidden: true
+      })
       await h.syncList(false, true)
       const data = h.sync.data.data
       expect(data).toHaveLength(1)
@@ -371,7 +368,9 @@ describe('gtasks <=> gmail', function() {
     await h.syncList(true, true)
     const thread_1 = h.gmail_sync.threads.values().next().value
     // remove 1, add 2
-    let promise_tasks = h.patchTask(task_id_1, 'gtasks-gmail-1 #project_2')
+    let promise_tasks = h.patchTask(task_id_1, {
+      title: 'gtasks-gmail-1 #project_2'
+    })
     // add 3
     let promise_gmail = h.modifyLabels(thread_1.id, ['P/project_3'])
     await Promise.all([promise_tasks, promise_gmail])
@@ -391,6 +390,7 @@ describe.skip('sync', function() {
   it('auto starts', function() {})
   it('auto syncs', function() {})
   it('auto restarts', function() {})
+  it('supports a function based list definition', function() {})
 
   describe.skip('label filters', function() {})
 })

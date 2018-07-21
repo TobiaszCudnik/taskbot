@@ -275,7 +275,7 @@ export default async function createHelpers(log) {
     task_id: string,
     list: string = '!next'
   ): Promise<google.tasks.v1.Task> {
-    const [body, res] = await req('gtasks.tasks.insert', {
+    const [body, res] = await req('gtasks.tasks.get', {
       tasklist: gtasks_sync.getListByName(list).list.id,
       task: task_id
     })
@@ -301,32 +301,22 @@ export default async function createHelpers(log) {
     return body.id
   }
 
+  /**
+   * @param id Task ID
+   * @param patch Partial Task resource
+   * @param list List name (not the ID)
+   * @return Task ID
+   */
   async function patchTask(
     id,
-    title: string,
-    list = '!next',
-    notes = '',
-    completed = undefined,
-    hidden = undefined
+    patch: Partial<google.tasks.v1.Task>,
+    list = '!next'
   ): Promise<string> {
-    let resource = { title }
-    if (notes) {
-      // @ts-ignore
-      resource.notes = notes
-    }
-    if (typeof completed !== undefined) {
-      // @ts-ignore
-      resource.status = completed ? 'completed' : 'needsAction'
-    }
-    if (typeof hidden !== undefined) {
-      // @ts-ignore
-      resource.hidden = hidden
-    }
     const [body, res] = await req('gtasks.tasks.patch', {
       tasklist: gtasks_sync.getListByName(list).list.id,
       task: id,
       fields: 'id',
-      resource
+      resource: patch
     })
     return body.id
   }
