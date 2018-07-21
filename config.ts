@@ -38,7 +38,7 @@ const config: IConfigBase = {
   google: {
     scopes: [
       'https://www.googleapis.com/auth/tasks',
-      'https://www.googleapis.com/auth/gmail.modify',
+      'https://www.googleapis.com/auth/gmail.modify'
       // for tests only
       // 'https://mail.google.com/'
     ]
@@ -230,9 +230,6 @@ const config: IConfigBase = {
             // this.log(`Executing task label '${label}' (${name})`)
             this.log(`Executing task label '${label}'`)
             for (const list of this.root.subs.google.subs.tasks.subs.lists) {
-              const list_name = list.config.name.replace('!', '').toLowerCase()
-
-              // if (name && list_name != name) continue
               // force refresh
               if (list.state.is('QuotaExceeded')) {
                 add.add('M/GTasks Quota Exceeded')
@@ -250,9 +247,25 @@ const config: IConfigBase = {
     }
   ],
   lists: [
+    // all the `!T/Task` labels (anywhere, gmail only)
+    (config: IConfig) => {
+      const query = config.labels
+        .filter(l => l.prefix == '!T/')
+        .map(l => `label:${l.prefix}${l.name}`)
+        .join(' ')
+
+      return {
+        name: 'task-labels',
+        gmail_query: query,
+        db_query: r => Boolean(hasLabel(r, /^!T\//)),
+        enter: {},
+        exit: {},
+        writers: ['gmail']
+      }
+    },
+    // query unread self emails in the inbox (gmail only)
     (config: IConfig) => ({
       name: 'inbox-labels',
-      // query unread self emails in the inbox
       gmail_query: `in:inbox label:unread from:${config.google.username} to:${
         config.google.username
       }`,

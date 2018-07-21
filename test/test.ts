@@ -53,7 +53,7 @@ describe('gmail', function() {
     }
   })
 
-  it.skip('should sync label definitions', function() {})
+  it.skip('should sync label definitions for new labels', function() {})
 
   it('refreshes on Dirty', async function() {
     await h.syncList(true, true)
@@ -63,12 +63,14 @@ describe('gmail', function() {
     expect(list.shouldRead()).toBeTruthy()
   })
 
-  it.only('processes "!T/Task" labels added to any email', async function() {
-    const list = h.gtasks_sync.getListByName('!next')
-    list.state.drop('Dirty')
+  it('processes "!T/Task" labels added to any email', async function() {
+    await h.reset()
+    const gtasks_list = h.gtasks_sync.getListByName('!next')
+    gtasks_list.state.drop('Dirty')
     await h.gmail_sync.createThread('test', ['!T/Sync GTasks'])
-    await h.syncList(true, false)
-    expect(list.state.states_active).toContain('Dirty')
+    await h.syncList(true, false, 'task-labels')
+    const gmail_list = h.gmail_sync.getListByName('task-labels')
+    expect(gmail_list.query.threads).toHaveLength(1)
   })
 
   describe('db', function() {
@@ -190,7 +192,18 @@ describe('gmail', function() {
     })
 
     it(`creates new labels for non-existing text labels`, async function() {})
-    it.skip(`triggers a sync with '!T/Sync GTasks'`, async function() {})
+    it(`triggers a sync with '!T/Sync GTasks'`, async function() {
+      const list = h.gtasks_sync.getListByName('!next')
+      list.state.drop('Dirty')
+      await h.gmail_sync.createThread('test', [
+        '!S/Action',
+        '!T/Sync GTasks'
+      ])
+      // check if gtasks-next will be synced
+      const last_read = list.last_read_end.unix()
+      await h.syncList(true, false, '!actions')
+      expect(list.last_read_end.unix()).toBeGreaterThan(last_read)
+    })
 
     it('syncs text labels for new self emails', async function() {
       await h.reset()
