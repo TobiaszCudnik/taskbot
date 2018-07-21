@@ -284,14 +284,16 @@ export default async function createHelpers(log) {
 
   // @returns the ID of the new task
   async function addTask(
-    title = '',
+    title,
     list = '!next',
     notes = '',
-    completed = false
+    completed = false,
+    parent?: string
   ): Promise<string> {
     const [body, res] = await req('gtasks.tasks.insert', {
       tasklist: gtasks_sync.getListByName(list).list.id,
       fields: 'id',
+      parent,
       resource: {
         title,
         notes,

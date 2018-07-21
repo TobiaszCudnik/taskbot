@@ -131,6 +131,20 @@ describe('gmail', function() {
       expect(list.items[0]).toMatchObject(record)
     })
 
+    it.skip('syncs tasks with children between lists', async function() {
+      // TODO
+      await h.reset()
+      const task_id = await h.addTask('gtasks-gmail-1')
+      const child_id = await h.addTask(
+        'gtasks-gmail-1',
+        '!next',
+        '',
+        false,
+        task_id
+      )
+      await h.syncList()
+    })
+
     it('syncs tasks between lists', async function() {
       await h.reset()
       const thread_id = await h.gmail_sync.createThread('gmail-gtask-1', [
@@ -279,17 +293,35 @@ describe('gtasks', function() {
   })
 
   describe('gmail', function() {
-    it('syncs new tasks', async function() {
+    it('creates emails from new tasks', async function() {
       await h.reset()
-      await h.addTask('gtasks-gmail-1')
+      const task_id = await h.addTask('gtasks-gmail-1')
       // sync
       await h.syncList(false, true)
-      // assert
       const list = await h.listQuery('label:!s-next-action')
+      // assert
       expect(list.threads).toHaveLength(1)
       for (const field of ['historyId', 'id']) {
         expect(Object.keys(list.threads[0])).toContain(field)
       }
+    })
+
+    it('sync gmail_ids to the new tasks', async function() {
+      await h.reset()
+      const task_id = await h.addTask('gtasks-gmail-1')
+      // sync
+      await h.syncList(false, true)
+      // TODO download in parallel
+      const list = await h.listQuery('label:!s-next-action')
+      const task = await h.getTask(task_id)
+      const gmail_id = h.sync.data.data[0].gmail_id
+      // assert
+      expect(list.threads).toHaveLength(1)
+      for (const field of ['historyId', 'id']) {
+        expect(Object.keys(list.threads[0])).toContain(field)
+      }
+      expect(task.notes).toMatch(gmail_id)
+      // TODO assert the email link
     })
 
     it('syncs text labels', async function() {
@@ -327,13 +359,30 @@ describe('gtasks', function() {
     })
 
     it.skip('syncs tasks between lists', async function() {
-      // create a new task in next
-      // sync
-      // delete the one in next, but copy the notes
-      // create another task in actions
-      // sync
-      // check if the new thread has S/Actions
+      await h.reset()
+      const tasklist_id = h.gtasks_sync.getListByName('!actions').list.id
+      const task_id = await h.addTask('gtasks-gmail-1')
+      await h.syncList(false, true)
+      const task = await h.getTask(task_id)
+      // console.log(task)
+      // return
+      // move the task
+      // delete the old ask from !next
+      await h.req('gtasks.tasks.delete', {
+        tasklist: tasklist_id,
+        task: task_id
+      })
+      // and add a copy to !actions
+      await h.addTask('gtasks-gmail-1', '!actions', task.notes)
+      // mark !actions and !next as Dirty
+      h.gtasks_sync.getListByName('!actions').state.add('Dirty')
+      await h.syncList(false, true)
+      const threads = [...h.gmail_sync.threads.values()]
+      expect(threads).toHaveLength(1)
+      expect(h.hasLabel(threads[0], '!S/Action')).toBeTruthy()
     })
+
+    it('syncs tasks between lists when only one is being synced', async function() {})
 
     it('syncs task completions', async function() {
       await h.reset()
