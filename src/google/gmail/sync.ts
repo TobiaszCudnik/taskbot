@@ -367,6 +367,10 @@ export default class GmailSync extends SyncWriter<
     await this.createLabelsIfMissing(labels, abort)
   }
 
+  toString() {
+    return this.subs.lists.map(l => l.toString()).join('\n') + '\n'
+  }
+
   async syncLabels(abort: TAbortFunction) {
     await map(this.labels, async (label: Label) => {
       const def = this.root.getLabelDefinition(label.name)
@@ -460,6 +464,7 @@ export default class GmailSync extends SyncWriter<
       // mark touched lists as Dirty to trigger a re-read
       // @ts-ignore
       this.root.markListsAsDirty(this, record)
+      this.root.markWritersAsDirty(this, record)
       await this.fetchThread(id, abort)
     })
   }

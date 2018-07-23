@@ -283,6 +283,10 @@ export default class GTasksSync extends SyncWriter<
     })
   }
 
+  toString() {
+    return this.subs.lists.map(l => l.toString()).join('\n') + '\n'
+  }
+
   toGmailID(task: Task): string | null {
     // legacy format
     let match = (task.notes || '').match(/\bemail:([\w-]+)\b/)
@@ -312,10 +316,7 @@ export default class GTasksSync extends SyncWriter<
           .chain()
           .where((record: DBRecord) => {
             // TODO implement gtasks_hidden_ids
-            return Boolean(
-              record.gtasks_ids &&
-                record.gtasks_ids[task.id]
-            )
+            return Boolean(record.gtasks_ids && record.gtasks_ids[task.id])
           })
           .limit(1)
           .data())
@@ -326,8 +327,8 @@ export default class GTasksSync extends SyncWriter<
         // TODO type
         const patch: any = {}
         // TODO this should wait for gmail to write
+        // @ts-ignore
         if (record.gmail_id && this.toGmailID(task) != record.gmail_id) {
-          // Link to email
           patch.notes = this.addGmailID(record.content, record.gmail_id)
         }
         const title =
@@ -354,7 +355,9 @@ export default class GTasksSync extends SyncWriter<
             const children = sync.getChildren(task.id)
             if (children.root_tasks.length) {
               this.log(
-                `Moving ${children.root_tasks.length} for '${task.title}'`
+                `Moving ${children.root_tasks.length} children for '${
+                  task.title
+                }'`
               )
               // defer writing children until all the lists are done
               // TODO ideally wait only for the target list

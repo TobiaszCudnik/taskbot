@@ -75,7 +75,7 @@ export default class GTasksListSync extends SyncReader<
     this.state.drop('QuotaExceeded')
   }
 
-  async Reading_state() {
+  async Reading_state(time = 1) {
     if (!this.shouldRead()) {
       return this.state.addNext('ReadingDone')
     }
@@ -128,7 +128,7 @@ export default class GTasksListSync extends SyncReader<
       this.tasks = list
     }
 
-    this.state.add('ReadingDone')
+    this.state.add('ReadingDone', time)
   }
 
   // ----- -----
@@ -250,6 +250,7 @@ export default class GTasksListSync extends SyncReader<
         this.log('change')
         this.log_verbose('new record:\n %O', new_record)
         this.root.data.insert(new_record)
+        this.root.markListsAsDirty(this, new_record)
         changed++
       } else if (this.mergeRecord(task, record)) {
         this.log('change')

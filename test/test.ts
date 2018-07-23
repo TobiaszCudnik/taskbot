@@ -53,7 +53,9 @@ describe('gmail', function() {
     }
   })
 
-  it.skip('should sync label definitions for new labels', function() {})
+  it.skip('should sync label definitions for new labels', function() {
+    // TODO test the delayed labels
+  })
 
   it('refreshes on Dirty', async function() {
     await h.syncList(true, true)
@@ -75,6 +77,7 @@ describe('gmail', function() {
 
   describe('db', function() {
     it('auto add text labels from new self emails', async function() {
+      await h.reset()
       await h.gmail_sync.createThread(
         'auto-label-test-1 !na *location_1 ^reference_1'
       )
@@ -131,11 +134,10 @@ describe('gmail', function() {
       expect(list.items[0]).toMatchObject(record)
     })
 
-    it.skip('syncs tasks with children between lists', async function() {
-      // TODO
+    it('syncs tasks with children between lists', async function() {
       await h.reset()
       const task_id = await h.addTask('gtasks-gmail-1')
-      const child_id = await h.addTask(
+      await h.addTask(
         'gtasks-gmail-1',
         '!next',
         '',
@@ -306,7 +308,7 @@ describe('gtasks', function() {
       }
     })
 
-    it('sync gmail_ids to the new tasks', async function() {
+    it('sync back gmail_ids to the new tasks', async function() {
       await h.reset()
       const task_id = await h.addTask('gtasks-gmail-1')
       // sync
@@ -348,7 +350,7 @@ describe('gtasks', function() {
 
     it('syncs text labels for non-existing gmail labels', async function() {
       await h.reset()
-      await h.addTask('gtasks-gmail-2 #project_4')
+      await h.addTask('gtasks-gmail-1 #project_4')
       // sync
       await h.syncList(false, true)
       // assert
@@ -358,14 +360,12 @@ describe('gtasks', function() {
       expect(h.hasLabel(thread_1, 'P/project_4'))
     })
 
-    it.skip('syncs tasks between lists', async function() {
+    it('syncs tasks between lists', async function() {
       await h.reset()
       const tasklist_id = h.gtasks_sync.getListByName('!actions').list.id
       const task_id = await h.addTask('gtasks-gmail-1')
       await h.syncList(false, true)
       const task = await h.getTask(task_id)
-      // console.log(task)
-      // return
       // move the task
       // delete the old ask from !next
       await h.req('gtasks.tasks.delete', {
@@ -382,7 +382,7 @@ describe('gtasks', function() {
       expect(h.hasLabel(threads[0], '!S/Action')).toBeTruthy()
     })
 
-    it('syncs tasks between lists when only one is being synced', async function() {})
+    it.skip('syncs tasks between lists when only one is being synced', async function() {})
 
     it('syncs task completions', async function() {
       await h.reset()
@@ -478,6 +478,7 @@ describe.skip('sync', function() {
   it('auto starts', function() {})
   it('auto syncs', function() {})
   it('auto restarts', function() {})
+  it('syncs in intervals', function() {})
   it('supports a function based list definition', function() {})
 
   describe.skip('label filters', function() {})

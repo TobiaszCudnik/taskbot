@@ -30,8 +30,8 @@ export const sync_reader_state: IJSONStates = {
   Ready: { auto: true, drop: ['Initializing'] },
   // optional
   ConfigSet: {},
-  SubsReady: {},
   SubsInited: {},
+  SubsReady: {},
 
   Reading: {
     drop: ['ReadingDone'],

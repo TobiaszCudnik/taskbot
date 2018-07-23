@@ -17,7 +17,7 @@ export const sync_writer_state: IJSONStates = {
   ...sync_reader_state,
 
   Writing: merge(sync_reader_state.Reading, {
-    drop: ['WritingDone']
+    drop: ['WritingDone', 'SyncDone']
   }),
   WritingDone: merge(sync_reader_state.Reading, {
     drop: ['Writing']
@@ -68,6 +68,11 @@ export abstract class SyncWriter<
     return <any>this.subs_flat.filter(sync => sync instanceof SyncWriter)
   }
 
+  get subs_all_writers(): SyncWriter<any, any, any, any>[] {
+    // TODO cast
+    return <any>this.subs_all.filter(sync => sync instanceof SyncWriter)
+  }
+
   // ----- -----
   // Transitions
   // ----- -----
@@ -91,11 +96,12 @@ export abstract class SyncWriter<
     return this.subs_flat_writers.every(sync => sync.state.is('WritingDone'))
   }
 
-  WritingDone_state() {
+  async WritingDone_state() {
     this.last_write_end = moment()
     this.last_write_time = moment.duration(
       this.last_write_end.diff(this.last_write_start)
     )
+    this.state.drop('Dirty')
   }
 
   // ----- -----

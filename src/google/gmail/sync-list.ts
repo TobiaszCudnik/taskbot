@@ -60,7 +60,7 @@ export default class GmailListSync extends SyncReader<
   // Transitions
   // ----- -----
 
-  async Reading_state() {
+  async Reading_state(time = 1) {
     if (!this.shouldRead()) {
       return this.state.addNext('ReadingDone')
     }
@@ -72,7 +72,7 @@ export default class GmailListSync extends SyncReader<
     await this.query.state.when('MsgsFetched')
     this.state.drop('Dirty')
     if (abort()) return
-    this.state.add('ReadingDone')
+    this.state.add('ReadingDone', time)
   }
 
   Restarting_state() {

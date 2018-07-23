@@ -122,8 +122,11 @@ export default async function createHelpers(log) {
 
   function printDB() {
     if (!sync.data) return
-    log('Internal DB:')
+    log('\nInternal DB:')
     log(sync.data.toString())
+    log('\nAPI DBs:')
+    log(gmail_sync.toString())
+    log(gtasks_sync.toString())
   }
 
   async function initTest() {
@@ -136,7 +139,8 @@ export default async function createHelpers(log) {
     config.gtasks.sync_frequency = 10000 * 100
     sync = new RootSync(config, logger, connections)
     // disable heartbeat
-    sync.HeartBeat_state = () => {}
+    sync.HeartBeat_enter = () => false
+    sync.Scheduled_enter = () => false
     // fwd exceptions
     sync.state.on('Exception_state', err => {
       throw err
@@ -268,7 +272,7 @@ export default async function createHelpers(log) {
       gmail_sync.getListByName(name).state.add('Dirty')
     }
     sync.state.add('Reading')
-    await sync.state.when('WritingDone')
+    await sync.state.when('SyncDone')
   }
 
   async function getTask(
@@ -277,7 +281,8 @@ export default async function createHelpers(log) {
   ): Promise<google.tasks.v1.Task> {
     const [body, res] = await req('gtasks.tasks.get', {
       tasklist: gtasks_sync.getListByName(list).list.id,
-      task: task_id
+      task: task_id,
+      fields: 'id,title,updated,status,notes'
     })
     return body
   }
@@ -341,6 +346,21 @@ export default async function createHelpers(log) {
     for (const list of sync.subs.google.subs.gmail.subs.lists) {
       list.query.threads = []
     }
+    sync.state.drop(
+      'Scheduled',
+      'Reading',
+      'Writing',
+      'ReadingDone',
+      'WritingDone'
+    )
+    await sync.subs_all.map(async sync => {
+      sync.state.drop('ReadingDone')
+      await sync.state.whenNot('ReadingDone')
+    })
+    await sync.subs_all_writers.map(async sync => {
+      sync.state.drop('WritingDone')
+      await sync.state.whenNot('WritingDone')
+    })
     await delay(1000)
   }
 

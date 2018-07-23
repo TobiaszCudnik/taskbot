@@ -34,6 +34,7 @@ import { SyncReader, sync_reader_state } from './reader'
 import { SyncWriter, sync_writer_state } from './writer'
 import * as _ from 'lodash'
 import { TStates as TReaderStates } from '../../typings/machines/sync/reader'
+import * as merge from 'deepmerge'
 
 // TODO move to utils.ts
 const SEC = 1000
@@ -41,25 +42,52 @@ const SEC = 1000
 export const sync_state: IJSONStates = {
   ...sync_writer_state,
 
+  // extend writer
+  Writing: merge(sync_writer_state.Writing, {
+    drop: ['SyncDone']
+  }),
+  WritingDone: merge(sync_writer_state.WritingDone, {
+    drop: ['SyncDone']
+  }),
+
+  Reading: merge(sync_writer_state.Reading, {
+    drop: ['SyncDone']
+  }),
+  ReadingDone: merge(sync_writer_state.ReadingDone, {
+    drop: ['SyncDone']
+  }),
+
+  // implement reader
   SubsInited: {
     require: ['ConfigSet', 'DBReady'],
     auto: true,
     after: ['DBReady']
   },
-  SubsReady: { require: ['SubsInited'], auto: true },
-  Ready: {
-    auto: true,
-    require: ['ConfigSet', 'SubsReady', 'Enabled'],
-    drop: ['Initializing'],
-    add: ['Reading']
+  SubsReady: {
+    require: ['SubsInited'],
+    auto: true
   },
+  Ready: merge(sync_reader_state.Ready, {
+    require: ['ConfigSet', 'SubsReady', 'Enabled'],
+    add: ['Reading']
+  }),
   DBReady: { auto: true },
+
+  // syncing
+  HeartBeat: {},
+  Scheduled: {
+    drop: ['SyncDone']
+  },
+  // TODO Syncing
+  SyncDone: {
+    drop: ['Reading', 'Writing', 'ReadingDone', 'WritingDone']
+  },
+
+  // extend asyncmachine
   Exception: {
     multi: true,
     drop: ['Reading', 'Writing']
-  },
-  HeartBeat: {},
-  Scheduled: {}
+  }
 }
 
 export type DB = Loki.Collection<DBRecord>
@@ -277,7 +305,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     this.bindToSubs()
   }
 
-  async ReadingDone_state() {
+  async ReadingDone_state(time = 1) {
     super.ReadingDone_state()
     const abort = this.state.getAbort('ReadingDone')
     await this.merge(abort)
@@ -286,14 +314,14 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     const should_reread = this.subs_all.some(
       s => s.state.is('Dirty') && s.state.not('QuotaExceeded')
     )
-    if (should_reread) {
+    if (should_reread && time <= 10) {
       this.log('Re-reading because at least one list is Dirty')
       // forcefully drop the done state because Reading is negotiable
       await this.subs_all.map(async sync => {
         sync.state.drop('ReadingDone')
         await sync.state.whenNot('ReadingDone')
       })
-      return this.state.add('Reading')
+      return this.state.add('Reading', ++time)
     }
     this.log_verbose(`DB read in ${this.last_read_time.asSeconds()}sec`)
     // if (debug.enabled('db-diff')) {
@@ -302,14 +330,32 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     this.state.add('Writing')
   }
 
-  WritingDone_state() {
-    super.WritingDone_state()
+  async WritingDone_state(time = 1) {
+    await super.WritingDone_state()
     // remove records pending for removal from the DB
     this.root.data
       .chain()
       .find({ to_delete: true })
       .remove()
-    // TODO show how many sources were actually synced
+    // if any of the writers is marked as Dirty by other ones, re-read
+    const should_rewrite = this.subs_all_writers.some(
+      s => s.state.is('Dirty') && s.state.not('QuotaExceeded')
+    )
+    if (should_rewrite && time <= 10) {
+      this.log('Re-writing because at least one writer is Dirty')
+      // forcefully drop the done state because Writing is negotiable
+      await this.subs_all_writers.map(async sync => {
+        sync.state.drop('WritingDone')
+        await sync.state.whenNot('WritingDone')
+      })
+      this.state.add('Writing', ++time)
+    } else {
+      this.state.add('SyncDone')
+    }
+  }
+
+  // TODO show how many sources were actually synced
+  SyncDone_state() {
     this.log(
       `SYNC DONE (${this.last_sync_reads} reads):\n` +
         `Usage: T/${this.subs.google.subs.tasks.user_quota}\n` +
@@ -435,6 +481,26 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     }
   }
 
+  /**
+   * Result of one writer potentially influences another one (eg gmail ID need
+   * to be synced back to google tasks, but both are saved at the same time).
+   *
+   * @param origin
+   * @param record
+   */
+  markWritersAsDirty(
+    origin: SyncReader<any, TReaderStates, any, any>,
+    record: DBRecord
+  ) {
+    const id = origin.state.id(true)
+    this.log(`Write change from ${id}, marking related lists as Dirty`)
+    // TODO use record to narrow down parent writers
+    for (const sync of this.subs_all_writers) {
+      if (sync === origin) continue
+      sync.state.add('Dirty')
+    }
+  }
+
   markListsAsDirty(
     origin: SyncReader<any, TReaderStates, any, any>,
     record: DBRecord
@@ -500,10 +566,9 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     this.log_db_diff('db-diff')
     const db = this.data.toString() + '\n'
     const gmail_sync = this.subs.google.subs.gmail
-    const gmail = gmail_sync.subs.lists.map(l => l.toString()).join('\n') + '\n'
+    const gmail = gmail_sync.toString()
     const gtasks_sync = this.subs.google.subs.tasks
-    const gtasks =
-      gtasks_sync.subs.lists.map(l => l.toString()).join('\n') + '\n'
+    const gtasks = gtasks_sync.toString()
     const dbs = [
       [db, this.last_db],
       [gmail, this.last_gmail],
