@@ -17,7 +17,7 @@ export const sync_writer_state: IJSONStates = {
   ...sync_reader_state,
 
   Writing: merge(sync_reader_state.Reading, {
-    drop: ['WritingDone', 'SyncDone']
+    drop: ['WritingDone']
   }),
   WritingDone: merge(sync_reader_state.Reading, {
     drop: ['Writing']
@@ -32,7 +32,9 @@ export const sync_writer_state: IJSONStates = {
 
   Restarting: merge(sync_reader_state.Restarting, {
     drop: ['Writing', 'WritingDone']
-  })
+  }),
+
+  MaxWritesExceeded: {}
 }
 export type TSyncStateWriter = AsyncMachine<TStates, IBind, IEmit>
 
@@ -42,13 +44,13 @@ export abstract class SyncWriter<
   GStates,
   GBind,
   GEmit
-> extends SyncReader<GConfig, GStates, GBind, GEmit>
-// TODO type machine types
-// implements ITransitions
-{
+> extends SyncReader<GConfig, GStates, GBind, GEmit> {
+  // implements ITransitions
+  // TODO type machine types
   get state_writer(): TSyncStateWriter {
     return this.state
   }
+
   // TODO automate `bindToSubs()`
   // sub_states_inbound: [GStates | TStates, GStates | TStates][] = [
   //   ['ReadingDone', 'ReadingDone'],
@@ -58,10 +60,11 @@ export abstract class SyncWriter<
   //   ['Reading', 'Reading'],
   //   ['Enabled', 'Enabled'],
   // ]
-
   last_write_end: moment.Moment
   last_write_start: moment.Moment
   last_write_time: moment.Duration
+  // number of tries
+  last_write_tries = 0
 
   get subs_flat_writers(): SyncWriter<any, any, any, any>[] {
     // TODO cast
@@ -84,6 +87,7 @@ export abstract class SyncWriter<
       return false
     }
     if (!this.last_read_end) {
+      this.log_error("Attempt to Write before Reading has finished")
       return false
     }
   }
@@ -92,16 +96,26 @@ export abstract class SyncWriter<
     this.last_write_start = moment()
   }
 
+  Syncing_state() {
+    super.Syncing_state()
+    this.last_write_tries = 0
+  }
+
   WritingDone_enter() {
     return this.subs_flat_writers.every(sync => sync.state.is('WritingDone'))
   }
 
   async WritingDone_state() {
+    this.last_write_tries++
     this.last_write_end = moment()
     this.last_write_time = moment.duration(
       this.last_write_end.diff(this.last_write_start)
     )
     this.state.drop('Dirty')
+  }
+
+  MaxWritesExceeded_state() {
+    this.state.drop('MaxWritesExceeded')
   }
 
   // ----- -----

@@ -21,8 +21,14 @@ export const sync_state: IJSONStates = {
 
   Authenticated: {},
 
-  SubsInited: { require: ['Enabled'], auto: true },
-  SubsReady: { require: ['Authenticated', 'SubsInited'], auto: true },
+  SubsInited: {
+    auto: true,
+    require: ['Enabled']
+  },
+  SubsReady: {
+    auto: true,
+    require: ['Authenticated', 'SubsInited']
+  },
   Ready: {
     auto: true,
     require: ['ConfigSet', 'SubsReady'],

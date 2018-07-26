@@ -148,17 +148,22 @@ export default class GTasksSync extends SyncWriter<
   // ----- -----
 
   async Writing_state() {
-    super.Writing_state()
-    if (process.env['DRY']) {
-      this.state.add('WritingDone')
-      return
-    }
+    this.last_write_tries++
     const abort = this.state.getAbort('Writing')
     // get and modify tasks
     await this.processTasksToModify(abort)
     await this.processTasksToAdd(abort)
     await this.processTasksToDelete(abort)
     this.state.add('WritingDone')
+  }
+
+  SyncDone_state() {
+    // cleanup the tmp flags
+    // TODO dont use `where`, update the indexes
+    this.root.data.where((record: DBRecord) => {
+      delete record.gtasks_hidden_completed
+      return false
+    })
   }
 
   SubsInited_state() {
@@ -531,7 +536,6 @@ export default class GTasksSync extends SyncWriter<
 
   processTasksToAdd(abort: () => boolean) {
     return map(this.subs.lists, async (sync: GTasksListSync) => {
-      // TODO loose the cast
       const records = this.root.data.where((record: DBRecord) => {
         // TODO implement gtasks_hidden_ids
         return !record.to_delete && sync.config.db_query(record)

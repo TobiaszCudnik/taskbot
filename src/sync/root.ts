@@ -78,10 +78,14 @@ export const sync_state: IJSONStates = {
   Scheduled: {
     drop: ['SyncDone']
   },
-  // TODO Syncing
-  SyncDone: {
-    drop: ['Reading', 'Writing', 'ReadingDone', 'WritingDone']
+  Syncing: {
+    add: ['Reading'],
+    drop: ['SyncDone']
   },
+  SyncDone: {
+    drop: ['Syncing', 'Reading', 'Writing', 'ReadingDone', 'WritingDone']
+  },
+  MergeLimitExceeded: {},
 
   // extend asyncmachine
   Exception: {
@@ -91,6 +95,13 @@ export const sync_state: IJSONStates = {
 }
 
 export type DB = Loki.Collection<DBRecord>
+// TODO
+// export enum GTasksStatus {
+//   COMPLETED,
+//   HIDDEN,
+//   DELETED,
+//   MISSING
+// }
 
 /**
  * Local DB record format.
@@ -110,10 +121,19 @@ export interface DBRecord {
   labels: { [index: string]: DBRecordLabel }
   // different task ids per list
   gtasks_ids?: { [task_id: string]: string }
+  // TODO
+  // gtasks_ids?: {
+  //   [task_id: string]: {
+  //     list_id: string
+  //     status: GTasksStatus
+  //     updated: string
+  //   }
+  // }
   // marks the record for deletion
   to_delete?: boolean
   // TODO maybe store as gmail_lists[id] = boolean instead?
   gmail_orphan?: boolean
+  gtasks_hidden_completed?: boolean
 }
 
 export type DBRecordID = string
@@ -150,7 +170,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   // seconds
   // TODO to the config
   read_timeout = 2 * 60
-  // seconds
+  // TODO react on specific exception types
   // TODO to the config
   write_timeout = 2 * 60
   // seconds
@@ -158,6 +178,9 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   restarts_count = 0
   last_sync_reads = 0
   network_errors = ['EADDRNOTAVAIL', 'ETIMEDOUT']
+  // seconds
+  merge_tries: number
+
   log_db_diff: log_fn
 
   constructor(
@@ -167,7 +190,6 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     public connections: Connections
   ) {
     super(config, logger)
-    this.log_db_diff = logger.createLogger('db-diff')
     this.log(
       `Starting the sync service for user ${config.user.id}: ${
         config.google.username
@@ -245,8 +267,9 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   Exception_enter() {
     return true
   }
+  // Shortcuts record's labels as text, omitting the ones defined in the list's
 
-  // TODO react on specific exception types
+  // TODO support ETIMEDOUT
   async Exception_state(err: Error) {
     this.log_error('ERROR: %O', err, { user_id: this.config.user.id })
     this.exceptions.push(moment().unix())
@@ -269,7 +292,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     // start syncing again
     this.state.drop(['Exception', 'Scheduled'])
     this.log_verbose('Scheduled adds Reading')
-    this.state.add('Reading')
+    this.state.add(['Syncing'])
   }
 
   DBReady_state() {
@@ -280,12 +303,13 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
         .map((r: DBRecord) => {
           let ret = '- ' + r.title
           const snippet = r.content.replace(/\n/g, '')
-          ret += snippet ? ` (${snippet})\n  ` : '\n  '
+          ret += snippet ? `  (${snippet})\n  ` : '\n  '
+          ret += r.to_delete ? `  TO DELETE\n` : ''
           ret += Object.entries(r.labels)
             .filter(([name, data]) => {
               return data.active
             })
-            .map(([name, data]) => {
+            .map(([name]) => {
               return name
             })
             .join(', ')
@@ -305,50 +329,55 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     this.bindToSubs()
   }
 
-  async ReadingDone_state(time = 1) {
+  async ReadingDone_state() {
     super.ReadingDone_state()
     const abort = this.state.getAbort('ReadingDone')
     await this.merge(abort)
     if (abort()) return
     // if any of the readers is marked as Dirty by other ones, re-read
-    const should_reread = this.subs_all.some(
-      s => s.state.is('Dirty') && s.state.not('QuotaExceeded')
-    )
-    if (should_reread && time <= 10) {
-      this.log('Re-reading because at least one list is Dirty')
+    const dirty = this.dirtyReaders()
+    // TODO `time` to the config
+    if (dirty.length && this.last_read_tries <= 10) {
+      this.log_verbose(`Re-reading because Dirty: ${dirty.join(', ')}`)
       // forcefully drop the done state because Reading is negotiable
       await this.subs_all.map(async sync => {
         sync.state.drop('ReadingDone')
         await sync.state.whenNot('ReadingDone')
       })
-      return this.state.add('Reading', ++time)
+      return this.state.add('Reading')
+      // TODO `time` to the config
+    } else if (this.last_read_tries > 10) {
+      this.log_error('Max re-read exceeded')
+      this.state.add('MaxReadsExceeded')
     }
+    // log
     this.log_verbose(`DB read in ${this.last_read_time.asSeconds()}sec`)
-    // if (debug.enabled('db-diff')) {
-    this.printDBDiffs()
-    // }
+    if (debug.enabled('db-diff')) {
+      this.printDBDiffs()
+    }
+    // go to the next step
     this.state.add('Writing')
   }
 
-  async WritingDone_state(time = 1) {
+  async WritingDone_state() {
     await super.WritingDone_state()
-    // remove records pending for removal from the DB
-    this.root.data
-      .chain()
-      .find({ to_delete: true })
-      .remove()
     // if any of the writers is marked as Dirty by other ones, re-read
-    const should_rewrite = this.subs_all_writers.some(
-      s => s.state.is('Dirty') && s.state.not('QuotaExceeded')
-    )
-    if (should_rewrite && time <= 10) {
-      this.log('Re-writing because at least one writer is Dirty')
+    const dirty = this.subs_all_writers
+      .filter(s => s.state.is('Dirty') && s.state.not('QuotaExceeded'))
+      .map(s => s.state.id())
+    // TODO `time` to the config
+    if (dirty.length && this.last_write_tries <= 10) {
+      this.log(`Re-writing because of Dirty: ${dirty.join(', ')}`)
       // forcefully drop the done state because Writing is negotiable
       await this.subs_all_writers.map(async sync => {
         sync.state.drop('WritingDone')
         await sync.state.whenNot('WritingDone')
       })
-      this.state.add('Writing', ++time)
+      this.state.add('Writing')
+      // TODO `time` to the config
+    } else if (this.last_write_tries > 10) {
+      this.log_error('Max re-writes exceeded')
+      this.state.add('MaxWritesExceeded')
     } else {
       this.state.add('SyncDone')
     }
@@ -356,6 +385,11 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
 
   // TODO show how many sources were actually synced
   SyncDone_state() {
+    // remove records pending for removal from the DB
+    this.root.data
+      .chain()
+      .find({ to_delete: true })
+      .remove()
     this.log(
       `SYNC DONE (${this.last_sync_reads} reads):\n` +
         `Usage: T/${this.subs.google.subs.tasks.user_quota}\n` +
@@ -364,6 +398,10 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     )
     this.last_sync_reads = 0
     this.state.add('Scheduled', this.config.sync_frequency)
+  }
+
+  MergeLimitExceeded_state() {
+    this.state.drop('MergeLimitExceeded')
   }
 
   // ----- -----
@@ -430,7 +468,6 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     return { text: text, labels: [...labels] }
   }
 
-  // Shortcuts record's labels as text, omitting the ones defined in the list's
   // config
   getRecordLabelsAsText(record: DBRecord, list_config: IListConfig): string {
     const skip = [
@@ -497,6 +534,9 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     // TODO use record to narrow down parent writers
     for (const sync of this.subs_all_writers) {
       if (sync === origin) continue
+      // TODO GoogleSync should be a SyncReader?
+      if (sync instanceof GoogleSync) continue
+      this.log_verbose(`${sync.state.id()} Dirty`)
       sync.state.add('Dirty')
     }
   }
@@ -509,8 +549,10 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     const id = origin.state.id(true)
     this.log(`Record change from ${id}, marking related lists as Dirty`)
     let lists = this.getListsForRecord(record)
-    lists = _.without(lists, origin)
-    lists.forEach(l => l.state.add('Dirty'))
+    for (const sync of lists.filter(s => s !== origin)) {
+      this.log_verbose(`${sync.state.id()} Dirty`)
+      sync.state.add('Dirty')
+    }
   }
 
   getListsForRecord(
@@ -532,8 +574,9 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   //   do it in batch and only here
   async merge(abort: TAbortFunction): Promise<any[]> {
     this.log_verbose('merge')
-    let changes,
-      c = 0
+    this.merge_tries = 1
+    let changes
+    // TODO config
     const MAX = 10
     do {
       changes = await this.subs_flat.reduce(
@@ -541,6 +584,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
           prev: Promise<any[]>,
           reader: SyncReader<any, any, any, any>
         ) => {
+          // execute the prev promise
           const ret = await prev
           const changes = await reader.merge(abort)
           if (changes) {
@@ -553,17 +597,29 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
       if (changes.length) {
         this.log('changes: %o', changes)
       }
-    } while (changes.length && ++c < MAX)
-    if (c == MAX) {
-      this.log_error(`MERGE LIMIT EXCEEDED (${c})`)
-    } else if (c) {
-      this.log(`MERGED after ${c} round(s)`)
+    } while (changes.length && ++this.merge_tries < MAX && !this.dirtyReaders())
+    if (this.merge_tries == MAX) {
+      this.log_error(`MERGE LIMIT EXCEEDED (${this.merge_tries})`)
+      this.state.add('MergeLimitExceeded')
+    } else if (this.merge_tries) {
+      this.log(`MERGED after ${this.merge_tries} round(s)`)
     }
     return []
   }
 
+  // TODO should be an inbound state?
+  dirtyReaders() {
+    return (
+      this.subs_all
+        .filter(s => s.state.is('Dirty') && s.state.not('QuotaExceeded'))
+        // TODO sth wrong here...
+        .filter(s => !(s instanceof SyncWriter))
+        .map(s => s.state.id())
+    )
+  }
+
   printDBDiffs() {
-    this.log_db_diff('db-diff')
+    this.log_verbose('db-diff')
     const db = this.data.toString() + '\n'
     const gmail_sync = this.subs.google.subs.gmail
     const gmail = gmail_sync.toString()
@@ -577,7 +633,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     for (const [current, previous] of dbs) {
       const db_diff = this.getDBDiff(current, previous)
       if (!db_diff) continue
-      this.log_db_diff(db_diff)
+      this.log_verbose(db_diff)
     }
     this.last_db = db
     this.last_gmail = gmail

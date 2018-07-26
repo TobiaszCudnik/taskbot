@@ -21,7 +21,9 @@ beforeAll(async function() {
   ])
 })
 afterAll(function() {
-  h.printDB()
+  if (h) {
+    h.printDB()
+  }
 })
 
 // DEBUG=root\*-info,record-diffs,db-diffs,gtasks-list-next\*,gmail-list-next\* DEBUG_AM=2
@@ -69,7 +71,7 @@ describe('gmail', function() {
     await h.reset()
     const gtasks_list = h.gtasks_sync.getListByName('!next')
     gtasks_list.state.drop('Dirty')
-    await h.gmail_sync.createThread('test', ['!T/Sync GTasks'])
+    await h.gmail_sync.createThread('gmail-1', ['!T/Sync GTasks'])
     await h.syncList(true, false, 'task-labels')
     const gmail_list = h.gmail_sync.getListByName('task-labels')
     expect(gmail_list.query.threads).toHaveLength(1)
@@ -137,13 +139,7 @@ describe('gmail', function() {
     it('syncs tasks with children between lists', async function() {
       await h.reset()
       const task_id = await h.addTask('gtasks-gmail-1')
-      await h.addTask(
-        'gtasks-gmail-1',
-        '!next',
-        '',
-        false,
-        task_id
-      )
+      await h.addTask('gtasks-gmail-1', '!next', '', false, task_id)
       await h.syncList()
     })
 
@@ -210,7 +206,10 @@ describe('gmail', function() {
     it(`triggers a sync with '!T/Sync GTasks'`, async function() {
       const list = h.gtasks_sync.getListByName('!next')
       list.state.drop('Dirty')
-      await h.gmail_sync.createThread('test', ['!S/Action', '!T/Sync GTasks'])
+      await h.gmail_sync.createThread('gmail-gtasks-1', [
+        '!S/Action',
+        '!T/Sync GTasks'
+      ])
       // check if gtasks-next will be synced
       const last_read = list.last_read_end.unix()
       await h.syncList(true, false, '!actions')
@@ -362,27 +361,42 @@ describe('gtasks', function() {
 
     it('syncs tasks between lists', async function() {
       await h.reset()
-      const tasklist_id = h.gtasks_sync.getListByName('!actions').list.id
       const task_id = await h.addTask('gtasks-gmail-1')
+      // sync
       await h.syncList(false, true)
       const task = await h.getTask(task_id)
-      // move the task
+      // move the task TODO parallel
       // delete the old ask from !next
-      await h.req('gtasks.tasks.delete', {
-        tasklist: tasklist_id,
-        task: task_id
-      })
+      await h.deleteTask(task_id)
       // and add a copy to !actions
       await h.addTask('gtasks-gmail-1', '!actions', task.notes)
       // mark !actions and !next as Dirty
       h.gtasks_sync.getListByName('!actions').state.add('Dirty')
       await h.syncList(false, true)
+      // assert
       const threads = [...h.gmail_sync.threads.values()]
       expect(threads).toHaveLength(1)
       expect(h.hasLabel(threads[0], '!S/Action')).toBeTruthy()
     })
 
-    it.skip('syncs tasks between lists when only one is being synced', async function() {})
+    it('syncs tasks between lists when only one is being synced', async function() {
+      await h.reset()
+      const task_id = await h.addTask('gtasks-gmail-1')
+      // sync
+      await h.syncList(false, true)
+      const task = await h.getTask(task_id)
+      // move the task TODO parallel
+      // delete the old ask from !next
+      await h.deleteTask(task_id)
+      // and add a copy to !actions
+      await h.addTask('gtasks-gmail-1', '!actions', task.notes)
+      // sync having only !next as Dirty
+      await h.syncList(false, true)
+      // assert
+      const threads = [...h.gmail_sync.threads.values()]
+      expect(threads).toHaveLength(1)
+      expect(h.hasLabel(threads[0], '!S/Action')).toBeTruthy()
+    })
 
     it('syncs task completions', async function() {
       await h.reset()
@@ -395,6 +409,7 @@ describe('gtasks', function() {
       const data = h.sync.data.data
       expect(data).toHaveLength(1)
       const refresh = await h.getThread(data[0].gmail_id)
+      console.log(refresh)
       expect(h.hasLabel(refresh, '!S/Finished')).toBeTruthy()
     })
 
@@ -439,6 +454,39 @@ describe('gtasks', function() {
       ])
       expect(query.threads).toHaveLength(1)
       expect(tasks.items).toHaveLength(1)
+    })
+
+    it('syncs missing threads between lists', async function() {
+      await h.reset()
+      // add 2 tasks
+      await Promise.all([
+        h.addTask('gtasks-gmail-1'),
+        h.addTask('gtasks-gmail-2', '!actions')
+      ])
+      // sync
+      h.gtasks_sync.getListByName('!actions').state.add('Dirty')
+      await h.syncList(true, true)
+      expect(h.sync.data.data).toHaveLength(2)
+      // delete one thread
+      const thread_1 = (await h.listQuery()).threads[0]
+      await h.deleteThread(thread_1.id)
+      // sync
+      await h.syncList(true, true)
+      // check if the deletion propagated
+      const [tasks, tasks_actions, query, query_actions] = await Promise.all([
+        await h.listTasklist(),
+        await h.listTasklist('!actions'),
+        await h.listQuery(),
+        await h.listQuery('label:!s-action')
+      ])
+      expect(query.threads || []).toHaveLength(0)
+      expect(query_actions.threads || []).toHaveLength(1)
+      expect(tasks.items || []).toHaveLength(0)
+      expect(tasks_actions.items || []).toHaveLength(1)
+    })
+
+    it.skip('syncs un-completions', function() {
+
     })
 
     it.skip('syncs tasks removals', function() {})

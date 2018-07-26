@@ -55,7 +55,8 @@ export default async function createHelpers(log) {
     reset,
     labelID,
     modifyLabels,
-    printDB
+    printDB,
+    deleteTask
   }
 
   async function modifyLabels(
@@ -139,9 +140,12 @@ export default async function createHelpers(log) {
     config.gtasks.sync_frequency = 10000 * 100
     sync = new RootSync(config, logger, connections)
     // disable heartbeat
-    sync.HeartBeat_enter = () => false
-    sync.Scheduled_enter = () => false
+    sync.state.on('HeartBeat_enter', () => false)
+    sync.state.on('Scheduled_enter', () => false)
     // fwd exceptions
+    sync.state.on('MergeLimitExceeded_state', () => {
+      throw new Error('MergeLimitExceeded')
+    })
     sync.state.on('Exception_state', err => {
       throw err
     })
@@ -164,10 +168,21 @@ export default async function createHelpers(log) {
     await sync.state.when('Ready')
     gmail_sync = sync.subs.google.subs.gmail
     gtasks_sync = sync.subs.google.subs.tasks
+    // treat max reads/writes as exceptions
+    for (const sub of sync.subs_all) {
+      sub.state.on('MaxReadsExceeded_state', () => {
+        throw new Error('MaxReadsExceeded')
+      })
+    }
+    for (const sub of sync.subs_all_writers) {
+      sub.state.on('MaxWritesExceeded_state', () => {
+        throw new Error('MaxWritesExceeded')
+      })
+    }
     assert(gtasks_sync, 'gtasks sync missing')
     assert(gmail_sync, 'gmail sync missing')
     // trigger sync
-    sync.state.add('Reading')
+    sync.state.add('Syncing')
     log('connected')
     await sync.state.when('WritingDone')
     log('initial sync OK')
@@ -271,7 +286,7 @@ export default async function createHelpers(log) {
     if (gmail_dirty) {
       gmail_sync.getListByName(name).state.add('Dirty')
     }
-    sync.state.add('Reading')
+    sync.state.add('Syncing')
     await sync.state.when('SyncDone')
   }
 
@@ -348,6 +363,8 @@ export default async function createHelpers(log) {
     }
     sync.state.drop(
       'Scheduled',
+      'Syncing',
+      'SyncDone',
       'Reading',
       'Writing',
       'ReadingDone',
@@ -368,5 +385,12 @@ export default async function createHelpers(log) {
     const id = gmail_sync.getLabelID(name)
     assert(id, `Label '${name}' doesnt exist`)
     return id
+  }
+
+  async function deleteTask(id, list = '!next') {
+    return await req('gtasks.tasks.delete', {
+      tasklist: gtasks_sync.getListByName(list).list.id,
+      task: id
+    })
   }
 }

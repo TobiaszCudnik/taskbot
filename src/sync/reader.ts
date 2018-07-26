@@ -34,12 +34,17 @@ export const sync_reader_state: IJSONStates = {
   SubsReady: {},
 
   Reading: {
+    after: ['Syncing'],
     drop: ['ReadingDone'],
     require: ['Enabled', 'Ready']
   },
   ReadingDone: {
     drop: ['Reading']
   },
+
+  // controller by the RootSync
+  Syncing: { drop: ['SyncDone'] },
+  SyncDone: { drop: ['Syncing'] },
 
   Cached: {},
   Dirty: { drop: ['Cached'] },
@@ -51,7 +56,9 @@ export const sync_reader_state: IJSONStates = {
   },
   Restarted: {
     drop: ['Restarting']
-  }
+  },
+
+  MaxReadsExceeded: {}
 }
 export type TSyncState = AsyncMachine<TStates, IBind, IEmit>
 
@@ -73,7 +80,9 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
   sub_states_outbound: [GStates | TStates, GStates | TStates, PipeFlags][] = [
     ['Reading', 'Reading', PipeFlags.NEGOTIATION_ENTER | PipeFlags.FINAL_EXIT],
     ['Enabled', 'Enabled', PipeFlags.NEGOTIATION_ENTER | PipeFlags.FINAL_EXIT],
-    ['Restarting', 'Restarting', PipeFlags.FINAL]
+    ['Restarting', 'Restarting', PipeFlags.FINAL],
+    ['Syncing', 'Syncing', PipeFlags.FINAL],
+    ['SyncDone', 'SyncDone', PipeFlags.FINAL]
   ]
   subs: {
     [index: string]: any
@@ -85,6 +94,7 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
   last_read_end: moment.Moment
   last_read_start: moment.Moment
   last_read_time: moment.Duration
+  last_read_tries = 0
 
   log: log_fn
   log_error: log_fn
@@ -235,6 +245,10 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
     return this.subs_flat.every(sync => sync.state.is('Ready'))
   }
 
+  Syncing_state() {
+    this.last_read_tries = 0
+  }
+
   Reading_state() {
     this.last_read_start = moment()
   }
@@ -243,24 +257,15 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
     return this.subs_flat.every(sync => sync.state.is('ReadingDone'))
   }
 
-  // TODO check if still needed with queue duplicates detection
-  // ReadingDone_exit() {
-  //   // prevent queued pipe mutations to switch ReadingDone back and forth
-  //   const keep_reading_done =
-  //     this.ReadingDone_enter() &&
-  //     !(
-  //       this.state.to().includes('Reading') ||
-  //       this.state.to().includes('Writing') ||
-  //       this.state.to().includes('Restarting')
-  //     )
-  //   return !keep_reading_done
-  // }
-
   ReadingDone_state() {
     this.last_read_end = moment()
     this.last_read_time = moment.duration(
       this.last_read_end.diff(this.last_read_start)
     )
+  }
+
+  MaxReadsExceeded_state() {
+    this.state.drop('MaxReadsExceeded')
   }
 
   // ----- -----
@@ -330,7 +335,7 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
     const after = clone(record)
     delete after.$loki
     delete after.meta
-    let msg = 'DB diff'
+    let msg = 'Record diff'
     if (title) {
       msg += ` '${title}'`
     }
@@ -345,7 +350,7 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
     }
     // console.log(msg)
     // TODO tmp for jest
-    process.stdout.write(msg + '\n')
+    // process.stdout.write(msg + '\n')
     this.log(msg)
   }
 

@@ -239,12 +239,8 @@ export default class GmailSync extends SyncWriter<
   }
 
   async Writing_state() {
-    super.Writing_state()
-    if (process.env['DRY']) {
-      // TODO list expected changes
-      this.state.add('WritingDone')
-      return
-    }
+    this.last_write_tries++
+
     const abort = this.state.getAbort('Writing')
     await Promise.all([
       this.processLabelsToFetch(abort),
@@ -464,6 +460,7 @@ export default class GmailSync extends SyncWriter<
       // mark touched lists as Dirty to trigger a re-read
       // @ts-ignore
       this.root.markListsAsDirty(this, record)
+      // @ts-ignore
       this.root.markWritersAsDirty(this, record)
       await this.fetchThread(id, abort)
     })
@@ -499,6 +496,12 @@ export default class GmailSync extends SyncWriter<
         // mark touched lists as Dirty to trigger a re-read
         // @ts-ignore
         this.root.markListsAsDirty(this, record)
+        // check cache of other lists if the thread was there before
+        // TODO get this info from the record's history
+        for (const list of this.subs.lists) {
+          if (!list.hasThread(record.gmail_id)) continue
+          list.state.add('Dirty')
+        }
         return [thread.id, add, remove]
       })
       .filter(i => i)

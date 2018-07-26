@@ -75,16 +75,19 @@ export default class GTasksListSync extends SyncReader<
     this.state.drop('QuotaExceeded')
   }
 
-  async Reading_state(time = 1) {
+  async Reading_state() {
     if (!this.shouldRead()) {
       return this.state.addNext('ReadingDone')
     }
+    // counters
     super.Reading_state()
     this.root.last_sync_reads++
     this.gtasks.reads_today++
+    this.last_read_tries++
+
     const quota = this.gtasks.short_quota_usage
     const abort = this.state.getAbort('Reading')
-    const req_ret = await this.gtasks.req(
+    const [list, res] = await this.gtasks.req(
       'api.tasks.list',
       this.gtasks.api.tasks.list,
       {
@@ -103,8 +106,6 @@ export default class GTasksListSync extends SyncReader<
       abort,
       true
     )
-    if (!req_ret) debugger
-    const [list, res] = req_ret
 
     if (abort()) return
 
@@ -128,7 +129,13 @@ export default class GTasksListSync extends SyncReader<
       this.tasks = list
     }
 
-    this.state.add('ReadingDone', time)
+    this.state.add('ReadingDone')
+  }
+
+  mark_to_delete = []
+  ReadingDone_state() {
+    super.ReadingDone_state()
+    this.mark_to_delete = []
   }
 
   // ----- -----
@@ -258,47 +265,88 @@ export default class GTasksListSync extends SyncReader<
       }
     }
     // delete
+    // TODO extract
     const deleted = _.uniq(
       _.differenceBy(this.getPrevTasks(), this.getTasks(), t => t.id)
     )
     if (deleted.length) {
-      this.log_verbose(`Checking ${deleted.length} tasks missing`)
+      this.log_verbose(`Checking ${deleted.length} task(s) missing`)
     }
     for (const task of deleted) {
+      const record = this.getFromDB(task)
+      if (!record || record.gtasks_hidden_completed) {
+        continue
+      }
       // check if not hidden (new google's clients behavior)
-      try {
-        await this.gtasks.req(
-          'api.tasks.patch',
-          this.gtasks.api.tasks.patch,
-          {
-            tasklist: this.list.id,
-            task: task.id,
-            fields: 'id',
-            resource: {
-              hidden: false
-            }
-          },
-          abort,
-          false
-        )
+      // only during the first merge run
+      const refreshed =
+        this.root.merge_tries == 1
+          ? await this.gtasks.req(
+              'api.tasks.patch',
+              this.gtasks.api.tasks.patch,
+              {
+                tasklist: this.list.id,
+                task: task.id,
+                // fields: 'id',
+                resource: {
+                  hidden: false
+                }
+              },
+              abort,
+              false
+            )
+          : null
+      // hidden and completed
+      if (
+        refreshed &&
+        !refreshed.deleted &&
+        this.gtasks.isCompleted(refreshed)
+      ) {
         changed++
         this.state.add('Dirty')
         // add back to the cache
-        this.tasks.items.push(task)
-      } catch (e) {
+        this.tasks.items.push(refreshed)
+        record.gtasks_hidden_completed = true
+      } else {
         // task was really deleted
-        this.log(`Task '${task.title}' deleted in GTasks`)
-        const record = this.getFromDB(task)
-        if (!record) continue
-        if (record.gtasks_ids) {
+        this.log(`Task '${record.title}' deleted in GTasks`)
+        // mark the local ID as deleted
+        // if (record.gtasks_ids) {
+        //   record.gtasks_ids[refreshed.id].status = GTasksStatus.DELETED
+        // }
+        this.mark_to_delete.push(task.id)
+        // loop at least three times to let others alter the DB
+        if (this.root.merge_tries < 3) {
+          changed++
+        }
+        // mark all the other lists as Dirty on the first run
+        if (this.root.merge_tries == 1) {
+          this.log_verbose('Marking all GTasks lists as Dirty')
+          this.gtasks.subs.lists.forEach(l => l.state.add('Dirty'))
+        }
+        // loop at least three times to let others alter the DB
+        if (changed) continue
+        // mark records without any existing task as pending deletion
+        if (
+          Object.keys(record.gtasks_ids).length == 1 &&
+          this.mark_to_delete.includes(task.id)
+        ) {
+          this.log(`Marking record '${record.title}' for deletion`)
+          record.to_delete = true
+          record.gtasks_moving = true
+        } else {
+          // if the task was moved, delete the old ID
           delete record.gtasks_ids[task.id]
         }
-        // mark records without any existing task as pending deletion
-        if (!record.gtasks_ids || !Object.keys(record.gtasks_ids).length) {
-          this.log(`Marking record '${task.title}' to deletion`)
-          record.to_delete = true
-        }
-        continue
+        // TODO use complex gtasks_ids with statuses and dates or equivalents
+        // record.gtasks_ids = record.gtasks_ids || {}
+        // const deleted_everywhere = !Object.values(record.gtasks_ids).every(
+        //   t => t.status == GTasksStatus.DELETED
+        // )
+        // if (deleted_everywhere) {
+        //   this.log(`Marking record '${refreshed.title}' for deletion`)
+        //   record.to_delete = true
+        // }
       }
     }
     return changed ? [changed] : []
@@ -386,6 +434,10 @@ export default class GTasksListSync extends SyncReader<
       text_labels_updated = true
     }
     record.content = this.getContent(task.notes)
+    // mark as found in case of moving
+    if (record.gtasks_moving) {
+      record.to_delete = false
+    }
     // add to the gtasks id map
     record.gtasks_ids = record.gtasks_ids || {}
     record.gtasks_ids[task.id] = this.list.id
@@ -412,6 +464,7 @@ export default class GTasksListSync extends SyncReader<
     return (
       'GTasks - ' +
       this.config.name +
+      (this.state.is('Dirty') ? ' (Dirty)' : '') +
       '\n' +
       this.getTasks()
         .map((t: Task) => (t.status == 'completed' ? 'c ' : '- ') + t.title)

@@ -64,8 +64,11 @@ export default class GmailListSync extends SyncReader<
     if (!this.shouldRead()) {
       return this.state.addNext('ReadingDone')
     }
+    // counters
     super.Reading_state()
     this.root.last_sync_reads++
+    this.last_read_tries++
+
     const abort = this.state.getAbort('Reading')
     this.query.state.add('FetchingThreads')
     // TODO pipe?
@@ -242,6 +245,11 @@ export default class GmailListSync extends SyncReader<
     return (<any>source).id ? (<any>source).id : source
   }
 
+  // checks if the list has the given thread in cache
+  hasThread(id: string) {
+    return this.query.threads.find(t => t.id == id)
+  }
+
   // TODO merge with FetchingOrphans
   // TODO support duplicating in case of a conflict ???
   //   or send a new email in the thread?
@@ -298,6 +306,7 @@ export default class GmailListSync extends SyncReader<
     return (
       'Gmail - ' +
       this.config.name +
+      (this.state.is('Dirty') ? ' (Dirty)' : '') +
       '\n' +
       this.query.threads
         .map((t: Thread) => {
