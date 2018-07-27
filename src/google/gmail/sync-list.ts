@@ -163,6 +163,8 @@ export default class GmailListSync extends SyncReader<
     // query the db for the current list where IDs arent present locally
     // and apply the exit label changes
     // TODO use an index
+    // console.log('this.query.threads', this.query.threads)
+    // console.log('this.query.prev_threads', this.query.prev_threads)
     const find = (record: DBRecord) => {
       return (
         // only records with a gmail id
@@ -180,7 +182,13 @@ export default class GmailListSync extends SyncReader<
         // only not seen in this sync so far
         !ids.includes(this.toLocalID(record)) &&
         // only ones updated earlier than this query
-        record.updated.gmail_hid < this.query.history_id_synced
+        record.updated.gmail_hid < this.query.history_id_synced &&
+        // seen in the previous query
+        this.query.prev_threads.some( t => t.id == record.gmail_id )
+        // which the latest update was from gmail
+        // TODO test
+        // record.updated.latest ==
+        //   this.gmail.timeFromHistoryID(record.updated.gmail_hid)
       )
     }
     // TODO indexes - dont update here, update in the top merge

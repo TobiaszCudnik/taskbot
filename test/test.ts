@@ -432,7 +432,7 @@ describe('gtasks', function() {
       expect(h.hasLabel(refresh, '!S/Finished')).toBeTruthy()
     })
 
-    it('syncs missing threads', async function() {
+    it.only('syncs missing threads', async function() {
       await h.reset()
       // add 2 tasks
       await Promise.all([
@@ -446,7 +446,7 @@ describe('gtasks', function() {
       const thread_1 = (await h.listQuery()).threads[0]
       await h.deleteThread(thread_1.id)
       // sync
-      await h.syncList(true, true)
+      await h.syncList(true, false)
       // check if the deletion propagated
       const [tasks, query] = await Promise.all([
         await h.listTasklist(),
@@ -485,7 +485,9 @@ describe('gtasks', function() {
       expect(tasks_actions.items || []).toHaveLength(1)
     })
 
-    it.only('syncs un-completions', async function() {
+    // TODO reproduce the manual scenario
+    // should fail without the last condition for 'threads to close'
+    it('syncs un-completions', async function() {
       await h.reset()
       // add a task
       const id = await h.addTask('gtasks-gmail-1')
@@ -503,6 +505,8 @@ describe('gtasks', function() {
         status: 'needsAction',
         completed: null
       })
+      // sync
+      await h.syncList(false, true)
       const [tasks, query] = await Promise.all([
         await h.listTasklist(),
         await h.listQuery(),

@@ -146,6 +146,12 @@ export default async function createHelpers(log) {
     sync.state.on('MergeLimitExceeded_state', () => {
       throw new Error('MergeLimitExceeded')
     })
+    sync.state.on('MaxReadsExceeded_state', () => {
+      throw new Error('MaxReadsExceeded')
+    })
+    sync.state.on('MaxWritesExceeded_state', () => {
+      throw new Error('MaxWritesExceeded')
+    })
     sync.state.on('Exception_state', err => {
       throw err
     })

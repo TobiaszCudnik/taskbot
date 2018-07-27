@@ -359,12 +359,11 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     this.state.add('Writing')
   }
 
+  // TODO abort function
   async WritingDone_state() {
     await super.WritingDone_state()
     // if any of the writers is marked as Dirty by other ones, re-read
-    const dirty = this.subs_all_writers
-      .filter(s => s.state.is('Dirty') && s.state.not('QuotaExceeded'))
-      .map(s => s.state.id())
+    const dirty = this.dirtyWriters()
     // TODO `time` to the config
     if (dirty.length && this.last_write_tries <= 10) {
       this.log(`Re-writing because of Dirty: ${dirty.join(', ')}`)
@@ -378,15 +377,32 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     } else if (this.last_write_tries > 10) {
       this.log_error('Max re-writes exceeded')
       this.state.add('MaxWritesExceeded')
+    // } else if (this.dirtyReaders().length) {
+    //   this.log('Re-syncing because of Dirty: ' + this.dirtyReaders().join(', '))
+    //   // Re-read in case of a change. Early reads help with merged
+    //   this.state.drop('ReadingDone')
+    //   this.state.add('Reading')
     } else {
       this.state.add('SyncDone')
     }
   }
 
+  dirtyWriters() {
+    return this.subs_all_writers
+      .filter(s => s.state.is('Dirty') && s.state.not('QuotaExceeded'))
+      .map(s => s.state.id())
+  }
+
   // TODO show how many sources were actually synced
   SyncDone_state() {
     // remove records pending for removal from the DB
-    this.root.data
+    for (const record of this.data.data) {
+      // delete merge flags
+      delete record.gtasks_uncompleted
+      delete record.gtasks_moving
+      delete record.gtasks_hidden_completed
+    }
+    this.data
       .chain()
       .find({ to_delete: true })
       .remove()

@@ -455,7 +455,11 @@ export default class GTasksListSync extends SyncReader<
     }
     const labels =
       task.status == 'completed' ? this.config.exit : this.config.enter
+    // if (task.status == 'completed' && before.status == 'needsAction') {
+    //   record.gtasks_uncompleted = true
+    // }
     this.applyLabels(record, labels)
+    this.root.markListsAsDirty(this, record)
     this.printRecordDiff(before, record)
     return true
   }

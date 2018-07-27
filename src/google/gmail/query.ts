@@ -48,6 +48,7 @@ export default class GmailQuery {
   // history ID from the moment of reading
   history_id_synced: number | null
   threads: Thread[] = []
+  prev_threads: Thread[] = []
 
   log: log_fn
 
@@ -155,6 +156,7 @@ export default class GmailQuery {
     let history_id = await this.gmail.getHistoryId(abort)
     if (abort()) return
 
+    this.prev_threads = this.threads
     this.threads = results
     this.state.drop('Dirty')
 
