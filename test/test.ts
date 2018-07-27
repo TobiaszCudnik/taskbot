@@ -485,8 +485,30 @@ describe('gtasks', function() {
       expect(tasks_actions.items || []).toHaveLength(1)
     })
 
-    it.skip('syncs un-completions', function() {
-
+    it.only('syncs un-completions', async function() {
+      await h.reset()
+      // add a task
+      const id = await h.addTask('gtasks-gmail-1')
+      // sync
+      await h.syncList(false, true)
+      // complete & hide
+      await h.patchTask(id, {
+        status: 'completed',
+        hidden: true
+      })
+      // sync
+      await h.syncList(false, true)
+      // un-complete
+      await h.patchTask(id, {
+        status: 'needsAction',
+        completed: null
+      })
+      const [tasks, query] = await Promise.all([
+        await h.listTasklist(),
+        await h.listQuery(),
+      ])
+      expect(query.threads || []).toHaveLength(1)
+      expect(tasks.items || []).toHaveLength(1)
     })
 
     it.skip('syncs tasks removals', function() {})

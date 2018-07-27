@@ -739,6 +739,8 @@ declare module 'googleapis' {
           status: 'completed' | 'needsAction'
           title: string
           updated: string
+          // date
+          completed: string | null
         }
 
         export interface TaskList {

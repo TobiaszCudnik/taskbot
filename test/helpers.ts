@@ -302,7 +302,9 @@ export default async function createHelpers(log) {
     return body
   }
 
-  // @returns the ID of the new task
+  /**
+   * @returns the ID of the new task
+   */
   async function addTask(
     title,
     list = '!next',
