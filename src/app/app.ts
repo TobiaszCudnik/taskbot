@@ -88,6 +88,9 @@ async function exit() {
         `\nUser ${sync.config.user.id}: ${sync.config.google.username}`
       )
       console.log(data)
+      const subs = sync.subs.google.subs
+      console.log(subs.gmail.toString())
+      console.log(subs.tasks.toString())
     }
     console.log(`\nUser ${sync.config.user.id}: ${sync.config.google.username}`)
     console.log(`Restarts count: ${sync.restarts_count}`)
