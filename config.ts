@@ -222,7 +222,7 @@ const config: IConfigBase = {
           this.log_verbose(`Matching task label '${label}'`)
 
           // sync gtasks
-          match = label.match(/\/Sync GTasks(\/.+?)$/)
+          match = label.match(/\/Sync GTasks$/)
           if (match) {
             // const name = match[1]
             //   ? (match[1] as string).replace('/', '').toLowerCase()
