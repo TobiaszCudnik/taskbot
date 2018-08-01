@@ -1,6 +1,7 @@
 ///<reference path="../typings/index.d.ts"/>
 
-const DELAY = 1000
+export const DELAY = 1000
+export const scenarios = [0, 1, 2]
 
 import * as assert from 'assert'
 import * as google from 'googleapis'
@@ -49,6 +50,7 @@ export default async function createHelpers(log) {
     truncateGTasks,
     truncateGTasksList,
     syncList,
+    syncListScenario,
     getTask,
     addTask,
     patchTask,
@@ -280,6 +282,28 @@ export default async function createHelpers(log) {
     log('removed all emails')
   }
 
+  /*
+   * Scenarios:
+   * 0 - gmail & tasks sync simultaneously
+   * 1 - gmail syncs, then gmail&tasks simultaneously
+   * 2 - gmail syncs, then gmail&tasks simultaneously, then gmail again
+   */
+  async function syncListScenario(scenario: number, list = '!next') {
+    switch (scenario) {
+      case 1:
+        await syncList(true, false, list)
+        await syncList(true, true, list)
+        break
+      case 2:
+        await syncList(true, false, list)
+        await syncList(true, true, list)
+        await syncList(true, false, list)
+        break
+      default:
+        await syncList(true, true, list)
+    }
+  }
+
   async function syncList(
     gmail_dirty = true,
     gtasks_dirty = true,
@@ -289,9 +313,7 @@ export default async function createHelpers(log) {
     if (gtasks_dirty) {
       gtasks_sync.getListByName(name).state.add('Dirty')
     }
-    if (gmail_dirty) {
-      gmail_sync.getListByName(name).state.add('Dirty')
-    }
+    gmail_sync.getListByName(name).state.add('Dirty')
     sync.state.add('Syncing')
     await sync.state.when('SyncDone')
   }
