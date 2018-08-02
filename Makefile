@@ -17,7 +17,8 @@ start:
 	DEBUG=root:\*-info,\*-error,http-server-info DEBUG_FILE=1 node src/app/app.js
 
 start-prod:
-	PROD=1 DEBUG=root:\*-info,\*-error DEBUG_FILE=1 DEBUG_AM=1 node src/app/app.js
+	# PROD=1 DEBUG=root:\*-info,\*-error DEBUG_FILE=1 DEBUG_AM=1 node src/app/app.js
+	PROD=1 DEBUG=root:\*-info,\*-error node src/app/app.js
 
 start-am:
 	DEBUG=\*-error,connections-verbose,root:\*-info,gmail-root,gtasks-root,record-diffs,\*-am:\* \
@@ -118,5 +119,24 @@ npmi:
 	npm i
 	npm link asyncmachine
 	npm link ami-logger
+
+test:
+	-TEST=1 SCENARIO=0 npx jest gmail
+	sleep 30
+	-TEST=1 SCENARIO=1 npx jest gmail
+	sleep 30
+	-TEST=1 SCENARIO=2 npx jest gmail
+	sleep 30
+	-TEST=1 SCENARIO=0 npx jest gtasks
+	sleep 30
+	-TEST=1 SCENARIO=1 npx jest gtasks
+	sleep 30
+	-TEST=1 SCENARIO=2 npx jest gtasks
+	sleep 30
+	-TEST=1 SCENARIO=0 npx jest merge
+	sleep 5
+	-TEST=1 SCENARIO=1 npx jest merge
+	sleep 5
+	-TEST=1 SCENARIO=2 npx jest merge
 
 .PHONY: test break build

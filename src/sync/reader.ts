@@ -27,7 +27,10 @@ export const sync_reader_state: IJSONStates = {
 
   Initializing: { require: ['Enabled'] },
   // TODO split to ReadyForReading, ReadyForWriting
-  Ready: { auto: true, drop: ['Initializing'] },
+  Ready: {
+    auto: true,
+    drop: ['Initializing']
+  },
   // optional
   ConfigSet: {},
   SubsInited: {},

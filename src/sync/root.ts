@@ -74,7 +74,9 @@ export const sync_state: IJSONStates = {
   DBReady: { auto: true },
 
   // syncing
-  HeartBeat: {},
+  HeartBeat: {
+    require: ['Enabled']
+  },
   Scheduled: {
     drop: ['SyncDone']
   },
@@ -377,11 +379,11 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     } else if (this.last_write_tries > 10) {
       this.log_error('Max re-writes exceeded')
       this.state.add('MaxWritesExceeded')
-    // } else if (this.dirtyReaders().length) {
-    //   this.log('Re-syncing because of Dirty: ' + this.dirtyReaders().join(', '))
-    //   // Re-read in case of a change. Early reads help with merged
-    //   this.state.drop('ReadingDone')
-    //   this.state.add('Reading')
+      // } else if (this.dirtyReaders().length) {
+      //   this.log('Re-syncing because of Dirty: ' + this.dirtyReaders().join(', '))
+      //   // Re-read in case of a change. Early reads help with merged
+      //   this.state.drop('ReadingDone')
+      //   this.state.add('Reading')
     } else {
       this.state.add('SyncDone')
     }

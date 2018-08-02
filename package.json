@@ -6,7 +6,9 @@
   "contributors": [],
   "scripts": {
     "start": "make start-prod",
-    "start-dev": "make start"
+    "start-dev": "make start",
+    "test": "make test",
+    "test-service": "TEST=1 make start-am"
   },
   "repository": {
     "type": "git",

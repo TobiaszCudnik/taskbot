@@ -60,7 +60,9 @@ for (const user of users) {
   const config_user = merge(config, user)
   const sync = new RootSync(config_user, logger, connections)
   // jump out of this tick
-  sync.state.addNext('Enabled')
+  // if (!process.env['TEST']) {
+    sync.state.addNext('Enabled')
+  // }
   syncs.push(sync)
 }
 // TODO /APP CLASS
@@ -82,7 +84,7 @@ async function exit() {
   for (const sync of syncs) {
     console.log(`\nUser ${sync.config.user.id}: ${sync.config.google.username}`)
     console.log(sync.getMachines())
-    const data = sync.data.toString()
+    const data = sync.data && sync.data.toString() || ''
     if (data.trim()) {
       console.log(
         `\nUser ${sync.config.user.id}: ${sync.config.google.username}`
@@ -106,6 +108,8 @@ async function exit() {
     .value()
     .join('\n  ')
   console.log('\nLoggers:\n ', loggers)
+  // TODO extract
+  // TODO add info about exceeded quotas
   exit_printed = true
   process.exit()
 }

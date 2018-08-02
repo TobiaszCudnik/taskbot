@@ -1,6 +1,6 @@
 ///<reference path="../typings/index.d.ts"/>
 
-export const DELAY = 1000
+export const DELAY = 5000
 export const scenarios = [0, 1, 2]
 
 import * as assert from 'assert'
@@ -114,7 +114,7 @@ export default async function createHelpers(log) {
   }
 
   async function listTasklist(name = '!next'): Promise<google.tasks.v1.Tasks> {
-    const [body, res] = await req('gtasks.tasks.list', {
+    const [body] = await req('gtasks.tasks.list', {
       maxResults: 1000,
       tasklist: gtasks_sync.getListByName(name).list.id,
       fields: 'etag,items(id,title,notes,updated,etag,status,parent)',
@@ -176,10 +176,14 @@ export default async function createHelpers(log) {
     await sync.state.when('Ready')
     gmail_sync = sync.subs.google.subs.gmail
     gtasks_sync = sync.subs.google.subs.tasks
-    // treat max reads/writes as exceptions
+    // treat max reads/writes as an exceptions
     for (const sub of sync.subs_all) {
       sub.state.on('MaxReadsExceeded_state', () => {
         throw new Error('MaxReadsExceeded')
+      })
+      // treat quota exceeded as an exception
+      sub.state.on('QuotaExceeded_state', () => {
+        throw new Error('QuotaExceeded')
       })
     }
     for (const sub of sync.subs_all_writers) {
@@ -285,22 +289,28 @@ export default async function createHelpers(log) {
   /*
    * Scenarios:
    * 0 - gmail & tasks sync simultaneously
-   * 1 - gmail syncs, then gmail&tasks simultaneously
-   * 2 - gmail syncs, then gmail&tasks simultaneously, then gmail again
+   * 1 - gmail syncs x2, then gmail&tasks simultaneously
+   * 2 - gmail syncs x2, then gmail&tasks simultaneously
+   *   then gmail again
    */
   async function syncListScenario(scenario: number, list = '!next') {
     switch (scenario) {
+      default:
+        await syncList(true, true, list) // gt
+        await syncList(true, false, list) // g
+        await syncList(true, true, list) // gt
+        break
       case 1:
-        await syncList(true, false, list)
-        await syncList(true, true, list)
+        await syncList(true, false, list) // g
+        await syncList(true, false, list) // g
+        await syncList(true, true, list) // gt
         break
       case 2:
-        await syncList(true, false, list)
-        await syncList(true, true, list)
-        await syncList(true, false, list)
+        await syncList(true, false, list) // g
+        await syncList(true, false, list) // g
+        await syncList(true, true, list) // gt
+        await syncList(true, false, list) // g
         break
-      default:
-        await syncList(true, true, list)
     }
   }
 
@@ -311,7 +321,11 @@ export default async function createHelpers(log) {
   ) {
     // start a selective sync
     if (gtasks_dirty) {
-      gtasks_sync.getListByName(name).state.add('Dirty')
+      const list = gtasks_sync.getListByName(name)
+      // skip gmail-only lists
+      if (list) {
+        list.state.add('Dirty')
+      }
     }
     gmail_sync.getListByName(name).state.add('Dirty')
     sync.state.add('Syncing')
@@ -373,24 +387,29 @@ export default async function createHelpers(log) {
     return body.id
   }
 
+  // TODO reset exceptions too, maybe clone states from after the inital sync
   async function reset() {
     log('reset')
+    const task_lists = sync.subs.google.subs.tasks.subs.lists
     // clear all the APIs
-    await Promise.all([
-      truncateGmail(),
-      // TODO loop over the lists from conig
-      truncateGTasksList('!next'),
-      truncateGTasksList('!actions')
-    ])
+    const wait = [truncateGmail()]
+    for (const list of task_lists) {
+      wait.push(truncateGTasksList(list.config.name))
+    }
+    await Promise.all(wait)
     // clear the local DB
     sync.data.clear()
     sync.subs.google.subs.gmail.threads.clear()
-    for (const list of sync.subs.google.subs.tasks.subs.lists) {
+    for (const list of task_lists) {
       list.tasks = null
     }
     for (const list of sync.subs.google.subs.gmail.subs.lists) {
       list.query.threads = []
     }
+    gmail_sync.history_ids = []
+    gmail_sync.history_id_latest = null
+    gmail_sync.last_sync_time = null
+    // drop all outbound states
     sync.state.drop(
       'Scheduled',
       'Syncing',
@@ -408,7 +427,7 @@ export default async function createHelpers(log) {
       sync.state.drop('WritingDone')
       await sync.state.whenNot('WritingDone')
     })
-    await delay(1000)
+    await delay(DELAY)
   }
 
   function labelID(name) {

@@ -174,6 +174,8 @@ export default class GmailSync extends SyncWriter<
       // @ts-ignore
       err.errors &&
       // @ts-ignore
+      err.errors.message &&
+      // @ts-ignore
       err.errors.message[0] == 'No label add or removes specified'
     ) {
       // allowed error

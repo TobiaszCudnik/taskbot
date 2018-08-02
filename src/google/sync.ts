@@ -31,7 +31,7 @@ export const sync_state: IJSONStates = {
   },
   Ready: {
     auto: true,
-    require: ['ConfigSet', 'SubsReady'],
+    require: ['ConfigSet', 'SubsReady', 'Authenticated'],
     drop: ['Initializing']
   }
 }
@@ -66,6 +66,7 @@ export default class GoogleSync extends SyncWriter<
     this.bindToSubs()
     this.auth.pipe('Ready', this.state, 'Authenticated')
     this.auth.pipe('Exception', this.state)
+    this.state.pipe('Enabled', this.auth)
   }
 
   // ----- -----

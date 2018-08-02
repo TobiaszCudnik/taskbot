@@ -69,6 +69,7 @@ export default class GTasksListSync extends SyncReader<
   // Transitions
   // ----- -----
 
+  // TODO propagate to GTasksSYnc
   async QuotaExceeded_state() {
     const SEC = 1000
     await delay(this.gtasks.config.gtasks.quota_exceeded_delay * SEC)
@@ -429,6 +430,7 @@ export default class GTasksListSync extends SyncReader<
     const task_updated = moment(task.updated).unix()
     // apply title labels on the initial record's sync
     let text_labels_updated = false
+    record.gtasks_ids = record.gtasks_ids || {}
     if (!record.gtasks_ids[task.id]) {
       this.updateTextLabels(record, task.title)
       text_labels_updated = true
@@ -439,7 +441,6 @@ export default class GTasksListSync extends SyncReader<
       record.to_delete = false
     }
     // add to the gtasks id map
-    record.gtasks_ids = record.gtasks_ids || {}
     record.gtasks_ids[task.id] = this.list.id
     if (task_updated <= record.updated.gtasks) {
       // TODO check resolve conflict? since the last sync

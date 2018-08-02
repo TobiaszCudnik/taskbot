@@ -13,11 +13,13 @@ import { machineLogToDebug } from '../utils'
 
 // TODO add logging
 export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
+  Enabled: {}
+
   CredentialsSet: IState = {}
 
   RefreshingToken: IState = {
     auto: true,
-    require: ['CredentialsSet'],
+    require: ['CredentialsSet', 'Enabled'],
     drop: ['TokenRefreshed']
   }
 
@@ -69,7 +71,7 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
         config.refresh_token
       )
     } else {
-      throw new Error('not-implemented')
+      throw new Error('No google access tokens')
     }
   }
 
