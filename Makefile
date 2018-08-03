@@ -139,4 +139,7 @@ test:
 	sleep 5
 	-TEST=1 SCENARIO=2 npx jest merge
 
+test-debug:
+	TEST=1 DEBUG=tests,connections\*,root\*,record-diff,db-diff,\*-am,\*-error,\*-am DEBUG_FILE=1 DEBUG_AM=3 node ./node_modules/jest/bin/jest.js gmail
+
 .PHONY: test break build

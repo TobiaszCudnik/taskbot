@@ -8,7 +8,8 @@
     "start": "make start-prod",
     "start-dev": "make start",
     "test": "make test",
-    "test-service": "TEST=1 make start-am"
+    "test-service": "TEST=1 make start-am",
+    "test-debug": "make test-debug"
   },
   "repository": {
     "type": "git",
@@ -76,5 +77,8 @@
   "prettier": {
     "singleQuote": true,
     "semi": false
+  },
+  "jest": {
+    "testURL": "http://localhost/"
   }
 }

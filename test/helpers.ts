@@ -11,11 +11,12 @@ import { test_user } from '../config-users'
 import { getConfig } from '../src/app/config'
 import Connections from '../src/app/connections'
 import Logger from '../src/app/logger'
-import Auth from '../src/google/auth'
 import GmailSync from '../src/google/gmail/sync'
 import GTasksSync from '../src/google/tasks/sync'
 import RootSync from '../src/sync/root'
 import * as delay from 'delay'
+
+import { OAuth2Client } from 'google-auth-library/build/src/auth/oauth2client.d.ts'
 
 export type Label = google.gmail.v1.Label
 export type Thread = google.gmail.v1.Thread
@@ -25,7 +26,7 @@ export type TaskList = google.tasks.v1.TaskList
 export default async function createHelpers(log) {
   let gtasks: google.tasks.v1.Tasks
   let gmail: google.gmail.v1.Gmail
-  let auth: Auth
+  let auth: OAuth2Client
   let sync: RootSync
   let gmail_sync: GmailSync
   let gtasks_sync: GTasksSync
@@ -158,24 +159,41 @@ export default async function createHelpers(log) {
       throw err
     })
     const ready_state = sync.state.get('Ready')
-    // disable auto start
+    // disable auto start (remove Reading being added by Ready)
     ready_state.add = _.without(ready_state.add, 'Reading')
     // jump to the next tick
     await delay(0)
-    // assign apis
-    gtasks = connections.apis.gtasks
-    gmail = connections.apis.gmail
-    // wait for the google auth
-    await sync.subs.google.auth.when('Ready')
-    auth = sync.subs.google.auth
+
+    // build the API clients and the Auth object
+    // TODO extract
+    gtasks = google.tasks('v1')
+    gmail = google.gmail('v1')
+    auth = new google.auth.OAuth2(
+      config.google.client_id,
+      config.google.client_secret,
+      config.google.redirect_url
+    )
+    auth.credentials = {
+      access_token: config.google.access_token,
+      refresh_token: config.google.refresh_token
+    }
+    await new Promise(resolve => {
+      auth.refreshAccessToken(err => {
+        if (err) throw new Error(err)
+        resolve(err)
+      })
+    })
+
     // delete all the data
     await truncateGmail()
     await truncateGTasks()
+
     // init the engine
     sync.state.addNext('Enabled')
     await sync.state.when('Ready')
     gmail_sync = sync.subs.google.subs.gmail
     gtasks_sync = sync.subs.google.subs.tasks
+
     // treat max reads/writes as an exceptions
     for (const sub of sync.subs_all) {
       sub.state.on('MaxReadsExceeded_state', () => {
@@ -207,7 +225,7 @@ export default async function createHelpers(log) {
       await delay(delay)
     }
     // @ts-ignore
-    params.auth = auth.client
+    params.auth = auth
     // prevent JIT from shadowing those
     // @ts-ignore
     void (gmail, gtasks)

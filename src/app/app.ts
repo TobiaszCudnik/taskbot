@@ -60,9 +60,9 @@ for (const user of users) {
   const config_user = merge(config, user)
   const sync = new RootSync(config_user, logger, connections)
   // jump out of this tick
-  // if (!process.env['TEST']) {
+  if (!process.env['TEST']) {
     sync.state.addNext('Enabled')
-  // }
+  }
   syncs.push(sync)
 }
 // TODO /APP CLASS

@@ -10,10 +10,12 @@ import {
 import Logger from '../app/logger'
 import { IConfig, IConfigGoogle } from '../types'
 import { machineLogToDebug } from '../utils'
+import { OAuth2Client } from 'google-auth-library/build/src/auth/oauth2client'
 
 // TODO add logging
+// TODO compose asyncmachine
 export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
-  Enabled: {}
+  Enabled: IState =  {}
 
   CredentialsSet: IState = {}
 
@@ -37,7 +39,7 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
     drop: ['Ready']
   }
 
-  client: any
+  client: OAuth2Client
   config: IConfigGoogle
 
   constructor(config: IConfigGoogle, user_id: number, logger: Logger) {
@@ -48,7 +50,8 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
       'Ready',
       'CredentialsSet',
       'RefreshingToken',
-      'TokenRefreshed'
+      'TokenRefreshed',
+      'Enabled'
     )
     this.id('Google Auth')
     machineLogToDebug(logger, this, user_id)
@@ -59,7 +62,7 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
       }
     }
     // TODO missing type
-    this.client = new (<any>google).auth.OAuth2(
+    this.client = new google.auth.OAuth2(
       config.client_id,
       config.client_secret,
       config.redirect_url
