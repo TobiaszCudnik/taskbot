@@ -38,9 +38,9 @@ const config: IConfigBase = {
   google: {
     scopes: [
       'https://www.googleapis.com/auth/tasks',
-      'https://www.googleapis.com/auth/gmail.modify'
+      !process.env['TEST'] ? 'https://www.googleapis.com/auth/gmail.modify' : 
       // for tests only
-      // 'https://mail.google.com/'
+      'https://mail.google.com/'
     ]
   },
   gmail: {
