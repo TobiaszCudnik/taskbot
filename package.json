@@ -1,6 +1,6 @@
 {
   "name": "gtd-bot",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "Tobiasz Cudnik <tobiasz.cudnik@gmail.com>",
   "description": "GTD Bot service.",
   "contributors": [],
@@ -29,7 +29,6 @@
   ],
   "dependencies": {
     "@google-cloud/logging-winston": "^0.9.0",
-    "@types/debug": "0.0.30",
     "ami-logger": "^0.3.22",
     "asyncmachine": "^3.4.0",
     "await-semaphore": "^0.1.3",
@@ -42,6 +41,7 @@
     "diff": "^3.5.0",
     "escape-string-regexp": "^1.0.5",
     "googleapis": "^23.0.2",
+    "hapi": "^17.5.3",
     "internet-timestamp": "0.0.1",
     "lodash": "^4.17.10",
     "lokijs": "^1.5.4",
@@ -49,7 +49,6 @@
     "moment-timezone": "^0.5.17",
     "printf": "^0.2.5",
     "round-to": "^2.0.0",
-    "server": "^1.0.18",
     "source-map-support": "^0.5.6",
     "supports-color": "^5.4.0",
     "suspend": "^0.7.0",
@@ -62,6 +61,8 @@
     "node": ">=0.8"
   },
   "devDependencies": {
+    "@types/debug": "0.0.30",
+    "@types/hapi": "^17.0.17",
     "@types/jest": "^23.1.5",
     "@types/lodash": "^4.14.110",
     "@types/lokijs": "^1.5.2",
@@ -71,7 +72,6 @@
     "jest": "^23.3.0",
     "prettier": "^1.12.1",
     "showdown": "^1.8.6",
-    "ts-jest": "^23.0.0",
     "typescript": "^2.8.3"
   },
   "prettier": {

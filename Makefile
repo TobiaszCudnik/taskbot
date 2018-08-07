@@ -18,7 +18,10 @@ start:
 
 start-prod:
 	# PROD=1 DEBUG=root:\*-info,\*-error DEBUG_FILE=1 DEBUG_AM=1 node src/app/app.js
-	PROD=1 DEBUG=root:\*-info,\*-error node src/app/app.js
+	PROD=1 \
+		DEBUG_FILE=1 \
+		DEBUG=root:\*-info,\*-error \
+		node src/app/app.js
 
 start-am:
 	DEBUG=\*-error,connections-verbose,db-diff,record-diff,root:\*-info,gmail-root,gtasks-root,\*inbox-labels\*,\*task-labels\*,\*gmail\*pending\*,\*next\*,\*-am \

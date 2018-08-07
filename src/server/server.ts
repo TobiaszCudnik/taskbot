@@ -10,13 +10,20 @@ import { Server } from 'hapi'
 export default async function(config, logger: Logger) {
   const logger_info = logger.createLogger('http-server', 'info')
   const logger_error = logger.createLogger('http-server', 'error')
-  const port = process.env['PROD'] ? 80 : 8080
+  // const port = process.env['PROD'] ? 80 : 8080
+  const port = 8080
   console.log(`Starting the HTTP server on ${port}`)
+  // TODO type
+  const context = {
+    logger_info,
+    logger_error,
+    config
+  }
 
-  const server = new Server({
-    host: '0.0.0.0',
-    port: port
-  })
+  const server = new Server({ port })
+  await server.start()
+  console.log(`HTTP started at ${server.info.uri}`)
+  server.bind(context)
 
   // Add the route
   server.route([
@@ -25,14 +32,14 @@ export default async function(config, logger: Logger) {
       path: '/_ah/health',
       handler: function(request, h) {
         const res = h.response('')
-        res.code(200)
+        return res.code(200)
       }
     },
     {
       method: 'GET',
       path: '/',
       handler: function(request, h) {
-        const res = h.response('TaskBot is coming...')
+        return h.response('TaskBot is coming...')
       }
     },
     {
@@ -47,53 +54,11 @@ export default async function(config, logger: Logger) {
     },
     {
       method: 'GET',
-      path: '/google/login/callback',
+      path: '/privacy-policy',
       handler: (req, h) => {
         const file = readFileSync('./static/privacy-policy.html')
-        const res = h.response(file)
+        return h.response(file)
       }
     }
   ])
 }
-
-// export default async function(config, logger: Logger) {
-//   const logger_info = logger.createLogger('http-server', 'info')
-//   const logger_error = logger.createLogger('http-server', 'error')
-//   const port = process.env['PROD'] ? 80 : 8080
-//   console.log(`Starting the HTTP server on ${port}`)
-//
-//   await server(
-//     {
-//       port,
-//       public: 'static'
-//     },
-//     ctx => {
-//       ctx.config = config
-//       ctx.logger = logger_info
-//     },
-//     [
-//       // GAE health check
-//       get('/_ah/health', ctx => 200),
-//       get('/', ctx => send('TaskBot is coming...')),
-//       get('/google/login', google_login.login),
-//       get('/google/login/callback', google_login.callback),
-//       get('/privacy-policy', ctx =>
-//         type('html').send(readFileSync('./static/privacy-policy.html'))
-//       ),
-//       // 404
-//       get(ctx => 404),
-//       // GLOBAL ERROR HANDLER
-//       error(ctx => {
-//         // TODO ctx.error not needed?
-//         if (ctx.error) {
-//           logger_error('Global HTTP server error handler: %O', ctx.error)
-//         }
-//       })
-//     ],
-//     ctx => {
-//       // dont log health checks
-//       if (ctx.url == '/_ah/health') return
-//       logger_info('GET %s %s', ctx.res.statusCode, ctx.url)
-//     }
-//   )
-// }
