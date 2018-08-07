@@ -1,37 +1,30 @@
 ## Bugs
 
-* deleting tasks doesnt work
-* 'syncs missing threads' test fails but work manually
-* count the read_tries per list (skip counts when shouldRead() === false)
-  * later extract sync-per-record logic to a state machine
-* `record.updated.gtasks` cant be null if theres `record.gtasks_ids.length`
-* http server leaks 42mb per hour for 2 users
-  * StackDrivers also may
-    * `Warning: connect.session() MemoryStore is not`
-    * check memory usage on GAE without the StackDriver transport
 * after starting the service for 2 users
   * `connections-error [gtd...@gmail.com] Request 'gtasks.api.tasks.list' aborted by the abort() function +0ms`
 * restart after an exception doesnt kick in
-* refech other gtasks lists in case a task went missing
-  * to support moving between lists
 
 ## Milestone 1:
 
 * make `tail -f` show ansi colors
   * separate log file `debug.log` showing loggers from the `DEBUG` env var
   * make `combined.log` optional
+  * disable the google log
 * unify hashtags
   * `^foo` into `#r-foo`
   * `*foo` into `#l-foo`
   * duplicates may be a problem
   * not the action tags - !na is fine
-* hidden label '!gtd' to list all the email with a status
-* test - unhide and restore the parent
-  * assert the parent stays the same
+* hidden label '!gtd' to list all the emails with a status
+* tests
+  * unhide and restore the parent
+    * assert the parent stays the same
+  * service
+    * restarting 
+    * reacting on exceptions 
 * welcome email with instructions
   * `TaskBot Welcome Email`
   * `!T/Sync GTasks`
-* query `!T/*` as a separate list
 * when checking initial labels compare using the normalized form
 * react to `code: 'ECONNRESET'`
 * handle `invalid_grant` in google auth
