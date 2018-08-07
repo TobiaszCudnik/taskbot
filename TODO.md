@@ -17,9 +17,9 @@
 
 ## Milestone 1:
 
-* better tests
-  * separate project for testing (quota)
-  * sync scenario as an env var (visible in tests names)
+* make `tail -f` show ansi colors
+  * separate log file `debug.log` showing loggers from the `DEBUG` env var
+  * make `combined.log` optional
 * unify hashtags
   * `^foo` into `#r-foo`
   * `*foo` into `#l-foo`
@@ -70,6 +70,7 @@
 
 ## TODO
 
+* read local logs with kibana
 * split `connections-info` to `connections/gmail-info` etc
 * print new records on db-diffs and record=diffs
 * dont re-order non-status labels, keep them in the text
@@ -116,6 +117,7 @@
 
 ## Optimizations
 
+* reduce the number of appengine health checks
 * share the same http agent across all the users on the node
 * apply the change manually on the internal readers' data structs
   * to avoid impossible re-reads in case of too frequent syncs
