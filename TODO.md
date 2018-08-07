@@ -1,5 +1,10 @@
 ## Bugs
 
+* deleting tasks doesnt work
+* 'syncs missing threads' test fails but work manually
+* count the read_tries per list (skip counts when shouldRead() === false)
+  * later extract sync-per-record logic to a state machine
+* `record.updated.gtasks` cant be null if theres `record.gtasks_ids.length`
 * http server leaks 42mb per hour for 2 users
   * StackDrivers also may
     * `Warning: connect.session() MemoryStore is not`
@@ -7,18 +12,30 @@
 * after starting the service for 2 users
   * `connections-error [gtd...@gmail.com] Request 'gtasks.api.tasks.list' aborted by the abort() function +0ms`
 * restart after an exception doesnt kick in
+* refech other gtasks lists in case a task went missing
+  * to support moving between lists
 
 ## Milestone 1:
 
+* better tests
+  * separate project for testing (quota)
+  * sync scenario as an env var (visible in tests names)
+* unify hashtags
+  * `^foo` into `#r-foo`
+  * `*foo` into `#l-foo`
+  * duplicates may be a problem
+  * not the action tags - !na is fine
+* hidden label '!gtd' to list all the email with a status
+* test - unhide and restore the parent
+  * assert the parent stays the same
 * welcome email with instructions
   * `TaskBot Welcome Email`
   * `!T/Sync GTasks`
+* query `!T/*` as a separate list
 * when checking initial labels compare using the normalized form
 * react to `code: 'ECONNRESET'`
 * handle `invalid_grant` in google auth
 * hide `!T/` labels from the label list
-* single `!S` label marking every monitored email
-  * quickly see all the gtd emails
 * `!T/task` and `A/answer` labels auto-removed after 
   a certain amount of time
 * encrypt sensitive info in the logs with MD5 hashes
@@ -38,8 +55,8 @@
 * per-user ip to skip 100 per user quota
 * separate service for the website on GAE std
 * logger
-  _ ability to turn on debug per specific user
-  _ handle errors from winston
+  * ability to turn on debug per specific user
+  * handle errors from winston
 * delete per-user-logs when deleting an account
 * store users in Cloud Datastore
   * local emulator for development
@@ -53,6 +70,7 @@
 
 ## TODO
 
+* split `connections-info` to `connections/gmail-info` etc
 * print new records on db-diffs and record=diffs
 * dont re-order non-status labels, keep them in the text
 * scrape email content to a new task
@@ -140,6 +158,9 @@
 
 ## Milestone 2
 
+* merge as an asyncmachine
+  * merge for each record as an asyncmachine
+  * copy each record before the merge and compare with the one after the merge
 * multi user mode for syncing gtasks lists only
   * usecase: share a google tasks list with someone
   * sharing lists via the project tag eg P/groceries
