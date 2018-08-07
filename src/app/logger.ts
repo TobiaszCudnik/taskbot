@@ -1,4 +1,5 @@
 import * as debug from 'debug'
+import * as fs from 'fs'
 import * as winston from 'winston'
 import * as printf from 'printf'
 import { LoggingWinston as StackDriver } from '@google-cloud/logging-winston'
@@ -26,6 +27,9 @@ export default class Logger {
 
   // TODO read from env.DEBUG
   constructor() {
+    if (!isProd()) {
+      fs.mkdirSync('logs')
+    }
     const transports = isProd()
       ? [new StackDriver()]
       : [
