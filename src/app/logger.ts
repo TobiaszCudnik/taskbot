@@ -28,7 +28,9 @@ export default class Logger {
   // TODO read from env.DEBUG
   constructor() {
     if (!isProd()) {
-      fs.mkdirSync('logs')
+      try {
+        fs.mkdirSync('logs')
+      } catch (e) {}
     }
     const transports = isProd()
       ? [new StackDriver()]
