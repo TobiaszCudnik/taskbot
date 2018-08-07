@@ -145,7 +145,7 @@ describe(`gmail (sync_type: ${scenario})`, function() {
       await h.syncListScenario(scenario)
     })
 
-    it('syncs tasks between lists', async function() {
+    it.only('syncs tasks between lists', async function() {
       await h.reset()
       // create a thread in !na
       const thread_id = await h.gmail_sync.createThread('gmail-gtask-1', [

@@ -21,7 +21,7 @@ start-prod:
 	PROD=1 DEBUG=root:\*-info,\*-error node src/app/app.js
 
 start-am:
-	DEBUG=\*-error,connections-verbose,root:\*-info,gmail-root,gtasks-root,record-diffs,\*-am:\* \
+	DEBUG=\*-error,connections-verbose,db-diff,record-diff,root:\*-info,gmail-root,gtasks-root,\*inbox-labels\*,\*task-labels\*,\*gmail\*pending\*,\*next\*,\*-am \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node --inspect \
@@ -59,10 +59,10 @@ site:
 		-i static/privacy-policy.md -o static/privacy-policy-output.html
 
 deploy:
-	# test
 	gcloud app deploy app.yaml --version=test
+	# sudo docker exec -t -i gaeapp /bin/bash
 	# sudo apt-get install mc fish htop
-	#gcloud app deploy
+	# kill -HUP 1
 
 debug:
 	DEBUG=root DEBUG_FILE=1 node --inspect-brk src/app/app.js
@@ -140,6 +140,12 @@ test:
 	-TEST=1 SCENARIO=2 npx jest merge
 
 test-debug:
-	TEST=1 DEBUG=tests,connections\*,root\*,record-diff,db-diff,\*-am,\*-error,\*-am DEBUG_FILE=1 DEBUG_AM=3 node ./node_modules/jest/bin/jest.js gmail
+	TEST=1 \
+		SCENARIO=2 \
+		DEBUG=tests,connections-verbose,root\*,record-diff,db-diff,\*-am,\*-error \
+		DEBUG_FILE=1 \
+		DEBUG_AM=1 \
+		node ./node_modules/jest/bin/jest.js \
+		gmail
 
 .PHONY: test break build

@@ -142,7 +142,7 @@ export default class Connections {
     // called if the call gets aborted
     const aborted = (release_user, release_global?) => {
       this.log_error(
-        `${method_name} aborted by the abort() function`,
+        `${method_name} aborted by the abort() function\n%O\n%O`,
         params_log,
         this.getReqsStats()
       )
