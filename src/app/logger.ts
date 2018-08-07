@@ -13,6 +13,12 @@ const winston_format = winston.format.printf(info => {
 export type level = 'info' | 'verbose' | 'error'
 export type log_fn = (...msg: any[]) => void
 
+function isProd(): boolean {
+  // TODO debug
+  return false
+  return Boolean(process.env['PROD'])
+}
+
 // TODO  Split to ProdLogger and DevLogger
 // TODO fix all the process.env['PROD'] and env['DEBUG_FILE']
 export default class Logger {
@@ -20,7 +26,7 @@ export default class Logger {
 
   // TODO read from env.DEBUG
   constructor() {
-    const transports = process.env['PROD']
+    const transports = isProd()
       ? [new StackDriver()]
       : [
           new winston.transports.File({
@@ -33,7 +39,7 @@ export default class Logger {
     // @ts-ignore
     this.winston = winston.createLogger({
       level: 'verbose',
-      format: process.env['PROD']
+      format: isProd()
         ? winston.format.json()
         : combine(timestamp(), winston_format),
       transports
@@ -58,7 +64,7 @@ export default class Logger {
       // First msg has to be a string
       msgs[0] = (msgs[0] && msgs[0].toString()) || ''
       // dont log to console on PROD, except for errors
-      if (!process.env['PROD'] || level == 'error') {
+      if (!isProd() || level == 'error') {
         // @ts-ignore
         terminal(...msgs)
       }
@@ -77,11 +83,11 @@ export default class Logger {
       let log_data = {
         // labels,
         labels: base_labels,
-        message: process.env['PROD'] ? msgs : printf(...msgs),
+        message: isProd() ? msgs : printf(...msgs),
         level
       }
       // provide `label` only for local (file) transports
-      if (!process.env['PROD']) {
+      if (!isProd()) {
         // @ts-ignore
         log_data.label = name2
       }
