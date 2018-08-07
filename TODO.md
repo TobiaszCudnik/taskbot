@@ -43,8 +43,6 @@
 * delete per-user-logs when deleting an account
 * store users in Cloud Datastore
   * local emulator for development
-* switching config options by setting label on the welcome email
-  * `TaskBot Welcomes! Config by labels`
 * handle google auth “error” : “invalid_grant”
   * https://blog.timekit.io/google-oauth-invalid-grant-nightmare-and-how-to-fix-it-9f4efaf1da35
 * users admin panel
@@ -70,12 +68,6 @@
   * remove from list
 * store history ID times per user in the DB
   * helps with first-start merge to compare dates
-* consider unifying hashtags
-  * ^foo into #r-foo
-  * \*foo into #l-foo
-  * or switch the symbols to \*ref, ^loc
-  * duplicates may be a problem
-  * not the action tags - !na is fine
 * auto create the logs dir
 * show the origin of a finished request in root::req
 * check if `(#tag)` works

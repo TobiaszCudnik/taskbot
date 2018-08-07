@@ -14,17 +14,17 @@ Real time Gmail to Google Tasks sync and a GTD workflow manager.
   * `Reference` - `R/document`, `^document`
   * `Location` - `L/home`, `*home`
 * Auto label colors
-* multi user support
-* quota calculation and throttling
-* per user restarts
+* Multi user support
+* Quota calculation and throttling
+* Per-user restarts on exceptions
 * AppEngine Flexible deployment
 
 ## Usage
 
 1.  `npm i`
-1.  Create a [Google API project](https://console.cloud.google.com/iam-admin/) and a backend service account
+1.  Create a [Google API project](https://console.cloud.google.com/iam-admin/) and a `Web Application` OAuth2 client account
 1.  Rename `config-credentials-template.ts` to `config-credentials.ts`
-1.  Fill it in using the service account credentials
+1.  Fill it in using the OAuth2 account credentials, including the callback URL
 1.  Rename `config-users-template.ts` to `config-users.ts`
 1.  Generate a token using `node /dev/tools/oauth/oauth.js`
 1.  Paste into `config-users.ts`
