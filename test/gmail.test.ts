@@ -147,12 +147,15 @@ describe(`gmail (sync_type: ${scenario})`, function() {
 
     it('syncs tasks between lists', async function() {
       await h.reset()
+      // create a thread in !na
       const thread_id = await h.gmail_sync.createThread('gmail-gtask-1', [
         '!S/Next Action',
         'P/project_1',
         'P/project_2'
       ])
+      // sync
       await h.syncList(true, false)
+      // move to !a
       log('moving to !S/Action')
       await h.req('gmail.users.threads.modify', {
         id: thread_id,
@@ -162,12 +165,14 @@ describe(`gmail (sync_type: ${scenario})`, function() {
           addLabelIds: [h.labelID('!S/Action')]
         }
       })
+      // sync
       await h.syncListScenario(scenario)
+      // list both !na and !a
       const [list_action, list_next] = await Promise.all([
         h.listTasklist('!actions'),
         h.listTasklist('!next')
       ])
-      // assert the result
+      // assert the result (0 in !na, 1 in !a)
       const record = {
         status: 'needsAction'
       }
