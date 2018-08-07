@@ -82,7 +82,7 @@ describe(`gmail (sync_type: ${scenario})`, function() {
     it(`auto add text labels from new self emails`, async function() {
       await h.reset()
       await h.gmail_sync.createThread(
-        'auto-label-test-1 !na *location_1 ^reference_1'
+        'auto-label-test-1 !na #L-location_1 #R-reference_1'
       )
       log('email sent')
       await h.syncListScenario(scenario, 'inbox-labels')
@@ -145,7 +145,7 @@ describe(`gmail (sync_type: ${scenario})`, function() {
       await h.syncListScenario(scenario)
     })
 
-    it.only('syncs tasks between lists', async function() {
+    it('syncs tasks between lists', async function() {
       await h.reset()
       // create a thread in !na
       const thread_id = await h.gmail_sync.createThread('gmail-gtask-1', [
@@ -227,7 +227,7 @@ describe(`gmail (sync_type: ${scenario})`, function() {
       await h.reset()
       // create a new thread
       await h.gmail_sync.createThread(
-        'gmail-gtask-1 !na #project_1 *location_1 ^reference_1'
+        'gmail-gtask-1 !na #project_1 #L-location_1 #R-reference_1'
       )
       log('email sent')
       await h.syncListScenario(scenario, 'inbox-labels')
@@ -235,7 +235,7 @@ describe(`gmail (sync_type: ${scenario})`, function() {
       const res = await h.listTasklist()
       // assert the result
       const record = {
-        title: 'gmail-gtask-1 #project_1 *location_1 ^reference_1',
+        title: 'gmail-gtask-1 #project_1 #L-location_1 #R-reference_1',
         status: 'needsAction'
       }
       expect(res.items).toHaveLength(1)

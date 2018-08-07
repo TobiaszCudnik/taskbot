@@ -18,7 +18,9 @@ beforeAll(async function() {
   await h.gmail_sync.createLabelsIfMissing([
     'P/project_1',
     'P/project_2',
-    'P/project_3'
+    'P/project_3',
+    'R/reference_1',
+    'L/location_3',
   ])
 })
 afterAll(function() {
@@ -126,8 +128,8 @@ describe(`gtasks (sync_type: ${scenario})`, function() {
     it('syncs text labels', async function() {
       await h.reset()
       const wait = [
-        h.addTask('gtasks-gmail-2 #project_1'),
-        h.addTask('gtasks-gmail-1 #project_2 #project_3')
+        h.addTask('gtasks-gmail-2 #project_1 #L-location_1'),
+        h.addTask('gtasks-gmail-1 #project_2 #project_3 #R-reference_1')
       ]
       await Promise.all(wait)
       // sync
@@ -142,6 +144,8 @@ describe(`gtasks (sync_type: ${scenario})`, function() {
       const [thread_1, thread_2] = await Promise.all(load_threads)
       expect(h.hasLabel(thread_1, 'P/project_2'))
       expect(h.hasLabel(thread_1, 'P/project_3'))
+      expect(h.hasLabel(thread_2, 'P/project_1'))
+      expect(h.hasLabel(thread_2, 'R/reference_1'))
       expect(h.hasLabel(thread_2, 'P/project_1'))
     })
 

@@ -79,6 +79,7 @@ const config: IConfigBase = {
   // seconds
   sync_frequency: 1,
   labels: [
+    // statuses
     {
       symbol: '!',
       shortcut: 'na',
@@ -135,8 +136,35 @@ const config: IConfigBase = {
       name: 'Finished',
       prefix: '!S/',
       colors: {
+        bg: '#fb4c2f',
+        fg: '#ffffff'
+      }
+    },
+    // global gtd status
+    {
+      name: 'gtd',
+      prefix: '!S/',
+      colors: {
         bg: '#e07798',
         fg: '#ffffff'
+      },
+      hidden_thread: true
+    },
+    // hashtags
+    {
+      symbol: '#R-',
+      prefix: 'R/',
+      colors: {
+        bg: '#ffd6a2',
+        fg: '#000000'
+      }
+    },
+    {
+      symbol: '#L-',
+      prefix: 'L/',
+      colors: {
+        bg: '#b9e4d0',
+        fg: '#000000'
       }
     },
     {
@@ -147,22 +175,7 @@ const config: IConfigBase = {
         fg: '#000000'
       }
     },
-    {
-      symbol: '^',
-      prefix: 'R/',
-      colors: {
-        bg: '#ffd6a2',
-        fg: '#000000'
-      }
-    },
-    {
-      symbol: '*',
-      prefix: 'L/',
-      colors: {
-        bg: '#b9e4d0',
-        fg: '#000000'
-      }
-    },
+    // tasks & msgs
     {
       prefix: '!T/',
       name: 'Sync GTasks',
