@@ -487,6 +487,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   }
 
   // config
+  // TODO skip hidden labels
   getRecordLabelsAsText(record: DBRecord, list_config: IListConfig): string {
     const skip = [
       ...(list_config.enter.add || []),

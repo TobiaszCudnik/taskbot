@@ -36,7 +36,10 @@ export type ILabelDefinition = ILabelDefinitionBase &
 
 export interface ILabelDefinitionBase {
   colors?: { bg: string; fg: string }
-  hide?: true
+  // hide in the menu
+  hide_menu?: boolean
+  // hide in the tread view
+  hide_list?: boolean
 }
 
 export interface ILabelDefinition1 {

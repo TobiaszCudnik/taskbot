@@ -95,6 +95,19 @@ describe(`gmail (sync_type: ${scenario})`, function() {
         'L/location_1': { active: true }
       })
     })
+
+    it('make sure the !S label is added to existing emails', async function() {
+      await h.reset()
+      await h.gmail_sync.createThread('gmail-1', ['!S/Next Action'])
+      await h.syncListScenario(scenario)
+      expect(h.sync.data.data).toHaveLength(1)
+      const record = h.sync.data.data[0]
+
+      expect(record.labels).toMatchObject({
+        '!S/Next Action': { active: true },
+        '!S': { active: true }
+      })
+    })
   })
 
   describe('gtasks', function() {

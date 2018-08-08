@@ -184,7 +184,7 @@ export default class GmailListSync extends SyncReader<
         // only ones updated earlier than this query
         record.updated.gmail_hid < this.query.history_id_synced &&
         // seen in the previous query
-        this.query.prev_threads.some( t => t.id == record.gmail_id )
+        this.query.prev_threads.some(t => t.id == record.gmail_id)
         // which the latest update was from gmail
         // TODO test
         // record.updated.latest ==
@@ -288,7 +288,11 @@ export default class GmailListSync extends SyncReader<
     // apply labels from gmail
     const thread_labels = this.gmail.getLabelsFromThread(thread)
     const to_remove = _.difference(record_labels, thread_labels)
-    const to_add = _.difference(thread_labels, record_labels)
+    let to_add = _.difference(thread_labels, record_labels)
+    // include the lists 'enter' labels
+    if (this.config.enter && this.config.enter.add) {
+      to_add = [...to_add, ...this.config.enter.add]
+    }
 
     // mark as dirty only if theres a change
     if (to_add.length || to_remove.length) {
@@ -302,7 +306,7 @@ export default class GmailListSync extends SyncReader<
     // TODO confirm if unnecessary
     // this.applyLabels(record, this.config.enter)
     //   getListsForRecord(before).map( list => list.state.add('Dirty')
-    this.printRecordDiff(before, record)
+    this.printRecordDiff(before, record, 'gmail-merge')
     return true
   }
 

@@ -71,7 +71,7 @@ debug:
 	DEBUG=root DEBUG_FILE=1 node --inspect-brk src/app/app.js
 
 debug-list-next:
-	DEBUG=record-diffs,google,gmail-root,gtasks-root,gmail-query-next\*,gmail-list-next\*,gtasks-list-next\*,\*-error \
+	DEBUG=google,gmail-root,gtasks-root,gmail-query-next\*,gmail-list-next\*,gtasks-list-next\*,\*-error,db-diff,record-diff \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node --inspect src/app/app.js

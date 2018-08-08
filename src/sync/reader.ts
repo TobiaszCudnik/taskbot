@@ -306,9 +306,11 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
   }
 
   applyLabels(record: DBRecord, labels: TModifyLabels) {
+    // dont remove labels which are about to be added
     record.labels = record.labels || {}
     for (const label of labels.remove || []) {
       // update the time only when something changes
+      if (labels.add && labels.add.includes(label)) continue
       if (record.labels[label] && !record.labels[label].active) continue
       record.labels[label] = {
         active: false,
@@ -342,18 +344,20 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
     if (title) {
       msg += ` '${title}'`
     }
-    msg += ` from '${this.state.id()}'\n`
+    msg += ` from '${this.state.id()}'`
+    this.log(msg)
     const text_diff = diff.diffChars(
       inspect(before, false, 3),
       inspect(after, false, 3)
     )
+    msg = ''
     for (const chunk of text_diff) {
       const color = chunk.added ? 'green' : chunk.removed ? 'red' : 'white'
       msg += chunk.value[color]
     }
     // console.log(msg)
     // TODO tmp for jest
-    // process.stdout.write(msg + '\n')
+    process.stdout.write(msg + '\n')
     this.log(msg)
   }
 

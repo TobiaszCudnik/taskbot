@@ -377,7 +377,8 @@ export default class GmailSync extends SyncWriter<
         !label.color ||
         label.color.textColor != def.colors.fg ||
         label.color.backgroundColor != def.colors.bg ||
-        (def.hide && label.labelListVisibility != 'labelHide')
+        (def.hide_menu && label.labelListVisibility != 'labelHide') ||
+        (def.hide_list && label.messageListVisibility != 'labelHide')
       ) {
         this.log(`Syncing label '${label.name}'`)
         const resource = this.labelDefToGmailDef(def)
@@ -582,7 +583,10 @@ export default class GmailSync extends SyncWriter<
   ): Promise<boolean> {
     await this.createLabelsIfMissing(add_labels, abort)
     let add_label_ids = add_labels.map(l => this.getLabelID(l))
-    let remove_label_ids = remove_labels.map(l => this.getLabelID(l))
+    let remove_label_ids = remove_labels
+      .map(l => this.getLabelID(l))
+      // dont remove labels which are supposed to be added
+      .filter(id => !add_label_ids.includes(id))
     let thread = this.getThread(thread_id, true)
 
     let title = thread
@@ -784,7 +788,7 @@ export default class GmailSync extends SyncWriter<
         }
       })
     }
-    if (def.hide) {
+    if (def.hide_menu) {
       Object.assign(ret, {
         labelListVisibility: 'labelHide'
       })
