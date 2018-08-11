@@ -3,33 +3,33 @@
 * after starting the service for 2 users
   * `connections-error [gtd...@gmail.com] Request 'gtasks.api.tasks.list' aborted by the abort() function +0ms`
 * restart after an exception doesnt kick in
+* after applying `!S/Expired` it automatically changes to `!S/Finished`
 
 ## Milestone 1:
 
+* refresh token on unauthorized_client exception
+  * store refreshed tokens in the DB
+* mark self-sent emails as read after processing a status (if any)
+* `!S/Some day` to `!S/Someday`
 * make `tail -f` show ansi colors
   * separate log file `debug.log` showing loggers from the `DEBUG` env var
   * make `combined.log` optional
   * disable the google log
-* unify hashtags
-  * `^foo` into `#r-foo`
-  * `*foo` into `#l-foo`
-  * duplicates may be a problem
-  * not the action tags - !na is fine
-* hidden label '!gtd' to list all the emails with a status
 * tests
   * unhide and restore the parent
     * assert the parent stays the same
   * service
     * restarting 
-    * reacting on exceptions 
+    * reacting on exceptions
+  * dont repeat tests without a sync scenario
+* tests - turn on debug msgs after "initial sync OK"
+  * also exclude the reset phase
 * welcome email with instructions
   * `TaskBot Welcome Email`
   * `!T/Sync GTasks`
 * when checking initial labels compare using the normalized form
-* react to `code: 'ECONNRESET'`
-* handle `invalid_grant` in google auth
-* hide `!T/` labels from the label list
-* `!T/task` and `A/answer` labels auto-removed after 
+  * update if the case in the name differs
+* `A/answer` labels auto-removed after 
   a certain amount of time
 * encrypt sensitive info in the logs with MD5 hashes
   * only for PROD
@@ -39,6 +39,9 @@
 
 ## Milestone 1.2
 
+* react to `code: 'ECONNRESET'`
+* react to `Backend Error`
+* handle `invalid_grant` in google auth
 * in case of a color conflict
   * try to remove custom colors (scan and compare)
   * avoid updating the color (continue using the users one)
@@ -133,7 +136,6 @@
   * pubsub instead of pulling
     * https://mixmax.com/blog/adventures-in-the-gmail-pubsub-api
   * OR track own gmail changes and DONT re-fetch
-* mark gmail queries as Dirty based on related labels
 * check if all the requests use the 'fields' limits
 * use views from lokijs
 * check if requests are gzipped
