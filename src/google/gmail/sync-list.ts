@@ -235,6 +235,8 @@ export default class GmailListSync extends SyncReader<
     // apply labels from gmail
     const labels_from_thread = this.gmail.getLabelsFromThread(thread)
     this.applyLabels(record, { add: labels_from_thread })
+    // apply enter labels from the list definition
+    this.applyLabels(record, this.config.enter)
     // apply labels from text, but only when in inbox AND send to yourself AND
     // by yourself
     if (labels_from_thread.includes('INBOX') && self_sent) {
