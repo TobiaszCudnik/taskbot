@@ -87,40 +87,40 @@ describe(`gmail (sync_type: ${scenario})`, function() {
   }
 
   describe('db', function() {
-    if (scenario) {
-      return
+    if (!scenario) {
+      it(`auto add text labels from new self emails`, async function() {
+        h.log('\n\nTEST: auto add text labels from new self emails')
+        await h.reset()
+        await h.gmail_sync.createThread(
+          'auto-label-test-1 !na #L-location_1 #R-reference_1'
+        )
+        await h.syncList(true, false, 'inbox-labels')
+        expect(h.sync.data.data).toHaveLength(1)
+        const record = h.sync.data.data[0]
+
+        expect(record.labels).toMatchObject({
+          '!S/Next Action': { active: true },
+          'R/reference_1': { active: true },
+          'L/location_1': { active: true },
+          UNREAD: { active: false }
+        })
+      })
     }
-    it(`auto add text labels from new self emails`, async function() {
-      h.log('\n\nTEST: auto add text labels from new self emails')
-      await h.reset()
-      await h.gmail_sync.createThread(
-        'auto-label-test-1 !na #L-location_1 #R-reference_1'
-      )
-      await h.syncList(true, false, 'inbox-labels')
-      expect(h.sync.data.data).toHaveLength(1)
-      const record = h.sync.data.data[0]
+    if (!scenario) {
+      it('make sure the !S label is added to existing emails', async function() {
+        h.log('\n\nTEST: make sure the !S label is added to existing emails')
+        await h.reset()
+        await h.gmail_sync.createThread('gmail-1', ['!S/Next Action'])
+        await h.syncList(true, false)
+        expect(h.sync.data.data).toHaveLength(1)
+        const record = h.sync.data.data[0]
 
-      expect(record.labels).toMatchObject({
-        '!S/Next Action': { active: true },
-        'R/reference_1': { active: true },
-        'L/location_1': { active: true },
-        UNREAD: { active: false }
+        expect(record.labels).toMatchObject({
+          '!S/Next Action': { active: true },
+          '!S': { active: true }
+        })
       })
-    })
-
-    it('make sure the !S label is added to existing emails', async function() {
-      h.log('\n\nTEST: make sure the !S label is added to existing emails')
-      await h.reset()
-      await h.gmail_sync.createThread('gmail-1', ['!S/Next Action'])
-      await h.syncList(true, false)
-      expect(h.sync.data.data).toHaveLength(1)
-      const record = h.sync.data.data[0]
-
-      expect(record.labels).toMatchObject({
-        '!S/Next Action': { active: true },
-        '!S': { active: true }
-      })
-    })
+    }
   })
 
   describe('gtasks', function() {
@@ -278,7 +278,7 @@ describe(`gmail (sync_type: ${scenario})`, function() {
       )
     })
 
-    it.only('syncs !S/Expired as a completion', async function() {
+    it('syncs !S/Expired as a completion', async function() {
       h.log('\n\nTEST: syncs !S/Expired as a completion')
       await h.reset()
       // create a new thread

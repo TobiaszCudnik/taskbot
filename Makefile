@@ -124,27 +124,26 @@ npmi:
 	npm link ami-logger
 
 test:
-	-TEST=1 SCENARIO=0 npx jest gmail
+	-SCENARIO=0 npx jest gmail
 	sleep 30
-	-TEST=1 SCENARIO=1 npx jest gmail
+	-SCENARIO=1 npx jest gmail
 	sleep 30
-	-TEST=1 SCENARIO=2 npx jest gmail
+	-SCENARIO=2 npx jest gmail
 	sleep 30
-	-TEST=1 SCENARIO=0 npx jest gtasks
+	-SCENARIO=0 npx jest gtasks
 	sleep 30
-	-TEST=1 SCENARIO=1 npx jest gtasks
+	-SCENARIO=1 npx jest gtasks
 	sleep 30
-	-TEST=1 SCENARIO=2 npx jest gtasks
+	-SCENARIO=2 npx jest gtasks
 	sleep 30
-	-TEST=1 SCENARIO=0 npx jest merge
+	-SCENARIO=0 npx jest merge
 	sleep 5
-	-TEST=1 SCENARIO=1 npx jest merge
+	-SCENARIO=1 npx jest merge
 	sleep 5
-	-TEST=1 SCENARIO=2 npx jest merge
+	-SCENARIO=2 npx jest merge
 
 test-debug:
-	TEST=1 \
-		SCENARIO=2 \
+	SCENARIO=0 \
 		# connections-verbose,
 		DEBUG=tests,google\*-info,gmail-root\*-info,gtasks-root\*-info,gmail-query-next\*,gmail-list-next\*,gtasks-list-next\*,\*-error,db-diff,record-diff-verbose \
 		DEBUG_FILE=1 \
