@@ -70,7 +70,7 @@ export default class Logger {
       // First msg has to be a string
       msgs[0] = (msgs[0] && msgs[0].toString()) || ''
       // dont log to console on PROD, except for errors
-      if (!isProd() || level == 'error') {
+      if (!debug.disabled && (!isProd() || level == 'error')) {
         // @ts-ignore
         terminal(...msgs)
       }

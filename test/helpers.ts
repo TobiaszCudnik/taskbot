@@ -5,6 +5,7 @@ export const scenarios = [0, 1, 2]
 
 import * as assert from 'assert'
 import * as google from 'googleapis'
+import * as debug from 'debug'
 import * as _ from 'lodash'
 import { promisifyArray } from 'typed-promisify-tob/index'
 import { test_user } from '../config-users'
@@ -16,20 +17,26 @@ import GTasksSync from '../src/google/tasks/sync'
 import RootSync from '../src/sync/root'
 import * as delay from 'delay'
 
-import { OAuth2Client } from 'google-auth-library/build/src/auth/oauth2client.d.ts'
+import { OAuth2Client } from 'google-auth-library/build/src/auth/oauth2client'
 
 export type Label = google.gmail.v1.Label
 export type Thread = google.gmail.v1.Thread
 export type Task = google.tasks.v1.Task
 export type TaskList = google.tasks.v1.TaskList
 
-export default async function createHelpers(log) {
+export default async function createHelpers() {
   let gtasks: google.tasks.v1.Tasks
   let gmail: google.gmail.v1.Gmail
   let auth: OAuth2Client
   let sync: RootSync
   let gmail_sync: GmailSync
   let gtasks_sync: GTasksSync
+  const log_inner = debug('tests')
+  const log = (msg, ...rest) => {
+    // @ts-ignore
+    if (debug.disabled) return
+    log_inner(msg, ...rest)
+  }
 
   await initTest()
 
@@ -59,7 +66,8 @@ export default async function createHelpers(log) {
     labelID,
     modifyLabels,
     printDB,
-    deleteTask
+    deleteTask,
+    log
   }
 
   async function modifyLabels(
@@ -134,6 +142,7 @@ export default async function createHelpers(log) {
   }
 
   async function initTest() {
+    disableDebug()
     // init sync
     const logger = new Logger()
     const connections = new Connections(logger)
@@ -168,6 +177,7 @@ export default async function createHelpers(log) {
     // TODO extract
     gtasks = google.tasks('v1')
     gmail = google.gmail('v1')
+    // @ts-ignore
     auth = new google.auth.OAuth2(
       config.google.client_id,
       config.google.client_secret,
@@ -216,6 +226,7 @@ export default async function createHelpers(log) {
     log('connected')
     await sync.state.when('WritingDone')
     log('initial sync OK')
+    enableDebug()
   }
 
   // TODO retry on Backend Error
@@ -408,6 +419,7 @@ export default async function createHelpers(log) {
   // TODO reset exceptions too, maybe clone states from after the inital sync
   async function reset() {
     log('reset')
+    disableDebug()
     const task_lists = sync.subs.google.subs.tasks.subs.lists
     // clear all the APIs
     const wait = [truncateGmail()]
@@ -446,6 +458,7 @@ export default async function createHelpers(log) {
       await sync.state.whenNot('WritingDone')
     })
     await delay(DELAY)
+    enableDebug()
   }
 
   function labelID(name) {
@@ -460,4 +473,14 @@ export default async function createHelpers(log) {
       task: id
     })
   }
+}
+
+function disableDebug() {
+  // @ts-ignore
+  debug.disabled = true
+}
+
+function enableDebug() {
+  // @ts-ignore
+  debug.disabled = false
 }

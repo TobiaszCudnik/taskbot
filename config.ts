@@ -145,10 +145,8 @@ const config: IConfigBase = {
     // global gtd status
     {
       name: '!S',
-      // TODO
+      // TODO default gray
       // colors: {
-      //   bg: '#E7E7E7',
-      //   fg: '#464646'
       // },
       hide_list: true
     },
@@ -164,6 +162,7 @@ const config: IConfigBase = {
     {
       symbol: '#L-',
       prefix: 'L/',
+      // TODO
       colors: {
         bg: '#b9e4d0',
         fg: '#000000'

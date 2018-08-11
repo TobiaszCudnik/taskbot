@@ -24,14 +24,14 @@ start-prod:
 		node src/app/app.js
 
 start-am:
-	DEBUG=\*-error,connections-verbose,db-diff,record-diff,root:\*-info,gmail-root,gtasks-root,\*inbox-labels\*,\*task-labels\*,\*gmail\*pending\*,\*next\*,\*-am \
+	DEBUG=\*-error,connections-verbose,db-diff,record-diff-verbose,root:\*-info,gmail-root,gtasks-root,\*inbox-labels\*,\*task-labels\*,\*gmail\*pending\*,\*next\*,\*-am \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node --inspect \
 		src/app/app.js
 
 start-verbose:
-	DEBUG=\*-error,\*-verbose,root:\*-info,gmail-root,gtasks-root,record-diffs \
+	DEBUG=\*-error,\*-verbose,root:\*-info,gmail-root,gtasks-root,record-diff-verboses \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node --inspect \
@@ -71,14 +71,14 @@ debug:
 	DEBUG=root DEBUG_FILE=1 node --inspect-brk src/app/app.js
 
 debug-list-next:
-	DEBUG=google,gmail-root,gtasks-root,gmail-query-next\*,gmail-list-next\*,gtasks-list-next\*,\*-error,db-diff,record-diff \
+	DEBUG=google\*-info,gmail-root\*-info,gtasks-root\*-info,gmail-query-next\*,gmail-list-next\*,gtasks-list-next\*,\*-error,db-diff,record-diff-verbose \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node --inspect src/app/app.js
 		#node --inspect-brk src/app/app.js
 
 debug-gmail:
-	DEBUG=record-diffs,google,gmail-root,gmail-verbose,\*-error,gtasks \
+	DEBUG=record-diff-verboses,google,gmail-root,gmail-verbose,\*-error,gtasks \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node --inspect src/app/app.js
@@ -145,7 +145,7 @@ test:
 test-debug:
 	TEST=1 \
 		SCENARIO=2 \
-		DEBUG=tests,connections-verbose,root\*,record-diff,db-diff,\*-am,\*-error \
+		DEBUG=tests,connections-verbose,google\*-info,gmail-root\*-info,gtasks-root\*-info,gmail-query-next\*,gmail-list-next\*,gtasks-list-next\*,\*-error,db-diff,record-diff-verbose \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node ./node_modules/jest/bin/jest.js \

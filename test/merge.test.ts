@@ -7,11 +7,10 @@ const scenario = parseInt(process.env['SCENARIO'], 10) || 0
 // types for the helpers
 type Unpacked<T> = T extends Promise<infer U> ? U : T
 let h: Unpacked<ReturnType<typeof createHelpers>>
-const log = debug('tests')
 
 jest.setTimeout(15 * 1000)
 beforeAll(async function() {
-  h = await createHelpers(log)
+  h = await createHelpers()
 })
 beforeAll(async function() {
   await h.gmail_sync.createLabelsIfMissing([
