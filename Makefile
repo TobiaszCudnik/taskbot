@@ -56,7 +56,7 @@ start-am-heartbeat:
 
 clear-logs:
 	rm logs/*
-	
+
 site:
 	$(SHOWDOWN_BIN) makehtml \
 		-i static/privacy-policy.md -o static/privacy-policy-output.html
@@ -145,7 +145,8 @@ test:
 test-debug:
 	TEST=1 \
 		SCENARIO=2 \
-		DEBUG=tests,connections-verbose,google\*-info,gmail-root\*-info,gtasks-root\*-info,gmail-query-next\*,gmail-list-next\*,gtasks-list-next\*,\*-error,db-diff,record-diff-verbose \
+		# connections-verbose,
+		DEBUG=tests,google\*-info,gmail-root\*-info,gtasks-root\*-info,gmail-query-next\*,gmail-list-next\*,gtasks-list-next\*,\*-error,db-diff,record-diff-verbose \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node ./node_modules/jest/bin/jest.js \

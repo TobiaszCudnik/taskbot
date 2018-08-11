@@ -20,12 +20,13 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
   CredentialsSet: IState = {}
 
   RefreshingToken: IState = {
-    auto: true,
+    // auto: true,
     require: ['CredentialsSet', 'Enabled'],
     drop: ['TokenRefreshed']
   }
 
   TokenRefreshed: IState = {
+    auto: true,
     require: ['CredentialsSet'],
     drop: ['RefreshingToken']
   }

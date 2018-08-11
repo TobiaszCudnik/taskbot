@@ -187,12 +187,18 @@ export default async function createHelpers() {
       access_token: config.google.access_token,
       refresh_token: config.google.refresh_token
     }
-    await new Promise(resolve => {
-      auth.refreshAccessToken(err => {
-        if (err) throw new Error(err)
-        resolve(err)
-      })
-    })
+    // TODO
+    // const token = await new Promise(resolve => {
+    //   auth.refreshAccessToken((err, token) => {
+    //     if (err) {
+    //       console.error('refreshAccessToken')
+    //       throw new Error(err)
+    //     }
+    //     resolve(token)
+    //   })
+    // })
+    // console.log(`New access token ${token}`)
+    // process.exit()
 
     // delete all the data
     await truncateGmail()
