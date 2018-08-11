@@ -135,7 +135,8 @@ export default class GmailListSync extends SyncReader<
     this.log_verbose('merge')
     const ids = []
     let changed = 0
-    // add / merge
+
+    // ADD / MERGE
     for (const thread of this.query.threads) {
       const record = this.root.data.findOne({
         gmail_id: this.toDBID(thread.id)
@@ -159,13 +160,14 @@ export default class GmailListSync extends SyncReader<
     if (this.config.writers && this.config.writers.length == 1) {
       return changed ? [changed] : []
     }
+
     // REMOVE (from this list)
     // query the db for the current list where IDs arent present locally
     // and apply the exit label changes
     // TODO use an index
     // console.log('this.query.threads', this.query.threads)
     // console.log('this.query.prev_threads', this.query.prev_threads)
-    const find = (record: DBRecord) => {
+    const find_orphans = (record: DBRecord) => {
       return (
         // only records with a gmail id
         record.gmail_id &&
@@ -186,13 +188,10 @@ export default class GmailListSync extends SyncReader<
         // seen in the previous query
         this.query.prev_threads.some(t => t.id == record.gmail_id)
         // which the latest update was from gmail
-        // TODO test
-        // record.updated.latest ==
-        //   this.gmail.timeFromHistoryID(record.updated.gmail_hid)
       )
     }
     // TODO indexes - dont update here, update in the top merge
-    this.root.data.findAndUpdate(find, (record: DBRecord) => {
+    this.root.data.findAndUpdate(find_orphans, (record: DBRecord) => {
       changed++
       this.log('new gmail orhpan record:\n%O', record)
       // TODO clone only in debug
@@ -212,6 +211,35 @@ export default class GmailListSync extends SyncReader<
       record.gmail_orphan = true
       return record
     })
+
+    // ENSURE ALL MATCHES HAVE THE ENTER LABELS SET
+    // eg effect of label-filters
+    // TODO should be in RooSync?
+    const find_unmatched = (record: DBRecord) => {
+      const has_every_enter_label = (this.config.enter.add || []).every(
+        label => record.labels[label] && record.labels[label].active
+      )
+      const has_some_exit_labels = (this.config.enter.remove || []).some(
+        label => record.labels[label] && record.labels[label].active
+      )
+      return (
+        // only those matching this list
+        this.config.db_query(record) && // only if NOT having some of the enter labels
+        // OR
+        // only if having some of the exit labels
+        (!has_every_enter_label || has_some_exit_labels)
+      )
+    }
+    this.root.data.findAndUpdate(find_unmatched, (record: DBRecord) => {
+      changed++
+      this.log('matched gmail record missing enter labels:\n%O', record)
+      // TODO clone only in debug
+      this.root.markListsAsDirty(this, record)
+      const before = clone(record)
+      this.applyLabels(record, this.config.enter)
+      this.printRecordDiff(before, record, 'threads to close')
+    })
+
     return changed ? [changed] : []
   }
 

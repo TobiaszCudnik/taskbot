@@ -595,11 +595,11 @@ export default class GmailSync extends SyncWriter<
 
     let log_msg = `Modifying labels for thread ${title} `
     if (add_labels.length) {
-      log_msg += `+(${add_labels.join(' ')}) `
+      log_msg += `+('${add_labels.join("', '")}') `
     }
 
     if (remove_labels.length) {
-      log_msg += `-(${remove_labels.join(' ')})`
+      log_msg += `-('${remove_labels.join("', '")}')`
     }
 
     this.log(log_msg)

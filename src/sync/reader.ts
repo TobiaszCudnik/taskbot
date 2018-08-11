@@ -102,7 +102,7 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
   log: log_fn
   log_error: log_fn
   log_verbose: log_fn
-  log_record_diff: log_fn
+  log_db: log_fn
 
   quota_error: string | null
   quota_next_sync: number | null
@@ -330,12 +330,13 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
 
   // TODO output to the logger, loose ID in the msg
   printRecordDiff(before, record, title = '') {
-    if (!debug.enabled('record-diff-verbose')) {
+    if (!debug.enabled('db-verbose')) {
       return
     }
     if (JSON.stringify(before) == JSON.stringify(record)) {
       return
     }
+    this.log_verbose('record-diff')
     delete before.$loki
     delete before.meta
     const after = clone(record)
@@ -346,7 +347,7 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
       msg += ` '${title}'`
     }
     msg += ` from '${this.state.id()}'`
-    this.log_record_diff(msg)
+    this.log_db(msg)
     const text_diff = diff.diffChars(
       inspect(before, false, 3),
       inspect(after, false, 3)
@@ -356,7 +357,7 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
       const color = chunk.added ? 'green' : chunk.removed ? 'red' : 'white'
       msg += chunk.value[color]
     }
-    this.log_record_diff(msg)
+    this.log_db(msg)
   }
 
   getMachines(inactive_states = true): string {
@@ -376,9 +377,6 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
     this.log = this.root.logger.createLogger(name)
     this.log_verbose = this.root.logger.createLogger(name, 'verbose')
     this.log_error = this.root.logger.createLogger(name, 'error')
-    this.log_record_diff = this.root.logger.createLogger(
-      'record-diff',
-      'verbose'
-    )
+    this.log_db = this.root.logger.createLogger('db', 'verbose')
   }
 }

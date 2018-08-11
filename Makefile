@@ -14,7 +14,7 @@ build-watch:
 	node_modules/.bin/tsc --watch
 
 start:
-	DEBUG=root:\*-info,\*-error,http-server-info DEBUG_FILE=1 node src/app/app.js
+	DEBUG=db\*,root:\*,\*-error,http-server-info DEBUG_FILE=1 node src/app/app.js
 
 start-prod:
 	# PROD=1 DEBUG=root:\*-info,\*-error DEBUG_FILE=1 DEBUG_AM=1 node src/app/app.js
@@ -143,9 +143,9 @@ test:
 	-SCENARIO=2 npx jest merge
 
 test-debug:
-	SCENARIO=0 \
 		# connections-verbose,
-		DEBUG=tests,google\*-info,gmail-root\*-info,gtasks-root\*-info,gmail-query-next\*,gmail-list-next\*,gtasks-list-next\*,\*-error,db-diff,record-diff-verbose \
+	SCENARIO=0 \
+		DEBUG=tests,google\*-info,gmail-root\*-info,gtasks-root\*-info,gmail-query-next\*,gmail-list-next\*,gtasks-list-next\*,\*-error,db\*,label-filter-\*,\*inbox-labels\* \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node ./node_modules/jest/bin/jest.js \

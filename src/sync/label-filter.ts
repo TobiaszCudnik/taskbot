@@ -36,6 +36,7 @@ export default class LabelFilterSync extends SyncReader<
   }
 
   async merge(abort: TAbortFunction): Promise<number[]> {
+    this.log('merge')
     let count = 0
     const records = this.root.data.where(this.config.db_query)
     if (records.length) {

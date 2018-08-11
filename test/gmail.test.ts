@@ -94,6 +94,8 @@ describe(`gmail (sync_type: ${scenario})`, function() {
         await h.gmail_sync.createThread(
           'auto-label-test-1 !na #L-location_1 #R-reference_1'
         )
+        // TODO 1 sync should be enough
+        await h.syncList(true, false, 'inbox-labels')
         await h.syncList(true, false, 'inbox-labels')
         expect(h.sync.data.data).toHaveLength(1)
         const record = h.sync.data.data[0]

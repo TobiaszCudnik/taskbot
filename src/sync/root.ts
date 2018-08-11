@@ -120,7 +120,7 @@ export interface DBRecord {
     gmail_hid: number | null
   }
   parent?: DBRecordID
-  labels: { [index: string]: DBRecordLabel }
+  labels: { [name: string]: DBRecordLabel }
   // different task ids per list
   gtasks_ids?: { [task_id: string]: string }
   // TODO
@@ -354,7 +354,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     }
     // log
     this.log_verbose(`DB read in ${this.last_read_time.asSeconds()}sec`)
-    if (debug.enabled('db-diff')) {
+    if (debug.enabled('db-verbose')) {
       this.printDBDiffs()
     }
     // go to the next step
@@ -652,7 +652,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     for (const [current, previous] of dbs) {
       const db_diff = this.getDBDiff(current, previous)
       if (!db_diff) continue
-      this.log_verbose(db_diff)
+      this.log_db(db_diff)
     }
     this.last_db = db
     this.last_gmail = gmail

@@ -2,6 +2,7 @@ import LabelFilterSync from './src/sync/label-filter'
 import { DBRecord, default as RootSync } from './src/sync/root'
 import { IConfig, IConfigBase } from './src/types'
 import * as _ from 'lodash'
+import moment = require('moment-timezone')
 
 // TODO move functions to /src/sync/label-filter.ts
 const hasLabel = function(r: DBRecord, label: string | RegExp): number {
@@ -49,6 +50,7 @@ const config: IConfigBase = {
     max_results: 300,
     included_labels: [
       /^!S\/[\w\s-]+$/,
+      /^!S$/,
       /^!T\/[\w\s-/]+$/,
       /^M\/[\w\s-/]+$/,
       /^P\/[\w\s-]+$/,
@@ -283,9 +285,19 @@ const config: IConfigBase = {
       gmail_query: `in:inbox label:unread from:${config.google.username} to:${
         config.google.username
       }`,
-      db_query: r => Boolean(hasLabel(r, 'INBOX') && hasLabel(r, 'UNREAD')),
+      db_query: r => {
+        const ret =
+          hasLabel(r, 'INBOX') && hasLabel(r, 'UNREAD') && !hasLabel(r, '!S')
+        if (!ret) return false
+        // TODO this shouldn't happen here
+        r.labels['UNREAD'].active = false
+        r.labels['UNREAD'].updated = moment().unix()
+        return ret
+      },
       enter: {},
-      exit: {},
+      exit: {
+        remove: ['UNREAD']
+      },
       writers: ['gmail']
     }),
     {
@@ -325,8 +337,8 @@ const config: IConfigBase = {
       gmail_query: 'label:!s-action',
       db_query: r => Boolean(hasLabel(r, '!S/Action')),
       enter: {
-        remove: ['!S/Finished', '!S'],
-        add: ['!S/Action']
+        add: ['!S/Action', '!S'],
+        remove: ['!S/Finished']
       },
       exit: {
         add: ['!S/Finished', '!S'],
@@ -338,8 +350,8 @@ const config: IConfigBase = {
       gmail_query: 'label:!s-some-day',
       db_query: r => Boolean(hasLabel(r, '!S/Some day')),
       enter: {
-        remove: ['!S/Finished', '!S'],
-        add: ['!S/Some day']
+        add: ['!S/Some day', '!S'],
+        remove: ['!S/Finished']
       },
       exit: {
         add: ['!S/Finished', '!S'],
