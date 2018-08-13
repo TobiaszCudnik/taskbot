@@ -564,6 +564,7 @@ export default class GTasksSync extends SyncWriter<
           abort,
           false
         )
+        if (abort && abort()) abort()
         record.gtasks_ids = record.gtasks_ids || {}
         record.gtasks_ids[res.id] = sync.list.id
         const to_move = this.children_to_move.find(
@@ -572,6 +573,7 @@ export default class GTasksSync extends SyncWriter<
         )
         if (to_move) {
           await this.saveChildren(sync.list.id, res.id, to_move.children, abort)
+          if (abort && abort()) abort()
           this.children_to_move = _.without(this.children_to_move, to_move)
         }
         // TODO batch

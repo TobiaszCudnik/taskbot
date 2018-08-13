@@ -527,10 +527,11 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   }
 
   getLabelDefinition(label: string): ILabelDefinition {
+    label = label.toLowerCase()
     for (const def of this.config.labels) {
       if (
-        (def.name && def.prefix + def.name == label) ||
-        (!def.name && label.startsWith(def.prefix))
+        (def.name && ((def.prefix) + def.name).toLowerCase() == label) ||
+        (!def.name && label.startsWith(def.prefix.toLowerCase()))
       ) {
         return def
       }

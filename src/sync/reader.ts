@@ -313,7 +313,7 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
       if (labels.add && labels.add.includes(label)) continue
       // dont remove labels which are aliases of those to be added
       const def = this.root.getLabelDefinition(label)
-      if (def.alias) {
+      if (def && def.alias) {
         let skip = false
         for (const alias of def.alias) {
           if (labels.add && labels.add.includes(alias)) {

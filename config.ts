@@ -147,6 +147,7 @@ const config: IConfigBase = {
     },
     // global gtd status
     {
+      prefix: '',
       name: '!S',
       // TODO default gray
       // colors: {

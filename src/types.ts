@@ -71,6 +71,7 @@ export interface ILabelDefinition3 {
 }
 
 export interface ILabelDefinition4 {
+  prefix: ''
   name: string
 }
 

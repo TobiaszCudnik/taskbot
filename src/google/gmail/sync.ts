@@ -372,14 +372,26 @@ export default class GmailSync extends SyncWriter<
   async syncLabels(abort: TAbortFunction) {
     await map(this.labels, async (label: Label) => {
       const def = this.root.getLabelDefinition(label.name)
-      if (!def || !def.colors) return
+      if (!def) return
+      let sync = false
+      // sync colors
       if (
-        !label.color ||
-        label.color.textColor != def.colors.fg ||
-        label.color.backgroundColor != def.colors.bg ||
-        (def.hide_menu && label.labelListVisibility != 'labelHide') ||
-        (def.hide_list && label.messageListVisibility != 'labelHide')
+        def.colors &&
+        (!label.color ||
+          label.color.textColor != def.colors.fg ||
+          label.color.backgroundColor != def.colors.bg)
       ) {
+        sync = true
+      }
+      // sync visibility
+      if (
+        (def.hide_menu && label.labelListVisibility != 'labelHide') ||
+        (def.hide_list && label.messageListVisibility != 'hide')
+      ) {
+        sync = true
+      }
+      // sync the definition
+      if (sync) {
         this.log(`Syncing label '${label.name}'`)
         const resource = this.labelDefToGmailDef(def)
         await this.req(
@@ -751,6 +763,7 @@ export default class GmailSync extends SyncWriter<
     const no_id = labels.filter(name => !this.getLabelID(name))
     return map(no_id, async name => {
       const def = this.root.getLabelDefinition(name)
+      // decorate with local definiton
       const gmail_def = def ? this.labelDefToGmailDef(def) : null
       this.log(`Creating a new label '${name}'`)
       const res = await this.req(
@@ -791,6 +804,11 @@ export default class GmailSync extends SyncWriter<
     if (def.hide_menu) {
       Object.assign(ret, {
         labelListVisibility: 'labelHide'
+      })
+    }
+    if (def.hide_list) {
+      Object.assign(ret, {
+        messageListVisibility: 'hide'
       })
     }
     return Object.keys(ret).length ? ret : null
