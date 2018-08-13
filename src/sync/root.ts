@@ -574,6 +574,41 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     }
   }
 
+  /**
+   * Returns a number of matching labels.
+   *
+   * Aliases are considered only if a string label if passed.
+   *
+   * @param record
+   * @param label
+   */
+  recordHasLabel(record: DBRecord, label: string | RegExp): number {
+    let ret = this.checkLabel(record, label)
+    // TODO read aliases from the config
+    if (label == '!S/Finished') {
+      ret = ret || this.checkLabel(record, '!S/Expired')
+    } else if (label == '!S/Expired') {
+      ret = ret || this.checkLabel(record, '!S/Finished')
+    }
+    return ret
+  }
+
+  private checkLabel(record: DBRecord, match: string | RegExp) {
+    let matches = 0
+    for (const [label, data] of Object.entries(record.labels)) {
+      if (!data.active) continue
+      if (match instanceof RegExp && match.test(label)) {
+        matches++
+      } else if (
+        !(match instanceof RegExp) &&
+        match.toLowerCase() == label.toLowerCase()
+      ) {
+        matches++
+      }
+    }
+    return matches
+  }
+
   getListsForRecord(
     record: DBRecord
   ): SyncReader<IListConfig, TReaderStates, any, any>[] {

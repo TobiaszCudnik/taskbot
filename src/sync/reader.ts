@@ -307,11 +307,23 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
   }
 
   applyLabels(record: DBRecord, labels: TModifyLabels) {
-    // dont remove labels which are about to be added
     record.labels = record.labels || {}
     for (const label of labels.remove || []) {
-      // update the time only when something changes
+      // dont remove labels which are about to be added
       if (labels.add && labels.add.includes(label)) continue
+      // dont remove labels which are aliases of those to be added
+      const def = this.root.getLabelDefinition(label)
+      if (def.alias) {
+        let skip = false
+        for (const alias of def.alias) {
+          if (labels.add && labels.add.includes(alias)) {
+            skip = true
+            break
+          }
+        }
+        if (skip) continue
+      }
+      // update the time only when something changes
       if (record.labels[label] && !record.labels[label].active) continue
       record.labels[label] = {
         active: false,
@@ -319,6 +331,8 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
       }
     }
     for (const label of labels.add || []) {
+      // add only labels who's aliases arent set
+      if (this.root.recordHasLabel(record, label)) continue
       // update the time only when something changes
       if (record.labels[label] && record.labels[label].active) continue
       record.labels[label] = {

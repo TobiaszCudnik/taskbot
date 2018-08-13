@@ -32,7 +32,11 @@ export interface IListConfig {
 }
 
 export type ILabelDefinition = ILabelDefinitionBase &
-  (ILabelDefinition1 | ILabelDefinition2 | ILabelDefinition3)
+  (
+    | ILabelDefinition1
+    | ILabelDefinition2
+    | ILabelDefinition3
+    | ILabelDefinition4)
 
 export interface ILabelDefinitionBase {
   colors?: { bg: string; fg: string }
@@ -40,6 +44,7 @@ export interface ILabelDefinitionBase {
   hide_menu?: boolean
   // hide in the tread view
   hide_list?: boolean
+  alias?: string[]
 }
 
 export interface ILabelDefinition1 {
@@ -65,6 +70,10 @@ export interface ILabelDefinition3 {
   shortcut?: string
 }
 
+export interface ILabelDefinition4 {
+  name: string
+}
+
 export interface IConfig extends IConfigBase, TConfigCredentials {
   google: IConfigGoogle
 }
@@ -83,7 +92,7 @@ export interface IConfigBase {
     request_quota_100: number
     request_quota_day: number
     // seconds
-    sync_frequency: number
+    sync_frequency?: number
   }
   exception_delay: number
   exception_flood_delay: number
@@ -97,7 +106,7 @@ export interface IConfigBase {
   labels: ILabelDefinition[]
   label_filters: ILabelFilter[]
   sync_frequency: number
-  lists: IListConfig[]
+  lists: (IListConfig | ((config: IConfig) => IListConfig))[]
 }
 
 export interface IConfigGoogle

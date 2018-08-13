@@ -217,10 +217,10 @@ export default class GmailListSync extends SyncReader<
     // TODO should be in RooSync?
     const find_unmatched = (record: DBRecord) => {
       const has_every_enter_label = (this.config.enter.add || []).every(
-        label => record.labels[label] && record.labels[label].active
+        label => Boolean(this.root.recordHasLabel(record, label))
       )
       const has_some_exit_labels = (this.config.enter.remove || []).some(
-        label => record.labels[label] && record.labels[label].active
+        label => Boolean(this.root.recordHasLabel(record, label))
       )
       return (
         // only those matching this list

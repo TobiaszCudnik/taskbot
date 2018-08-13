@@ -6,18 +6,17 @@ import moment = require('moment-timezone')
 
 // TODO move functions to /src/sync/label-filter.ts
 const hasLabel = function(r: DBRecord, label: string | RegExp): number {
-  return checkLabel(r, label, true)
+  let ret = checkLabel(r, label)
+  // TODO read aliases from the config
+  if (label == '!S/Finished') {
+    ret = ret || checkLabel(r, '!S/Expired')
+  } else if (label == '!S/Expired') {
+    ret = ret || checkLabel(r, '!S/Finished')
+  }
+  return ret
 }
 
-const hadLabel = function(r: DBRecord, label: string | RegExp): number {
-  return checkLabel(r, label, false)
-}
-
-function checkLabel(
-  r: DBRecord,
-  match: string | RegExp,
-  active: boolean
-): number {
+function checkLabel(r: DBRecord, match: string | RegExp): number {
   let matches = 0
   for (const [label, data] of Object.entries(r.labels)) {
     if (!data.active) continue
@@ -116,7 +115,7 @@ const config: IConfigBase = {
     {
       symbol: '!',
       shortcut: 'sd',
-      name: 'Some day',
+      name: 'Someday',
       prefix: '!S/',
       colors: {
         bg: '#c9daf8',
@@ -127,6 +126,7 @@ const config: IConfigBase = {
       symbol: '!',
       shortcut: 'e',
       name: 'Expired',
+      alias: ['!S/Finished'],
       prefix: '!S/',
       colors: {
         bg: '#cccccc',
@@ -137,6 +137,7 @@ const config: IConfigBase = {
       symbol: '!',
       shortcut: 'f',
       name: 'Finished',
+      alias: ['!S/Expired'],
       prefix: '!S/',
       // TODO
       colors: {
@@ -266,8 +267,10 @@ const config: IConfigBase = {
     // all the `!T/Task` labels (anywhere, gmail only)
     (config: IConfig) => {
       const query = config.labels
+        // @ts-ignore
         .filter(l => l.prefix == '!T/')
-        .map(l => `label:${l.prefix}${l.name}`)
+        // @ts-ignore
+        .map(l => `label:${l.prefix ||''}${l.name}`)
         .join(' ')
 
       return {
