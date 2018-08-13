@@ -7,6 +7,9 @@ import RemoteNodeLoggerMixin from 'ami-logger/mixins/remote-node'
 // @ts-ignore
 import FileFSStreamMixin from 'ami-logger/mixins/snapshot/fs-stream'
 import { TAsyncMachine } from 'asyncmachine'
+import * as firebase from 'firebase/app'
+import 'firebase/auth'
+import 'firebase/database'
 import * as fs from 'fs'
 import * as debug from 'debug'
 import 'source-map-support/register'
@@ -63,6 +66,7 @@ console.log('Starting the sync service...')
 const logger = new Logger()
 server(config, logger)
 const connections = new Connections(logger)
+firebase.initializeApp(config, config.firebase)
 for (const user of users) {
   const config_user = merge(config, user)
   const sync = new RootSync(config_user, logger, connections)

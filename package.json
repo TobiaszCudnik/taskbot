@@ -40,6 +40,7 @@
     "delay": "^2.0.0",
     "diff": "^3.5.0",
     "escape-string-regexp": "^1.0.5",
+    "firebase": "^5.3.1",
     "google-auth-library": "^1.6.1",
     "googleapis": "^23.0.2",
     "hapi": "^17.5.3",
