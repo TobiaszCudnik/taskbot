@@ -76,14 +76,14 @@ export interface ILabelDefinition4 {
   name: string
 }
 
-export interface IConfig extends IConfigBase, TConfigCredentials {
-  google: IConfigGoogle
+export interface IConfig extends IConfigPublic, IConfigPrivate, IConfigAccount {
+  google: IConfigPublicGoogle & IConfigAccountGoogle & IConfigPrivateGoogle
 }
 
-export interface IConfigBase {
+export interface IConfigPublic {
   sync_frequency_multi?: number
   repl_port: number
-  google: IConfigGoogleBase
+  google: IConfigPublicGoogle
   gmail: {
     // TODO
     max_results: number
@@ -111,30 +111,36 @@ export interface IConfigBase {
   lists: (IListConfig | ((config: IConfig) => IListConfig))[]
 }
 
-export interface IConfigGoogle
-  extends IConfigGoogleBase,
-    IConfigGoogleCredentials {}
-
-export type TConfigCredentials = {
-  user?: {
-    id: string
-  }
+export interface IConfigPrivate {
   // extract to the account type
   sync_frequency_multi?: number
-  google: IConfigGoogleCredentials
-  firebase_admin?: any
+  service: {
+    email: 'contact@taskbot.app'
+  }
+  google: IConfigPrivateGoogle
+  firebase_admin: any
 }
 
-export interface IConfigGoogleCredentials {
+export interface IConfigPrivateGoogle {
   // app
-  client_id?: string
-  client_secret?: string
-  redirect_url?: string
-  // user
-  username?: string
+  client_id: string
+  client_secret: string
+  redirect_url: string
 }
 
-export type TAccount = {
+export interface IConfigAccountGoogle extends GoogleCredentials {
+  username: string
+  access_token: string
+}
+
+export interface IConfigAccount {
+  user: {
+    id: string
+  }
+  google: IConfigAccountGoogle
+}
+
+export interface IAccount {
   email: string
   registered: string
   invitation_code?: string
@@ -144,18 +150,10 @@ export type TAccount = {
   }
   enabled: boolean
   dev?: boolean
-  config: {
-    user: {
-      id: string
-    }
-    google: {
-      username: string
-      access_token: string
-    } & GoogleCredentials
-  }
+  config: IConfigAccount
 }
 
-export interface IConfigGoogleBase {
+export interface IConfigPublicGoogle {
   scopes: string[]
 }
 
