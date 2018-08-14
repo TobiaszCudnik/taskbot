@@ -1,8 +1,8 @@
 import * as firebase from 'firebase-admin'
-import test_user from '../../config-users'
-import { Credentials } from '../../node_modules/google-auth-library/build/src/auth/credentials'
+import { test_user } from '../../config-users'
+import { Credentials as GoogleCredentials } from 'google-auth-library/build/src/auth/credentials'
 import RootSync from '../sync/root'
-import { IConfig, TConfigCredentials } from '../types'
+import { IConfig, TAccount, TConfigCredentials } from '../types'
 import Connections from './connections'
 import Logger from './logger'
 import * as merge from 'deepmerge'
@@ -28,7 +28,7 @@ export class App {
     }
   }
 
-  async getUsers(): Promise<TConfigCredentials[]> {
+  async getUsers(): Promise<TAccount[]> {
     // TEST env
     if (process.env['TEST']) {
       return [test_user]
@@ -38,26 +38,32 @@ export class App {
       .database()
       .ref('/users')
       .once('value')
-    return users.val()
+    return users.val().filter(user => {
+      // handle dev accounts
+      if (process.env['PROD'] && user.dev) return false
+      if (!process.env['PROD'] && !user.dev) return false
+      // skip disabled ones
+      if (!user.enabled || !user.client_data.enabled) return false
+      return true
+    })
   }
 
   async start() {
     const users = await this.getUsers()
     this.last_id = 0
     for (const user of users) {
-      this.last_id = Math.max(this.last_id, user.user.id)
-      const sync = this.createUserInstance(this.config, user)
+      this.last_id = Math.max(this.last_id, parseInt(user.config.user.id, 10))
+      const sync = this.createUserInstance(this.config, user.config)
       if (!sync) continue
       this.syncs.push(sync)
     }
   }
 
-  // TODO use an async iterator
   async listenToChanges() {
-    const posts_ref = this.firebase.database().ref('/users')
+    const posts_ref = this.firebase.database().ref('/accounts')
 
     posts_ref.on('child_added', user => {
-      const sync = this.createUserInstance(this.config, user.val())
+      const sync = this.createUserInstance(this.config, user.val().config)
       if (sync) {
         this.syncs.push(sync)
       }
@@ -67,7 +73,7 @@ export class App {
     })
     posts_ref.on('child_changed', user => {
       this.removeSync(user.val().id)
-      const sync = this.createUserInstance(this.config, user.val())
+      const sync = this.createUserInstance(this.config, user.val().config)
       if (sync) {
         this.syncs.push(sync)
       }
@@ -82,13 +88,7 @@ export class App {
     return true
   }
 
-  createUserInstance(
-    config: IConfig,
-    user: TConfigCredentials
-  ): RootSync | false {
-    if (process.env['PROD'] && user.user.dev) return false
-    if (!process.env['PROD'] && !user.user.dev) return false
-    if (!user.user.enabled) return false
+  createUserInstance(config: IConfig, user: TConfigCredentials): RootSync {
     const config_user = merge(config, user)
     const sync = new RootSync(config_user, this.logger, this.connections)
     if (!process.env['TEST']) {
@@ -99,7 +99,7 @@ export class App {
   }
 
   createNewUser(
-    google_tokens: Credentials,
+    google_tokens: GoogleCredentials,
     email: string,
     invitation_code?: string
   ) {

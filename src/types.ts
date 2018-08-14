@@ -1,4 +1,5 @@
 import { DBRecord } from './sync/root'
+import { Credentials as GoogleCredentials } from 'google-auth-library/build/src/auth/credentials'
 
 export type TModifyLabels = {
   add?: string[]
@@ -118,6 +119,7 @@ export type TConfigCredentials = {
   user?: {
     id: string
   }
+  // extract to the account type
   sync_frequency_multi?: number
   google: IConfigGoogleCredentials
   firebase_admin?: any
@@ -130,8 +132,27 @@ export interface IConfigGoogleCredentials {
   redirect_url?: string
   // user
   username?: string
-  access_token?: string
-  refresh_token?: string
+}
+
+export type TAccount = {
+  email: string
+  registered: string
+  invitation_code?: string
+  client_data: {
+    enabled: boolean
+    snapshot?: any
+  }
+  enabled: boolean
+  dev?: boolean
+  config: {
+    user: {
+      id: string
+    }
+    google: {
+      username: string
+      access_token: string
+    } & GoogleCredentials
+  }
 }
 
 export interface IConfigGoogleBase {

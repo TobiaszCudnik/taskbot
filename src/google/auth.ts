@@ -15,7 +15,7 @@ import { OAuth2Client } from 'google-auth-library/build/src/auth/oauth2client'
 // TODO add logging
 // TODO compose asyncmachine
 export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
-  Enabled: IState =  {}
+  Enabled: IState = {}
 
   CredentialsSet: IState = {}
 
@@ -69,11 +69,7 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
       config.redirect_url
     )
     if (config.access_token && config.refresh_token) {
-      this.add(
-        'CredentialsSet',
-        config.access_token,
-        config.refresh_token
-      )
+      this.add('CredentialsSet', config.access_token, config.refresh_token)
     } else {
       throw new Error('No google access tokens')
     }
@@ -91,11 +87,11 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
   }
 
   Exception_state(err) {
-    switch(err.code) {
+    switch (err.code) {
       case 'invalid_grant':
         this.log('Invalid token grant')
         // TODO redo the token
-        break;
+        break
     }
   }
 }

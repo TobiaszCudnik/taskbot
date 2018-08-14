@@ -54,12 +54,12 @@ export default async function(config: IConfig, logger: Logger, app: App) {
     },
     {
       method: 'GET',
-      path: '/google/login',
+      path: '/signup',
       handler: google_login.login
     },
     {
       method: 'GET',
-      path: '/google/login/callback',
+      path: '/signup/done',
       handler: google_login.callback
     },
     {

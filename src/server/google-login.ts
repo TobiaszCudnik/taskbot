@@ -74,12 +74,12 @@ export async function callback(
     audience: this.config.google.client_id
   })
   const payload = id_token.getPayload()
+  debugger
   if (!payload.email_verified || !payload.email) {
     return h.response('Email not confirmed or missing').code(400)
   }
   // save new use to firebase
-  const app: App = this.app
-  app.createNewUser(tokens, payload.email)
+  this.app.createNewUser(tokens, payload.email)
 
   // TODO redir to a success page with some docs
   return h.response(tokens)

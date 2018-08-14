@@ -16,12 +16,13 @@
     }
   ],
   "last_user_id": 0,
-  "users": [
+  "accounts": [
     {
       "email": "fhhds8y9@gmail.com",
       "registered": "ISO_DATE",
       "invitation_code": "",
       "client_data": {
+        "enabled": true,
         "snapshot": {}
       },
       "enabled": true,

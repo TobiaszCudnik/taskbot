@@ -87,7 +87,7 @@ export abstract class SyncWriter<
       return false
     }
     if (!this.last_read_end) {
-      this.log_error("Attempt to Write before Reading has finished")
+      this.log_error('Attempt to Write before Reading has finished')
       return false
     }
   }
