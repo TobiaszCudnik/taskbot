@@ -133,6 +133,8 @@ export interface DBRecord {
   // }
   // marks the record for deletion
   to_delete?: boolean
+  gtasks_moving?: boolean
+  gtasks_uncompleted?: boolean
   // TODO maybe store as gmail_lists[id] = boolean instead?
   gmail_orphan?: boolean
   gtasks_hidden_completed?: boolean
@@ -530,7 +532,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     label = label.toLowerCase()
     for (const def of this.config.labels) {
       if (
-        (def.name && ((def.prefix) + def.name).toLowerCase() == label) ||
+        (def.name && (def.prefix + def.name).toLowerCase() == label) ||
         (!def.name && label.startsWith(def.prefix.toLowerCase()))
       ) {
         return def
@@ -633,6 +635,8 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     let changes
     // TODO config
     const MAX = 10
+    // TODO extract as a label filter
+    this.ensureSLabel()
     do {
       changes = await this.subs_flat.reduce(
         async (
@@ -660,6 +664,18 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
       this.log(`MERGED after ${this.merge_tries} round(s)`)
     }
     return []
+  }
+
+  /**
+   * Add !S label to every record
+   * // TODO migrate to a label filter
+   */
+  private ensureSLabel() {
+    const no_s = this.data.where(r => !Boolean(this.recordHasLabel(r, '!S')))
+    for (const r of no_s) {
+      this.log_verbose(`Adding !S label to '${r.title}'`)
+      this.modifyLabels(r, { add: ['!S'] })
+    }
   }
 
   // TODO should be an inbound state?

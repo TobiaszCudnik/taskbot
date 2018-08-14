@@ -198,7 +198,7 @@ export default class GmailListSync extends SyncReader<
       this.root.markListsAsDirty(this, record)
       const before = clone(record)
       // remove enter labels, as the thread left the query
-      this.applyLabels(record, { remove: this.config.enter.add })
+      this.modifyLabels(record, { remove: this.config.enter.add })
       // assume deletion and let the orphan logic handle other cases
       this.gmail.removeThreadFromCache(record.gmail_id)
       // TODO sync the local thread object
@@ -210,34 +210,6 @@ export default class GmailListSync extends SyncReader<
       this.printRecordDiff(before, record, 'threads to close')
       record.gmail_orphan = true
       return record
-    })
-
-    // ENSURE ALL MATCHES HAVE THE ENTER LABELS SET
-    // eg effect of label-filters
-    // TODO should be in RooSync?
-    const find_unmatched = (record: DBRecord) => {
-      const has_every_enter_label = (this.config.enter.add || []).every(
-        label => Boolean(this.root.recordHasLabel(record, label))
-      )
-      const has_some_exit_labels = (this.config.enter.remove || []).some(
-        label => Boolean(this.root.recordHasLabel(record, label))
-      )
-      return (
-        // only those matching this list
-        this.config.db_query(record) && // only if NOT having some of the enter labels
-        // OR
-        // only if having some of the exit labels
-        (!has_every_enter_label || has_some_exit_labels)
-      )
-    }
-    this.root.data.findAndUpdate(find_unmatched, (record: DBRecord) => {
-      changed++
-      this.log('matched gmail record missing enter labels:\n%O', record)
-      // TODO clone only in debug
-      this.root.markListsAsDirty(this, record)
-      const before = clone(record)
-      this.applyLabels(record, this.config.enter)
-      this.printRecordDiff(before, record, 'threads to close')
     })
 
     return changed ? [changed] : []
@@ -262,13 +234,13 @@ export default class GmailListSync extends SyncReader<
     }
     // apply labels from gmail
     const labels_from_thread = this.gmail.getLabelsFromThread(thread)
-    this.applyLabels(record, { add: labels_from_thread })
+    this.modifyLabels(record, { add: labels_from_thread })
     // apply enter labels from the list definition
-    this.applyLabels(record, this.config.enter)
+    this.modifyLabels(record, this.config.enter)
     // apply labels from text, but only when in inbox AND send to yourself AND
     // by yourself
     if (labels_from_thread.includes('INBOX') && self_sent) {
-      this.applyLabels(record, {
+      this.modifyLabels(record, {
         add: this.root.getLabelsFromText(
           this.gmail.getTitleFromThread(thread, false)
         ).labels
@@ -329,7 +301,7 @@ export default class GmailListSync extends SyncReader<
       this.root.markListsAsDirty(this, record)
     }
 
-    this.applyLabels(record, {
+    this.modifyLabels(record, {
       add: to_add,
       remove: to_remove
     })

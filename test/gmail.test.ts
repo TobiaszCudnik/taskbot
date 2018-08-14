@@ -109,7 +109,7 @@ describe(`gmail (sync_type: ${scenario})`, function() {
       })
     }
     if (!scenario) {
-      it('make sure the !S label is added to existing emails', async function() {
+      it('!S label is added to existing emails with a status', async function() {
         h.log('\n\nTEST: make sure the !S label is added to existing emails')
         await h.reset()
         await h.gmail_sync.createThread('gmail-1', ['!S/Next Action'])

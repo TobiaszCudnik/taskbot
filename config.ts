@@ -130,6 +130,7 @@ const config: IConfigBase = {
       prefix: '!S/',
       colors: {
         bg: '#cccccc',
+        // TODO black
         fg: '#ffffff'
       }
     },
@@ -309,11 +310,11 @@ const config: IConfigBase = {
       gmail_query: 'label:!s-next-action',
       db_query: r => Boolean(hasLabel(r, '!S/Next Action')),
       enter: {
-        add: ['!S/Next Action', '!S'],
+        add: ['!S/Next Action'],
         remove: ['!S/Finished']
       },
       exit: {
-        add: ['!S/Finished', '!S'],
+        add: ['!S/Finished'],
         remove: ['!S/Next Action']
       },
       sync_frequency: {
@@ -325,11 +326,11 @@ const config: IConfigBase = {
       gmail_query: 'label:!s-pending',
       db_query: r => Boolean(hasLabel(r, '!S/Pending')),
       enter: {
-        add: ['!S/Pending', '!S'],
+        add: ['!S/Pending'],
         remove: ['!S/Finished']
       },
       exit: {
-        add: ['!S/Finished', '!S'],
+        add: ['!S/Finished'],
         remove: ['!S/Pending']
       },
       sync_frequency: {
@@ -341,11 +342,11 @@ const config: IConfigBase = {
       gmail_query: 'label:!s-action',
       db_query: r => Boolean(hasLabel(r, '!S/Action')),
       enter: {
-        add: ['!S/Action', '!S'],
+        add: ['!S/Action'],
         remove: ['!S/Finished']
       },
       exit: {
-        add: ['!S/Finished', '!S'],
+        add: ['!S/Finished'],
         remove: ['!S/Action']
       }
     },
@@ -354,11 +355,11 @@ const config: IConfigBase = {
       gmail_query: 'label:!s-some-day',
       db_query: r => Boolean(hasLabel(r, '!S/Some day')),
       enter: {
-        add: ['!S/Some day', '!S'],
+        add: ['!S/Some day'],
         remove: ['!S/Finished']
       },
       exit: {
-        add: ['!S/Finished', '!S'],
+        add: ['!S/Finished'],
         remove: ['!S/Some day']
       },
       sync_frequency: {

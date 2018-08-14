@@ -306,14 +306,22 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
     }
   }
 
-  applyLabels(record: DBRecord, labels: TModifyLabels) {
+  /**
+   * Modify labels honoring aliases.
+   *
+   * Depends on `record.updated.latest`, so set it before invoking this method.
+   *
+   * @param record
+   * @param labels
+   */
+  modifyLabels(record: DBRecord, labels: TModifyLabels) {
     record.labels = record.labels || {}
     for (const label of labels.remove || []) {
       // dont remove labels which are about to be added
       if (labels.add && labels.add.includes(label)) continue
-      // dont remove labels which are aliases of those to be added
       const def = this.root.getLabelDefinition(label)
       if (def && def.alias) {
+        // dont remove labels which are aliases of those to be added
         let skip = false
         for (const alias of def.alias) {
           if (labels.add && labels.add.includes(alias)) {
@@ -322,6 +330,18 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
           }
         }
         if (skip) continue
+        // remove all aliases of labels to be removed
+        for (const alias of def.alias) {
+          if (
+            !record.labels[alias] ||
+            (record.labels[alias] && !record.labels[alias].active)
+          )
+            continue
+          record.labels[alias] = {
+            active: false,
+            updated: record.updated.latest
+          }
+        }
       }
       // update the time only when something changes
       if (record.labels[label] && !record.labels[label].active) continue

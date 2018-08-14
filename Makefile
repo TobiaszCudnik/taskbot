@@ -136,16 +136,16 @@ test:
 	sleep 30
 	-SCENARIO=2 npx jest gtasks
 	sleep 30
-	-SCENARIO=0 npx jest merge
+	-SCENARIO=0 npx jest sync
 	sleep 5
-	-SCENARIO=1 npx jest merge
+	-SCENARIO=1 npx jest sync
 	sleep 5
-	-SCENARIO=2 npx jest merge
+	-SCENARIO=2 npx jest sync
 
 test-debug:
 		# connections-verbose,
 	SCENARIO=0 \
-		DEBUG=tests,google\*-info,gmail-root\*-info,gtasks-root\*-info,gmail-query-next\*,gmail-list-next\*,gtasks-list-next\*,\*-error,db\*,label-filter-\*,\*inbox-labels\* \
+		DEBUG=tests,google\*-info,gmail-root\*-info,gtasks-root\*-info,gmail-query-next\*,gmail-list-next\*,gtasks-list-next\*,\*-error,db\*,label-filter-\*,\*inbox-labels\*,root:\* \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node ./node_modules/jest/bin/jest.js \

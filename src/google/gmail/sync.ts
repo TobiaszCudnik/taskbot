@@ -21,7 +21,7 @@ import GC from '../../sync/gc'
 import { SyncReader } from '../../sync/reader'
 import RootSync, { DBRecord } from '../../sync/root'
 import { sync_writer_state, SyncWriter } from '../../sync/writer'
-import { IConfig, ILabelDefinition, TRawEmail } from '../../types'
+import { IConfig, ILabelDefinition, IListConfig, TRawEmail } from '../../types'
 import Auth from '../auth'
 ///<reference path="../../../node_modules/typed-promisify-tob/index.ts"/>
 import { Thread } from './query'
@@ -130,7 +130,7 @@ export default class GmailSync extends SyncWriter<
 
   SubsInited_state() {
     this.subs = {
-      lists: this.config.lists
+      lists: (this.config.lists as IListConfig[])
         .filter(config => !config.writers || config.writers.includes('gmail'))
         .map(config => new GmailListSync(config, this.root, this))
     }
@@ -442,7 +442,7 @@ export default class GmailSync extends SyncWriter<
     }
     return await map(to_delete, async (record: DBRecord) => {
       // Delete from gmail by moving to Trash
-      await this.modifyLabels(record.gmail_id, ['TRASH'], [], abort)
+      await this.writeThreadLabels(record.gmail_id, ['TRASH'], [], abort)
       // Delete from the global gmail cache
       await this.threads.delete(record.gmail_id)
       // TODO delete also from all the matching lists?
@@ -525,7 +525,7 @@ export default class GmailSync extends SyncWriter<
       this.log(`Modifying ${diff_threads.length} new threads`)
     }
     return await map(diff_threads, async ([id, add, remove]) => {
-      await this.modifyLabels(id, add, remove, abort)
+      await this.writeThreadLabels(id, add, remove, abort)
     })
   }
 
@@ -587,7 +587,7 @@ export default class GmailSync extends SyncWriter<
    * @param remove_labels
    * @param abort
    */
-  async modifyLabels(
+  async writeThreadLabels(
     thread_id: string,
     add_labels: string[] = [],
     remove_labels: string[] = [],

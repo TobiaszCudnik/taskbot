@@ -392,9 +392,9 @@ export default class GTasksListSync extends SyncReader<
     // apply labels from the list definition
     const labels =
       task.status == 'completed' ? this.config.exit : this.config.enter
-    this.applyLabels(record, labels)
+    this.modifyLabels(record, labels)
     // apply labels from text
-    this.applyLabels(record, { add: text_labels.labels })
+    this.modifyLabels(record, { add: text_labels.labels })
     return record
   }
 
@@ -417,7 +417,7 @@ export default class GTasksListSync extends SyncReader<
     const text_labels_old = this.root.getLabelsFromText(old_title, true)
     if (old_title != new_title) {
       record.title = text_labels.text
-      this.applyLabels(record, {
+      this.modifyLabels(record, {
         add: text_labels.labels,
         remove: _.difference(text_labels_old.labels, text_labels.labels)
       })
@@ -459,7 +459,7 @@ export default class GTasksListSync extends SyncReader<
     // if (task.status == 'completed' && before.status == 'needsAction') {
     //   record.gtasks_uncompleted = true
     // }
-    this.applyLabels(record, labels)
+    this.modifyLabels(record, labels)
     this.root.markListsAsDirty(this, record)
     this.printRecordDiff(before, record)
     return true
