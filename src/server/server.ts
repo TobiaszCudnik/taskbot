@@ -1,5 +1,7 @@
 import { readFileSync } from 'fs'
-import Logger from '../app/logger'
+import { App } from '../app/app'
+import Logger, { log_fn } from '../app/logger'
+import { IConfig } from '../types'
 import * as google_login from './google-login'
 // import { router, reply, utils } from 'server'
 import { Server } from 'hapi'
@@ -7,17 +9,25 @@ import { Server } from 'hapi'
 // const { get, error } = router
 // const { send, type } = reply
 
-export default async function(config, logger: Logger) {
+export type TContext = {
+  logger_info: log_fn
+  logger_error: log_fn
+  config: IConfig
+  app: App
+}
+
+export default async function(config: IConfig, logger: Logger, app: App) {
   const logger_info = logger.createLogger('http-server', 'info')
   const logger_error = logger.createLogger('http-server', 'error')
   // const port = process.env['PROD'] ? 80 : 8080
   const port = 8080
   console.log(`Starting the HTTP server on ${port}`)
   // TODO type
-  const context = {
+  const context: TContext = {
     logger_info,
     logger_error,
-    config
+    config,
+    app
   }
 
   const server = new Server({ port })

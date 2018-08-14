@@ -116,10 +116,11 @@ export interface IConfigGoogle
 
 export type TConfigCredentials = {
   user?: {
-    id: number
+    id: string
   }
   sync_frequency_multi?: number
   google: IConfigGoogleCredentials
+  firebase_admin?: any
 }
 
 export interface IConfigGoogleCredentials {

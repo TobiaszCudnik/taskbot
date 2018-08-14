@@ -1,14 +1,19 @@
+import { OAuth2Client } from 'google-auth-library'
+
 // @ts-ignore
 import { auth } from 'googleapis'
 // import { reply } from 'server'
 import { Request, ResponseToolkit, Server } from 'hapi'
+import { Credentials } from 'google-auth-library/build/src/auth/credentials'
 import { IConfig } from '../types'
+import { App } from '../app/app'
+import { TContext } from './server'
 
 // const { redirect, send, status } = reply
 
 let client
 
-function getClient(ctx): object {
+function getClient(ctx): OAuth2Client {
   if (client) return client
   const config: IConfig = ctx.config
 
@@ -21,7 +26,7 @@ function getClient(ctx): object {
 }
 
 // /google/login
-export function login(req: Request, h: ResponseToolkit) {
+export function login(this: TContext, req: Request, h: ResponseToolkit) {
   this.logger_info('/google/login')
 
   // @ts-ignore
@@ -34,7 +39,11 @@ export function login(req: Request, h: ResponseToolkit) {
 }
 
 // /google/login/callback
-export async function callback(req: Request, h: ResponseToolkit) {
+export async function callback(
+  this: TContext,
+  req: Request,
+  h: ResponseToolkit
+) {
   this.logger_info('/google/login/callback')
   const code = req.query['code']
 
@@ -44,7 +53,7 @@ export async function callback(req: Request, h: ResponseToolkit) {
 
   // request access token
   // TODO merge with the email address and user ID
-  const tokens = await new Promise((resolve, reject) =>
+  const tokens: Credentials = await new Promise((resolve, reject) =>
     // @ts-ignore
     getClient(this).getToken(code, function(err, tokens) {
       if (err) {
@@ -56,6 +65,22 @@ export async function callback(req: Request, h: ResponseToolkit) {
     })
   )
   this.logger_info('tokens fetched')
-  // json mime type
+  if (process.env['TEST']) {
+    // TODO json mime type
+    return h.response(tokens)
+  }
+  const id_token = await getClient(this).verifyIdToken({
+    idToken: tokens.id_token,
+    audience: this.config.google.client_id
+  })
+  const payload = id_token.getPayload()
+  if (!payload.email_verified || !payload.email) {
+    return h.response('Email not confirmed or missing').code(400)
+  }
+  // save new use to firebase
+  const app: App = this.app
+  app.createNewUser(tokens, payload.email)
+
+  // TODO redir to a success page with some docs
   return h.response(tokens)
 }
