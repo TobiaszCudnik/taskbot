@@ -1,10 +1,12 @@
 import { readFileSync } from 'fs'
+import * as path from 'path'
 import { App } from '../app/app'
 import Logger, { log_fn } from '../app/logger'
 import { IConfig } from '../types'
 import * as google_login from './google-login'
 // import { router, reply, utils } from 'server'
-import { Server, Request } from 'hapi'
+import { Server, Request, ResponseToolkit } from 'hapi'
+import * as inert from 'inert'
 
 // const { get, error } = router
 // const { send, type } = reply
@@ -30,8 +32,15 @@ export default async function(config: IConfig, logger: Logger, app: App) {
     app
   }
 
-  const server = new Server({ port })
-  await server.start()
+  const server = new Server({
+    port,
+    routes: {
+      files: {
+        relativeTo: path.join(process.cwd(), 'www')
+      }
+    }
+  })
+  await server.register(inert)
   console.log(`HTTP started at ${server.info.uri}`)
   server.bind(context)
 
@@ -65,9 +74,19 @@ export default async function(config: IConfig, logger: Logger, app: App) {
     {
       method: 'GET',
       path: '/privacy-policy',
-      handler: (req, h) => {
-        const file = readFileSync('./static/privacy-policy.html')
-        return h.response(file)
+      handler: (req, h: ResponseToolkit) => {
+        return h.file('./privacy-policy.html')
+      }
+    },
+    {
+      method: 'GET',
+      path: '/{param*}',
+      handler: {
+        directory: {
+          path: '.',
+          redirectToSlash: true,
+          index: true
+        }
       }
     }
   ])
@@ -85,6 +104,8 @@ export default async function(config: IConfig, logger: Logger, app: App) {
     // @ts-ignore
     logger_info(request.url.toString())
     logger_error(response)
+    console.dir(response)
     return reply.continue
   })
+  await server.start()
 }
