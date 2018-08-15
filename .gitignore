@@ -17,6 +17,8 @@
 /test/**/*.js.map
 /build/
 .DS_Store
+/config-private.*
+/config-accounts.*
 /config-credentials.*
 /config-users.*
 /error.log

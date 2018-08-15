@@ -14,16 +14,14 @@ import * as fs from 'fs'
 import * as _ from 'lodash'
 import 'source-map-support/register'
 import config_base from '../../config'
-import config_credentials from '../../config-credentials'
+import config_credentials from '../../config-private'
 import server from '../server/server'
-import RootSync from '../sync/root'
 import { IConfig } from '../types'
 import { App } from './app'
 import Connections from './connections'
 import Logger from './logger'
 import create_repl from './repl'
 
-const syncs: RootSync[] = []
 const config: IConfig = <any>merge(config_base, config_credentials)
 
 // TODO make it less global
@@ -79,7 +77,7 @@ async function exit() {
     await global.am_logger.dispose()
     console.log(`Saved a snapshot to logs/snapshot.json`)
   }
-  for (const sync of syncs) {
+  for (const sync of app.syncs) {
     console.log(`\nUser ${sync.config.user.id}: ${sync.config.google.username}`)
     console.log(sync.getMachines())
     const data = (sync.data && sync.data.toString()) || ''
@@ -112,4 +110,4 @@ async function exit() {
   process.exit()
 }
 
-create_repl(syncs, connections, logger, init_am_inspector, config.repl_port)
+create_repl(app.syncs, connections, logger, init_am_inspector, config.repl_port)

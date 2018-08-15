@@ -1,6 +1,6 @@
 import LabelFilterSync from './src/sync/label-filter'
 import { DBRecord, default as RootSync } from './src/sync/root'
-import { IConfig, IConfigBase } from './src/types'
+import { IConfig, IConfigPublic } from './src/types'
 import * as _ from 'lodash'
 import moment = require('moment-timezone')
 
@@ -33,15 +33,16 @@ function checkLabel(r: DBRecord, match: string | RegExp): number {
 }
 
 // @ts-ignore TODO
-const config: IConfigBase = {
+const config: IConfigPublic = {
   repl_port: 5002,
   google: {
     scopes: [
+      'https://www.googleapis.com/auth/userinfo.email',
       'https://www.googleapis.com/auth/tasks',
-      !process.env['TEST']
-        ? 'https://www.googleapis.com/auth/gmail.modify'
-        : // for tests only
-          'https://mail.google.com/'
+      // tests can delete emails
+      process.env['TEST']
+        ? 'https://mail.google.com/'
+        : 'https://www.googleapis.com/auth/gmail.modify'
     ]
   },
   gmail: {
@@ -272,7 +273,7 @@ const config: IConfigBase = {
         // @ts-ignore
         .filter(l => l.prefix == '!T/')
         // @ts-ignore
-        .map(l => `label:${l.prefix ||''}${l.name}`)
+        .map(l => `label:${l.prefix || ''}${l.name}`)
         .join(' ')
 
       return {

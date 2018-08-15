@@ -27,7 +27,7 @@ function getClient(ctx): OAuth2Client {
 
 // /google/login
 export function login(this: TContext, req: Request, h: ResponseToolkit) {
-  this.logger_info('/google/login')
+  this.logger_info('/signup')
 
   // @ts-ignore
   const url = getClient(this).generateAuthUrl({
@@ -44,7 +44,7 @@ export async function callback(
   req: Request,
   h: ResponseToolkit
 ) {
-  this.logger_info('/google/login/callback')
+  this.logger_info('/signup/done')
   const code = req.query['code']
 
   if (!code) {
@@ -55,11 +55,9 @@ export async function callback(
   // TODO merge with the email address and user ID
   const tokens: Credentials = await new Promise((resolve, reject) =>
     // @ts-ignore
-    getClient(this).getToken(code, function(err, tokens) {
+    getClient(this).getToken(code, (err, tokens) => {
       if (err) {
-        this.logger_error(err)
-        console.error(err)
-        reject(null)
+        return reject(err)
       }
       resolve(tokens)
     })
@@ -69,17 +67,27 @@ export async function callback(
     // TODO json mime type
     return h.response(tokens)
   }
-  const id_token = await getClient(this).verifyIdToken({
-    idToken: tokens.id_token,
-    audience: this.config.google.client_id
+  const id_token = await new Promise((resolve, reject) => {
+    // @ts-ignore
+    getClient(this).verifyIdToken(
+      tokens.id_token,
+      this.config.google.client_id,
+      (err, ret) => {
+        if (err) return reject(err)
+        resolve(ret)
+      }
+    )
   })
+  // @ts-ignore
   const payload = id_token.getPayload()
-  debugger
+  debugger // TODO
   if (!payload.email_verified || !payload.email) {
     return h.response('Email not confirmed or missing').code(400)
   }
-  // save new use to firebase
-  this.app.createNewUser(tokens, payload.email)
+  // save the new user to firebase
+  const xff_header = req.headers['x-forwarded-for']
+  const ip = xff_header ? xff_header.split(',')[0] : req.info.remoteAddress
+  this.app.addUser(tokens, payload.email, ip)
 
   // TODO redir to a success page with some docs
   return h.response(tokens)

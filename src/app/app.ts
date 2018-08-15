@@ -1,8 +1,8 @@
 import * as firebase from 'firebase-admin'
-import { test_user } from '../../config-users'
+import { test_user } from '../../config-accounts'
 import { Credentials as GoogleCredentials } from 'google-auth-library/build/src/auth/credentials'
 import RootSync from '../sync/root'
-import { IConfig, TAccount, TConfigCredentials } from '../types'
+import { IConfig, IAccount, IConfigAccount } from '../types'
 import Connections from './connections'
 import Logger from './logger'
 import * as merge from 'deepmerge'
@@ -12,6 +12,7 @@ export class App {
   syncs: RootSync[] = []
   firebase: firebase.app.App
   last_id: number = 0
+  log_info = this.logger.createLogger('app')
 
   constructor(
     public config: IConfig,
@@ -22,65 +23,61 @@ export class App {
       credential: firebase.credential.cert(config.firebase_admin),
       databaseURL: 'https://gtd-bot.firebaseio.com'
     })
-    this.start()
     if (!process.env['TEST']) {
       this.listenToChanges()
-    }
-  }
-
-  async getUsers(): Promise<TAccount[]> {
-    // TEST env
-    if (process.env['TEST']) {
-      return [test_user]
-    }
-    // DEV and PROD
-    const users = await this.firebase
-      .database()
-      .ref('/users')
-      .once('value')
-    return users.val().filter(user => {
-      // handle dev accounts
-      if (process.env['PROD'] && user.dev) return false
-      if (!process.env['PROD'] && !user.dev) return false
-      // skip disabled ones
-      if (!user.enabled || !user.client_data.enabled) return false
-      return true
-    })
-  }
-
-  async start() {
-    const users = await this.getUsers()
-    this.last_id = 0
-    for (const user of users) {
-      this.last_id = Math.max(this.last_id, parseInt(user.config.user.id, 10))
-      const sync = this.createUserInstance(this.config, user.config)
-      if (!sync) continue
-      this.syncs.push(sync)
+    } else {
+      this.syncs.push(this.createUserInstance(this.config, test_user.config))
     }
   }
 
   async listenToChanges() {
-    const posts_ref = this.firebase.database().ref('/accounts')
+    const accounts_ref = this.firebase.database().ref('/accounts')
 
-    posts_ref.on('child_added', user => {
-      const sync = this.createUserInstance(this.config, user.val().config)
-      if (sync) {
-        this.syncs.push(sync)
+    accounts_ref.on('child_added', (s: firebase.database.DataSnapshot) => {
+      const account: IAccount = s.val()
+      // TODO use last_id from firebase
+      this.last_id = Math.max(
+        this.last_id,
+        parseInt(account.config.user.id, 10)
+      )
+      if (!this.isAccountEnabled(account)) {
+        return false
       }
+      const sync = this.createUserInstance(this.config, account.config)
+      this.syncs.push(sync)
     })
-    posts_ref.on('child_removed', user => {
-      this.removeSync(user.val().id)
+    accounts_ref.on('child_removed', (s: firebase.database.DataSnapshot) => {
+      const account: IAccount = s.val()
+      this.removeSync(account.config.user.id)
     })
-    posts_ref.on('child_changed', user => {
-      this.removeSync(user.val().id)
-      const sync = this.createUserInstance(this.config, user.val().config)
-      if (sync) {
-        this.syncs.push(sync)
+    accounts_ref.on('child_changed', (s: firebase.database.DataSnapshot) => {
+      const account: IAccount = s.val()
+      this.removeSync(account.config.user.id)
+      if (!this.isAccountEnabled(account)) {
+        return false
       }
+      const sync = this.createUserInstance(this.config, account.config)
+      this.syncs.push(sync)
     })
   }
 
-  removeSync(user_id) {
+  isAccountEnabled(account: IAccount) {
+    // handle dev accounts
+    if (process.env['PROD'] && account.dev) {
+      return false
+    }
+    if (!process.env['PROD'] && !account.dev) {
+      return false
+    }
+    // skip disabled ones
+    if (!account.enabled || !account.client_data.enabled) {
+      return false
+    }
+    return true
+  }
+
+  removeSync(user_id: string) {
+    this.log_info(`Remove sync for user ${user_id}`)
     const sync = this.syncs.find(sync => sync.config.user.id === user_id)
     if (!sync) return false
     sync.state.drop('Enabled')
@@ -88,7 +85,7 @@ export class App {
     return true
   }
 
-  createUserInstance(config: IConfig, user: TConfigCredentials): RootSync {
+  createUserInstance(config: IConfig, user: IConfigAccount): RootSync {
     const config_user = merge(config, user)
     const sync = new RootSync(config_user, this.logger, this.connections)
     if (!process.env['TEST']) {
@@ -98,14 +95,22 @@ export class App {
     return sync
   }
 
-  createNewUser(
+  /**
+   * TODO detect if the email is already added and merge
+   * @param google_tokens
+   * @param email
+   * @param ip
+   * @param invitation_code
+   */
+  addUser(
     google_tokens: GoogleCredentials,
     email: string,
-    invitation_code?: string
+    ip: string,
+    invitation_code: string = null
   ) {
     const new_user = this.firebase
       .database()
-      .ref('users')
+      .ref('accounts')
       .push()
     const registered = moment()
       .utc()
@@ -118,7 +123,7 @@ export class App {
       registered,
       invitation_code,
       client_data: {
-        snapshot: {}
+        enabled: true
       },
       enabled: true,
       config: {
@@ -131,6 +136,7 @@ export class App {
         }
       }
     })
+    this.log_info(`Added a new user ${id}: ${email}`)
     return true
   }
 }

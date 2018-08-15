@@ -4,7 +4,7 @@ import Logger, { log_fn } from '../app/logger'
 import { IConfig } from '../types'
 import * as google_login from './google-login'
 // import { router, reply, utils } from 'server'
-import { Server } from 'hapi'
+import { Server, Request } from 'hapi'
 
 // const { get, error } = router
 // const { send, type } = reply
@@ -19,10 +19,10 @@ export type TContext = {
 export default async function(config: IConfig, logger: Logger, app: App) {
   const logger_info = logger.createLogger('http-server', 'info')
   const logger_error = logger.createLogger('http-server', 'error')
-  // const port = process.env['PROD'] ? 80 : 8080
+
   const port = 8080
   console.log(`Starting the HTTP server on ${port}`)
-  // TODO type
+
   const context: TContext = {
     logger_info,
     logger_error,
@@ -71,4 +71,20 @@ export default async function(config: IConfig, logger: Logger, app: App) {
       }
     }
   ])
+  // error handler
+  server.ext('onPreResponse', (request: Request, reply: any) => {
+    const response = request.response
+    // @ts-ignore
+
+    if (!response.isBoom) {
+      // if not error then continue :)
+      return reply.continue
+    }
+
+    // error
+    // @ts-ignore
+    logger_info(request.url.toString())
+    logger_error(response)
+    return reply.continue
+  })
 }
