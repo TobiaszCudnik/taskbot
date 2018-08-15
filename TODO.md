@@ -2,19 +2,32 @@
 
 * after starting the service for 2 users
   * `connections-error [gtd...@gmail.com] Request 'gtasks.api.tasks.list' aborted by the abort() function +0ms`
-* restart after an exception doesnt kick in
 * after applying `!S/Expired` it automatically changes to `!S/Finished`
 
 ## Milestone 1:
 
+* separate log file `debug.log`
+  * showing only loggers from the `DEBUG` env var
+* make `tail -f` show ansi colors
+* make `combined.log` optional
+* use stackdriver for errors only in PROD
+* welcome email with instructions
+  * `Welcome to TaskBot.app`
+    * reply to contact@taskbot.app
+  * `!T/Sync GTasks`
+* mangle sensitive info in the logs with hashes
+  * only for PROD
+  * salt
+  * delete prev stackdriver logs
+* user signup (password protected)
+  * collect the ip
+
+## Milestone 1.2
+
+* handle 404 and 500 in hapi
+  * https://futurestud.io/tutorials/hapi-how-to-handle-404-responses-for-missing-routes
 * refresh token on unauthorized_client exception
   * store refreshed tokens in the DB
-* mark self-sent emails as read after processing a status (if any)
-* `!S/Some day` to `!S/Someday`
-* make `tail -f` show ansi colors
-  * separate log file `debug.log` showing loggers from the `DEBUG` env var
-  * make `combined.log` optional
-  * disable the google log
 * tests
   * unhide and restore the parent
     * assert the parent stays the same
@@ -22,26 +35,7 @@
     * restarting 
     * reacting on exceptions
   * dont repeat tests without a sync scenario
-* tests - turn on debug msgs after "initial sync OK"
-  * also exclude the reset phase
-* welcome email with instructions
-  * `TaskBot Welcome Email`
-  * `!T/Sync GTasks`
-* when checking initial labels compare using the normalized form
-  * update if the case in the name differs
-* `A/answer` labels auto-removed after 
-  a certain amount of time
-* encrypt sensitive info in the logs with MD5 hashes
-  * only for PROD
-  * salt
-* user signup (password protected)
-  * collect the ip
-
-## Milestone 1.2
-
 * react to `code: 'ECONNRESET'`
-* react to `Backend Error`
-* handle `invalid_grant` in google auth
 * in case of a color conflict
   * try to remove custom colors (scan and compare)
   * avoid updating the color (continue using the users one)
@@ -63,9 +57,13 @@
   * enable / disable logging per user
   * activate user accounts
   * sync per api in the last 1h, 24h
+* `A/answer` labels auto-removed after a certain amount of time
 
 ## TODO
 
+* align config templates with the latest changes
+* handle `invalid_grant` in google auth
+* introduce `move`, triggered when a record moved between lists
 * read local logs with kibana
 * split `connections-info` to `connections/gmail-info` etc
 * print new records on db-diffs and record=diffs
