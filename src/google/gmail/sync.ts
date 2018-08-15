@@ -258,7 +258,11 @@ export default class GmailSync extends SyncWriter<
     let res = await this.req(
       'users.labels.list',
       this.api.users.labels.list,
-      { userId: 'me', fields: 'labels(id,name,color,labelListVisibility)' },
+      {
+        userId: 'me',
+        fields:
+          'labels(id,name,color,labelListVisibility,messageListVisibility)'
+      },
       abort,
       false
     )
