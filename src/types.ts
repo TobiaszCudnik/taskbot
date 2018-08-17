@@ -1,4 +1,5 @@
 import { DBRecord } from './sync/root'
+import { Credentials as GoogleCredentials } from 'google-auth-library/build/src/auth/credentials'
 
 export type TModifyLabels = {
   add?: string[]
@@ -75,14 +76,14 @@ export interface ILabelDefinition4 {
   name: string
 }
 
-export interface IConfig extends IConfigBase, TConfigCredentials {
-  google: IConfigGoogle
+export interface IConfig extends IConfigPublic, IConfigPrivate, IConfigAccount {
+  google: IConfigPublicGoogle & IConfigAccountGoogle & IConfigPrivateGoogle
 }
 
-export interface IConfigBase {
+export interface IConfigPublic {
   sync_frequency_multi?: number
   repl_port: number
-  google: IConfigGoogleBase
+  google: IConfigPublicGoogle
   gmail: {
     // TODO
     max_results: number
@@ -110,30 +111,49 @@ export interface IConfigBase {
   lists: (IListConfig | ((config: IConfig) => IListConfig))[]
 }
 
-export interface IConfigGoogle
-  extends IConfigGoogleBase,
-    IConfigGoogleCredentials {}
-
-export type TConfigCredentials = {
-  user?: {
-    id: number
-  }
+export interface IConfigPrivate {
+  // extract to the account type
   sync_frequency_multi?: number
-  google: IConfigGoogleCredentials
+  service: {
+    email: 'contact@taskbot.app'
+  }
+  google: IConfigPrivateGoogle
+  firebase_admin: any
 }
 
-export interface IConfigGoogleCredentials {
+export interface IConfigPrivateGoogle {
   // app
-  client_id?: string
-  client_secret?: string
-  redirect_url?: string
-  // user
-  username?: string
-  access_token?: string
-  refresh_token?: string
+  client_id: string
+  client_secret: string
+  redirect_url: string
 }
 
-export interface IConfigGoogleBase {
+export interface IConfigAccountGoogle extends GoogleCredentials {
+  username: string
+  access_token: string
+}
+
+export interface IConfigAccount {
+  user: {
+    id: string
+  }
+  google: IConfigAccountGoogle
+}
+
+export interface IAccount {
+  email: string
+  registered: string
+  invitation_code?: string
+  client_data: {
+    enabled: boolean
+    snapshot?: any
+  }
+  enabled: boolean
+  dev?: boolean
+  config: IConfigAccount
+}
+
+export interface IConfigPublicGoogle {
   scopes: string[]
 }
 

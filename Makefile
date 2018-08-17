@@ -14,36 +14,36 @@ build-watch:
 	node_modules/.bin/tsc --watch
 
 start:
-	DEBUG=db\*,root:\*,\*-error,http-server-info DEBUG_FILE=1 node src/app/app.js
+	DEBUG=app\*,root:\*,\*-error,http-server-info DEBUG_FILE=1 node src/app/bootstrap.js
 
 start-prod:
-	# PROD=1 DEBUG=root:\*-info,\*-error DEBUG_FILE=1 DEBUG_AM=1 node src/app/app.js
+	# PROD=1 DEBUG=root:\*-info,\*-error DEBUG_FILE=1 DEBUG_AM=1 node src/app/bootstrap.js
 	PROD=1 \
 		DEBUG_FILE=1 \
 		DEBUG=root:\*-info,\*-error \
-		node src/app/app.js
+		node src/app/bootstrap.js
 
 start-am:
 	DEBUG=\*-error,connections-verbose,db-diff,record-diff-verbose,root:\*-info,gmail-root,gtasks-root,\*inbox-labels\*,\*task-labels\*,\*gmail\*pending\*,\*next\*,\*-am \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node --inspect \
-		src/app/app.js
+		src/app/bootstrap.js
 
 start-verbose:
 	DEBUG=\*-error,\*-verbose,root:\*-info,gmail-root,gtasks-root,record-diff-verboses \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node --inspect \
-		src/app/app.js
+		src/app/bootstrap.js
 
 start-ami:
 	DEBUG=root:\*-info,gmail-root,gtasks DEBUG_FILE=1 DEBUG_AMI=1 DEBUG_AM=1 \
-		node --inspect src/app/app.js
-		#node --inspect-brk src/app/app.js
+		node --inspect src/app/bootstrap.js
+		#node --inspect-brk src/app/bootstrap.js
 
 start-inspect:
-	DEBUG=root node --inspect src/app/app.js
+	DEBUG=root node --inspect src/app/bootstrap.js
 
 start-am-heartbeat:
 	@echo 'Start with expressive logging for HeartBeat with the --inspect flag'
@@ -51,8 +51,8 @@ start-am-heartbeat:
 	DEBUG=root\*,gmail-root,gtasks-root,\*-am,\*-error,gmail-query-next\* \
 		DEBUG_FILE=1 \
 		DEBUG_AM=3 \
-		node --inspect src/app/app.js
-		#node --inspect-brk src/app/app.js
+		node --inspect src/app/bootstrap.js
+		#node --inspect-brk src/app/bootstrap.js
 
 clear-logs:
 	rm logs/*
@@ -68,20 +68,20 @@ deploy:
 	# kill -HUP 1
 
 debug:
-	DEBUG=root DEBUG_FILE=1 node --inspect-brk src/app/app.js
+	DEBUG=root DEBUG_FILE=1 node --inspect-brk src/app/bootstrap.js
 
 debug-list-next:
 	DEBUG=google\*-info,gmail-root\*-info,gtasks-root\*-info,gmail-query-next\*,gmail-list-next\*,gtasks-list-next\*,\*-error,db-diff,record-diff-verbose \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
-		node --inspect src/app/app.js
-		#node --inspect-brk src/app/app.js
+		node --inspect src/app/bootstrap.js
+		#node --inspect-brk src/app/bootstrap.js
 
 debug-gmail:
 	DEBUG=record-diff-verboses,google,gmail-root,gmail-verbose,\*-error,gtasks \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
-		node --inspect src/app/app.js
+		node --inspect src/app/bootstrap.js
 
 format:
 	prettier --config package.json --write *.ts

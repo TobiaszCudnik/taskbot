@@ -5,7 +5,7 @@ import Logger from './app/logger'
 export function machineLogToDebug(
   logger: Logger,
   machine: TAsyncMachine,
-  user_id?: number
+  user_id?: string
 ) {
   const name = machine.id(true) + '-am'
   // TODO https://github.com/googleapis/nodejs-logging-winston/issues/85

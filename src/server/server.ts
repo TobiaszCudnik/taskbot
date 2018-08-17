@@ -1,27 +1,46 @@
 import { readFileSync } from 'fs'
-import Logger from '../app/logger'
+import * as path from 'path'
+import { App } from '../app/app'
+import Logger, { log_fn } from '../app/logger'
+import { IConfig } from '../types'
 import * as google_login from './google-login'
 // import { router, reply, utils } from 'server'
-import { Server } from 'hapi'
+import { Server, Request, ResponseToolkit } from 'hapi'
+import * as inert from 'inert'
 
 // const { get, error } = router
 // const { send, type } = reply
 
-export default async function(config, logger: Logger) {
+export type TContext = {
+  logger_info: log_fn
+  logger_error: log_fn
+  config: IConfig
+  app: App
+}
+
+export default async function(config: IConfig, logger: Logger, app: App) {
   const logger_info = logger.createLogger('http-server', 'info')
   const logger_error = logger.createLogger('http-server', 'error')
-  // const port = process.env['PROD'] ? 80 : 8080
+
   const port = 8080
   console.log(`Starting the HTTP server on ${port}`)
-  // TODO type
-  const context = {
+
+  const context: TContext = {
     logger_info,
     logger_error,
-    config
+    config,
+    app
   }
 
-  const server = new Server({ port })
-  await server.start()
+  const server = new Server({
+    port,
+    routes: {
+      files: {
+        relativeTo: path.join(process.cwd(), 'www')
+      }
+    }
+  })
+  await server.register(inert)
   console.log(`HTTP started at ${server.info.uri}`)
   server.bind(context)
 
@@ -44,21 +63,49 @@ export default async function(config, logger: Logger) {
     },
     {
       method: 'GET',
-      path: '/google/login',
+      path: '/signup',
       handler: google_login.login
     },
     {
       method: 'GET',
-      path: '/google/login/callback',
+      path: '/signup/done',
       handler: google_login.callback
     },
     {
       method: 'GET',
       path: '/privacy-policy',
-      handler: (req, h) => {
-        const file = readFileSync('./static/privacy-policy.html')
-        return h.response(file)
+      handler: (req, h: ResponseToolkit) => {
+        return h.file('./privacy-policy.html')
+      }
+    },
+    {
+      method: 'GET',
+      path: '/{param*}',
+      handler: {
+        directory: {
+          path: '.',
+          redirectToSlash: true,
+          index: true
+        }
       }
     }
   ])
+  // error handler
+  server.ext('onPreResponse', (request: Request, reply: any) => {
+    const response = request.response
+    // @ts-ignore
+
+    if (!response.isBoom) {
+      // if not error then continue :)
+      return reply.continue
+    }
+
+    // error
+    // @ts-ignore
+    logger_info(request.url.toString())
+    logger_error(response)
+    console.dir(response)
+    return reply.continue
+  })
+  await server.start()
 }

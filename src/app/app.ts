@@ -1,124 +1,142 @@
-// import { Logger as LoggerRemote } from 'ami-logger/remote'
-import { Logger as AMILogger, Network, Granularity } from 'ami-logger'
-// TODO fix the default exports
-// @ts-ignore
-import RemoteNodeLoggerMixin from 'ami-logger/mixins/remote-node'
-// import WorkerPoolMixin from 'ami-logger/mixins/workerpool'
-// @ts-ignore
-import FileFSStreamMixin from 'ami-logger/mixins/snapshot/fs-stream'
-import { TAsyncMachine } from 'asyncmachine'
-import * as fs from 'fs'
-import * as debug from 'debug'
-import 'source-map-support/register'
-import config_base from '../../config'
-import config_credentials from '../../config-credentials'
-import users from '../../config-users'
-import * as merge from 'deepmerge'
+import * as firebase from 'firebase-admin'
+import { test_user } from '../../config-accounts'
+import { Credentials as GoogleCredentials } from 'google-auth-library/build/src/auth/credentials'
+import RootSync from '../sync/root'
+import { IConfig, IAccount, IConfigAccount } from '../types'
 import Connections from './connections'
 import Logger from './logger'
-import create_repl from './repl'
-import RootSync from '../sync/root'
-import { IConfig } from '../types'
-// import * as os from 'os'
-import * as _ from 'lodash'
-import server from '../server/server'
+import * as merge from 'deepmerge'
+import * as moment from 'moment-timezone'
 
-const syncs: RootSync[] = []
-const config: IConfig = <any>merge(config_base, config_credentials)
+export class App {
+  syncs: RootSync[] = []
+  firebase: firebase.app.App
+  last_id: number = 0
+  log_info = this.logger.createLogger('app')
 
-// TODO make it less global
-function init_am_inspector(machines?: TAsyncMachine[]) {
-  // TODO avoid globals
-  global.am_network = new Network(machines)
-  // build the logger class
-  let LoggerClass = AMILogger
-  LoggerClass = FileFSStreamMixin(LoggerClass)
-  LoggerClass = RemoteNodeLoggerMixin(LoggerClass)
-  // if (os.cpus().length > 1) {
-  //   LoggerClass = WorkerPoolMixin(LoggerClass)
-  // }
-  // TODO avoid globals
-  global.am_logger = new LoggerClass(
-    global.am_network,
-    // @ts-ignore
-    {
-      // granularity: Granularity.STATES,
-      stream: fs.createWriteStream('logs/snapshot.json')
-      // url: 'http://localhost:3757/'
+  constructor(
+    public config: IConfig,
+    public logger: Logger,
+    public connections: Connections
+  ) {
+    this.firebase = firebase.initializeApp({
+      credential: firebase.credential.cert(config.firebase_admin),
+      databaseURL: 'https://gtd-bot.firebaseio.com'
+    })
+    if (!process.env['TEST']) {
+      this.listenToChanges()
+    } else {
+      this.syncs.push(this.createUserInstance(this.config, test_user.config))
     }
-  )
-  // TODO avoid globals
-  global.am_logger.start()
-}
-
-if (process.env['DEBUG_AMI']) {
-  init_am_inspector()
-}
-
-process.on('SIGINT', exit)
-process.on('exit', exit)
-
-console.log('Starting the sync service...')
-// TODO APP CLASS
-const logger = new Logger()
-server(config, logger)
-const connections = new Connections(logger)
-for (const user of users) {
-  const config_user = merge(config, user)
-  const sync = new RootSync(config_user, logger, connections)
-  // jump out of this tick
-  if (!process.env['TEST']) {
-    sync.state.addNext('Enabled')
   }
-  syncs.push(sync)
-}
-// TODO /APP CLASS
 
-let exit_printed = false
-async function exit() {
-  if (exit_printed) return
-  // TODO avoid globals
-  if (global.am_network) {
-    // const filename = err.name
-    //   ? 'logs/snapshot-exception.json'
-    //   : 'logs/snapshot.json'
-    // global.am_logger.saveFile(filename)
-    // console.log(`Saved a snapshot to ${filename}`)
-    // TODO avoid globals
-    await global.am_logger.dispose()
-    console.log(`Saved a snapshot to logs/snapshot.json`)
-  }
-  for (const sync of syncs) {
-    console.log(`\nUser ${sync.config.user.id}: ${sync.config.google.username}`)
-    console.log(sync.getMachines())
-    const data = sync.data && sync.data.toString() || ''
-    if (data.trim()) {
-      console.log(
-        `\nUser ${sync.config.user.id}: ${sync.config.google.username}`
+  async listenToChanges() {
+    const accounts_ref = this.firebase.database().ref('/accounts')
+
+    accounts_ref.on('child_added', (s: firebase.database.DataSnapshot) => {
+      const account: IAccount = s.val()
+      // TODO use last_id from firebase
+      this.last_id = Math.max(
+        this.last_id,
+        parseInt(account.config.user.id, 10)
       )
-      console.log(data)
-      const subs = sync.subs.google.subs
-      console.log(subs.gmail.toString())
-      console.log(subs.tasks.toString())
-    }
-    console.log(`\nUser ${sync.config.user.id}: ${sync.config.google.username}`)
-    console.log(`Restarts count: ${sync.restarts_count}`)
+      if (!this.isAccountEnabled(account)) {
+        return false
+      }
+      const sync = this.createUserInstance(this.config, account.config)
+      this.syncs.push(sync)
+    })
+    accounts_ref.on('child_removed', (s: firebase.database.DataSnapshot) => {
+      const account: IAccount = s.val()
+      this.removeSync(account.config.user.id)
+    })
+    accounts_ref.on('child_changed', (s: firebase.database.DataSnapshot) => {
+      const account: IAccount = s.val()
+      this.removeSync(account.config.user.id)
+      if (!this.isAccountEnabled(account)) {
+        return false
+      }
+      const sync = this.createUserInstance(this.config, account.config)
+      this.syncs.push(sync)
+    })
   }
-  // TODO mark which loggers are enabled
-  // TODO rename user_id to * and dont output same loggers for every user
-  // @ts-ignore
-  const loggers = _(debug.instances)
-    .map(logger => logger.namespace.replace(/:\d+-/, ':*-'))
-    .concat('record-diff')
-    .uniq()
-    .sortBy()
-    .value()
-    .join('\n  ')
-  console.log('\nLoggers:\n ', loggers)
-  // TODO extract
-  // TODO add info about exceeded quotas
-  exit_printed = true
-  process.exit()
-}
 
-create_repl(syncs, connections, logger, init_am_inspector, config.repl_port)
+  isAccountEnabled(account: IAccount) {
+    // handle dev accounts
+    if (process.env['PROD'] && account.dev) {
+      return false
+    }
+    if (!process.env['PROD'] && !account.dev) {
+      return false
+    }
+    // skip disabled ones
+    if (!account.enabled || !account.client_data.enabled) {
+      return false
+    }
+    return true
+  }
+
+  removeSync(user_id: string) {
+    this.log_info(`Remove sync for user ${user_id}`)
+    const sync = this.syncs.find(sync => sync.config.user.id === user_id)
+    if (!sync) return false
+    sync.state.drop('Enabled')
+    this.syncs = this.syncs.filter(s => s !== sync)
+    return true
+  }
+
+  createUserInstance(config: IConfig, user: IConfigAccount): RootSync {
+    const config_user = merge(config, user)
+    const sync = new RootSync(config_user, this.logger, this.connections)
+    if (!process.env['TEST']) {
+      // jump out of this tick
+      sync.state.addNext('Enabled')
+    }
+    return sync
+  }
+
+  /**
+   * TODO detect if the email is already added and merge
+   * @param google_tokens
+   * @param email
+   * @param ip
+   * @param invitation_code
+   */
+  addUser(
+    google_tokens: GoogleCredentials,
+    email: string,
+    ip: string,
+    invitation_code: string = null
+  ) {
+    const new_user = this.firebase
+      .database()
+      .ref('accounts')
+      .push()
+    const registered = moment()
+      .utc()
+      .toISOString()
+    // TODO perform on firebase
+    const id = ++this.last_id
+
+    new_user.set({
+      email,
+      registered,
+      invitation_code,
+      client_data: {
+        enabled: true
+      },
+      enabled: true,
+      config: {
+        user: {
+          id
+        },
+        google: {
+          username: email,
+          ...google_tokens
+        }
+      }
+    })
+    this.log_info(`Added a new user ${id}: ${email}`)
+    return true
+  }
+}
