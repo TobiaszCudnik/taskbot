@@ -56,7 +56,7 @@ export default async function(config: IConfig, logger: Logger, app: App) {
     },
     {
       method: 'GET',
-      path: '/signup',
+      path: '/signup/{code}',
       handler: google_login.signup
     },
     {
@@ -65,7 +65,7 @@ export default async function(config: IConfig, logger: Logger, app: App) {
       handler: function(this: TContext, req: Request, h: ResponseToolkit) {
         this.logger_info('/invite')
         this.app.addInvite(req.payload['email'])
-        return h.redirect('./requested')
+        return h.redirect('/invite-requested')
       }
     },
     {
@@ -82,7 +82,7 @@ export default async function(config: IConfig, logger: Logger, app: App) {
     },
     {
       method: 'GET',
-      path: '/requested',
+      path: '/invite-requested',
       handler: (req, h: ResponseToolkit) => {
         return h.file('./requested.html')
       }

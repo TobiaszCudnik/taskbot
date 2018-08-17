@@ -114,7 +114,28 @@ export class App {
     return true
   }
 
-  isInvitationValid(code: string) {
+  async isInvitationValid(code: string) {
+    const ref = await this.firebase
+      .database()
+      .ref('invitation_codes')
+      .orderByChild('code')
+      .equalTo(code)
+      .once('value')
+    const invites = ref.val()
+    const key = Object.keys(invites)[0]
+    if (!key) {
+      return false
+    }
+    if (!invites[key].remaining) {
+      return false
+    }
+    invites[key].remaining--
+    // save
+    // TODO reduce the remaining after a successful signup
+    this.firebase
+      .database()
+      .ref(`invitation_codes/${key}`)
+      .set(invites[key])
     return true
   }
 
@@ -131,7 +152,6 @@ export class App {
     ip: string,
     invitation_code: string = null
   ) {
-    // TODO check if invitation_code is valid
     const ref = this.firebase
       .database()
       .ref('accounts')

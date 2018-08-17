@@ -26,10 +26,12 @@ function getClient(ctx): OAuth2Client {
 }
 
 // /google/login
-export function signup(this: TContext, req: Request, h: ResponseToolkit) {
+export async function signup(this: TContext, req: Request, h: ResponseToolkit) {
   this.logger_info('/signup')
 
-  if (!this.app.isInvitationValid(req.params['invitation_code'])) {
+  // TODO ask for an invitation code if not present
+  let is_valid = await this.app.isInvitationValid(req.params['code'])
+  if (!is_valid) {
     // TODO 403 page
     return h.redirect('/')
   }
