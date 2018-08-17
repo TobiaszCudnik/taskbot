@@ -1,6 +1,6 @@
 # GTD Bot
 
-Real time Gmail to Google Tasks sync and a GTD workflow manager.
+Real time GMail to Google Tasks sync and a GTD workflow manager.
 
 ## Features
 
@@ -13,6 +13,7 @@ Real time Gmail to Google Tasks sync and a GTD workflow manager.
   * `Project` - `P/groceries`, `#groceries`
   * `Reference` - `R/document`, `#R-document`
   * `Location` - `L/home`, `#L-home`
+  * `Commands` - `!T/Sync GTasks`
 * Auto label colors
 * Multi user support
 * Quota calculation and throttling
@@ -30,7 +31,8 @@ Real time Gmail to Google Tasks sync and a GTD workflow manager.
 1.  `make build`
 1.  `make start` (or `make start-prod`)
 1.  Go to [localhost:8080/signup](http://localhost:8080/signup) and authorize the app
-1.  Follow the **How to use** steps (optional)
+1.  Follow the [How to use](#how-to-use) steps (optional)
+1.  GTasks are being pulled rarely, to trigger a pull add `!T/Sync GTasks` to **any** email
 1.  Use your fav GTasks client on mobile and [tasks canvas](https://mail.google.com/tasks/canvas) on the web
 
 ## Roadmap
@@ -54,11 +56,11 @@ Although GTD Bot configures automatically as much as possible, there's still a c
 
 Enable Multi Inbox:
 
-1. Settings
-1. "Advanced" Tab
-1. Enable "Multiple Inboxes"
-1. "Multiple Inboxes" Tab
-1. Set "Below the inbox"
+1.  Settings
+1.  "Advanced" Tab
+1.  Enable "Multiple Inboxes"
+1.  "Multiple Inboxes" Tab
+1.  Set "Below the inbox"
 
 Configs for Multi Inbox Panes:
 
