@@ -96,7 +96,7 @@ export default class Connections {
 
   // TODO take abort() as the second param
   async req<A, T, T2>(
-    username: number,
+    username: string,
     method_name: string,
     method: (arg: A, cb: (err: any, res: T, res2: T2) => void) => void,
     params: A,
@@ -106,7 +106,7 @@ export default class Connections {
     retries?: number
   ): Promise<[T, T2] | null>
   async req<A, T>(
-    username: number,
+    username: string,
     method_name: string,
     method: (arg: A, cb: (err: any, res: T) => void) => void,
     params: A,
@@ -116,7 +116,7 @@ export default class Connections {
     retries?: number
   ): Promise<T | null>
   async req<A, T>(
-    user_id: number,
+    user_id: string,
     method_name: string,
     method: (arg: A, cb: (err: any, res: T) => void) => void,
     params: A,

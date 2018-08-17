@@ -26,8 +26,13 @@ function getClient(ctx): OAuth2Client {
 }
 
 // /google/login
-export function login(this: TContext, req: Request, h: ResponseToolkit) {
+export function signup(this: TContext, req: Request, h: ResponseToolkit) {
   this.logger_info('/signup')
+
+  if (!this.app.isInvitationValid(req.params['invitation_code'])) {
+    // TODO 403 page
+    return h.redirect('/')
+  }
 
   // @ts-ignore
   const url = getClient(this).generateAuthUrl({
@@ -39,7 +44,7 @@ export function login(this: TContext, req: Request, h: ResponseToolkit) {
 }
 
 // /google/login/callback
-export async function callback(
+export async function signupCallback(
   this: TContext,
   req: Request,
   h: ResponseToolkit

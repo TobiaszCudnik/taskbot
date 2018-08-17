@@ -56,26 +56,35 @@ export default async function(config: IConfig, logger: Logger, app: App) {
     },
     {
       method: 'GET',
-      path: '/',
-      handler: function(request, h) {
-        return h.response('TaskBot is coming...')
+      path: '/signup',
+      handler: google_login.signup
+    },
+    {
+      method: 'POST',
+      path: '/invite',
+      handler: function(this: TContext, req: Request, h: ResponseToolkit) {
+        this.logger_info('/invite')
+        this.app.addInvite(req.payload['email'])
+        return h.redirect('./requested')
       }
     },
     {
       method: 'GET',
-      path: '/signup',
-      handler: google_login.login
-    },
-    {
-      method: 'GET',
       path: '/signup/done',
-      handler: google_login.callback
+      handler: google_login.signupCallback
     },
     {
       method: 'GET',
       path: '/privacy-policy',
       handler: (req, h: ResponseToolkit) => {
         return h.file('./privacy-policy.html')
+      }
+    },
+    {
+      method: 'GET',
+      path: '/requested',
+      handler: (req, h: ResponseToolkit) => {
+        return h.file('./requested.html')
       }
     },
     {

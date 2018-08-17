@@ -1,3 +1,4 @@
+import * as assert from 'assert'
 import * as firebase from 'firebase-admin'
 import { test_user } from '../../config-accounts'
 import { Credentials as GoogleCredentials } from 'google-auth-library/build/src/auth/credentials'
@@ -95,6 +96,28 @@ export class App {
     return sync
   }
 
+  addInvite(email: string) {
+    assert(email && email.includes('@'), 'Invalid email')
+    // TODO validate email
+    const entry = {
+      email,
+      time: moment()
+        .utc()
+        .toISOString(),
+      active: false
+    }
+    const ref = this.firebase
+      .database()
+      .ref('signups')
+      .push()
+    ref.set(entry)
+    return true
+  }
+
+  isInvitationValid(code: string) {
+    return true
+  }
+
   /**
    * TODO detect if the email is already added and merge
    * @param google_tokens
@@ -108,7 +131,8 @@ export class App {
     ip: string,
     invitation_code: string = null
   ) {
-    const new_user = this.firebase
+    // TODO check if invitation_code is valid
+    const ref = this.firebase
       .database()
       .ref('accounts')
       .push()
@@ -118,7 +142,7 @@ export class App {
     // TODO perform on firebase
     const id = ++this.last_id
 
-    new_user.set({
+    ref.set({
       email,
       registered,
       invitation_code,
