@@ -2,7 +2,7 @@ import React from 'react'
 import Document, { Head, Main, NextScript } from 'next/document'
 import flush from 'styled-jsx/server'
 import Link from 'next/link'
-import invite from '../src/invite'
+import invite from '../src/google-auth'
 
 class MyDocument extends Document {
   render() {
