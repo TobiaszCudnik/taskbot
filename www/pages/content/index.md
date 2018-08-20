@@ -1,5 +1,3 @@
-### GMail Task Organizer
-
 **TaskBot.app** is a background GMail service which manages your emails using the [Getting Things Done](https://en.wikipedia.org/wiki/Getting_Things_Done) flow. Everything is synchronized to **Google Tasks**, so you're covered on the go.
 
 ![GMail with TaskBot](/static/images/home.png)

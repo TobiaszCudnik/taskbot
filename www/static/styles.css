@@ -277,8 +277,54 @@ footer {
   margin-top: 1em;
 }
 
+/* LOGO */
+
+h1.logo {
+  margin-bottom: 0.2em;
+}
+
+h4.logo {
+  color: dimgray;
+  margin-top: 0;
+}
+
+/* MENU */
+
+nav.menu ol {
+  display: flex;
+  justify-content: space-between;
+  list-style: none;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+nav.menu li {
+  display: block;
+  list-style-type: none;
+  padding: 0.3em 1em;
+}
+
+nav.menu li a,
+nav.menu li a:active,
+nav.menu li a:visited,
+nav.menu li a:hover {
+  cursor: pointer;
+  color: dimgray;
+  font-weight: 600;
+}
+
+nav.menu li.selected {
+  border-bottom: 3px solid #4785e9;
+}
+
+nav.menu li.selected a {
+  color: #4785e9;
+}
+
 /* TODO write a generator */
 .label {
+  line-height: 1.9em;
   border-radius: 4px;
   font-size: 12px;
   font-family: Roboto, RobotoDraft, Helvetica, Arial, sans-serif;

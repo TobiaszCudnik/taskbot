@@ -35,7 +35,34 @@ class MyDocument extends Document {
           <script dangerouslySetInnerHTML={{ __html: invite_src }} />
         </Head>
         <body>
-          <h1>TaskBot.app</h1>
+          {/* TODO make it a component */}
+          <h1 className="logo">TaskBot.app</h1>
+          <h4 className="logo">GMail Task Organizer</h4>
+          {/* TODO make it a component */}
+          <nav className="menu">
+            <ol>
+              <li className="crumb selected">
+                <Link href="/">
+                  <a>Home</a>
+                </Link>
+              </li>
+              <li className="crumb">
+                <Link href="/gmail">
+                  <a>Setup</a>
+                </Link>
+              </li>
+              <li className="crumb">
+                <Link href="/account">
+                  <a>Account</a>
+                </Link>
+              </li>
+              <li className="crumb">
+                <Link href="https://github.com/TobiaszCudnik/gtd-bot">
+                  <a>GitHub</a>
+                </Link>
+              </li>
+            </ol>
+          </nav>
           <Main />
           <NextScript />
           <footer>
