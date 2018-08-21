@@ -9,7 +9,8 @@
     "start-dev": "make start",
     "test": "make test",
     "test-service": "TEST=1 make start-am",
-    "test-debug": "make test-debug"
+    "test-debug": "make test-debug",
+    "next-dev": "cd www && npm run dev"
   },
   "repository": {
     "type": "git",

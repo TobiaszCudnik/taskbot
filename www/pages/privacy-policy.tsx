@@ -1,9 +1,7 @@
 /* eslint-disable jsx-a11y/anchor-is-valid */
 
 import React from 'react'
-import PropTypes from 'prop-types'
 import { withStyles } from '@material-ui/core/styles'
-import Link from 'next/link'
 const content = markdown.require('./content/privacy-policy.md')
 
 const styles = theme => ({
