@@ -3,10 +3,21 @@ import Document, { Head, Main, NextScript } from 'next/document'
 import flush from 'styled-jsx/server'
 import Link from 'next/link'
 import invite from '../src/google-auth'
+import Menu from '../pages/components/menu'
 
 class MyDocument extends Document {
+  static async getInitialProps({ res }) {
+    if (res) {
+      console.log(res)
+      debugger
+      debugger
+    }
+
+    return {}
+  }
+
   render() {
-    const { pageContext } = this.props
+    const { pageContext, pathname } = this.props
 
     let invite_src = invite.toString()
     invite_src = `(${invite_src})()`
@@ -35,34 +46,9 @@ class MyDocument extends Document {
           <script dangerouslySetInnerHTML={{ __html: invite_src }} />
         </Head>
         <body>
-          {/* TODO make it a component */}
           <h1 className="logo">TaskBot.app</h1>
           <h4 className="logo">GMail Task Organizer</h4>
-          {/* TODO make it a component */}
-          <nav className="menu">
-            <ol>
-              <li className="crumb selected">
-                <Link href="/">
-                  <a>Home</a>
-                </Link>
-              </li>
-              <li className="crumb">
-                <Link href="/gmail">
-                  <a>Setup</a>
-                </Link>
-              </li>
-              <li className="crumb">
-                <Link href="/account">
-                  <a>Account</a>
-                </Link>
-              </li>
-              <li className="crumb">
-                <Link href="https://github.com/TobiaszCudnik/gtd-bot">
-                  <a>GitHub</a>
-                </Link>
-              </li>
-            </ol>
-          </nav>
+          <Menu pathname={pathname} />
           <Main />
           <NextScript />
           <footer>
@@ -119,6 +105,7 @@ MyDocument.getInitialProps = ctx => {
   return {
     ...page,
     pageContext,
+    pathname: ctx.pathname,
     // Styles fragment is rendered after the app and page rendering finish.
     styles: (
       <React.Fragment>
