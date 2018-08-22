@@ -8,7 +8,9 @@ compile-watch:
 	node_modules/.bin/tsc --pretty --watch --noEmit
 
 build:
-	node_modules/.bin/tsc 
+	-node_modules/.bin/tsc
+	rm -rf www/node_modules/.cache/babel-loader/*
+	cd www && node_modules/.bin/next build
 
 build-watch:
 	node_modules/.bin/tsc --watch

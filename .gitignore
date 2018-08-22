@@ -3,6 +3,7 @@
 /node_modules/
 /.codio
 /.vscode
+/.alm
 /.DS_Store
 /src/**.js
 /test/**.js

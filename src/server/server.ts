@@ -7,6 +7,7 @@ import * as google_login from './google-login'
 // import { router, reply, utils } from 'server'
 import { Server, Request, ResponseToolkit } from 'hapi'
 import * as inert from 'inert'
+import www_start from '../../www/src/next'
 
 // const { get, error } = router
 // const { send, type } = reply
@@ -36,12 +37,11 @@ export default async function(config: IConfig, logger: Logger, app: App) {
     port,
     routes: {
       files: {
-        relativeTo: path.join(process.cwd(), 'www')
+        relativeTo: path.join(process.cwd(), 'www/static')
       }
     }
   })
   await server.register(inert)
-  console.log(`HTTP started at ${server.info.uri}`)
   server.bind(context)
 
   // Add the route
@@ -89,7 +89,7 @@ export default async function(config: IConfig, logger: Logger, app: App) {
     },
     {
       method: 'GET',
-      path: '/{param*}',
+      path: '/static/{param*}',
       handler: {
         directory: {
           path: '.',
@@ -116,5 +116,7 @@ export default async function(config: IConfig, logger: Logger, app: App) {
     console.dir(response)
     return reply.continue
   })
+  await www_start(server)
   await server.start()
+  console.log(`HTTP started at ${server.info.uri}`)
 }
