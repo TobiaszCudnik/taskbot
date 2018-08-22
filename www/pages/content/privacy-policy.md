@@ -13,3 +13,6 @@ All other data related to synchronizing your GMail and Google Tasks entries is k
 #### What information do we share?
 
 We don't share any information with 3rd partied, besides Google Cloud which initially provides the information (`email`, `access_token` and `refresh_token`) for us, after your consent.
+<!--stackedit_data:
+eyJoaXN0b3J5IjpbLTIwNTUwNDUzNTldfQ==
+-->
