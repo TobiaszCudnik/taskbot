@@ -9,6 +9,9 @@ compile-watch:
 
 build:
 	-node_modules/.bin/tsc
+	make build-www
+
+build-www:
 	rm -rf www/node_modules/.cache/babel-loader/*
 	cd www && NODE_ENV=production node_modules/.bin/next build
 
@@ -55,6 +58,9 @@ start-am-heartbeat:
 		DEBUG_AM=3 \
 		node --inspect src/app/bootstrap.js
 		#node --inspect-brk src/app/bootstrap.js
+
+start-www:
+	cd www && npm run dev
 
 clear-logs:
 	rm logs/*

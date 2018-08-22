@@ -1,38 +1,26 @@
-import { readFileSync } from 'fs'
 import * as path from 'path'
 import { App } from '../app/app'
 import Logger, { log_fn } from '../app/logger'
 import { IConfig } from '../types'
 import * as google_login from './google-login'
-// import { router, reply, utils } from 'server'
-import { Server, Request, ResponseToolkit } from 'hapi'
+import { Server, Request } from 'hapi'
 import * as inert from 'inert'
 import www_start from '../../www/src/next'
-
-// const { get, error } = router
-// const { send, type } = reply
 
 export type TContext = {
   logger_info: log_fn
   logger_error: log_fn
-  config: IConfig
   app: App
 }
 
-export default async function(config: IConfig, logger: Logger, app: App) {
+export default async function(logger: Logger, app: App) {
   const logger_info = logger.createLogger('http-server', 'info')
   const logger_error = logger.createLogger('http-server', 'error')
 
   const port = 8080
   console.log(`Starting the HTTP server on ${port}`)
 
-  const context: TContext = {
-    logger_info,
-    logger_error,
-    config,
-    app
-  }
-
+  // static file server
   const server = new Server({
     port,
     routes: {
@@ -42,10 +30,18 @@ export default async function(config: IConfig, logger: Logger, app: App) {
     }
   })
   await server.register(inert)
+
+  // global context
+  const context: TContext = {
+    logger_info,
+    logger_error,
+    app
+  }
   server.bind(context)
 
-  // Add the route
+  // routes
   server.route([
+    // appengine
     {
       method: 'GET',
       path: '/_ah/health',
@@ -54,39 +50,23 @@ export default async function(config: IConfig, logger: Logger, app: App) {
         return res.code(200)
       }
     },
-    {
-      method: 'GET',
-      path: '/signup/{code}',
-      handler: google_login.signup
-    },
+    // google
     {
       method: 'POST',
       path: '/invite',
-      handler: function(this: TContext, req: Request, h: ResponseToolkit) {
-        this.logger_info('/invite')
-        this.app.addInvite(req.payload['email'])
-        return h.redirect('/invite-requested')
-      }
+      handler: google_login.invite
+    },
+    {
+      method: 'POST',
+      path: '/signup',
+      handler: google_login.signup
     },
     {
       method: 'GET',
       path: '/signup/done',
       handler: google_login.signupCallback
     },
-    {
-      method: 'GET',
-      path: '/privacy-policy',
-      handler: (req, h: ResponseToolkit) => {
-        return h.file('./privacy-policy.html')
-      }
-    },
-    {
-      method: 'GET',
-      path: '/invite-requested',
-      handler: (req, h: ResponseToolkit) => {
-        return h.file('./requested.html')
-      }
-    },
+    // /www/static
     {
       method: 'GET',
       path: '/static/{param*}',
@@ -99,24 +79,31 @@ export default async function(config: IConfig, logger: Logger, app: App) {
       }
     }
   ])
+
   // error handler
   server.ext('onPreResponse', (request: Request, reply: any) => {
     const response = request.response
-    // @ts-ignore
 
+    // no error
+    // @ts-ignore
     if (!response.isBoom) {
-      // if not error then continue :)
       return reply.continue
     }
 
     // error
-    // @ts-ignore
     logger_info(request.url.toString())
     logger_error(response)
+    // TODO log the stack trace
     console.dir(response)
+
     return reply.continue
   })
+
+  // nextjs server
   await www_start(server)
+
+  // start listening
   await server.start()
+
   console.log(`HTTP started at ${server.info.uri}`)
 }

@@ -1,7 +1,7 @@
 import { machine, PipeFlags } from 'asyncmachine'
 import { TAbortFunction } from 'asyncmachine/types'
 import * as debug from 'debug'
-import * as google from 'googleapis'
+import { google } from 'googleapis'
 import * as http from 'http'
 import * as _ from 'lodash'
 import { Moment } from 'moment'

@@ -1,6 +1,7 @@
 export default function() {
   function start() {
     // 2. Initialize the JavaScript client library.
+    // TODO read from the config
     gapi.auth2
       .init({
         clientId: '900809192866-rvmuos3to6bcidcvnpeqv0alqcnskhvj.apps.googleusercontent.com',

@@ -1,51 +1,41 @@
-import { OAuth2Client } from 'google-auth-library'
-
-// @ts-ignore
-import { auth } from 'googleapis'
-// import { reply } from 'server'
+import * as assert from 'assert'
 import { Request, ResponseToolkit, Server } from 'hapi'
-import { Credentials } from 'google-auth-library/build/src/auth/credentials'
-import { IConfig } from '../types'
+import * as moment from 'moment-timezone'
 import { App } from '../app/app'
 import { TContext } from './server'
 
-// const { redirect, send, status } = reply
-
-let client
-
-function getClient(ctx): OAuth2Client {
-  if (client) return client
-  const config: IConfig = ctx.config
-
-  client = new auth.OAuth2(
-    config.google.client_id,
-    config.google.client_secret,
-    config.google.redirect_url
-  )
-  return client
+// POST /invite
+export async function invite(this: TContext, req: Request, h: ResponseToolkit) {
+  const email = await idTokenToEmail(this.app, req.payload['id_token'])
+  if (!email) {
+    h.response().code(403)
+  }
+  await addInvite(this.app, email)
+  return h.response().code(200)
 }
 
-// /google/login
+// POST /signup
 export async function signup(this: TContext, req: Request, h: ResponseToolkit) {
   this.logger_info('/signup')
 
-  // TODO ask for an invitation code if not present
-  let is_valid = await this.app.isInvitationValid(req.params['code'])
+  const email = await idTokenToEmail(this.app, req.payload['id_token'])
+  if (!email) {
+    h.response('ID token not valid').code(403)
+  }
+  let is_valid = await isInvitationValid(this.app, email)
   if (!is_valid) {
-    // TODO 403 page
-    return h.redirect('/')
+    return h.response('Invitation not valid').code(403)
   }
 
-  // @ts-ignore
-  const url = getClient(this).generateAuthUrl({
+  const url = this.app.auth.generateAuthUrl({
     // will return a refresh token
     access_type: 'offline',
-    scope: this.config.google.scopes
+    scope: this.app.config.google.scopes
   })
   return h.redirect(url + '&approval_prompt=force')
 }
 
-// /google/login/callback
+// GET /signup/done
 export async function signupCallback(
   this: TContext,
   req: Request,
@@ -58,44 +48,122 @@ export async function signupCallback(
     return h.response('Missing token code').code(400)
   }
 
-  // request access token
-  // TODO merge with the email address and user ID
-  const tokens: Credentials = await new Promise((resolve, reject) =>
-    // @ts-ignore
-    getClient(this).getToken(code, (err, tokens) => {
-      if (err) {
-        return reject(err)
-      }
-      resolve(tokens)
-    })
-  )
+  // request access tokens
+  const { tokens } = await this.app.auth.getToken(code)
   this.logger_info('tokens fetched')
+
   if (process.env['TEST']) {
-    // TODO json mime type
-    return h.response(tokens)
+    return tokens
   }
-  const id_token = await new Promise((resolve, reject) => {
-    // @ts-ignore
-    getClient(this).verifyIdToken(
-      tokens.id_token,
-      this.config.google.client_id,
-      (err, ret) => {
-        if (err) return reject(err)
-        resolve(ret)
-      }
-    )
-  })
-  // @ts-ignore
-  const payload = id_token.getPayload()
-  debugger // TODO
-  if (!payload.email_verified || !payload.email) {
+
+  const email = await idTokenToEmail(
+    this.app,
+    tokens.id_token,
+    this.app.config.google.client_id
+  )
+  if (!email) {
     return h.response('Email not confirmed or missing').code(400)
   }
+
   // save the new user to firebase
+  const ip = getIP(req)
+  await this.app.addUser(tokens, email, ip)
+
+  return h.redirect('/welcome')
+}
+
+// HELPER FUNCTIONS
+
+/**
+ * Get an (confirmed) email from an id_token.
+ *
+ * @param app
+ * @param id_token
+ * @param client_id Target audience, defaults to the website client_id
+ */
+async function idTokenToEmail(
+  this: void,
+  app: App,
+  id_token: string,
+  client_id = null
+): Promise<string | null> {
+  client_id = client_id || app.config.google_website.client_id
+  const login_ticket = await app.auth.verifyIdToken({
+    idToken: id_token,
+    audience: client_id
+  })
+
+  const payload = login_ticket.getPayload()
+  if (!payload.email_verified || !payload.email) {
+    return null
+  }
+  return payload.email
+}
+
+async function addInvite(this: void, app: App, email: string) {
+  assert(email && email.includes('@'), 'Invalid email')
+
+  // check if the invitation already exists
+  const query = await app.firebase
+    .database()
+    .ref('invitations')
+    .orderByChild('email')
+    .equalTo(email)
+    .once('value')
+  const invites = query.val()
+
+  if (invites) {
+    const key = Object.keys(invites)[0]
+    if (key) {
+      // invitation already exists
+      return false
+    }
+  }
+
+  // create a new invitation
+  // TODO type
+  const entry = {
+    email,
+    time: moment()
+      .utc()
+      .toISOString(),
+    active: false,
+    fulfilled: false
+  }
+  const push = app.firebase
+    .database()
+    .ref('invitations')
+    .push()
+  await push.set(entry)
+
+  return true
+}
+
+async function isInvitationValid(this: void, app: App, email: string) {
+  const invite = await getInvitation(app, email)
+  return invite.val.active
+}
+
+export async function getInvitation(app: App, email: string) {
+  const ref = await app.firebase
+    .database()
+    .ref('invitations')
+    .orderByChild('email')
+    .equalTo(email)
+    .once('value')
+  const invites = ref.val()
+  const key = Object.keys(invites)[0]
+  if (!key) {
+    return null
+  }
+  return {
+    ref: invites,
+    val: invites[key]
+  }
+}
+
+function getIP(this: void, req: Request) {
   const xff_header = req.headers['x-forwarded-for']
   const ip = xff_header ? xff_header.split(',')[0] : req.info.remoteAddress
-  this.app.addUser(tokens, payload.email, ip)
-
-  // TODO redir to a success page with some docs
-  return h.response(tokens)
+  return ip
 }

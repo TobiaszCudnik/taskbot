@@ -44,7 +44,7 @@
     "escape-string-regexp": "^1.0.5",
     "firebase-admin": "^6.0.0",
     "google-auth-library": "^1.6.1",
-    "googleapis": "^23.0.2",
+    "googleapis": "^33.0.0",
     "hapi": "^17.5.3",
     "inert": "^5.1.0",
     "internet-timestamp": "0.0.1",
@@ -58,7 +58,6 @@
     "supports-color": "^5.4.0",
     "suspend": "^0.7.0",
     "typed-promisify-tob": "^0.2.0",
-    "uuid": "^3.2.1",
     "winston": "^3.0.0"
   },
   "license": "MIT",

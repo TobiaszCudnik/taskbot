@@ -61,7 +61,7 @@ console.log('Starting the sync service...')
 const logger = new Logger()
 const connections = new Connections(logger)
 const app = new App(config, logger, connections)
-server(config, logger, app)
+server(logger, app)
 
 let exit_printed = false
 async function exit() {

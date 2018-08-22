@@ -1,5 +1,5 @@
 import { machine } from 'asyncmachine'
-import * as google from 'googleapis'
+import { google } from 'googleapis'
 import { map } from 'typed-promisify-tob'
 // Machine types
 import {

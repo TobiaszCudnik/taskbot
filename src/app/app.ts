@@ -1,19 +1,21 @@
-import * as assert from 'assert'
 import * as firebase from 'firebase-admin'
 import { test_user } from '../../config-accounts'
 import { Credentials as GoogleCredentials } from 'google-auth-library/build/src/auth/credentials'
+import { getInvitation } from '../server/google-login'
 import RootSync from '../sync/root'
 import { IConfig, IAccount, IConfigAccount } from '../types'
 import Connections from './connections'
 import Logger from './logger'
 import * as merge from 'deepmerge'
 import * as moment from 'moment-timezone'
+import { OAuth2Client } from 'google-auth-library'
 
 export class App {
   syncs: RootSync[] = []
   firebase: firebase.app.App
   last_id: number = 0
   log_info = this.logger.createLogger('app')
+  auth: OAuth2Client
 
   constructor(
     public config: IConfig,
@@ -29,6 +31,11 @@ export class App {
     } else {
       this.syncs.push(this.createUserInstance(this.config, test_user.config))
     }
+    this.auth = new OAuth2Client(
+      config.google.client_id,
+      config.google.client_secret,
+      config.google.redirect_url
+    )
   }
 
   async listenToChanges() {
@@ -49,11 +56,11 @@ export class App {
     })
     accounts_ref.on('child_removed', (s: firebase.database.DataSnapshot) => {
       const account: IAccount = s.val()
-      this.removeSync(account.config.user.id)
+      this.removeUserInstance(account.config.user.id)
     })
     accounts_ref.on('child_changed', (s: firebase.database.DataSnapshot) => {
       const account: IAccount = s.val()
-      this.removeSync(account.config.user.id)
+      this.removeUserInstance(account.config.user.id)
       if (!this.isAccountEnabled(account)) {
         return false
       }
@@ -77,7 +84,7 @@ export class App {
     return true
   }
 
-  removeSync(user_id: string) {
+  removeUserInstance(user_id: string) {
     this.log_info(`Remove sync for user ${user_id}`)
     const sync = this.syncs.find(sync => sync.config.user.id === user_id)
     if (!sync) return false
@@ -96,49 +103,6 @@ export class App {
     return sync
   }
 
-  addInvite(email: string) {
-    assert(email && email.includes('@'), 'Invalid email')
-    // TODO validate email
-    const entry = {
-      email,
-      time: moment()
-        .utc()
-        .toISOString(),
-      active: false
-    }
-    const ref = this.firebase
-      .database()
-      .ref('signups')
-      .push()
-    ref.set(entry)
-    return true
-  }
-
-  async isInvitationValid(code: string) {
-    const ref = await this.firebase
-      .database()
-      .ref('invitation_codes')
-      .orderByChild('code')
-      .equalTo(code)
-      .once('value')
-    const invites = ref.val()
-    const key = Object.keys(invites)[0]
-    if (!key) {
-      return false
-    }
-    if (!invites[key].remaining) {
-      return false
-    }
-    invites[key].remaining--
-    // save
-    // TODO reduce the remaining after a successful signup
-    this.firebase
-      .database()
-      .ref(`invitation_codes/${key}`)
-      .set(invites[key])
-    return true
-  }
-
   /**
    * TODO detect if the email is already added and merge
    * @param google_tokens
@@ -146,12 +110,7 @@ export class App {
    * @param ip
    * @param invitation_code
    */
-  addUser(
-    google_tokens: GoogleCredentials,
-    email: string,
-    ip: string,
-    invitation_code: string = null
-  ) {
+  async addUser(google_tokens: GoogleCredentials, email: string, ip: string) {
     const ref = this.firebase
       .database()
       .ref('accounts')
@@ -162,10 +121,9 @@ export class App {
     // TODO perform on firebase
     const id = ++this.last_id
 
-    ref.set({
+    await ref.set({
       email,
       registered,
-      invitation_code,
       client_data: {
         enabled: true
       },
@@ -180,6 +138,16 @@ export class App {
         }
       }
     })
+
+    const invite = await getInvitation(this, email)
+    // support no-invite accounts (bypass code)
+    if (invite) {
+      invite.ref.set({
+        ...invite.val,
+        fulfilled: true
+      })
+    }
+
     this.log_info(`Added a new user ${id}: ${email}`)
     return true
   }

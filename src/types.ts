@@ -118,6 +118,7 @@ export interface IConfigPrivate {
     email: 'contact@taskbot.app'
   }
   google: IConfigPrivateGoogle
+  google_website: { client_id: string; scope: string }
   firebase_admin: any
 }
 

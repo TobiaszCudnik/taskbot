@@ -3,7 +3,7 @@ import { TAbortFunction } from 'asyncmachine/types'
 import * as debug from 'debug'
 import * as clone from 'deepcopy'
 import * as delay from 'delay'
-import * as google from 'googleapis'
+import { google } from 'googleapis'
 import * as _ from 'lodash'
 import * as moment from 'moment'
 // Machine types

@@ -1,5 +1,5 @@
 import AsyncMachine from 'asyncmachine'
-import * as google from 'googleapis'
+import { google } from 'googleapis'
 // Machine types
 import {
   IBind,

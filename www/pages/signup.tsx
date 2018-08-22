@@ -1,8 +1,9 @@
+/* eslint-disable jsx-a11y/anchor-is-valid */
+
 import React from 'react'
 import { withStyles } from '@material-ui/core/styles'
-import SignupForm from './components/invite-form'
-
-const content = markdown.require('./content/index.md')
+import SignupForm from './components/signup-form'
+const content = markdown.require('./content/signup.md')
 
 const styles = theme => ({
   root: {
@@ -11,15 +12,10 @@ const styles = theme => ({
   }
 })
 
-class Index extends React.Component<{}, {}> {
-  state = {
-    signup: false
-  }
-
+class Index extends React.Component {
   render() {
     const { classes } = this.props
 
-    // TODO extract the signup form to a separate component
     return (
       <div className={classes.root}>
         <div dangerouslySetInnerHTML={{ __html: content }} />
