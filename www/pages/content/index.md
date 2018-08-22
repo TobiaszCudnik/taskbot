@@ -7,3 +7,6 @@
 * <span class='label reference'>R/</span> - References <span class='label reference'>R/document</span> <span class='label reference'>R/photo</span>
 * <span class='label location'>L/</span> - Locations <span class='label location'>L/Home</span> <span class='label location'>L/London</span>
 * <span class='label command'>!T/</span> - Commands <span class='label command'>!T/Sync GTasks</span>
+<!--stackedit_data:
+eyJoaXN0b3J5IjpbLTg5MTQ1MzM0NV19
+-->
