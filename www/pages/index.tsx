@@ -64,7 +64,7 @@ class Index extends React.Component<{}, State> {
                 fullWidth={true}
                 onClick={this.onRequestInviteClick}
               >
-                {invite_requested ? 'Rquesting...' : 'Request an invite'}
+                {invite_requested ? 'Requesting...' : 'Request an invite'}
               </Button>
             </form>
           </React.Fragment>

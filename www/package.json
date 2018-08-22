@@ -13,7 +13,7 @@
     "react-jss": "^8.6.1"
   },
   "scripts": {
-    "dev": "next",
+    "dev": "next -p 8080",
     "build": "next build",
     "start": "next start",
     "clean-cache": "rm -R ./node_modules/.cache/babel-loader/*"

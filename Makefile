@@ -10,17 +10,17 @@ compile-watch:
 build:
 	-node_modules/.bin/tsc
 	rm -rf www/node_modules/.cache/babel-loader/*
-	cd www && node_modules/.bin/next build
+	cd www && NODE_ENV=production node_modules/.bin/next build
 
 build-watch:
 	node_modules/.bin/tsc --watch
 
 start:
-	DEBUG=app\*,root:\*,\*-error,http-server-info DEBUG_FILE=1 node src/app/bootstrap.js
+	NODE_ENV=production DEBUG=app\*,root:\*,\*-error,http-server-info DEBUG_FILE=1 node src/app/bootstrap.js
 
 start-prod:
 	# PROD=1 DEBUG=root:\*-info,\*-error DEBUG_FILE=1 DEBUG_AM=1 node src/app/bootstrap.js
-	PROD=1 \
+	NODE_ENV=production PROD=1 \
 		DEBUG_FILE=1 \
 		DEBUG=root:\*-info,\*-error \
 		node src/app/bootstrap.js
