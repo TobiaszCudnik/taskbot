@@ -5,6 +5,7 @@ import * as moment from 'moment-timezone'
 import { App } from '../app/app'
 import { IConfig, IConfigPrivate } from '../types'
 import { TContext } from './server'
+import { Credentials } from 'google-auth-library/build/src/auth/credentials'
 
 // POST /invite
 export async function invite(this: TContext, req: Request, h: ResponseToolkit) {
@@ -60,7 +61,16 @@ export async function signupCallback(
   }
 
   // request access tokens
-  const { tokens } = await this.app.auth.getToken(code)
+  // const { tokens } = await this.app.auth.getToken(code)
+  const tokens: Credentials = await new Promise((resolve, reject) =>
+    // @ts-ignore
+    this.app.auth.getToken(code, (err, tokens) => {
+      if (err) {
+        return reject(err)
+      }
+      resolve(tokens)
+    })
+  )
   this.logger_info('tokens fetched')
 
   if (process.env['TEST']) {
@@ -98,7 +108,8 @@ async function idTokenToEmail(
   id_token: string,
   client_id = null
 ): Promise<string | null> {
-  client_id = client_id || app.config.www.client_id
+  client_id = client_id || app.config.www.google.client_id
+
   const login_ticket = await app.auth.verifyIdToken({
     idToken: id_token,
     audience: client_id

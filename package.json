@@ -44,7 +44,7 @@
     "escape-string-regexp": "^1.0.5",
     "firebase-admin": "^6.0.0",
     "google-auth-library": "^1.6.1",
-    "googleapis": "^33.0.0",
+    "googleapis": "^23.0.2",
     "hapi": "^17.5.3",
     "inert": "^5.1.0",
     "internet-timestamp": "0.0.1",

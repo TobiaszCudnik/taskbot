@@ -1,9 +1,7 @@
 import { Semaphore } from 'await-semaphore'
 import * as http from 'http'
 import { promisifyArray } from 'typed-promisify-tob/index'
-import { google } from 'googleapis'
-import { gmail_v1 } from 'googleapis/build/src/apis/gmail/v1'
-import { tasks_v1 } from 'googleapis/build/src/apis/tasks/v1'
+import * as google from 'googleapis'
 import GC from '../sync/gc'
 import { log_fn, default as Logger } from './logger'
 
@@ -33,10 +31,9 @@ export default class Connections {
   log_verbose: log_fn
   log_stats: log_fn
 
-  // TODO ???
   apis: {
-    gtasks: tasks_v1.Tasks | null
-    gmail: gmail_v1.Gmail | null
+    gtasks: google.tasks.v1.Tasks | null
+    gmail: google.gmail.v1.Gmail | null
   } = {
     gtasks: null,
     gmail: null
