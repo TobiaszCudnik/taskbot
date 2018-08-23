@@ -11,8 +11,11 @@ const styles = theme => ({
     // paddingTop: theme.spacing.unit * 20
   }
 })
+type Props = {}
 
-class Index extends React.Component {
+type State = {}
+
+class SignupPage extends React.Component<Props, State> {
   render() {
     const { classes } = this.props
 
@@ -25,4 +28,4 @@ class Index extends React.Component {
   }
 }
 
-export default withStyles(styles)(Index)
+export default withStyles(styles)(SignupPage)

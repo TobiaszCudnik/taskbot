@@ -4,7 +4,7 @@ export default function() {
     // TODO read from the config
     gapi.auth2
       .init({
-        clientId: '900809192866-rvmuos3to6bcidcvnpeqv0alqcnskhvj.apps.googleusercontent.com',
+        client_id: '900809192866-rvmuos3to6bcidcvnpeqv0alqcnskhvj.apps.googleusercontent.com',
         scope: 'https://www.googleapis.com/auth/userinfo.email'
       })
   }

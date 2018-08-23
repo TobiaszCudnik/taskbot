@@ -73,7 +73,7 @@ export async function signupCallback(
 
   // save the new user to firebase
   const ip = getIP(req)
-  await this.app.addUser(tokens, email, ip)
+  await this.app.addAccount(tokens, email, ip)
 
   return h.redirect('/welcome')
 }
@@ -158,6 +158,9 @@ export async function getInvitation(app: App, email: string) {
     .equalTo(email)
     .once('value')
   const invites = ref.val()
+  if (!invites) {
+    return null
+  }
   const key = Object.keys(invites)[0]
   if (!key) {
     return null

@@ -2,10 +2,15 @@ import React from 'react'
 import Button from '@material-ui/core/Button'
 import submitForm from 'submit-form'
 
+const content = markdown.require('../content/signup-form.md')
+
 type Props = {}
 
 type State = {
   authenticated: false | 'processing' | 'error' | true
+  authenticate_clicked?: boolean
+  email?: string
+  id_token?: string
 }
 
 export default class SignupForm extends React.Component<Props, State> {
@@ -13,40 +18,85 @@ export default class SignupForm extends React.Component<Props, State> {
     authenticated: false
   }
 
+  // TODO extract to GoogleAuthProvider
+  // inject the source script dynamically
+  async componentDidMount() {
+    gapi.load('client', () => {
+      const auth = gapi.auth2.getAuthInstance()
+      auth.currentUser.listen(user => {
+        if (user.isSignedIn()) {
+          this.setState({
+            authenticated: true,
+            email: user.getBasicProfile().getEmail(),
+            id_token: user.getAuthResponse().id_token
+          })
+        }
+      })
+    })
+  }
+
   onRequestInviteClick = async () => {
-    if (this.state.authenticated) {
+    if (this.state.authenticated && this.state.authenticated !== 'error') {
       return
     }
+    this.setState({ authenticate_clicked: true })
     this.setState({ authenticated: 'processing' })
-    const instance = gapi.auth2.getAuthInstance()
-    const user = await instance.signIn()
-    const { id_token } = user.getAuthResponse()
+    const auth = gapi.auth2.getAuthInstance()
+    let signin
+    try {
+      signin = await auth.signIn()
+    } catch (e) {
+      this.setState({ authenticated: 'error' })
+    }
+    const { id_token } = signin.getAuthResponse()
+    this.setState({ id_token, authenticated: true })
+    this.signUp()
+  }
+
+  signUp = () => {
     // TODO error handling?
     submitForm('/signup', {
       method: 'POST',
-      body: { id_token }
+      body: {
+        id_token: this.state.id_token
+      }
     })
-    this.setState({ authenticated: true })
   }
 
   render() {
-    const authenticated = this.state.authenticated
-    const show_form = authenticated !== true
-    const enabled = authenticated === false || authenticated === 'error'
-    const label = enabled ? 'Authenticate' : 'Authenticating'
+    const { authenticated, authenticate_clicked } = this.state
+
+    const auth_show_form = authenticated !== true
+    const auth_enabled = authenticated === false || authenticated === 'error'
+    const auth_label = auth_enabled ? 'Authenticate' : 'Authenticating'
+
+    const signup_show_form = !authenticate_clicked && authenticated === true
 
     return (
       <React.Fragment>
-        {show_form && (
+        {auth_show_form && (
           <React.Fragment>
+            <div dangerouslySetInnerHTML={{ __html: content }} />
             <Button
               variant="contained"
               color="primary"
               fullWidth={true}
               onClick={this.onRequestInviteClick}
-              disabled={!enabled}
+              disabled={!auth_enabled}
             >
-              {label}
+              {auth_label}
+            </Button>
+          </React.Fragment>
+        )}
+        {signup_show_form && (
+          <React.Fragment>
+            <Button
+              variant="contained"
+              color="primary"
+              fullWidth={true}
+              onClick={this.signUp}
+            >
+              Sign Up
             </Button>
           </React.Fragment>
         )}

@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@material-ui/core": "^1.5.1",
+    "@types/gapi.auth2": "0.0.47",
     "@zeit/next-typescript": "^1.1.0",
     "babel-plugin-markdown": "^0.3.0",
     "jss": "^9.8.7",

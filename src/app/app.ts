@@ -103,6 +103,18 @@ export class App {
     return sync
   }
 
+  async isAccountAdded(email: string) {
+    const ref = await this.firebase
+      .database()
+      .ref('accounts')
+      .orderByChild('email')
+      .equalTo(email)
+      .once('value')
+    const accounts = ref.val()
+
+    return accounts && Object.keys(accounts).length
+  }
+
   /**
    * TODO detect if the email is already added and merge
    * @param google_tokens
@@ -110,8 +122,19 @@ export class App {
    * @param ip
    * @param invitation_code
    */
-  async addUser(google_tokens: GoogleCredentials, email: string, ip: string) {
-    const ref = this.firebase
+  async addAccount(
+    google_tokens: GoogleCredentials,
+    email: string,
+    ip: string
+  ) {
+    if (await this.isAccountAdded(email)) {
+      this.log_info(
+        `Skipping creation of account for ${email} - already present`
+      )
+      return true
+    }
+
+    const push_ref = this.firebase
       .database()
       .ref('accounts')
       .push()
@@ -121,7 +144,8 @@ export class App {
     // TODO perform on firebase
     const id = ++this.last_id
 
-    await ref.set({
+    // TODO type
+    await push_ref.set({
       email,
       registered,
       client_data: {
