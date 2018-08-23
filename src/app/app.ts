@@ -143,26 +143,29 @@ export class App {
       .utc()
       .toISOString()
     // TODO perform on firebase
-    const id = ++this.last_id
+    const id = (++this.last_id).toString()
 
-    // TODO type
-    await push_ref.set({
+    let account: IAccount = {
       email,
       registered,
       client_data: {
         enabled: true
       },
       enabled: true,
+      // create dev accounts in the dev env
+      dev: !Boolean(process.env['PROD']),
       config: {
         user: {
           id
         },
+        // TODO make all google_token fields required (assert)
         google: {
           username: email,
           ...google_tokens
         }
       }
-    })
+    }
+    await push_ref.set(account)
 
     const invite = await getInvitation(this, email)
     // support no-invite accounts (bypass code)

@@ -109,6 +109,18 @@ export interface IConfigPublic {
   label_filters: ILabelFilter[]
   sync_frequency: number
   lists: (IListConfig | ((config: IConfig) => IListConfig))[]
+  www?: IConfigWWW
+}
+
+export interface IConfigWWW {
+  google: {
+    client_id: string
+    scope: string
+  }
+  firebase: {
+    url: string
+    credentials: object
+  }
 }
 
 export interface IConfigPrivate {
@@ -119,7 +131,6 @@ export interface IConfigPrivate {
     bypass_code: string
   }
   google: IConfigPrivateGoogle
-  google_website: { client_id: string; scope: string }
   firebase: {
     url: string
     // TODO type
@@ -155,7 +166,7 @@ export interface IAccount {
     snapshot?: any
   }
   enabled: boolean
-  dev?: boolean
+  dev: boolean
   config: IConfigAccount
 }
 

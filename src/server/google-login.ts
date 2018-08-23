@@ -38,6 +38,9 @@ export async function signup(this: TContext, req: Request, h: ResponseToolkit) {
   const url = this.app.auth.generateAuthUrl({
     // will return a refresh token
     access_type: 'offline',
+    prompt: 'consent',
+    // @ts-ignore required to get the refresh_token every time
+    approval_prompt: null,
     scope: this.app.config.google.scopes
   })
   return h.redirect(url + '&approval_prompt=force')
@@ -95,7 +98,7 @@ async function idTokenToEmail(
   id_token: string,
   client_id = null
 ): Promise<string | null> {
-  client_id = client_id || app.config.google_website.client_id
+  client_id = client_id || app.config.www.client_id
   const login_ticket = await app.auth.verifyIdToken({
     idToken: id_token,
     audience: client_id
@@ -154,7 +157,7 @@ export type TInvitation = {
 
 async function isInvitationValid(this: void, app: App, email: string) {
   const invite = await getInvitation(app, email)
-  return invite.val.active
+  return invite && invite.val.active
 }
 
 export async function getInvitation(app: App, email: string) {

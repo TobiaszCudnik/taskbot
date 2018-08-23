@@ -15,6 +15,7 @@ import * as _ from 'lodash'
 import 'source-map-support/register'
 import config_base from '../../config'
 import config_credentials from '../../config-private'
+import config_www from '../../www/config'
 import server from '../server/server'
 import { IConfig } from '../types'
 import { App } from './app'
@@ -23,6 +24,7 @@ import Logger from './logger'
 import create_repl from './repl'
 
 const config: IConfig = <any>merge(config_base, config_credentials)
+config.www = config_www
 
 // TODO make it less global
 function init_am_inspector(machines?: TAsyncMachine[]) {
