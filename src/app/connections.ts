@@ -33,8 +33,8 @@ export default class Connections {
   log_stats: log_fn
 
   apis: {
-    gtasks: google.tasks.v1.Tasks | null
-    gmail: google.gmail.v1.Gmail | null
+    gtasks: tasks_v1.Tasks | null
+    gmail: gmail_v1.Gmail | null
   } = {
     gtasks: null,
     gmail: null

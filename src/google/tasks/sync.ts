@@ -74,6 +74,8 @@ export type TTaskList = tasks_v1.Schema$TaskList
 export type TTasksRes = tasks_v1.Schema$Tasks
 export type TTaskListsRes = tasks_v1.Schema$TaskLists
 
+type TaskLists = tasks_v1.Schema$TaskLists
+
 export default class GTasksSync extends SyncWriter<
   IConfig,
   TStates,
