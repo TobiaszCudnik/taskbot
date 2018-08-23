@@ -1,7 +1,9 @@
 import * as assert from 'assert'
+import * as firebase from 'firebase-admin'
 import { Request, ResponseToolkit, Server } from 'hapi'
 import * as moment from 'moment-timezone'
 import { App } from '../app/app'
+import { IConfig, IConfigPrivate } from '../types'
 import { TContext } from './server'
 
 // POST /invite
@@ -19,7 +21,7 @@ export async function signup(this: TContext, req: Request, h: ResponseToolkit) {
   this.logger_info('/signup')
 
   if (req.params['code']) {
-    if (req.params['code'] !== this.app.config.service.bypass_code ) {
+    if (req.params['code'] !== this.app.config.service.bypass_code) {
       h.response('Code not valid').code(403)
     }
   } else {
@@ -128,13 +130,12 @@ async function addInvite(this: void, app: App, email: string) {
 
   // create a new invitation
   // TODO type
-  const entry = {
+  const entry: TInvitation = {
     email,
     time: moment()
       .utc()
-      .toISOString(),
-    active: false,
-    fulfilled: false
+      .unix(),
+    active: false
   }
   const push = app.firebase
     .database()
@@ -143,6 +144,12 @@ async function addInvite(this: void, app: App, email: string) {
   await push.set(entry)
 
   return true
+}
+
+export type TInvitation = {
+  email: string
+  time: number
+  active: boolean
 }
 
 async function isInvitationValid(this: void, app: App, email: string) {
@@ -166,8 +173,9 @@ export async function getInvitation(app: App, email: string) {
     return null
   }
   return {
-    ref: invites,
-    val: invites[key]
+    query_ref: ref,
+    key,
+    val: invites[key] as TInvitation
   }
 }
 
@@ -175,4 +183,35 @@ function getIP(this: void, req: Request) {
   const xff_header = req.headers['x-forwarded-for']
   const ip = xff_header ? xff_header.split(',')[0] : req.info.remoteAddress
   return ip
+}
+
+export async function acceptInvites(
+  this: void,
+  config: IConfigPrivate,
+  firebase: firebase.app.App,
+  amount: number
+): Promise<number> {
+  const query_ref = await firebase
+    .database()
+    .ref('invitations')
+    .orderByChild('time')
+    .limitToFirst(amount)
+    .once('value')
+  const query_val:
+    | { [index: string]: TInvitation }
+    | undefined = query_ref.val()
+  if (!query_val) {
+    return 0
+  }
+  const wait = []
+  for (const [key, invite] of Object.entries(query_val)) {
+    wait.push(
+      firebase
+        .database()
+        .ref(`invitations/${key}`)
+        .update({ ...invite, active: true } as TInvitation)
+    )
+  }
+  await Promise.all(wait)
+  return wait.length
 }

@@ -15,7 +15,7 @@ type State = {
 
 export default class SignupForm extends React.Component<Props, State> {
   state: State = {
-    authenticated: false
+    authenticated: 'processing'
   }
 
   // TODO extract to GoogleAuthProvider
@@ -25,11 +25,14 @@ export default class SignupForm extends React.Component<Props, State> {
       const auth = gapi.auth2.getAuthInstance()
       auth.currentUser.listen(user => {
         if (user.isSignedIn()) {
+          this.setState({ authenticated: true })
           this.setState({
             authenticated: true,
             email: user.getBasicProfile().getEmail(),
             id_token: user.getAuthResponse().id_token
           })
+        } else {
+          this.setState({ authenticated: false })
         }
       })
     })
@@ -39,8 +42,10 @@ export default class SignupForm extends React.Component<Props, State> {
     if (this.state.authenticated && this.state.authenticated !== 'error') {
       return
     }
-    this.setState({ authenticate_clicked: true })
-    this.setState({ authenticated: 'processing' })
+    this.setState({
+      authenticate_clicked: true,
+      authenticated: 'processing'
+    })
     const auth = gapi.auth2.getAuthInstance()
     let signin
     try {
@@ -49,7 +54,10 @@ export default class SignupForm extends React.Component<Props, State> {
       this.setState({ authenticated: 'error' })
     }
     const { id_token } = signin.getAuthResponse()
-    this.setState({ id_token, authenticated: true })
+    this.setState({
+      id_token,
+      authenticated: true
+    })
     this.signUp()
   }
 
@@ -76,7 +84,9 @@ export default class SignupForm extends React.Component<Props, State> {
       <React.Fragment>
         {auth_show_form && (
           <React.Fragment>
-            <div dangerouslySetInnerHTML={{ __html: content }} />
+            {auth_enabled && (
+              <div dangerouslySetInnerHTML={{ __html: content }} />
+            )}
             <Button
               variant="contained"
               color="primary"
@@ -89,16 +99,14 @@ export default class SignupForm extends React.Component<Props, State> {
           </React.Fragment>
         )}
         {signup_show_form && (
-          <React.Fragment>
-            <Button
-              variant="contained"
-              color="primary"
-              fullWidth={true}
-              onClick={this.signUp}
-            >
-              Sign Up
-            </Button>
-          </React.Fragment>
+          <Button
+            variant="contained"
+            color="primary"
+            fullWidth={true}
+            onClick={this.signUp}
+          >
+            Create Account
+          </Button>
         )}
       </React.Fragment>
     )

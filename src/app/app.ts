@@ -23,8 +23,9 @@ export class App {
     public connections: Connections
   ) {
     this.firebase = firebase.initializeApp({
-      credential: firebase.credential.cert(config.firebase_admin),
-      databaseURL: 'https://gtd-bot.firebaseio.com'
+      credential: firebase.credential.cert(config.firebase.admin),
+      // TODO move to the config
+      databaseURL: config.firebase.url
     })
     if (!process.env['TEST']) {
       this.listenToChanges()
@@ -166,10 +167,12 @@ export class App {
     const invite = await getInvitation(this, email)
     // support no-invite accounts (bypass code)
     if (invite) {
-      invite.ref.set({
-        ...invite.val,
-        fulfilled: true
-      })
+      // remove the invite
+      await this.firebase
+        .database()
+        .ref('invitations/' + invite.key)
+        .remove()
+      this.log_info(`Removed invite ${invite.key}`)
     }
 
     this.log_info(`Added a new user ${id}: ${email}`)

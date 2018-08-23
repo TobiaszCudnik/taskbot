@@ -115,12 +115,16 @@ export interface IConfigPrivate {
   // extract to the account type
   sync_frequency_multi?: number
   service: {
-    email: string,
+    email: string
     bypass_code: string
   }
   google: IConfigPrivateGoogle
   google_website: { client_id: string; scope: string }
-  firebase_admin: any
+  firebase: {
+    url: string
+    // TODO type
+    admin: any
+  }
 }
 
 export interface IConfigPrivateGoogle {
