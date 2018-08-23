@@ -88,9 +88,10 @@ export default class GTasksListSync extends SyncReader<
 
     const quota = this.gtasks.short_quota_usage
     const abort = this.state.getAbort('Reading')
+    // TODO port to new googleapis
     const [list, res] = await this.gtasks.req(
       'api.tasks.list',
-      this.gtasks.api.tasks.list,
+      [this.gtasks.api.tasks, list],
       {
         tasklist: this.list.id,
         fields: 'etag,items(id,title,notes,updated,etag,status,parent)',

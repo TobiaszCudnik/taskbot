@@ -1,11 +1,10 @@
 import { Semaphore } from 'await-semaphore'
-import * as http from 'http'
-import { promisifyArray } from 'typed-promisify-tob/index'
 import { google } from 'googleapis'
 import { gmail_v1 } from 'googleapis/build/src/apis/gmail/v1'
 import { tasks_v1 } from 'googleapis/build/src/apis/tasks/v1'
 import GC from '../sync/gc'
 import { log_fn, default as Logger } from './logger'
+import { AxiosResponse } from 'axios'
 
 /**
  * TODO logger mixin
@@ -86,7 +85,7 @@ export default class Connections {
     if (this.apis.gtasks) {
       // TODO dispose
     }
-    this.apis.gtasks = google.tasks('v1')
+    this.apis.gtasks = google.tasks({version: 'v1'})
   }
 
   initGmailAPI() {
@@ -94,41 +93,23 @@ export default class Connections {
     if (this.apis.gmail) {
       // TODO dispose
     }
-    this.apis.gmail = google.gmail('v1')
+    this.apis.gmail = google.gmail({version: 'v1'})
   }
 
   // TODO take abort() as the second param
-  async req<A, T, T2>(
-    username: string,
-    method_name: string,
-    method: (arg: A, cb: (err: any, res: T, res2: T2) => void) => void,
-    params: A,
-    abort: (() => boolean) | null | undefined,
-    returnArray: true,
-    options?: object,
-    retries?: number
-  ): Promise<[T, T2] | null>
-  async req<A, T>(
-    username: string,
-    method_name: string,
-    method: (arg: A, cb: (err: any, res: T) => void) => void,
-    params: A,
-    abort: (() => boolean) | null | undefined,
-    returnArray: false,
-    options?: object,
-    retries?: number
-  ): Promise<T | null>
   async req<A, T>(
     user_id: string,
     method_name: string,
-    method: (arg: A, cb: (err: any, res: T) => void) => void,
+    method: (params: A) => T,
+    pointer: [object, Function],
     params: A,
     abort: (() => boolean) | null | undefined,
-    return_array: boolean,
     options?: object,
     retries = 3
-  ): Promise<any> {
-    let ret
+  ): T {
+    // TODO tmp
+    if (!pointer.length) return null
+    debugger
     // prepare a version of params for logging
     let params_log = null
     if (!params) {
@@ -156,8 +137,10 @@ export default class Connections {
       this.pending_requests_global--
       this.pending_requests_user[user_id]--
 
-      return return_array ? [null, null] : null
+      return null
     }
+
+    let res: AxiosResponse<any>
     // run the query with retries
     for (let try_n = 1; try_n <= retries; try_n++) {
       // TODO keep username as a part of json (logger API)
@@ -183,13 +166,12 @@ export default class Connections {
       // TODO googleapis specific code should be in google/sync.ts
       try {
         // @ts-ignore
-        ret = await promisifyArray(method)(params, options)
-        const res: http.IncomingMessage = ret[1]
-        const was2xx = res && res.statusCode.toString().match(/^2/)
-        const wasNoContent = res && res.statusMessage == 'No Content'
-        if (was2xx && ret[0] === undefined && !wasNoContent) {
+        res = await pointer[1].call(pointer[0], params, options)
+        const was2xx = res && res.status.toString().match(/^2/)
+        const wasNoContent = res && res.statusText == 'No Content'
+        if (was2xx && res.data === undefined && !wasNoContent) {
           throw Error('Empty response on 2xx')
-        } else if (ret[1] === undefined && ret[0] === undefined) {
+        } else if (res === undefined) {
           throw Error('Response and body empty')
         }
         // stop redoing
@@ -211,7 +193,7 @@ export default class Connections {
       }
       this.log_verbose(`${method_name} request finished`)
     }
-    return return_array ? ret : ret[0]
+    return res
   }
 
   getReqsStats() {

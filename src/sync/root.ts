@@ -271,7 +271,6 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   Exception_enter() {
     return true
   }
-  // Shortcuts record's labels as text, omitting the ones defined in the list's
 
   // TODO support ETIMEDOUT
   async Exception_state(err: Error) {

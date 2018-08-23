@@ -9,6 +9,7 @@ import * as moment from 'moment'
 import * as delay from 'delay'
 import * as roundTo from 'round-to'
 import { map } from 'typed-promisify-tob'
+import { tasks_v1 } from 'googleapis/build/src/apis/tasks/v1'
 // Machine types
 import {
   AsyncMachine,
@@ -65,6 +66,8 @@ export type TaskTree = {
   completed: boolean
 }
 
+type TaskLists = tasks_v1.Schema$TaskLists
+
 export default class GTasksSync extends SyncWriter<
   IConfig,
   TStates,
@@ -80,7 +83,7 @@ export default class GTasksSync extends SyncWriter<
   } = {
     task_lists: null
   }
-  api: google.tasks.v1.Tasks
+  api: tasks_v1.Tasks
   // @ts-ignore
   sub_states_outbound = [
     ['Reading', 'Reading', PipeFlags.FINAL],
@@ -88,7 +91,7 @@ export default class GTasksSync extends SyncWriter<
     ['QuotaExceeded', 'QuotaExceeded', PipeFlags.FINAL],
     ['Restarting', 'Restarting', PipeFlags.FINAL]
   ]
-  lists: google.tasks.v1.TaskList[]
+  lists: TaskLists
   subs: {
     lists: GTasksListSync[]
   }
@@ -178,22 +181,20 @@ export default class GTasksSync extends SyncWriter<
   async FetchingTaskLists_state() {
     let abort = this.state.getAbort('FetchingTaskLists')
     let params = { headers: { 'If-None-Match': this.etags.task_lists } }
-    let [list, res]: [
-      google.tasks.v1.TaskLists,
-      http.IncomingMessage
-    ] = await this.req(
+    const res = await this.req(
       'tasklists.list',
       this.api.tasklists.list,
-      // @ts-ignore
+      [this.api.tasklists, this.api.tasklists.list],
       params,
-      abort,
-      true
+      null, // abort
     )
+    const {data } = res
+
     if (abort()) return
     if (res.statusCode !== 304) {
       this.log('[FETCHED] tasks lists')
       this.etags.task_lists = <string>res.headers.etag
-      this.lists = list.items
+      this.lists = data.items
     } else {
       this.log('[CACHED] tasks lists')
     }
@@ -229,30 +230,14 @@ export default class GTasksSync extends SyncWriter<
    * Request decorator
    * TODO extract as a GoogleRequestMixin
    */
-  async req<A, T, T2>(
-    method_name: string,
-    method: (arg: A, cb: (err: any, res: T, res2: T2) => void) => void,
-    params: A,
-    abort: (() => boolean) | null | undefined,
-    returnArray: true,
-    options?: object
-  ): Promise<[T, T2] | null>
   async req<A, T>(
     method_name: string,
-    method: (arg: A, cb: (err: any, res: T) => void) => void,
+    method: (params: A) => T,
+    pointer: [object, Function],
     params: A,
     abort: (() => boolean) | null | undefined,
-    returnArray: false,
     options?: object
-  ): Promise<T | null>
-  async req<A, T>(
-    method_name: string,
-    method: (arg: A, cb: (err: any, res: T) => void) => void,
-    params: A,
-    abort: (() => boolean) | null | undefined,
-    return_array: boolean,
-    options?: object
-  ): Promise<any> {
+  ): T {
     this.root.connections.requests.gtasks.push(moment().unix())
     // @ts-ignore
     params.auth = this.auth.client
@@ -264,11 +249,12 @@ export default class GTasksSync extends SyncWriter<
       this.root.config.user.id,
       'gtasks.' + method_name,
       method,
+      pointer,
       params,
       abort,
-      // @ts-ignore
-      return_array,
       {
+        // TODO keep alive
+        // shouldKeepAlive
         forever: true,
         ...options
       }
