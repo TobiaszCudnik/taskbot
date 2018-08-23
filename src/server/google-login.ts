@@ -18,13 +18,19 @@ export async function invite(this: TContext, req: Request, h: ResponseToolkit) {
 export async function signup(this: TContext, req: Request, h: ResponseToolkit) {
   this.logger_info('/signup')
 
-  const email = await idTokenToEmail(this.app, req.payload['id_token'])
-  if (!email) {
-    h.response('ID token not valid').code(403)
-  }
-  let is_valid = await isInvitationValid(this.app, email)
-  if (!is_valid) {
-    return h.response('Invitation not valid').code(403)
+  if (req.params['code']) {
+    if (req.params['code'] !== this.app.config.service.bypass_code ) {
+      h.response('Code not valid').code(403)
+    }
+  } else {
+    const email = await idTokenToEmail(this.app, req.payload['id_token'])
+    if (!email) {
+      h.response('ID token not valid').code(403)
+    }
+    let is_valid = await isInvitationValid(this.app, email)
+    if (!is_valid) {
+      return h.response('Invitation not valid').code(403)
+    }
   }
 
   const url = this.app.auth.generateAuthUrl({

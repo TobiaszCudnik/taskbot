@@ -115,7 +115,8 @@ export interface IConfigPrivate {
   // extract to the account type
   sync_frequency_multi?: number
   service: {
-    email: 'contact@taskbot.app'
+    email: string,
+    bypass_code: string
   }
   google: IConfigPrivateGoogle
   google_website: { client_id: string; scope: string }

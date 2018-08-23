@@ -63,6 +63,11 @@ export default async function(logger: Logger, app: App) {
     },
     {
       method: 'GET',
+      path: '/signup/{code}',
+      handler: google_login.signup
+    },
+    {
+      method: 'GET',
       path: '/signup/done',
       handler: google_login.signupCallback
     },
