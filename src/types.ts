@@ -128,7 +128,10 @@ export interface IConfigPrivate {
   sync_frequency_multi?: number
   service: {
     email: string
+    name: string
     bypass_code: string
+    // TODO type
+    google_tokens: object
   }
   google: IConfigPrivateGoogle
   firebase: {

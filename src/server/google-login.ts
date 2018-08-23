@@ -149,7 +149,8 @@ async function addInvite(this: void, app: App, email: string) {
     time: moment()
       .utc()
       .unix(),
-    active: false
+    active: false,
+    email_sent: false
   }
   const push = app.firebase
     .database()
@@ -162,6 +163,7 @@ async function addInvite(this: void, app: App, email: string) {
 
 export type TInvitation = {
   email: string
+  email_sent: boolean
   time: number
   active: boolean
 }
