@@ -1,9 +1,10 @@
 import * as firebase from 'firebase-admin'
+import * as google from "googleapis"
 import { test_user } from '../../config-accounts'
 import { Credentials as GoogleCredentials } from 'google-auth-library/build/src/auth/credentials'
-import { getInvitation } from '../server/google-login'
+import { getInvitation, TInvitation } from '../server/google-login'
 import RootSync from '../sync/root'
-import { IConfig, IAccount, IConfigAccount } from '../types'
+import { IConfig, IAccount, IConfigAccount, TRawEmail } from '../types'
 import Connections from './connections'
 import Logger from './logger'
 import * as merge from 'deepmerge'
@@ -16,6 +17,8 @@ export class App {
   last_id: number = 0
   log_info = this.logger.createLogger('app')
   auth: OAuth2Client
+  // TODO merge with auth once googleapis are up to date
+  auth_email: any
 
   constructor(
     public config: IConfig,
@@ -37,6 +40,15 @@ export class App {
       config.google.client_secret,
       config.google.redirect_url
     )
+    this.auth_email = new google.auth.OAuth2(
+      config.google.client_id,
+      config.google.client_secret,
+      config.google.redirect_url
+    )
+    this.auth_email.credentials = {
+      access_token: this.config.service.google_tokens.access_token,
+      refresh_token: this.config.service.google_tokens.refresh_token
+    }
   }
 
   async listenToChanges() {
@@ -67,6 +79,21 @@ export class App {
       }
       const sync = this.createUserInstance(this.config, account.config)
       this.syncs.push(sync)
+    })
+
+    const invitations_ref = this.firebase.database().ref('/invitations')
+    invitations_ref.on('child_changed', (s: firebase.database.DataSnapshot) => {
+      const invite: TInvitation = s.val()
+      if (!invite.active || invite.email_sent) return
+      this.sendServiceEmail(
+        invite.email,
+        `Invitation to ${this.config.service.name}`,
+        'TEST'
+      )
+      this.firebase
+        .database()
+        .ref('/invitations/' + s.key)
+        .set({ ...invite, email_sent: true })
     })
   }
 
@@ -180,5 +207,45 @@ export class App {
 
     this.log_info(`Added a new user ${id}: ${email}`)
     return true
+  }
+
+  async sendServiceEmail(to: string, subject: string, content?: string) {
+    let email = [
+      `From: ${this.config.service.name} <${this.config.service.email}>`,
+      `To: ${to}`,
+      'Content-type: text/html;charset=utf-8',
+      'MIME-Version: 1.0',
+      `Subject: ${subject}`
+    ].join('\r\n')
+
+    if (content) {
+      email += `\r\n\r\n${content}`
+    }
+
+    const raw = new Buffer(email)
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_') as TRawEmail
+
+    const ret = await new Promise((resolve, reject) => {
+      this.connections.apis.gmail.users.messages.send(
+        {
+          userId: 'me',
+          fields: 'threadId',
+          resource: {
+            raw: raw
+          },
+          auth: this.auth_email
+        },
+        (err, body) => {
+          if (err) return reject(err)
+          resolve(body)
+        }
+      )
+    })
+    if (ret && ret.threadId) {
+      this.log_info(`Send email ${ret.threadId} to ${to}`)
+      return true
+    }
   }
 }

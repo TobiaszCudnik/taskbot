@@ -10,7 +10,6 @@ import {
 import Logger from '../app/logger'
 import { IConfig, IConfigGoogle } from '../types'
 import { machineLogToDebug } from '../utils'
-import { OAuth2Client } from 'google-auth-library/build/src/auth/oauth2client'
 
 // TODO add logging
 // TODO compose asyncmachine
@@ -40,7 +39,7 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
     drop: ['Ready']
   }
 
-  client: OAuth2Client
+  client: any
   config: IConfigGoogle
 
   constructor(config: IConfigGoogle, user_id: number, logger: Logger) {

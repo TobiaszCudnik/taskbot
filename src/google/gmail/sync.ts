@@ -1,6 +1,6 @@
 import { machine } from 'asyncmachine'
 import { TAbortFunction } from 'asyncmachine/types'
-import { google } from 'googleapis'
+import * as google from 'googleapis'
 import * as _ from 'lodash'
 import * as delay from 'delay'
 import * as moment from 'moment'
@@ -724,7 +724,7 @@ export default class GmailSync extends SyncWriter<
     let email = [
       `From: ${this.root.config.google.username} <${
         this.root.config.google.username
-      }>s`,
+      }>`,
       `To: ${this.root.config.google.username}`,
       'Content-type: text/html;charset=utf-8',
       'MIME-Version: 1.0',
