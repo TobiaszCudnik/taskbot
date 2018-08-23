@@ -278,8 +278,16 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     this.log_error('ERROR: %O', err, { user_id: this.config.user.id })
     this.exceptions.push(moment().unix())
 
+    // TODO merge with Restarted_state()
+    if (this.isExceptionFlood()) {
+      this.state.drop('Enabled')
+      await delay(this.config.exception_flood_delay)
+      this.state.add('Enabled')
+    }
+
     // Exception is a multi state, handle one at-a-time
-    if (this.state.from().includes('Exception')) return
+    // TODO react to "not during an (own) transition"
+    // if (this.state.from().includes('Exception')) return
 
     this.logStates('Before restart')
     this.state.add('Restarting', 'Exception')
@@ -451,6 +459,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
 
   // Returns true in case of more than 100 exceptions during the last 10 minutes
   isExceptionFlood() {
+    // TODO values from the config
     const min_range = moment()
       .subtract(10, 'minutes')
       .unix()
