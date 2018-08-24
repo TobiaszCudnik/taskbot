@@ -199,7 +199,10 @@ export class App {
         }
       }
     }
+    // add the account
+    // TODO parallel
     await push_ref.set(account)
+    await this.sendServiceEmail(email, "Welcome to TaskBot.app", email_welcome)
 
     const invite = await getInvitation(this, email)
     // support no-invite accounts (bypass code)
