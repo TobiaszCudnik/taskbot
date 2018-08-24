@@ -3,7 +3,7 @@
 import React from 'react'
 import { withStyles } from '@material-ui/core/styles'
 import SignupForm from './components/signup-form'
-const content = markdown.require('./content/signup.md')
+const content = markdown.require('./content/invited.md')
 
 const styles = theme => ({
   root: {
