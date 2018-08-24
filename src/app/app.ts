@@ -1,5 +1,6 @@
 import * as firebase from 'firebase-admin'
-import * as google from "googleapis"
+import * as fs from 'fs'
+import * as google from 'googleapis'
 import { test_user } from '../../config-accounts'
 import { Credentials as GoogleCredentials } from 'google-auth-library/build/src/auth/credentials'
 import { getInvitation, TInvitation } from '../server/google-login'
@@ -10,6 +11,15 @@ import Logger from './logger'
 import * as merge from 'deepmerge'
 import * as moment from 'moment-timezone'
 import { OAuth2Client } from 'google-auth-library'
+import * as removeHtmlComments from 'remove-html-comments'
+import { Base64 } from 'js-base64'
+
+const email_invitation = removeHtmlComments(
+  fs.readFileSync('www/pages/content/email-invitation.md')
+).data
+const email_welcome = removeHtmlComments(
+  fs.readFileSync('www/pages/content/email-welcome.md')
+).date
 
 export class App {
   syncs: RootSync[] = []
@@ -88,7 +98,7 @@ export class App {
       this.sendServiceEmail(
         invite.email,
         `Invitation to ${this.config.service.name}`,
-        'TEST'
+        email_invitation
       )
       this.firebase
         .database()
@@ -213,28 +223,29 @@ export class App {
     let email = [
       `From: ${this.config.service.name} <${this.config.service.email}>`,
       `To: ${to}`,
-      'Content-type: text/html;charset=utf-8',
+      'Content-type: text/plain;charset=utf-8',
+      "Content-Transfer-Encoding: quoted-printable",
       'MIME-Version: 1.0',
       `Subject: ${subject}`
     ].join('\r\n')
 
     if (content) {
-      email += `\r\n\r\n${content}`
+      email += `\r\n\r\n${content.replace(`\n`, `\r\n`)}`
     }
 
-    const raw = new Buffer(email)
-      .toString('base64')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_') as TRawEmail
+    // TODO port Base64 to the gmail sync client
+    const raw = Base64.encodeURI(email) as TRawEmail
 
     const ret = await new Promise((resolve, reject) => {
       this.connections.apis.gmail.users.messages.send(
         {
           userId: 'me',
           fields: 'threadId',
+          // @ts-ignore
           resource: {
             raw: raw
           },
+          // payload: { mimeType: 'text/html' },
           auth: this.auth_email
         },
         (err, body) => {
