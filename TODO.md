@@ -6,6 +6,10 @@
 
 ## Milestone 1:
 
+* dont add invites for existing accounts
+* www - explain that emails arent being read in the privacy policy
+* disable !S/Expired for now
+* invites via an id_token to avoid fake ones
 * separate log file `debug.log`
   * showing only loggers from the `DEBUG` env var
 * make `tail -f` show ansi colors
@@ -24,6 +28,12 @@
 
 ## Milestone 1.2
 
+* coomunicate via tmp messages, which then get's trashed (no perms needed)
+* fix client-side routing in the nextjs app
+  * currently it fully reloads the page
+* Demo working in the browser ???
+* !S/Expired should hide, but not complete a task
+  * test
 * handle 404 and 500 in hapi
   * https://futurestud.io/tutorials/hapi-how-to-handle-404-responses-for-missing-routes
 * refresh token on unauthorized_client exception
