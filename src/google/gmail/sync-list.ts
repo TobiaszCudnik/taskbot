@@ -2,7 +2,7 @@ import { machine } from 'asyncmachine'
 import { TAbortFunction } from 'asyncmachine/types'
 import * as debug from 'debug'
 import * as clone from 'deepcopy'
-import { google } from 'googleapis'
+import * as google from 'googleapis'
 import * as loki from 'lokijs'
 import * as moment from 'moment'
 // Machine types
