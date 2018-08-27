@@ -70,6 +70,7 @@ site:
 		-i static/privacy-policy.md -o static/privacy-policy-output.html
 
 deploy:
+	make build-www
 	gcloud app deploy app.yaml --version=test
 	# sudo docker exec -t -i gaeapp /bin/bash
 	# sudo apt-get install mc fish htop

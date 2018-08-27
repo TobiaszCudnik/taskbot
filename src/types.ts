@@ -171,6 +171,7 @@ export interface IAccount {
   enabled: boolean
   dev: boolean
   config: IConfigAccount
+  send_welcome_email?: boolean
 }
 
 export interface IConfigPublicGoogle {

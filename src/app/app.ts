@@ -50,6 +50,7 @@ export class App {
       config.google.client_secret,
       config.google.redirect_url
     )
+    // TODO merge with auth once googleapis are up to date
     this.auth_email = new google.auth.OAuth2(
       config.google.client_id,
       config.google.client_secret,
@@ -62,8 +63,8 @@ export class App {
   }
 
   async listenToChanges() {
+    // ACCOUNTS
     const accounts_ref = this.firebase.database().ref('/accounts')
-
     accounts_ref.on('child_added', (s: firebase.database.DataSnapshot) => {
       const account: IAccount = s.val()
       // TODO use last_id from firebase
@@ -73,6 +74,18 @@ export class App {
       )
       if (!this.isAccountEnabled(account)) {
         return false
+      }
+      if (account.send_welcome_email) {
+        this.sendServiceEmail(
+          account.email,
+          `Welcome to ${this.config.service.name}`,
+          email_welcome
+        )
+        // TODO remove instead of `false` ?
+        this.firebase
+          .database()
+          .ref('/accounts/' + s.key)
+          .update({ send_welcome_email: false })
       }
       const sync = this.createUserInstance(this.config, account.config)
       this.syncs.push(sync)
@@ -90,7 +103,7 @@ export class App {
       const sync = this.createUserInstance(this.config, account.config)
       this.syncs.push(sync)
     })
-
+    // INVITATIONS
     const invitations_ref = this.firebase.database().ref('/invitations')
     invitations_ref.on('child_changed', (s: firebase.database.DataSnapshot) => {
       const invite: TInvitation = s.val()
@@ -103,7 +116,7 @@ export class App {
       this.firebase
         .database()
         .ref('/invitations/' + s.key)
-        .set({ ...invite, email_sent: true })
+        .update({ email_sent: true })
     })
   }
 
@@ -185,6 +198,7 @@ export class App {
       client_data: {
         enabled: true
       },
+      send_welcome_email: true,
       enabled: true,
       // create dev accounts in the dev env
       dev: !Boolean(process.env['PROD']),
@@ -202,7 +216,7 @@ export class App {
     // add the account
     // TODO parallel
     await push_ref.set(account)
-    await this.sendServiceEmail(email, "Welcome to TaskBot.app", email_welcome)
+    await this.sendServiceEmail(email, 'Welcome to TaskBot.app', email_welcome)
 
     const invite = await getInvitation(this, email)
     // support no-invite accounts (bypass code)
@@ -224,7 +238,7 @@ export class App {
       `From: ${this.config.service.name} <${this.config.service.email}>`,
       `To: ${to}`,
       'Content-type: text/plain;charset=utf-8',
-      "Content-Transfer-Encoding: quoted-printable",
+      'Content-Transfer-Encoding: quoted-printable',
       'MIME-Version: 1.0',
       `Subject: ${subject}`
     ].join('\r\n')
