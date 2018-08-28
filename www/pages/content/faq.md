@@ -61,9 +61,9 @@ While in the [GMail settings](https://mail.google.com/mail/u/0/#settings/general
 | Open keyboard shortcut help | `?` |
 
 #### Will TaskBot read my emails?
-TaskBot will not read the contents of your emails, although it will read the subjects and labe
+**TaskBot** will not read the contents of your emails, although it will read the subjects and labels assigned to them. Detailed explanation can be found in our [Privacy Policy](/privacy-policy).
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTIwODkyNDk5OTIsLTExMDIxNDYzMCwyNz
-k4OTgwNywyMDIyNTg5NDEyLDE2MTQyMzU0MzAsMTE4NTQyMTUw
-Ml19
+eyJoaXN0b3J5IjpbMTMwMDc2NzE5NiwtMTEwMjE0NjMwLDI3OT
+g5ODA3LDIwMjI1ODk0MTIsMTYxNDIzNTQzMCwxMTg1NDIxNTAy
+XX0=
 -->
