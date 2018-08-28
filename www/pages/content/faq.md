@@ -1,8 +1,8 @@
 ### FAQ
-1. What steps do I need to take to start using TaskBot?
-2. How to configure Multi Inbox?
-3. How to enable the keyboard shortcuts?
-4. Which of the keyboard shortcuts are useful for TaskBot?
+1. [What steps do I need to take to start using TaskBot?](/faq/#5)
+2. [How to configure Multi Inbox?](/faq/#5)
+3. [How to enable the keyboard shortcuts?](/faq/#5)
+4. [Which of the keyboard shortcuts are useful for TaskBot?](/faq/#5)
 
 #### What steps do I need to take to start using TaskBot?
 **TaskBot** configures itself automatically, this includes:
@@ -25,20 +25,19 @@ Enable Multi Inbox:
 
 Configure "Current searches" as follows:
 
-###### "Pane 0"
-* Query: `(label:!s-next-action -label:s-finished -label:!s-expired -label:!s-pending) OR (label:!s-pending AND label:unread)`
-* Title: `Next`
-###### "Pane 1" 
-* Query: `label:!s-action -label:!s-next-action -label:!s-finished -label:!s-expired`
+**Next** `(label:!s-next-action -label:s-finished -label:!s-expired -label:!s-pending) OR (label:!s-pending AND label:unread)`
+
+
+**Next**  `label:!s-action -label:!s-next-action -label:!s-finished -label:!s-expired`
 * Title `Actions`
-###### "Pane 2"
-* Query: `( label:drafts OR label:!s-pending ) -label:!s-expired`
+
+**Next**  `( label:drafts OR label:!s-pending ) -label:!s-expired`
 * Title `Pending`
-###### "Pane 3"
-* Query: `label:!s-action OR label:!s-next-action OR label:!s-pending OR label:!s-finished OR label:!s-some-day`
+
+**Next**  `label:!s-action OR label:!s-next-action OR label:!s-pending OR label:!s-finished OR label:!s-some-day`
 * Title `GTD`
-###### "Pane 4"
-* Query: `label:sent -label:chats`
+
+**Sent**  `label:sent -label:chats`
 * Title `Sent`
 
 After performing all the steps, save the changes.
@@ -71,7 +70,7 @@ While in the [GMail settings](https://mail.google.com/mail/u/0/#settings/general
 
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbNTU1OTgyOTMxLC0xMTAyMTQ2MzAsMjc5OD
-k4MDcsMjAyMjU4OTQxMiwxNjE0MjM1NDMwLDExODU0MjE1MDJd
-fQ==
+eyJoaXN0b3J5IjpbLTQwODU2MTA5OCwtMTEwMjE0NjMwLDI3OT
+g5ODA3LDIwMjI1ODk0MTIsMTYxNDIzNTQzMCwxMTg1NDIxNTAy
+XX0=
 -->
