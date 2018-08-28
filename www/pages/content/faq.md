@@ -74,8 +74,12 @@ To hide the the left sidebar, click the top-right hamburger icon ☰.
 
 #### Can I share a Google Tasks list with someone?
 Not at the moment, but we're working on it! Soon you'll be able to share a custom list in **Google Tasks** with another **TaskBot** user, without using any dedicated UI. Tasks from that list will still be able to have a status assigned to  them, which will make them show up in one of the status lists. That way you can organize your **GTD** independently of the shared list.
+
+#### How to trigger a manual sync for Google Tasks?
+
+Although changes from **GMail** are propagated to **Google Tasks** in real time, the other way around happens only once per 10 minutes (it's an API limitation). To trigger 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbOTY5OTg1NTYyLDExMjU0NjIyMjIsLTcyNz
+eyJoaXN0b3J5IjpbNjQzODg3MTg2LDExMjU0NjIyMjIsLTcyNz
 g2Njk5OCwtMTEwMjE0NjMwLDI3OTg5ODA3LDIwMjI1ODk0MTIs
 MTYxNDIzNTQzMCwxMTg1NDIxNTAyXX0=
 -->
