@@ -14,9 +14,9 @@
 * **Google Tasks** lists
 
 Optional (but recommended) steps the user has to perform manually are:
-1. Enabling Multi Inbox
-2. Hiding the left sidebar
-3. Enabling the keyboard shortcuts
+1. [Enabling Multi Inbox](/faq#5)
+2. [Hiding the left sidebar](/faq#5)
+3. [Enabling the keyboard shortcuts](/faq#5)
 
 #### How to configure Multi Inbox?
 Enable Multi Inbox:
@@ -71,7 +71,7 @@ Lorem Ipsum
 #### Can I share a Google Task list with someone?
 Not at the moment, but we're working on it :) Soon you'll be able to share a custom list in **Google Tasks** with another **TaskBot** user, without using any dedicated UI. Tasks from that list will still be able to have a status assigned to  them which will make them show up in one of the status lists.
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbNjY0NTc5OTI1LDExMjU0NjIyMjIsLTcyNz
-g2Njk5OCwtMTEwMjE0NjMwLDI3OTg5ODA3LDIwMjI1ODk0MTIs
-MTYxNDIzNTQzMCwxMTg1NDIxNTAyXX0=
+eyJoaXN0b3J5IjpbMTYzODQzODk5NywxMTI1NDYyMjIyLC03Mj
+c4NjY5OTgsLTExMDIxNDYzMCwyNzk4OTgwNywyMDIyNTg5NDEy
+LDE2MTQyMzU0MzAsMTE4NTQyMTUwMl19
 -->
