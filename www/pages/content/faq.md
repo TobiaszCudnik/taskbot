@@ -36,7 +36,7 @@ After performing all the steps, save the changes.
 
 #### How to enable the keyboard shortcuts?
 While in the [GMail settings](https://mail.google.com/mail/u/0/#settings/general):
- - Tab `General`
+ - [Tab "General"](https://mail.google.com/mail/u/0/#settings/general)
  - Enable `Keyboard shortcuts`
  - Save Changes
 ![GMail keyboard shortcuts](/static/images/gmail-keyboard.png)
@@ -61,7 +61,7 @@ While in the [GMail settings](https://mail.google.com/mail/u/0/#settings/general
 
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMjA2MDEyNTIwMSwtMTEwMjE0NjMwLDI3OT
-g5ODA3LDIwMjI1ODk0MTIsMTYxNDIzNTQzMCwxMTg1NDIxNTAy
-XX0=
+eyJoaXN0b3J5IjpbMTM5Nzg1MjI3LC0xMTAyMTQ2MzAsMjc5OD
+k4MDcsMjAyMjU4OTQxMiwxNjE0MjM1NDMwLDExODU0MjE1MDJd
+fQ==
 -->
