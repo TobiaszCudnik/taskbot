@@ -47,28 +47,23 @@ While in the [GMail settings](https://mail.google.com/mail/u/0/#settings/general
 ![GMail keyboard shortcuts](/static/images/gmail-keyboard.png)
 ##### Which of the GMail shortcuts are useful for TaskBot?
 Go to Inbox `g + i`
-Switch between the Tasks sidebar and your inbox `⌘/Ctrl + Alt + ,` and `⌘/Ctrl + Alt + .`
 Go to Tasks `g + k`
-Go to label `g +`
+Back to threadlist `u`
+New conversation `k`
+Older conversation `j`
+Open conversation `o or Enter`
+Go to next Inbox section `backtick`
+Compose `c`
+Search mail `/`
+Open "label as" menu `l`
 Select all conversations `* + a`
 Deselect all conversations `* + n`
 Select read conversations `* + r`
 Select unread conversations `* + u`
 Select starred conversations `* + s`
 Select unstarred conversations `* + t`
-Back to threadlist `u`
-New conversation `k`
-Older conversation `j`
-Open conversation `o or Enter`
-Go to next Inbox section `backtick`
-Go to previous Inbox section `~`
-Compose `c`
-Search mail `/`
-Search chat contacts `g`
-Open "more actions" menu `.`
-Open "label as" menu `l`
 Open keyboard shortcut help `?`
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMjAyMjU4OTQxMiwxNjE0MjM1NDMwLDExOD
-U0MjE1MDJdfQ==
+eyJoaXN0b3J5IjpbLTE2MjgzNTI1MTcsMjAyMjU4OTQxMiwxNj
+E0MjM1NDMwLDExODU0MjE1MDJdfQ==
 -->
