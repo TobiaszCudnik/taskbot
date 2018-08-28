@@ -69,9 +69,9 @@ Lorem Ipsum
 **TaskBot** will not read the contents of your emails, although it will read the subjects and labels assigned to them. Details about accessed and stored data can be found in our [Privacy Policy](/privacy-policy).
 
 #### Can I share a Google Task list with someone?
-Not at the moment, but we're working on it. Soon you'll be able to share a custom list in Google Tasks with another TaskBot user without any additional UI. Tasks from that 
+Not at the moment, but we're working on it :) Soon you'll be able to share a custom list in Google Tasks with another **TaskBot** user, without using any dedicated UI. Tasks from that list will still be able to have a status assigned to  them and which will make them show up in one of the status lists.
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTE3MTU1MzE0MDUsMTEyNTQ2MjIyMiwtNz
-I3ODY2OTk4LC0xMTAyMTQ2MzAsMjc5ODk4MDcsMjAyMjU4OTQx
-MiwxNjE0MjM1NDMwLDExODU0MjE1MDJdfQ==
+eyJoaXN0b3J5IjpbMTI3MTcwMjIyMCwxMTI1NDYyMjIyLC03Mj
+c4NjY5OTgsLTExMDIxNDYzMCwyNzk4OTgwNywyMDIyNTg5NDEy
+LDE2MTQyMzU0MzAsMTE4NTQyMTUwMl19
 -->
