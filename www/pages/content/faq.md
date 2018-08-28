@@ -47,9 +47,20 @@ While in the [GMail settings](https://mail.google.com/mail/u/0/#settings/general
 ![GMail keyboard shortcuts](/static/images/gmail-keyboard.png)
 
 ##### Which of the GMail shortcuts are useful for TaskBot?
-* Go to Inbox `g + i`
-* Compose `c`
-* Search mail `/`
+
+| Function | Shortcut |
+|--|--|
+| Go to Inbox | `g + i` |
+| Compose |  |
+| Search mail |  |
+|  |  |
+|  |  |
+|  |  |
+|  |  |
+|  |  |
+
+*  `c`
+*  `/`
 * Open "label as" menu `l`
 * Back to threadlist `u`
 * Newer conversation (UP) `k`
@@ -66,6 +77,7 @@ While in the [GMail settings](https://mail.google.com/mail/u/0/#settings/general
 * Open keyboard shortcut help `?`
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTExMDIxNDYzMCwyNzk4OTgwNywyMDIyNT
-g5NDEyLDE2MTQyMzU0MzAsMTE4NTQyMTUwMl19
+eyJoaXN0b3J5IjpbNzc1MDQxNzA4LC0xMTAyMTQ2MzAsMjc5OD
+k4MDcsMjAyMjU4OTQxMiwxNjE0MjM1NDMwLDExODU0MjE1MDJd
+fQ==
 -->
