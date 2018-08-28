@@ -37,13 +37,15 @@ Configure "Current searches" as follows:
 	2. Title `Sent`
 
 After performing all the steps, save the changes.
+![GMail keyboard shortcuts](/static/images/gmail-multi-inbox.png)
 
 #### How to enable the keyboard shortcuts?
 While in the [GMail settings](https://mail.google.com/mail/u/0/#settings/general):
 1. Tab `General`
-2. `Keyboard shortcuts`
+2. Enable `Keyboard shortcuts`
+3. Save Changes
 ![GMail keyboard shortcuts](/static/images/gmail-keyboard.png)
 ##### Which of the GMail shortcuts are useful for TaskBot?
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMTg5MzE1MDc5MywxMTg1NDIxNTAyXX0=
+eyJoaXN0b3J5IjpbMTYxNDIzNTQzMCwxMTg1NDIxNTAyXX0=
 -->
