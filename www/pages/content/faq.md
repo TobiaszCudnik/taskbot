@@ -12,8 +12,11 @@ Optional (but recommended) steps the user has to perform manually are:
 ##### How to configure Multi Inbox?
 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
 ##### How to enable the keyboard shortcuts?
-While in the [GMail settings](https://mail.google.com/mail/u/0/#settings/general)
+While in the [GMail settings](https://mail.google.com/mail/u/0/#settings/general):
+1. Tab `General`
+2. `Keyboard shortcuts`
+![GMail keyboard shortcuts](/static/images/gmail-keyboard.png)
 ##### Which of the GMail shortcuts are useful for TaskBot?
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTE5MzgxMzYwMTYsMTE4NTQyMTUwMl19
+eyJoaXN0b3J5IjpbLTIwMTM4Mjk2MjQsMTE4NTQyMTUwMl19
 -->
