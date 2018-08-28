@@ -21,10 +21,10 @@ Optional (but recommended) steps the user has to perform manually are:
 #### How to configure Multi Inbox?
 Enable Multi Inbox:
 1.  [GMail Settings](https://mail.google.com/mail/u/0/#settings/general)
-2.  ["Advanced" Tab](https://mail.google.com/mail/u/0/#settings/labs)
+2.  [*"Advanced"* Tab](https://mail.google.com/mail/u/0/#settings/labs)
 3.  Enable "Multiple Inboxes"
-4.  ["Multiple Inboxes" Tab](https://mail.google.com/mail/u/0/#settings/lighttlist)
-5.  Set "Below the inbox"
+4.  [*"Multiple Inboxes"* Tab](https://mail.google.com/mail/u/0/#settings/lighttlist)
+5.  Set *"Below the inbox"*
 
 Configure "Current searches" as follows:
 
@@ -35,14 +35,14 @@ Configure "Current searches" as follows:
 * **Sent**  `label:sent -label:chats`
 
 After performing all the steps, save the changes.
-![GMail keyboard shortcuts](/static/images/gmail-multi-inbox.png)
+![GMail keyboard shortcuts image](https://taskbot.app/static/images/gmail-multi-inbox.png)
 
 #### How to enable the keyboard shortcuts?
 While in the [GMail settings](https://mail.google.com/mail/u/0/#settings/general):
- - ["General" Tab](https://mail.google.com/mail/u/0/#settings/general)
- - Enable `Keyboard shortcuts`
+ - [*"General"* Tab](https://mail.google.com/mail/u/0/#settings/general)
+ - Enable *"Keyboard shortcuts"*
  - Save Changes
-![GMail keyboard shortcuts](/static/images/gmail-keyboard.png)
+![GMail keyboard shortcuts image](https://taskbot.app/static/static/images/gmail-keyboard.png)
 
 #### Which of the keyboard shortcuts are useful for TaskBot?
 
@@ -71,7 +71,7 @@ Lorem Ipsum
 #### Can I share a Google Task list with someone?
 Not at the moment, but we're working on it :) Soon you'll be able to share a custom list in **Google Tasks** with another **TaskBot** user, without using any dedicated UI. Tasks from that list will still be able to have a status assigned to  them which will make them show up in one of the status lists.
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMTYzODQzODk5NywxMTI1NDYyMjIyLC03Mj
+eyJoaXN0b3J5IjpbLTU2NDkzMTI3NiwxMTI1NDYyMjIyLC03Mj
 c4NjY5OTgsLTExMDIxNDYzMCwyNzk4OTgwNywyMDIyNTg5NDEy
 LDE2MTQyMzU0MzAsMTE4NTQyMTUwMl19
 -->
