@@ -21,20 +21,20 @@ Enable Multi Inbox:
 Configure "Current searches" as follows:
 
 ###### "Pane 0"
-1. Query: `(label:!s-next-action -label:s-finished -label:!s-expired -label:!s-pending) OR (label:!s-pending AND label:unread)`
-2. Title: `Next`
+* Query: `(label:!s-next-action -label:s-finished -label:!s-expired -label:!s-pending) OR (label:!s-pending AND label:unread)`
+* Title: `Next`
 ###### "Pane 1" 
-1. Query: `label:!s-action -label:!s-next-action -label:!s-finished -label:!s-expired`
-2. Title `Actions`
+* Query: `label:!s-action -label:!s-next-action -label:!s-finished -label:!s-expired`
+* Title `Actions`
 ###### "Pane 2"
-1. Query: `( label:drafts OR label:!s-pending ) -label:!s-expired`
-2. Title `Pending`
+* Query: `( label:drafts OR label:!s-pending ) -label:!s-expired`
+* Title `Pending`
 ###### "Pane 3"
-1. Query: `label:!s-action OR label:!s-next-action OR label:!s-pending OR label:!s-finished OR label:!s-some-day`
-2. Title `GTD`
+* Query: `label:!s-action OR label:!s-next-action OR label:!s-pending OR label:!s-finished OR label:!s-some-day`
+* Title `GTD`
 ###### "Pane 4"
-1. Query: `label:sent -label:chats`
-2. Title `Sent`
+* Query: `label:sent -label:chats`
+* Title `Sent`
 
 After performing all the steps, save the changes.
 ![GMail keyboard shortcuts](/static/images/gmail-multi-inbox.png)
@@ -64,6 +64,6 @@ Select starred conversations `* + s`
 Select unstarred conversations `* + t`
 Open keyboard shortcut help `?`
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMjEyMDIxNzE4MiwyMDIyNTg5NDEyLDE2MT
-QyMzU0MzAsMTE4NTQyMTUwMl19
+eyJoaXN0b3J5IjpbMjc5ODk4MDcsMjAyMjU4OTQxMiwxNjE0Mj
+M1NDMwLDExODU0MjE1MDJdfQ==
 -->
