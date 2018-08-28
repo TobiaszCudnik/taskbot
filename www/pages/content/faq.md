@@ -7,8 +7,9 @@
 6. [Can I share a **Google Tasks** list with someone?](/faq/#5)
 7. [Will **TaskBot** read my emails?](/faq/#5)
 8. [How to trigger a manual sync for **Google Tasks**?](/faq/#5)
+9. [Other questions?](/faq/#5)
 
-#### What steps do I need to take to start using TaskBot?
+#### [¶](#5) What steps do I need to take to start using TaskBot?
 **TaskBot** configures itself automatically, this includes:
 * Labels
 * Colors
@@ -19,7 +20,7 @@ Optional (but recommended) steps the user has to perform manually are:
 2. [Hiding the left sidebar](/faq#5)
 3. [Enabling the keyboard shortcuts](/faq#5)
 
-#### How to configure Multi Inbox?
+#### [¶](#5) How to configure Multi Inbox?
 Enable Multi Inbox:
 1.  [**GMail** Settings](https://mail.google.com/mail/u/0/#settings/general)
 2.  [*"Advanced"* Tab](https://mail.google.com/mail/u/0/#settings/labs)
@@ -38,14 +39,14 @@ Configure "Current searches" as follows:
 After performing all the steps, save the changes.
 ![GMail keyboard shortcuts image](https://taskbot.app/static/images/gmail-multi-inbox.png)
 
-#### How to enable the keyboard shortcuts?
+#### [¶](#5) How to enable the keyboard shortcuts?
 While in the [**GMail** settings](https://mail.google.com/mail/u/0/#settings/general):
  - [*"General"* Tab](https://mail.google.com/mail/u/0/#settings/general)
  - Enable *"Keyboard shortcuts"*
  - Save Changes
 ![GMail keyboard shortcuts image](https://taskbot.app/static/images/gmail-keyboard.png)
 
-#### Which of the keyboard shortcuts are useful for TaskBot?
+#### [¶](#5) Which of the keyboard shortcuts are useful for TaskBot?
 
 | Function | Shortcut |
 |--|--|
@@ -63,23 +64,28 @@ While in the [**GMail** settings](https://mail.google.com/mail/u/0/#settings/gen
 | Deselect all conversations | `* + n` |
 | Open keyboard shortcut help | `?` 
 
-#### How to hide the left GMail sidebar?
-Save some space by hiding a left sidebar in **GMail**. You can always access it by hovering with the cursor or you can jump to labels by using [keyboard shortcuts](/faq/#5).
+#### [¶](#5) How to hide the left GMail sidebar?
+Save some space by hiding the left sidebar in **GMail**. You can always access it by hovering with the cursor or you can jump to labels by using [keyboard shortcuts](/faq/#5).
 
 To hide the the left sidebar, click the top-right hamburger icon ☰.
-![GMail left sidebar image](https://taskbot.app/static/images/gmail-left-sidebar.png)
+![GMail left sidebar image](/static/images/gmail-left-sidebar.png)
 
-#### Will TaskBot read my emails?
+#### [¶](#5) Will TaskBot read my emails?
 **TaskBot** will not read the contents of your emails, although it will read the subjects and labels assigned to them. Details about accessed and stored data can be found in our [Privacy Policy](/privacy-policy).
 
-#### Can I share a Google Tasks list with someone?
+#### [¶](#5) Can I share a Google Tasks list with someone?
 Not at the moment, but we're working on it! Soon you'll be able to share a custom list in **Google Tasks** with another **TaskBot** user, without using any dedicated UI. Tasks from that list will still be able to have a status assigned to  them, which will make them show up in one of the status lists. That way you can organize your **GTD** independently of the shared list.
 
-#### How to trigger a manual sync for Google Tasks?
+#### [¶](#5) How to trigger a manual sync for Google Tasks?
 
 Although changes from **GMail** are propagated to **Google Tasks** in real time, the other way around happens only once per 10 minutes (it's an API limitation).
 
 To trigger a sync from **Google Tasks** to **GMail** any time you need it, add a <span class='label command'>!T/Sync GTasks</span> to **any email** (doesn't have to have any `!S/` label or any label for that matter). **TaskBot** will pick it up immediately, trigger the sync and remove the label. That's it.
+
+#### [¶](#5) Other questions?
+
+If you have't found an answer to your question here, you can always ask it on the [Google Group](https://groups.google.com/forum/#!forum/taskbotapp).
+
 <!--stackedit_data:
 eyJoaXN0b3J5IjpbLTU2NDY2MDg5NywxMTI1NDYyMjIyLC03Mj
 c4NjY5OTgsLTExMDIxNDYzMCwyNzk4OTgwNywyMDIyNTg5NDEy

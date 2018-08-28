@@ -302,7 +302,7 @@ nav.menu ol {
 nav.menu li {
   display: block;
   list-style-type: none;
-  padding: 0.3em 1em;
+  padding: 0.3em 1em 0.7em 1em;
 }
 
 nav.menu li a,
@@ -372,4 +372,27 @@ nav.menu li.selected a {
   background-color: #b9e4d0;
   border-color: #b9e4d0;
   color: #000;
+}
+
+video {
+  width: 100%;
+}
+
+.video-react
+  .video-react-volume-menu-button.video-react-menu-button-inline
+  .video-react-menu-content,
+.video-react .video-react-progress-control .video-react-mouse-display:after,
+.video-react .video-react-progress-control .video-react-mouse-display,
+.video-react,
+.video-react .video-react-poster {
+  background-color: white !important;
+}
+
+h6 {
+  margin-bottom: 0;
+}
+
+h4 > a {
+  font-size: 1.4em;
+  color: #83a9e6;
 }

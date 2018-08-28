@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { withStyles } from '@material-ui/core/styles'
-const content = markdown.require('./content/howto.md')
+const content = markdown.require('./content/faq.md')
 
 const styles = theme => ({
   root: {

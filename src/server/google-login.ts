@@ -90,7 +90,7 @@ export async function signupCallback(
   const ip = getIP(req)
   await this.app.addAccount(tokens, email, ip)
 
-  return h.redirect('/welcome')
+  return h.redirect('/account')
 }
 
 // HELPER FUNCTIONS
