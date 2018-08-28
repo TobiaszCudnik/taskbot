@@ -37,7 +37,7 @@ After performing all the steps, save the changes.
 
 #### How to enable the keyboard shortcuts?
 While in the [GMail settings](https://mail.google.com/mail/u/0/#settings/general):
- - [Tab "General"](https://mail.google.com/mail/u/0/#settings/general)
+ - ["General" Tab](https://mail.google.com/mail/u/0/#settings/general)
  - Enable `Keyboard shortcuts`
  - Save Changes
 ![GMail keyboard shortcuts](/static/images/gmail-keyboard.png)
@@ -63,7 +63,7 @@ While in the [GMail settings](https://mail.google.com/mail/u/0/#settings/general
 #### Will TaskBot read my emails?
 **TaskBot** will not read the contents of your emails, although it will read the subjects and labels assigned to them. Detailed explanation can be found in our [Privacy Policy](/privacy-policy).
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTE5MDM5MjE5MTAsLTExMDIxNDYzMCwyNz
-k4OTgwNywyMDIyNTg5NDEyLDE2MTQyMzU0MzAsMTE4NTQyMTUw
-Ml19
+eyJoaXN0b3J5IjpbLTcyNzg2Njk5OCwtMTEwMjE0NjMwLDI3OT
+g5ODA3LDIwMjI1ODk0MTIsMTYxNDIzNTQzMCwxMTg1NDIxNTAy
+XX0=
 -->
