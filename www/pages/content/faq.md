@@ -3,7 +3,8 @@
 2. [How to configure Multi Inbox?](/faq/#5)
 3. [How to enable the keyboard shortcuts?](/faq/#5)
 4. [Which of the keyboard shortcuts are useful for TaskBot?](/faq/#5)
-5. [Will TaskBot read my emails?](/faq/#5)
+5. [How to hide the left GMail sidebar](/faq/#5)
+6. [Will TaskBot read my emails?](/faq/#5)
 
 #### What steps do I need to take to start using TaskBot?
 **TaskBot** configures itself automatically, this includes:
@@ -58,12 +59,15 @@ While in the [GMail settings](https://mail.google.com/mail/u/0/#settings/general
 | Go to next Inbox section | ` (back-tick) |
 | Select all conversations | `* + a` |
 | Deselect all conversations | `* + n` |
-| Open keyboard shortcut help | `?` |
+| Open keyboard shortcut help | `?` 
+
+#### How to hide the left GMail sidebar?
+Lorem Ipsum
 
 #### Will TaskBot read my emails?
-**TaskBot** will not read the contents of your emails, although it will read the subjects and labels assigned to them. Detailed explanation can be found in our [Privacy Policy](/privacy-policy).
+**TaskBot** will not read the contents of your emails, although it will read the subjects and labels assigned to them. Details about  explanation can be found in our [Privacy Policy](/privacy-policy).
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTcyNzg2Njk5OCwtMTEwMjE0NjMwLDI3OT
-g5ODA3LDIwMjI1ODk0MTIsMTYxNDIzNTQzMCwxMTg1NDIxNTAy
-XX0=
+eyJoaXN0b3J5IjpbMTkwNDA1OTgxNCwtNzI3ODY2OTk4LC0xMT
+AyMTQ2MzAsMjc5ODk4MDcsMjAyMjU4OTQxMiwxNjE0MjM1NDMw
+LDExODU0MjE1MDJdfQ==
 -->
