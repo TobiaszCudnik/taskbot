@@ -65,9 +65,9 @@ While in the [GMail settings](https://mail.google.com/mail/u/0/#settings/general
 Lorem Ipsum
 
 #### Will TaskBot read my emails?
-**TaskBot** will not read the contents of your emails, although it will read the subjects and labels assigned to them. Details about  explanation can be found in our [Privacy Policy](/privacy-policy).
+**TaskBot** will not read the contents of your emails, although it will read the subjects and labels assigned to them. Details about accessed and stored data can be found in our [Privacy Policy](/privacy-policy).
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMTkwNDA1OTgxNCwtNzI3ODY2OTk4LC0xMT
+eyJoaXN0b3J5IjpbMTEyNTQ2MjIyMiwtNzI3ODY2OTk4LC0xMT
 AyMTQ2MzAsMjc5ODk4MDcsMjAyMjU4OTQxMiwxNjE0MjM1NDMw
 LDExODU0MjE1MDJdfQ==
 -->
