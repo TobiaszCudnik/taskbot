@@ -6,6 +6,7 @@
 5. [How to hide the left **GMail** sidebar](/faq/#5)
 6. [Can I share a **Google Tasks** list with someone?](/faq/#5)
 7. [Will **TaskBot** read my emails?](/faq/#5)
+8. [How to trigger a manual sync for **Google Tasks**?](/faq/#5)
 
 #### What steps do I need to take to start using TaskBot?
 **TaskBot** configures itself automatically, this includes:
@@ -74,7 +75,7 @@ To hide the the left sidebar, click the top-right hamburger icon ☰.
 #### Can I share a Google Tasks list with someone?
 Not at the moment, but we're working on it! Soon you'll be able to share a custom list in **Google Tasks** with another **TaskBot** user, without using any dedicated UI. Tasks from that list will still be able to have a status assigned to  them, which will make them show up in one of the status lists. That way you can organize your **GTD** independently of the shared list.
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMTYzMTcxMzg0MSwxMTI1NDYyMjIyLC03Mj
-c4NjY5OTgsLTExMDIxNDYzMCwyNzk4OTgwNywyMDIyNTg5NDEy
-LDE2MTQyMzU0MzAsMTE4NTQyMTUwMl19
+eyJoaXN0b3J5IjpbOTY5OTg1NTYyLDExMjU0NjIyMjIsLTcyNz
+g2Njk5OCwtMTEwMjE0NjMwLDI3OTg5ODA3LDIwMjI1ODk0MTIs
+MTYxNDIzNTQzMCwxMTg1NDIxNTAyXX0=
 -->
