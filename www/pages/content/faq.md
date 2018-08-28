@@ -1,4 +1,8 @@
 ### FAQ
+1. What steps do I need to take to start using TaskBot?
+2. How to configure Multi Inbox?
+3. How to enable the keyboard shortcuts?
+4. Which of the keyboard shortcuts are useful for TaskBot?
 
 #### What steps do I need to take to start using TaskBot?
 **TaskBot** configures itself automatically, this includes:
@@ -47,7 +51,7 @@ While in the [GMail settings](https://mail.google.com/mail/u/0/#settings/general
  - Save Changes
 ![GMail keyboard shortcuts](/static/images/gmail-keyboard.png)
 
-##### Which of the GMail shortcuts are useful for TaskBot?
+#### Which of the keyboard shortcuts are useful for TaskBot?
 
 | Function | Shortcut |
 |--|--|
@@ -67,7 +71,7 @@ While in the [GMail settings](https://mail.google.com/mail/u/0/#settings/general
 
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMTY1OTM5MDMyMiwtMTEwMjE0NjMwLDI3OT
-g5ODA3LDIwMjI1ODk0MTIsMTYxNDIzNTQzMCwxMTg1NDIxNTAy
-XX0=
+eyJoaXN0b3J5IjpbNTU1OTgyOTMxLC0xMTAyMTQ2MzAsMjc5OD
+k4MDcsMjAyMjU4OTQxMiwxNjE0MjM1NDMwLDExODU0MjE1MDJd
+fQ==
 -->
