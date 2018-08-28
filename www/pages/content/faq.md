@@ -3,6 +3,7 @@
 2. [How to configure Multi Inbox?](/faq/#5)
 3. [How to enable the keyboard shortcuts?](/faq/#5)
 4. [Which of the keyboard shortcuts are useful for TaskBot?](/faq/#5)
+5. [Will TaskBot read my emails?](/faq/#5)
 
 #### What steps do I need to take to start using TaskBot?
 **TaskBot** configures itself automatically, this includes:
@@ -59,9 +60,10 @@ While in the [GMail settings](https://mail.google.com/mail/u/0/#settings/general
 | Deselect all conversations | `* + n` |
 | Open keyboard shortcut help | `?` |
 
-
+#### Will TaskBot read my emails?
+TaskBot will not read the contents of your emails, although it will read the subjects and labe
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTY1ODc4NzM3LC0xMTAyMTQ2MzAsMjc5OD
-k4MDcsMjAyMjU4OTQxMiwxNjE0MjM1NDMwLDExODU0MjE1MDJd
-fQ==
+eyJoaXN0b3J5IjpbLTIwODkyNDk5OTIsLTExMDIxNDYzMCwyNz
+k4OTgwNywyMDIyNTg5NDEyLDE2MTQyMzU0MzAsMTE4NTQyMTUw
+Ml19
 -->
