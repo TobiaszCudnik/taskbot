@@ -16,7 +16,9 @@ Enable Multi Inbox:
 3.  Enable "Multiple Inboxes"
 4.  ["Multiple Inboxes" Tab](https://mail.google.com/mail/u/0/#settings/lighttlist)
 5.  Set "Below the inbox"
-6. Configure **Current searches
+6. Configure "Current searches" as follows
+	1. "Pane 0" `(label:!s-next-action -label:s-finished -label:!s-expired -label:!s-pending) OR (label:!s-pending AND label:unread)`, title `Next`
+	2. "Pane 1" ``, title ``
 ##### How to enable the keyboard shortcuts?
 While in the [GMail settings](https://mail.google.com/mail/u/0/#settings/general):
 1. Tab `General`
@@ -24,5 +26,5 @@ While in the [GMail settings](https://mail.google.com/mail/u/0/#settings/general
 ![GMail keyboard shortcuts](/static/images/gmail-keyboard.png)
 ##### Which of the GMail shortcuts are useful for TaskBot?
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTc2OTI3Mzg4MiwxMTg1NDIxNTAyXX0=
+eyJoaXN0b3J5IjpbLTE1MTU0Njc2NzIsMTE4NTQyMTUwMl19
 -->
