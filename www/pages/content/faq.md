@@ -51,23 +51,23 @@ While in the [GMail settings](https://mail.google.com/mail/u/0/#settings/general
 | Function | Shortcut |
 |--|--|
 | Go to Inbox | `g + i` |
-| Compose |  |
-| Search mail |  |
+| Compose | `c` |
+| Search mail | `/` |
+| Open "label as" menu | `l` |
+| Back to threadlist | `u` |
+| Newer conversation (UP) | `k` |
+| Older conversation (DOWN) | `j` |
+| Go to Tasks | `g + k` |
+| Open conversation | `o` or `Enter` |
+| Go to next Inbox section |  |
 |  |  |
 |  |  |
 |  |  |
 |  |  |
 |  |  |
 
-*  `c`
-*  `/`
-* Open "label as" menu `l`
-* Back to threadlist `u`
-* Newer conversation (UP) `k`
-* Older conversation (DOWN) `j`
-* Go to Tasks `g + k`
-* Open conversation `o or Enter`
-* Go to next Inbox section `backtick`
+*  
+*  `backtick`
 * Select all conversations `* + a`
 * Deselect all conversations `* + n`
 * Select read conversations `* + r`
@@ -77,7 +77,7 @@ While in the [GMail settings](https://mail.google.com/mail/u/0/#settings/general
 * Open keyboard shortcut help `?`
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbNzc1MDQxNzA4LC0xMTAyMTQ2MzAsMjc5OD
-k4MDcsMjAyMjU4OTQxMiwxNjE0MjM1NDMwLDExODU0MjE1MDJd
-fQ==
+eyJoaXN0b3J5IjpbLTI1ODY4NTU2MiwtMTEwMjE0NjMwLDI3OT
+g5ODA3LDIwMjI1ODk0MTIsMTYxNDIzNTQzMCwxMTg1NDIxNTAy
+XX0=
 -->
