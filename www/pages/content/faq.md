@@ -1,4 +1,5 @@
 ### FAQ
+
 #### What steps do I need to take to start using TaskBot?
 **TaskBot** configures itself automatically, this includes:
 * Labels
@@ -59,14 +60,14 @@ While in the [GMail settings](https://mail.google.com/mail/u/0/#settings/general
 | Older conversation (DOWN) | `j` |
 | Go to Tasks | `g + k` |
 | Open conversation | `o` or `Enter` |
-| Go to next Inbox section | ` |
+| Go to next Inbox section | ` (back-tick) |
 | Select all conversations | `* + a` |
 | Deselect all conversations | `* + n` |
 | Open keyboard shortcut help | `?` |
 
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTE3OTUyMDE2MTAsLTExMDIxNDYzMCwyNz
-k4OTgwNywyMDIyNTg5NDEyLDE2MTQyMzU0MzAsMTE4NTQyMTUw
-Ml19
+eyJoaXN0b3J5IjpbMTY1OTM5MDMyMiwtMTEwMjE0NjMwLDI3OT
+g5ODA3LDIwMjI1ODk0MTIsMTYxNDIzNTQzMCwxMTg1NDIxNTAy
+XX0=
 -->
