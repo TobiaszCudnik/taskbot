@@ -26,19 +26,10 @@ Enable Multi Inbox:
 Configure "Current searches" as follows:
 
 **Next** `(label:!s-next-action -label:s-finished -label:!s-expired -label:!s-pending) OR (label:!s-pending AND label:unread)`
-
-
-**Next**  `label:!s-action -label:!s-next-action -label:!s-finished -label:!s-expired`
-* Title `Actions`
-
+**Actions**  `label:!s-action -label:!s-next-action -label:!s-finished -label:!s-expired`
 **Next**  `( label:drafts OR label:!s-pending ) -label:!s-expired`
-* Title `Pending`
-
-**Next**  `label:!s-action OR label:!s-next-action OR label:!s-pending OR label:!s-finished OR label:!s-some-day`
-* Title `GTD`
-
+**GTD**  `label:!s-action OR label:!s-next-action OR label:!s-pending OR label:!s-finished OR label:!s-some-day`
 **Sent**  `label:sent -label:chats`
-* Title `Sent`
 
 After performing all the steps, save the changes.
 ![GMail keyboard shortcuts](/static/images/gmail-multi-inbox.png)
@@ -70,7 +61,7 @@ While in the [GMail settings](https://mail.google.com/mail/u/0/#settings/general
 
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTQwODU2MTA5OCwtMTEwMjE0NjMwLDI3OT
+eyJoaXN0b3J5IjpbMjA2MDEyNTIwMSwtMTEwMjE0NjMwLDI3OT
 g5ODA3LDIwMjI1ODk0MTIsMTYxNDIzNTQzMCwxMTg1NDIxNTAy
 XX0=
 -->
