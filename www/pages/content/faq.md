@@ -26,11 +26,11 @@ Enable Multi Inbox:
 
 Configure "Current searches" as follows:
 
-**Next** `(label:!s-next-action -label:s-finished -label:!s-expired -label:!s-pending) OR (label:!s-pending AND label:unread)`<br>
-**Actions**  `label:!s-action -label:!s-next-action -label:!s-finished -label:!s-expired`<br>
-**Next**  `( label:drafts OR label:!s-pending ) -label:!s-expired`<br>
-**GTD**  `label:!s-action OR label:!s-next-action OR label:!s-pending OR label:!s-finished OR label:!s-some-day`<br>
-**Sent**  `label:sent -label:chats`
+* **Next** `(label:!s-next-action -label:s-finished -label:!s-expired -label:!s-pending) OR (label:!s-pending AND label:unread)`
+* **Actions**  `label:!s-action -label:!s-next-action -label:!s-finished -label:!s-expired`
+* **Next**  `( label:drafts OR label:!s-pending ) -label:!s-expired`
+* **GTD**  `label:!s-action OR label:!s-next-action OR label:!s-pending OR label:!s-finished OR label:!s-some-day`
+* **Sent**  `label:sent -label:chats`
 
 After performing all the steps, save the changes.
 ![GMail keyboard shortcuts](/static/images/gmail-multi-inbox.png)
@@ -63,7 +63,7 @@ While in the [GMail settings](https://mail.google.com/mail/u/0/#settings/general
 #### Will TaskBot read my emails?
 **TaskBot** will not read the contents of your emails, although it will read the subjects and labels assigned to them. Detailed explanation can be found in our [Privacy Policy](/privacy-policy).
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMTMwMDc2NzE5NiwtMTEwMjE0NjMwLDI3OT
-g5ODA3LDIwMjI1ODk0MTIsMTYxNDIzNTQzMCwxMTg1NDIxNTAy
-XX0=
+eyJoaXN0b3J5IjpbLTE5MDM5MjE5MTAsLTExMDIxNDYzMCwyNz
+k4OTgwNywyMDIyNTg5NDEyLDE2MTQyMzU0MzAsMTE4NTQyMTUw
+Ml19
 -->
