@@ -18,11 +18,14 @@ Enable Multi Inbox:
 5.  Set "Below the inbox"
 
 Configure "Current searches" as follows
-6. "Pane 0" `(label:!s-next-action -label:s-finished -label:!s-expired -label:!s-pending) OR (label:!s-pending AND label:unread)`, title `Next`
-7. "Pane 1" `label:!s-action -label:!s-next-action -label:!s-finished -label:!s-expired`, title `Actions`
-8. "Pane 1" `( label:drafts OR label:!s-pending ) -label:!s-expired`, title `Pending`
-9. "Pane 1" `label:!s-action OR label:!s-next-action OR label:!s-pending OR label:!s-finished OR label:!s-some-day`, title `GTD`
-10. "Pane 1" `label:sent -label:chats`, title `Sent`
+6. "Pane 0"
+	1. Query: `(label:!s-next-action -label:s-finished -label:!s-expired -label:!s-pending) OR (label:!s-pending AND label:unread)`
+	2. Title: `Next`
+7.  "Pane 1" 
+	8. `label:!s-action -label:!s-next-action -label:!s-finished -label:!s-expired`, title `Actions`
+8. "Pane 2" `( label:drafts OR label:!s-pending ) -label:!s-expired`, title `Pending`
+9.  "Pane 3" `label:!s-action OR label:!s-next-action OR label:!s-pending OR label:!s-finished OR label:!s-some-day`, title `GTD`
+10.  "Pane 4" `label:sent -label:chats`, title `Sent`
 ##### How to enable the keyboard shortcuts?
 While in the [GMail settings](https://mail.google.com/mail/u/0/#settings/general):
 1. Tab `General`
@@ -30,5 +33,5 @@ While in the [GMail settings](https://mail.google.com/mail/u/0/#settings/general
 ![GMail keyboard shortcuts](/static/images/gmail-keyboard.png)
 ##### Which of the GMail shortcuts are useful for TaskBot?
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTc0MTkxNzQ4LDExODU0MjE1MDJdfQ==
+eyJoaXN0b3J5IjpbLTE4Nzg3MTk2MzEsMTE4NTQyMTUwMl19
 -->
