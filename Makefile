@@ -7,12 +7,15 @@ compile:
 compile-watch:
 	node_modules/.bin/tsc --pretty --watch --noEmit
 
+clean-www-cache:
+	rm -rf www/node_modules/.cache/babel-loader/*
+
 build:
 	-node_modules/.bin/tsc
 	make build-www
 
 build-www:
-	rm -rf www/node_modules/.cache/babel-loader/*
+	make clean-www-cache
 	cd www && NODE_ENV=production node_modules/.bin/next build
 
 build-watch:

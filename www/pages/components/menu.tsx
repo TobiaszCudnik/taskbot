@@ -28,9 +28,14 @@ class Menu extends React.Component<Props, {}> {
               <a>Home</a>
             </Link>
           </li>
-          <li className={this.isSelected('/howto') ? 'selected' : ''}>
-            <Link href="/howto">
-              <a>How To</a>
+          <li className={this.isSelected('/faq') ? 'selected' : ''}>
+            <Link href="/faq">
+              <a>FAQ</a>
+            </Link>
+          </li>
+          <li>
+            <Link href="https://groups.google.com/forum/#!forum/taskbotapp">
+              <a>Discuss</a>
             </Link>
           </li>
           <li className={this.isSelected('/account') ? 'selected' : ''}>

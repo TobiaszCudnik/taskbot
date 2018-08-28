@@ -41,6 +41,7 @@ class MyDocument extends Document {
             rel="stylesheet"
             href="https://fonts.googleapis.com/css?family=Roboto:300,400,500"
           />
+          <link rel="stylesheet" href="/static/video-react.css" />
           <link rel="stylesheet" href="/static/styles.css" />
           <script src="https://apis.google.com/js/platform.js" />
           <script dangerouslySetInnerHTML={{ __html: invite_src }} />
