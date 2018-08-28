@@ -77,9 +77,11 @@ Not at the moment, but we're working on it! Soon you'll be able to share a custo
 
 #### How to trigger a manual sync for Google Tasks?
 
-Although changes from **GMail** are propagated to **Google Tasks** in real time, the other way around happens only once per 10 minutes (it's an API limitation). To trigger a sync from **Google Tasks** to GMail any time you need it, add a <span class='label command'>!T/Sync GTasks</span> to **any** email (don't have to have `!S` label or any label for that matter). **TaskBot** will pick it up immediately, trigger the sync and remove the label. Thats 
+Although changes from **GMail** are propagated to **Google Tasks** in real time, the other way around happens only once per 10 minutes (it's an API limitation).
+
+To trigger a sync from **Google Tasks** to **GMail** any time you need it, add a <span class='label command'>!T/Sync GTasks</span> to **any email** (doesn't have to have any `!S/` label or any label for that matter). **TaskBot** will pick it up immediately, trigger the sync and remove the label. That's it.
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbOTg2NTAxODk4LDExMjU0NjIyMjIsLTcyNz
-g2Njk5OCwtMTEwMjE0NjMwLDI3OTg5ODA3LDIwMjI1ODk0MTIs
-MTYxNDIzNTQzMCwxMTg1NDIxNTAyXX0=
+eyJoaXN0b3J5IjpbLTU2NDY2MDg5NywxMTI1NDYyMjIyLC03Mj
+c4NjY5OTgsLTExMDIxNDYzMCwyNzk4OTgwNywyMDIyNTg5NDEy
+LDE2MTQyMzU0MzAsMTE4NTQyMTUwMl19
 -->
