@@ -63,7 +63,7 @@ While in the [**GMail** settings](https://mail.google.com/mail/u/0/#settings/gen
 | Open keyboard shortcut help | `?` 
 
 #### How to hide the left GMail sidebar?
-Save some space by hiding a left sidebar in **GMail**. You can always access it by hovering with the cursor or you can jump to labels by using [keyboard shortcuts](/faq/#5). To hide the the left sidebar, click the top-right hamburger icon 
+Save some space by hiding a left sidebar in **GMail**. You can always access it by hovering with the cursor or you can jump to labels by using [keyboard shortcuts](/faq/#5). To hide the the left sidebar, click the top-right hamburger icon ☰.
 
 #### Will TaskBot read my emails?
 **TaskBot** will not read the contents of your emails, although it will read the subjects and labels assigned to them. Details about accessed and stored data can be found in our [Privacy Policy](/privacy-policy).
@@ -71,7 +71,7 @@ Save some space by hiding a left sidebar in **GMail**. You can always access it 
 #### Can I share a Google Task list with someone?
 Not at the moment, but we're working on it :) Soon you'll be able to share a custom list in **Google Tasks** with another **TaskBot** user, without using any dedicated UI. Tasks from that list will still be able to have a status assigned to  them which will make them show up in one of the status lists.
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTQ3MTc5MDI1OCwxMTI1NDYyMjIyLC03Mj
-c4NjY5OTgsLTExMDIxNDYzMCwyNzk4OTgwNywyMDIyNTg5NDEy
-LDE2MTQyMzU0MzAsMTE4NTQyMTUwMl19
+eyJoaXN0b3J5IjpbODQ0ODAxMTY0LDExMjU0NjIyMjIsLTcyNz
+g2Njk5OCwtMTEwMjE0NjMwLDI3OTg5ODA3LDIwMjI1ODk0MTIs
+MTYxNDIzNTQzMCwxMTg1NDIxNTAyXX0=
 -->
