@@ -1,11 +1,11 @@
 ### FAQ
 1. [What steps do I need to take to start using TaskBot?](/faq/#5)
-2. [How to configure Multi Inbox?](/faq/#5)
-3. [How to enable the keyboard shortcuts?](/faq/#5)
-4. [Which of the keyboard shortcuts are useful for TaskBot?](/faq/#5)
-5. [How to hide the left GMail sidebar](/faq/#5)
-6. [Can I share a Google Task list with someone?](/faq/#5)
-7. [Will TaskBot read my emails?](/faq/#5)
+2. [How to configure Multi Inbox in ?](/faq/#5)
+3. [How to enable the keyboard shortcuts in **GMail**?](/faq/#5)
+4. [Which of the keyboard shortcuts are useful for **TaskBot**?](/faq/#5)
+5. [How to hide the left **GMail** sidebar](/faq/#5)
+6. [Can I share a **Google Task** list with someone?](/faq/#5)
+7. [Will **TaskBot** read my emails?](/faq/#5)
 
 #### What steps do I need to take to start using TaskBot?
 **TaskBot** configures itself automatically, this includes:
@@ -20,7 +20,7 @@ Optional (but recommended) steps the user has to perform manually are:
 
 #### How to configure Multi Inbox?
 Enable Multi Inbox:
-1.  [GMail Settings](https://mail.google.com/mail/u/0/#settings/general)
+1.  [**GMail** Settings](https://mail.google.com/mail/u/0/#settings/general)
 2.  [*"Advanced"* Tab](https://mail.google.com/mail/u/0/#settings/labs)
 3.  Enable "Multiple Inboxes"
 4.  [*"Multiple Inboxes"* Tab](https://mail.google.com/mail/u/0/#settings/lighttlist)
@@ -71,7 +71,7 @@ Lorem Ipsum
 #### Can I share a Google Task list with someone?
 Not at the moment, but we're working on it :) Soon you'll be able to share a custom list in **Google Tasks** with another **TaskBot** user, without using any dedicated UI. Tasks from that list will still be able to have a status assigned to  them which will make them show up in one of the status lists.
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTU2NDkzMTI3NiwxMTI1NDYyMjIyLC03Mj
+eyJoaXN0b3J5IjpbLTI3NjA0NzIxMiwxMTI1NDYyMjIyLC03Mj
 c4NjY5OTgsLTExMDIxNDYzMCwyNzk4OTgwNywyMDIyNTg5NDEy
 LDE2MTQyMzU0MzAsMTE4NTQyMTUwMl19
 -->
