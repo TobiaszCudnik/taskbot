@@ -4,7 +4,8 @@
 3. [How to enable the keyboard shortcuts?](/faq/#5)
 4. [Which of the keyboard shortcuts are useful for TaskBot?](/faq/#5)
 5. [How to hide the left GMail sidebar](/faq/#5)
-6. [Will TaskBot read my emails?](/faq/#5)
+6. [Can I share a Google Task list with someone?](/faq/#5)
+7. [Will TaskBot read my emails?](/faq/#5)
 
 #### What steps do I need to take to start using TaskBot?
 **TaskBot** configures itself automatically, this includes:
@@ -66,8 +67,11 @@ Lorem Ipsum
 
 #### Will TaskBot read my emails?
 **TaskBot** will not read the contents of your emails, although it will read the subjects and labels assigned to them. Details about accessed and stored data can be found in our [Privacy Policy](/privacy-policy).
+
+#### Can I share a Google Task list with someone?
+Not at the moment, but we're working on it. Soon
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMTEyNTQ2MjIyMiwtNzI3ODY2OTk4LC0xMT
-AyMTQ2MzAsMjc5ODk4MDcsMjAyMjU4OTQxMiwxNjE0MjM1NDMw
-LDExODU0MjE1MDJdfQ==
+eyJoaXN0b3J5IjpbOTU3MDE1Njg2LDExMjU0NjIyMjIsLTcyNz
+g2Njk5OCwtMTEwMjE0NjMwLDI3OTg5ODA3LDIwMjI1ODk0MTIs
+MTYxNDIzNTQzMCwxMTg1NDIxNTAyXX0=
 -->
