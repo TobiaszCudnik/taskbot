@@ -72,9 +72,9 @@ To hide the the left sidebar, click the top-right hamburger icon ☰.
 **TaskBot** will not read the contents of your emails, although it will read the subjects and labels assigned to them. Details about accessed and stored data can be found in our [Privacy Policy](/privacy-policy).
 
 #### Can I share a Google Tasks list with someone?
-Not at the moment, but we're working on it! Soon you'll be able to share a custom list in **Google Tasks** with another **TaskBot** user, without using any dedicated UI. Tasks from that list will still be able to have a status assigned to  them which will make them show up in one of the status lists.
+Not at the moment, but we're working on it! Soon you'll be able to share a custom list in **Google Tasks** with another **TaskBot** user, without using any dedicated UI. Tasks from that list will still be able to have a status assigned to  them, which will make them show up in one of the status lists. That way you can organize your **GTD** independently of the shared list.
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTEyMTMzMDg0OTMsMTEyNTQ2MjIyMiwtNz
-I3ODY2OTk4LC0xMTAyMTQ2MzAsMjc5ODk4MDcsMjAyMjU4OTQx
-MiwxNjE0MjM1NDMwLDExODU0MjE1MDJdfQ==
+eyJoaXN0b3J5IjpbMTYzMTcxMzg0MSwxMTI1NDYyMjIyLC03Mj
+c4NjY5OTgsLTExMDIxNDYzMCwyNzk4OTgwNywyMDIyNTg5NDEy
+LDE2MTQyMzU0MzAsMTE4NTQyMTUwMl19
 -->
