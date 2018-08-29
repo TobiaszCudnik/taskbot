@@ -1,5 +1,6 @@
 import React from 'react'
 import Button from '@material-ui/core/Button'
+import { signin } from '../../src/auth'
 
 const content_form = markdown.require('../content/invite-form.md')
 const content_requested = markdown.require('../content/invite-requested.md')
@@ -7,29 +8,34 @@ const content_requested = markdown.require('../content/invite-requested.md')
 type Props = {}
 
 type State = {
-  // TODO add error, enum
-  invite: false | 'processing' | true
+  // TODO enum
+  requested: boolean | 'processing' | 'error'
 }
 
 export default class InviteForm extends React.Component<Props, State> {
   state: State = {
-    invite: false
+    requested: false
   }
+
+  disposeOnLogin: Function
 
   onRequestInviteClick = async () => {
-    if (this.state.invite) {
+    const { requested } = this.state
+    if (requested && requested !== 'error') {
       return
     }
-    this.setState({ invite: 'processing' })
-    const instance = gapi.auth2.getAuthInstance()
-    const user = await instance.signIn()
-    const { id_token } = user.getAuthResponse()
-    // TODO check if successful
-    await this.sendIDToken(id_token)
-    this.setState({ invite: true })
+    this.setState({
+      requested: 'processing'
+    })
+    const { id_token } = await signin()
+    // request the invitation
+    const result = await this.requestInvitation(id_token)
+    this.setState({
+      requested: result ? true : 'error'
+    })
   }
 
-  async sendIDToken(id_token: string) {
+  async requestInvitation(id_token: string) {
     const res = await fetch('/invite', {
       method: 'POST',
       headers: {
@@ -41,9 +47,20 @@ export default class InviteForm extends React.Component<Props, State> {
   }
 
   render() {
-    const invite_requested = this.state.invite
-    const show_form =
-      invite_requested === false || invite_requested === 'processing'
+    const { requested } = this.state
+    const show_form = requested !== true
+    let label: string
+    switch (requested) {
+      case false:
+        label = 'Request an invite'
+        break;
+      case 'error':
+        label = 'Error'
+        break;
+      case 'processing':
+        label = 'Requesting...'
+        break;
+    }
 
     return (
       <React.Fragment>
@@ -54,13 +71,14 @@ export default class InviteForm extends React.Component<Props, State> {
               variant="contained"
               color="primary"
               fullWidth={true}
+              disabled={requested === 'processing'}
               onClick={this.onRequestInviteClick}
             >
-              {invite_requested ? 'Requesting...' : 'Request an invite'}
+              {label}
             </Button>
           </React.Fragment>
         )}
-        {invite_requested === true && (
+        {requested === true && (
           <div dangerouslySetInnerHTML={{ __html: content_requested }} />
         )}
       </React.Fragment>

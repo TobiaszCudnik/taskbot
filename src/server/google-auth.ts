@@ -9,11 +9,14 @@ import { Credentials } from 'google-auth-library/build/src/auth/credentials'
 
 // POST /invite
 export async function invite(this: TContext, req: Request, h: ResponseToolkit) {
-  const email = await idTokenToEmail(this.app, req.payload['id_token'])
+  const { email, uid } = await decodeFirebaseIDToken(
+    this.app,
+    req.payload['id_token']
+  )
   if (!email) {
     h.response().code(403)
   }
-  await addInvite(this.app, email)
+  await addInvite(this.app, email, uid)
   return h.response().code(200)
 }
 
@@ -122,7 +125,27 @@ async function idTokenToEmail(
   return payload.email
 }
 
-async function addInvite(this: void, app: App, email: string) {
+/**
+ * Decodes email and uid from a Firebase ID token.
+ *
+ * @param app
+ * @param id_token
+ */
+async function decodeFirebaseIDToken(
+  this: void,
+  app: App,
+  id_token: string
+): Promise<{ uid: string; email: string }> {
+  const payload = await firebase
+    .auth()
+    .verifyIdToken(id_token, app.config.firebase.admin.project_id)
+  if (!payload.email_verified || !payload.email) {
+    return null
+  }
+  return { email: payload.email, uid: payload.uid }
+}
+
+async function addInvite(this: void, app: App, email: string, uid: string) {
   assert(email && email.includes('@'), 'Invalid email')
 
   // check if the invitation already exists
@@ -146,6 +169,7 @@ async function addInvite(this: void, app: App, email: string) {
   // TODO type
   const entry: TInvitation = {
     email,
+    uid,
     time: moment()
       .utc()
       .unix(),
@@ -166,6 +190,8 @@ export type TInvitation = {
   email_sent: boolean
   time: number
   active: boolean
+  // Firebase UID
+  uid: string
 }
 
 async function isInvitationValid(this: void, app: App, email: string) {

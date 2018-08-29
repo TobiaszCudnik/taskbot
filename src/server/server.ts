@@ -1,11 +1,10 @@
 import * as path from 'path'
 import { App } from '../app/app'
 import Logger, { log_fn } from '../app/logger'
-import { IConfig } from '../types'
-import * as google_login from './google-login'
+import * as google_login from './google-auth'
 import { Server, Request } from 'hapi'
 import * as inert from 'inert'
-import www_start from '../../www/src/next'
+import www_start from '../../www/src/server'
 
 export type TContext = {
   logger_info: log_fn

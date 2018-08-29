@@ -1,28 +1,32 @@
-import React from 'react';
-import App, { Container } from 'next/app';
-import { MuiThemeProvider } from '@material-ui/core/styles';
-import CssBaseline from '@material-ui/core/CssBaseline';
-import JssProvider from 'react-jss/lib/JssProvider';
-import getPageContext from '../src/getPageContext';
+import React from 'react'
+import App, { Container } from 'next/app'
+import { MuiThemeProvider } from '@material-ui/core/styles'
+import CssBaseline from '@material-ui/core/CssBaseline'
+import JssProvider from 'react-jss/lib/JssProvider'
+import getPageContext from '../src/getPageContext'
+import { initFirebase } from '../src/auth'
 
 class MyApp extends App {
   constructor(props) {
-    super(props);
-    this.pageContext = getPageContext();
+    super(props)
+    this.pageContext = getPageContext()
+    if (process.browser) {
+      window.firebase_ready = initFirebase({})
+    }
   }
 
-  pageContext = null;
+  pageContext = null
 
   componentDidMount() {
     // Remove the server-side injected CSS.
-    const jssStyles = document.querySelector('#jss-server-side');
+    const jssStyles = document.querySelector('#jss-server-side')
     if (jssStyles && jssStyles.parentNode) {
-      jssStyles.parentNode.removeChild(jssStyles);
+      jssStyles.parentNode.removeChild(jssStyles)
     }
   }
 
   render() {
-    const { Component, pageProps } = this.props;
+    const { Component, pageProps } = this.props
     return (
       <Container>
         {/* Wrap every page in Jss and Theme providers */}
@@ -44,8 +48,8 @@ class MyApp extends App {
           </MuiThemeProvider>
         </JssProvider>
       </Container>
-    );
+    )
   }
 }
 
-export default MyApp;
+export default MyApp
