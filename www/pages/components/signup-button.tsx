@@ -3,16 +3,16 @@ import Button from '@material-ui/core/Button'
 import submitForm from 'submit-form'
 import { onLogin } from '../../src/auth'
 
-const content = markdown.require('../content/signup-form.md')
-
-type Props = {}
+type Props = {
+  button_props?: object
+}
 
 type State = {
   email?: string
   id_token?: string
 }
 
-export default class SignupForm extends React.Component<Props, State> {
+export default class SignUpButton extends React.Component<Props, State> {
   state: State = {}
 
   disposeOnLogin: Function
@@ -52,6 +52,7 @@ export default class SignupForm extends React.Component<Props, State> {
           color="primary"
           fullWidth={true}
           onClick={this.onSignupClick}
+          {...this.props.button_props}
         >
           Create Account
         </Button>

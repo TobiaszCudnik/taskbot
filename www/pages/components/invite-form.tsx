@@ -1,6 +1,6 @@
 import React from 'react'
 import Button from '@material-ui/core/Button'
-import { signin } from '../../src/auth'
+import { signIn } from '../../src/auth'
 
 const content_form = markdown.require('../content/invite-form.md')
 const content_requested = markdown.require('../content/invite-requested.md')
@@ -27,7 +27,7 @@ export default class InviteForm extends React.Component<Props, State> {
     this.setState({
       requested: 'processing'
     })
-    const { id_token } = await signin()
+    const { id_token } = await signIn()
     // request the invitation
     const result = await this.requestInvitation(id_token)
     this.setState({

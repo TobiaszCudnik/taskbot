@@ -3,7 +3,7 @@ import * as fs from 'fs'
 import * as google from 'googleapis'
 import { test_user } from '../../config-accounts'
 import { Credentials as GoogleCredentials } from 'google-auth-library/build/src/auth/credentials'
-import { getInvitation, TInvitation } from '../server/google-auth'
+import { getInvitationByEmail, TInvitation } from '../server/google-auth'
 import RootSync from '../sync/root'
 import { IConfig, IAccount, IConfigAccount, TRawEmail } from '../types'
 import Connections from './connections'
@@ -24,7 +24,6 @@ const email_welcome = removeHtmlComments(
 export class App {
   syncs: RootSync[] = []
   firebase: firebase.app.App
-  last_id: number = 0
   log_info = this.logger.createLogger('app')
   auth: OAuth2Client
   // TODO merge with auth once googleapis are up to date
@@ -62,17 +61,12 @@ export class App {
     }
   }
 
+  // TODO split
   async listenToChanges() {
-
     // ACCOUNTS
     const accounts_ref = this.firebase.database().ref('/accounts')
     accounts_ref.on('child_added', (s: firebase.database.DataSnapshot) => {
       const account: IAccount = s.val()
-      // TODO use last_id from firebase
-      this.last_id = Math.max(
-        this.last_id,
-        parseInt(account.config.user.id, 10)
-      )
       if (!this.isAccountEnabled(account)) {
         return false
       }
@@ -184,15 +178,17 @@ export class App {
       return true
     }
 
-    const push_ref = this.firebase
-      .database()
-      .ref('accounts')
-      .push()
+    const invitation = await getInvitationByEmail(this, email)
+
+    if (!invitation || !invitation.active) {
+      return false
+    }
+
+    const { uid } = invitation
+
     const registered = moment()
       .utc()
       .toISOString()
-    // TODO perform on firebase
-    const id = (++this.last_id).toString()
 
     let account: IAccount = {
       email,
@@ -206,7 +202,7 @@ export class App {
       dev: !Boolean(process.env['PROD']),
       config: {
         user: {
-          id
+          id: uid
         },
         // TODO make all google_token fields required (assert)
         google: {
@@ -217,21 +213,19 @@ export class App {
     }
     // add the account
     // TODO parallel
-    await push_ref.set(account)
+    await this.firebase
+      .database()
+      .ref(`accounts/${uid}`)
+      .set(account)
     await this.sendServiceEmail(email, 'Welcome to TaskBot.app', email_welcome)
 
-    const invite = await getInvitation(this, email)
-    // support no-invite accounts (bypass code)
-    if (invite) {
-      // remove the invite
-      await this.firebase
-        .database()
-        .ref('invitations/' + invite.key)
-        .remove()
-      this.log_info(`Removed invite ${invite.key}`)
-    }
+    // remove the invite
+    await this.firebase
+      .database()
+      .ref(`invitations/${uid}`)
+      .remove()
 
-    this.log_info(`Added a new user ${id}: ${email}`)
+    this.log_info(`Added a new user ${uid}: ${email}`)
     return true
   }
 
