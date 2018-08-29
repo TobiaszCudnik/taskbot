@@ -2,25 +2,11 @@ import React from 'react'
 import Document, { Head, Main, NextScript } from 'next/document'
 import flush from 'styled-jsx/server'
 import Link from 'next/link'
-import invite from '../src/google-auth'
 import Menu from '../pages/components/menu'
 
 class MyDocument extends Document {
-  static async getInitialProps({ res }) {
-    if (res) {
-      console.log(res)
-      debugger
-      debugger
-    }
-
-    return {}
-  }
-
   render() {
     const { pageContext, pathname } = this.props
-
-    let invite_src = invite.toString()
-    invite_src = `(${invite_src})()`
 
     return (
       <html lang="en" dir="ltr">
@@ -43,8 +29,14 @@ class MyDocument extends Document {
           />
           <link rel="stylesheet" href="/static/video-react.css" />
           <link rel="stylesheet" href="/static/styles.css" />
-          <script src="https://apis.google.com/js/platform.js" />
-          <script dangerouslySetInnerHTML={{ __html: invite_src }} />
+          {/*<script src="https://apis.google.com/js/platform.js" />*/}
+
+          {/* TODO */}
+          {/*<script src="https://www.gstatic.com/firebasejs/5.4.1/firebase-app.js"></script>
+          <script src="https://www.gstatic.com/firebasejs/5.4.1/firebase-auth.js"></script>
+          <script src="https://www.gstatic.com/firebasejs/5.4.1/firebase-database.js"></script>*/}
+
+          <script src="https://www.gstatic.com/firebasejs/5.4.1/firebase.js" />
         </Head>
         <body>
           <h1 className="logo">TaskBot.app</h1>

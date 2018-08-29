@@ -3,7 +3,7 @@ import * as fs from 'fs'
 import * as google from 'googleapis'
 import { test_user } from '../../config-accounts'
 import { Credentials as GoogleCredentials } from 'google-auth-library/build/src/auth/credentials'
-import { getInvitation, TInvitation } from '../server/google-login'
+import { getInvitation, TInvitation } from '../server/google-auth'
 import RootSync from '../sync/root'
 import { IConfig, IAccount, IConfigAccount, TRawEmail } from '../types'
 import Connections from './connections'
@@ -63,6 +63,7 @@ export class App {
   }
 
   async listenToChanges() {
+
     // ACCOUNTS
     const accounts_ref = this.firebase.database().ref('/accounts')
     accounts_ref.on('child_added', (s: firebase.database.DataSnapshot) => {
@@ -103,6 +104,7 @@ export class App {
       const sync = this.createUserInstance(this.config, account.config)
       this.syncs.push(sync)
     })
+
     // INVITATIONS
     const invitations_ref = this.firebase.database().ref('/invitations')
     invitations_ref.on('child_changed', (s: firebase.database.DataSnapshot) => {
