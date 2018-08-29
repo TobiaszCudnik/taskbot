@@ -9,14 +9,17 @@ import { Credentials } from 'google-auth-library/build/src/auth/credentials'
 
 // POST /invite
 export async function invite(this: TContext, req: Request, h: ResponseToolkit) {
+  this.logger_info('/invite')
+
   const { email, uid } = await decodeFirebaseIDToken(
     this.app,
     req.payload['id_token']
   )
   if (!email) {
-    h.response().code(403)
+    h.response('ID token not valid').code(403)
   }
-  await addInvite(this.app, email, uid)
+  await addInvitation(this.app, email, uid)
+
   return h.response().code(200)
 }
 
@@ -24,19 +27,17 @@ export async function invite(this: TContext, req: Request, h: ResponseToolkit) {
 export async function signup(this: TContext, req: Request, h: ResponseToolkit) {
   this.logger_info('/signup')
 
-  if (req.params['code']) {
-    if (req.params['code'] !== this.app.config.service.bypass_code) {
-      h.response('Code not valid').code(403)
-    }
-  } else {
-    const email = await idTokenToEmail(this.app, req.payload['id_token'])
-    if (!email) {
-      h.response('ID token not valid').code(403)
-    }
-    let is_valid = await isInvitationValid(this.app, email)
-    if (!is_valid) {
-      return h.response('Invitation not valid').code(403)
-    }
+  const { email, uid } = await decodeFirebaseIDToken(
+    this.app,
+    req.payload['id_token']
+  )
+  if (!email) {
+    h.response('ID token not valid').code(403)
+  }
+
+  let is_valid = await isInvitationValid(this.app, uid)
+  if (!is_valid) {
+    return h.response('Invitation not valid').code(403)
   }
 
   const url = this.app.auth.generateAuthUrl({
@@ -80,11 +81,7 @@ export async function signupCallback(
     return tokens
   }
 
-  const email = await idTokenToEmail(
-    this.app,
-    tokens.id_token,
-    this.app.config.google.client_id
-  )
+  const email = await idTokenToEmail(this.app, tokens.id_token)
   if (!email) {
     return h.response('Email not confirmed or missing').code(400)
   }
@@ -111,7 +108,7 @@ async function idTokenToEmail(
   id_token: string,
   client_id = null
 ): Promise<string | null> {
-  client_id = client_id || app.config.www.google.client_id
+  client_id = client_id || app.config.google.client_id
 
   const login_ticket = await app.auth.verifyIdToken({
     idToken: id_token,
@@ -145,29 +142,17 @@ async function decodeFirebaseIDToken(
   return { email: payload.email, uid: payload.uid }
 }
 
-async function addInvite(this: void, app: App, email: string, uid: string) {
+async function addInvitation(this: void, app: App, email: string, uid: string) {
   assert(email && email.includes('@'), 'Invalid email')
+  assert(uid)
 
-  // check if the invitation already exists
-  const query = await app.firebase
-    .database()
-    .ref('invitations')
-    .orderByChild('email')
-    .equalTo(email)
-    .once('value')
-  const invites = query.val()
-
-  if (invites) {
-    const key = Object.keys(invites)[0]
-    if (key) {
-      // invitation already exists
-      return false
-    }
+  const existing = await getInvitationByUID(app, uid)
+  if (existing) {
+    return false
   }
 
   // create a new invitation
-  // TODO type
-  const entry: TInvitation = {
+  const invitation: TInvitation = {
     email,
     uid,
     time: moment()
@@ -176,11 +161,12 @@ async function addInvite(this: void, app: App, email: string, uid: string) {
     active: false,
     email_sent: false
   }
-  const push = app.firebase
+
+  // set under the uid key
+  await app.firebase
     .database()
-    .ref('invitations')
-    .push()
-  await push.set(entry)
+    .ref(`invitations/${uid}`)
+    .set(invitation)
 
   return true
 }
@@ -194,12 +180,19 @@ export type TInvitation = {
   uid: string
 }
 
-async function isInvitationValid(this: void, app: App, email: string) {
-  const invite = await getInvitation(app, email)
-  return invite && invite.val.active
+async function isInvitationValid(
+  this: void,
+  app: App,
+  uid: string
+): Promise<boolean> {
+  const invite = await getInvitationByUID(app, uid)
+  return Boolean(invite && invite.active)
 }
 
-export async function getInvitation(app: App, email: string) {
+export async function getInvitationByEmail(
+  app: App,
+  email: string
+): Promise<TInvitation | null> {
   const ref = await app.firebase
     .database()
     .ref('invitations')
@@ -214,13 +207,23 @@ export async function getInvitation(app: App, email: string) {
   if (!key) {
     return null
   }
-  return {
-    query_ref: ref,
-    key,
-    val: invites[key] as TInvitation
-  }
+  return invites[key] as TInvitation
 }
 
+export async function getInvitationByUID(
+  app: App,
+  uid: string
+): Promise<TInvitation | null> {
+
+  const prev = await app.firebase
+    .database()
+    .ref(`invitations/${uid}`)
+    .once('value')
+
+  return (prev && prev.val()) || null
+}
+
+// TODO move to server.ts
 function getIP(this: void, req: Request) {
   const xff_header = req.headers['x-forwarded-for']
   const ip = xff_header ? xff_header.split(',')[0] : req.info.remoteAddress

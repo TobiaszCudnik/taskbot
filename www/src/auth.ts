@@ -12,7 +12,7 @@ export async function initFirebase(config) {
   firebase.initializeApp(config)
 }
 
-export async function signin(): Promise<{
+export async function signIn(): Promise<{
   uid: string
   email: string
   id_token: string
@@ -32,8 +32,16 @@ export async function signin(): Promise<{
   return { uid, email, id_token }
 }
 
-export function onLogin(fn): Function {
+export type TUser = {
+  uid: string
+  email: string
+  id_token: string
+}
+
+export function onLogin(fn: (user: TUser) => void): Function {
   return firebase.auth().onAuthStateChanged(async function(user) {
+    if (!user) return
+
     const id_token = await user.getIdToken()
     const email = user.email
     const uid = user.uid

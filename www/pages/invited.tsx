@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { withStyles } from '@material-ui/core/styles'
-import SignupForm from './components/signup-form'
+import SignupButton from './components/signup-button'
 const content = markdown.require('./content/invited.md')
 
 const styles = theme => ({
@@ -22,7 +22,7 @@ class SignupPage extends React.Component<Props, State> {
     return (
       <div className={classes.root}>
         <div dangerouslySetInnerHTML={{ __html: content }} />
-        <SignupForm />
+        <SignupButton />
       </div>
     )
   }

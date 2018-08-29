@@ -1,6 +1,10 @@
 import React from 'react'
 import { withStyles } from '@material-ui/core/styles'
-import { onLogin } from '../src/auth'
+import { TInvitation } from '../../src/server/google-auth'
+import { IAccount } from '../../src/types'
+import { onLogin, TUser } from '../src/auth'
+import SignInButton from './components/signin-button'
+import InvitationForm from './components/invite-form'
 
 const content = markdown.require('./content/account.md')
 
@@ -11,18 +15,39 @@ const styles = theme => ({
   }
 })
 
-class Index extends React.Component {
-  state = {
-    open: false,
-    logged_in: false
-  }
+type State = {
+  user?: TUser | null
+  account?: IAccount | null
+  invitation?: TInvitation | null
+}
+
+class Index extends React.Component<{}, State> {
+  state: State = {}
 
   disposeOnLogin: Function
 
   async componentDidMount() {
-    this.disposeOnLogin = onLogin(user => {
-      this.setState({ logged_in: Boolean(user) })
+    this.disposeOnLogin = onLogin(async (user: TUser) => {
+      this.setState({ user })
+      this.loadAccount(user.uid)
+      this.loadInvitation(user.uid)
     })
+  }
+
+  async loadAccount(uid: string) {
+    const account = await firebase
+      .database()
+      .ref(`accounts/${uid}`)
+      .once('value')
+    this.setState({ account })
+  }
+
+  async loadInvitation(uid: string) {
+    const invitation = await firebase
+      .database()
+      .ref(`invitations/${uid}`)
+      .once('value')
+    this.setState({ invitation })
   }
 
   componentWillUnmount() {
@@ -33,24 +58,27 @@ class Index extends React.Component {
 
   render() {
     const { classes } = this.props
-    const { logged_in } = this.state
+    const { user, account, invitation } = this.state
 
-    if (!process.browser) {
+    if (!process.browser || !user) {
       return (
         <div className={classes.root}>
-          <div dangerouslySetInnerHTML={{ __html: content }} />
+          <h4>Sign In</h4>
+          <p>
+            Please use the button below to sign in using your Google Account:
+          </p>
+          <SignInButton />
         </div>
       )
     }
 
-    const user = firebase.auth().currentUser
-
     return (
       <div className={classes.root}>
-        {logged_in && (
-          <React.Fragment>Logged in as: {user.email}</React.Fragment>
-        )}
         <div dangerouslySetInnerHTML={{ __html: content }} />
+        <p>Logged in as: {user.email}</p>
+        <pre>Account: {JSON.stringify(account, null, 1)}</pre>
+        <pre>Invitation: {JSON.stringify(invitation, null, 1)}</pre>
+        {invitation !== undefined && !invitation && <InvitationForm />}
       </div>
     )
   }

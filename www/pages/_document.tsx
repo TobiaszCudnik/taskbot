@@ -29,19 +29,23 @@ class MyDocument extends Document {
           />
           <link rel="stylesheet" href="/static/video-react.css" />
           <link rel="stylesheet" href="/static/styles.css" />
-          {/*<script src="https://apis.google.com/js/platform.js" />*/}
 
           {/* TODO */}
-          {/*<script src="https://www.gstatic.com/firebasejs/5.4.1/firebase-app.js"></script>
-          <script src="https://www.gstatic.com/firebasejs/5.4.1/firebase-auth.js"></script>
-          <script src="https://www.gstatic.com/firebasejs/5.4.1/firebase-database.js"></script>*/}
+          <script src="https://www.gstatic.com/firebasejs/5.4.1/firebase-app.js" />
+          <script src="https://www.gstatic.com/firebasejs/5.4.1/firebase-auth.js" />
+          <script src="https://www.gstatic.com/firebasejs/5.4.1/firebase-database.js" />
 
-          <script src="https://www.gstatic.com/firebasejs/5.4.1/firebase.js" />
+          {/*<script src="https://www.gstatic.com/firebasejs/5.4.1/firebase.js" />*/}
         </Head>
         <body>
-          <h1 className="logo">TaskBot.app</h1>
-          <h4 className="logo">GMail Task Organizer</h4>
-          <Menu pathname={pathname} />
+          <header>
+            <h1 className="logo">TaskBot.app</h1>
+            <h4 className="logo">GMail Task Organizer</h4>
+            <Link href="/account">
+              <a className="signin">Sign In</a>
+            </Link>
+            <Menu pathname={pathname} />
+          </header>
           <Main />
           <NextScript />
           <footer>
