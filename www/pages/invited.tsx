@@ -1,17 +1,20 @@
 /* eslint-disable jsx-a11y/anchor-is-valid */
 
+import { WithStyles, withStyles } from '@material-ui/core/styles'
 import React from 'react'
-import { withStyles } from '@material-ui/core/styles'
+import SignInBar from './components/signin-bar'
 import SignupButton from './components/signup-button'
+
 const content = markdown.require('./content/invited.md')
 
-const styles = theme => ({
+const styles = (/*theme*/) => ({
   root: {
     // textAlign: 'center',
     // paddingTop: theme.spacing.unit * 20
   }
 })
-type Props = {}
+
+interface Props extends WithStyles<typeof styles> {}
 
 type State = {}
 
@@ -20,10 +23,13 @@ class SignupPage extends React.Component<Props, State> {
     const { classes } = this.props
 
     return (
-      <div className={classes.root}>
-        <div dangerouslySetInnerHTML={{ __html: content }} />
-        <SignupButton />
-      </div>
+      <>
+        <SignInBar />
+        <div className={classes.root}>
+          <div dangerouslySetInnerHTML={{ __html: content }} />
+          <SignupButton />
+        </div>
+      </>
     )
   }
 }

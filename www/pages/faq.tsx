@@ -1,25 +1,31 @@
 /* eslint-disable jsx-a11y/anchor-is-valid */
 
+import { WithStyles, withStyles } from '@material-ui/core/styles'
 import React from 'react'
-import { withStyles } from '@material-ui/core/styles'
+import SignInBar from './components/signin-bar'
+
 const content = markdown.require('./content/faq.md')
 
-const styles = theme => ({
+const styles = (/*theme*/) => ({
   root: {
     // textAlign: 'center',
     // paddingTop: theme.spacing.unit * 20
   }
 })
 
-class Index extends React.Component {
+interface Props extends WithStyles<typeof styles> {}
 
+class Index extends React.Component<Props, {}> {
   render() {
     const { classes } = this.props
 
     return (
-      <div className={classes.root}>
-        <div dangerouslySetInnerHTML={{ __html: content }} />
-      </div>
+      <>
+        <SignInBar />
+        <div className={classes.root}>
+          <div dangerouslySetInnerHTML={{ __html: content }} />
+        </div>
+      </>
     )
   }
 }

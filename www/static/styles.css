@@ -12,10 +12,11 @@ body {
     serif;
   font-size: 12px;
   line-height: 1.5em;
-  padding: 1em;
+  padding: 0 1em 1em 1em;
   margin: auto;
   max-width: 42em;
   background: white !important;
+  position: relative;
 }
 
 a {
@@ -38,24 +39,6 @@ a:focus {
 a:hover,
 a:active {
   outline: 0;
-}
-
-::-moz-selection {
-  background: rgba(255, 255, 0, 0.3);
-  color: #000;
-}
-::selection {
-  background: rgba(255, 255, 0, 0.3);
-  color: #000;
-}
-
-a::-moz-selection {
-  background: rgba(255, 255, 0, 0.3);
-  color: #0645ad;
-}
-a::selection {
-  background: rgba(255, 255, 0, 0.3);
-  color: #0645ad;
 }
 
 p {
@@ -397,14 +380,4 @@ h6 {
 h4 > a {
   font-size: 1.4em;
   color: #83a9e6;
-}
-
-header {
-  position: relative;
-}
-
-header a.signin {
-  position: absolute;
-  top: 0;
-  right: 0;
 }

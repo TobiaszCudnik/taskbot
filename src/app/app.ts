@@ -162,17 +162,25 @@ export class App {
     return accounts && Object.keys(accounts).length
   }
 
+  async enableAccount(uid: string, enabled = true) {
+    await this.firebase
+      .database()
+      .ref(`accounts/${uid}`)
+      .update({ enabled })
+  }
+
   /**
    * TODO detect if the email is already added and merge
    * @param google_tokens
    * @param email
    * @param ip
-   * @param invitation_code
+   * @param enabled
    */
   async addAccount(
     google_tokens: GoogleCredentials,
     email: string,
-    ip: string
+    ip: string,
+    enabled: boolean = false
   ) {
     if (await this.isAccountAdded(email)) {
       this.log_info(
@@ -200,7 +208,9 @@ export class App {
         enabled: true
       },
       send_welcome_email: true,
-      enabled: true,
+      // create a disabled account by default
+      enabled,
+      ip,
       // create dev accounts in the dev env
       dev: !Boolean(process.env['PROD']),
       config: {

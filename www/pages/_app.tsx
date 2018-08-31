@@ -1,12 +1,14 @@
-import React from 'react'
-import App, { Container } from 'next/app'
-import { MuiThemeProvider } from '@material-ui/core/styles'
 import CssBaseline from '@material-ui/core/CssBaseline'
+import { MuiThemeProvider } from '@material-ui/core/styles'
+import App, { Container } from 'next/app'
+import React from 'react'
 import JssProvider from 'react-jss/lib/JssProvider'
-import getPageContext from '../src/getPageContext'
 import { initFirebase } from '../src/auth'
+import getPageContext from '../src/getPageContext'
 
 class MyApp extends App {
+  props: any
+
   constructor(props) {
     super(props)
     this.pageContext = getPageContext()
@@ -27,6 +29,7 @@ class MyApp extends App {
 
   render() {
     const { Component, pageProps } = this.props
+
     return (
       <Container>
         {/* Wrap every page in Jss and Theme providers */}

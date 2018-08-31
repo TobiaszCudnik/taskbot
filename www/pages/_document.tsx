@@ -1,10 +1,12 @@
-import React from 'react'
 import Document, { Head, Main, NextScript } from 'next/document'
-import flush from 'styled-jsx/server'
 import Link from 'next/link'
+import React from 'react'
+import flush from 'styled-jsx/server'
 import Menu from '../pages/components/menu'
 
 class MyDocument extends Document {
+  props: any
+
   render() {
     const { pageContext, pathname } = this.props
 
@@ -41,9 +43,6 @@ class MyDocument extends Document {
           <header>
             <h1 className="logo">TaskBot.app</h1>
             <h4 className="logo">GMail Task Organizer</h4>
-            <Link href="/account">
-              <a className="signin">Sign In</a>
-            </Link>
             <Menu pathname={pathname} />
           </header>
           <Main />
@@ -65,6 +64,7 @@ class MyDocument extends Document {
   }
 }
 
+// @ts-ignore
 MyDocument.getInitialProps = ctx => {
   // Resolution order
   //
