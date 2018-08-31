@@ -40,9 +40,11 @@ export async function signup(this: TContext, req: Request, h: ResponseToolkit) {
     return h.response('Invitation not valid').code(403)
   }
 
+  // TODO limit auth to the email from id_token
   const url = this.app.auth.generateAuthUrl({
     // will return a refresh token
     access_type: 'offline',
+    login_hint: email,
     prompt: 'consent',
     // @ts-ignore required to get the refresh_token every time
     approval_prompt: null,

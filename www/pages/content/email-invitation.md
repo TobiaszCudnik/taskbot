@@ -1,11 +1,12 @@
 Hello!
 
-You've been invited to the TaskBot.app private beta!
+You've been invited to TaskBot.app Private Beta!
 
-What to do next? Create your new account here:
-https://taskbot.app/invited
+What to do next? Enable sync on your account page:
+https://taskbot.app/account
 
-After your account gets created, the service will configure itself and start automatically. Don't hesitate to reply if you have any ideas to make it better :)
+After you authorize TaskBot, the service will configure itself and start syncing. Don't hesitate to reply to this email with any feedback you have. Also, take a look at the FAQ page:
+https://taskbot.app/faq
 
 Thank you for your interest and the feedback.
 

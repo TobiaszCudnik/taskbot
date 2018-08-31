@@ -1,18 +1,18 @@
 {
   "presets": ["next/babel", "@zeit/next-typescript/babel"],
-  // https://spectrum.chat/next-js?thread=97a6570d-572f-42e0-915d-5398594d6ea5
-  //  "presets": [
-  //    "next/babel",
-  //    [
-  //      "@babel/preset-env",
-  //      {
-  //        "targets": {
-  //          "esmodules": true
-  //        }
-  //      }
-  //    ],
-  //    "@zeit/next-typescript/babel"
-  //  ],
+//   https://spectrum.chat/next-js?thread=97a6570d-572f-42e0-915d-5398594d6ea5
+//    "presets": [
+//      "next/babel",
+//      [
+//        "@babel/preset-env",
+//        {
+//          "targets": {
+//            "esmodules": true
+//          }
+//        }
+//      ],
+//      "@zeit/next-typescript/babel"
+//    ],
   "plugins": [
     [
       "markdown",
