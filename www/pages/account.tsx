@@ -4,8 +4,7 @@ import { WithStyles, withStyles } from '@material-ui/core/styles'
 import React, { ChangeEvent } from 'react'
 import { TInvitation } from '../../src/server/google-auth'
 import { IAccount } from '../../src/types'
-import { onLogin, signInAndReqInvite, TUser } from '../src/auth'
-import InvitationForm from './components/invite-form'
+import { onLogin, signInAndReqInvite, TUser, signUp } from '../src/auth'
 import SignInBar from './components/signin-bar'
 
 const content = markdown.require('./content/account.md')
@@ -76,6 +75,10 @@ class Index extends React.Component<Props, State> {
   handleSignIn = async () => {
     const user = await signInAndReqInvite()
     this.setState({ user })
+  }
+
+  handleSignUp = async () => {
+    signUp(this.state.user.id_token)
   }
 
   async componentDidMount() {
@@ -172,6 +175,32 @@ class Index extends React.Component<Props, State> {
             )}
         </>
       )
+    } else if (invitation && invitation.active) {
+      invitation_content = (
+        <>
+          <h6>Enable Syncing</h6>
+          <p>
+            Hooray! You've been invited to TaskBot.app Private Beta! You can
+            enable syncing below.
+          </p>
+          <p>
+            After you authorize TaskBot, the service will configure itself and start syncing. Don't hesitate to express your
+            feedback on the{' '}
+            <a href="https://groups.google.com/forum/#!forum/taskbotapp">
+              Google Group
+            </a> or by dropping an email to <a href="mailto:contact@taskbot.app">contact@taskbot.app</a>.
+          </p>
+          <Button
+            variant="contained"
+            color="primary"
+            fullWidth={true}
+            onClick={this.handleSignUp}
+            disabled={disable_code_form}
+          >
+            Enable Syncing
+          </Button>
+        </>
+      )
     }
 
     return (
@@ -180,14 +209,17 @@ class Index extends React.Component<Props, State> {
         <div>
           <h3>Hi, {user.email}</h3>
           {invitation_content}
-          <h6>Remove Account</h6>
-          <p>You can remove your account and all data associated with it.</p>
+          <h6>Delete Account</h6>
+          <p>
+            You can remove your account and all data associated with it at any
+            time.
+          </p>
           <Button
             fullWidth={true}
             className={classes.removeAccount}
             onClick={this.handleRemoveAccount}
           >
-            Remove account
+            Delete Account
           </Button>
         </div>
       </>

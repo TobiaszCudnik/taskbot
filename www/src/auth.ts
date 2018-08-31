@@ -1,3 +1,5 @@
+import submitForm from 'submit-form'
+
 export async function initFirebase(config) {
   // TODO tmp
   config = {
@@ -78,4 +80,16 @@ export async function requestInvitation(id_token: string) {
     body: JSON.stringify({ id_token })
   })
   return res.status === 200
+}
+
+/**
+ * This method will redirect the browser.
+ *
+ * @param id_token
+ */
+export function signUp(id_token: string) {
+  submitForm('/signup', {
+    method: 'POST',
+    body: { id_token }
+  })
 }

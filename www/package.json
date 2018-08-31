@@ -15,7 +15,6 @@
     "react": "^16.4.2",
     "react-dom": "^16.4.2",
     "react-jss": "^8.6.1",
-    "react.di": "^2.0.0",
     "submit-form": "^2.0.0",
     "video-react": "^0.13.0"
   },
