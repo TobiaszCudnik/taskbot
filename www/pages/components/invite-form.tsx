@@ -1,6 +1,12 @@
-import React from 'react'
 import Button from '@material-ui/core/Button'
-import { signIn } from '../../src/auth'
+import React from 'react'
+import {
+  onLogin,
+  requestInvitation,
+  signIn,
+  signInAndReqInvite,
+  TUser
+} from '../../src/auth'
 
 const content_form = markdown.require('../content/invite-form.md')
 const content_requested = markdown.require('../content/invite-requested.md')
@@ -8,16 +14,28 @@ const content_requested = markdown.require('../content/invite-requested.md')
 type Props = {}
 
 type State = {
-  // TODO enum
+  already_invited: boolean
   requested: boolean | 'processing' | 'error'
 }
 
 export default class InviteForm extends React.Component<Props, State> {
   state: State = {
-    requested: false
+    requested: false,
+    already_invited: false
+  }
+  dispose_on_login: Function
+
+  async componentDidMount() {
+    this.dispose_on_login = onLogin(async (user: TUser) => {
+      this.setState({ already_invited: true })
+    }, true)
   }
 
-  disposeOnLogin: Function
+  componentWillUnmount() {
+    if (this.dispose_on_login) {
+      this.dispose_on_login()
+    }
+  }
 
   onRequestInviteClick = async () => {
     const { requested } = this.state
@@ -27,43 +45,39 @@ export default class InviteForm extends React.Component<Props, State> {
     this.setState({
       requested: 'processing'
     })
-    const { id_token } = await signIn()
-    // request the invitation
-    const result = await this.requestInvitation(id_token)
-    this.setState({
-      requested: result ? true : 'error'
-    })
-  }
-
-  async requestInvitation(id_token: string) {
-    const res = await fetch('/invite', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json; charset=utf-8'
-      },
-      body: JSON.stringify({ id_token })
-    })
-    return res.status === 200
+    let user
+    try {
+      user = signInAndReqInvite()
+    } catch (e) {
+      this.setState({
+        requested: user ? true : 'error'
+      })
+    }
   }
 
   render() {
-    const { requested } = this.state
+    const { requested, already_invited } = this.state
     const show_form = requested !== true
+
+    if (already_invited) {
+      return <></>
+    }
+
     let label: string
     switch (requested) {
       case false:
         label = 'Request an invite'
-        break;
+        break
       case 'error':
         label = 'Error'
-        break;
+        break
       case 'processing':
         label = 'Requesting...'
-        break;
+        break
     }
 
     return (
-      <React.Fragment>
+      <>
         {show_form && (
           <React.Fragment>
             <div dangerouslySetInnerHTML={{ __html: content_form }} />
@@ -81,7 +95,7 @@ export default class InviteForm extends React.Component<Props, State> {
         {requested === true && (
           <div dangerouslySetInnerHTML={{ __html: content_requested }} />
         )}
-      </React.Fragment>
+      </>
     )
   }
 }

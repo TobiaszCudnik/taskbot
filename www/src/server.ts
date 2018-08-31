@@ -1,9 +1,6 @@
-import * as next from 'next'
 import * as hapi from 'hapi'
-import {
-  defaultHandlerWrapper,
-  nextHandlerWrapper
-} from './next-wrapper'
+import * as next from 'next'
+import { defaultHandlerWrapper, nextHandlerWrapper } from './next-wrapper'
 
 const app = next({ dir: 'www' })
 

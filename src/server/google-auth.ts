@@ -1,9 +1,9 @@
 import * as assert from 'assert'
 import * as firebase from 'firebase-admin'
-import { Request, ResponseToolkit, Server } from 'hapi'
+import { Request, ResponseToolkit } from 'hapi'
 import * as moment from 'moment-timezone'
 import { App } from '../app/app'
-import { IConfig, IConfigPrivate } from '../types'
+import { IConfigPrivate } from '../types'
 import { TContext } from './server'
 import { Credentials } from 'google-auth-library/build/src/auth/credentials'
 
@@ -88,7 +88,7 @@ export async function signupCallback(
 
   // save the new user to firebase
   const ip = getIP(req)
-  await this.app.addAccount(tokens, email, ip)
+  await this.app.addAccount(tokens, email, ip, true)
 
   return h.redirect('/account')
 }
