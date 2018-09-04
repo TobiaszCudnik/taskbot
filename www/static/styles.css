@@ -275,12 +275,25 @@ h4.logo {
 /* MENU */
 
 nav.menu ol {
+  font-size: 10px;
   display: flex;
   justify-content: space-between;
   list-style: none;
   width: 100%;
   margin: 0;
   padding: 0;
+}
+
+@media only screen and (min-width: 480px) {
+  nav.menu ol {
+    font-size: 14px;
+  }
+}
+
+@media only screen and (min-width: 768px) {
+  nav.menu ol {
+    font-size: 16px;
+  }
 }
 
 nav.menu li {

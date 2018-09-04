@@ -2,10 +2,9 @@ import { TextField, Typography } from '@material-ui/core'
 import Button from '@material-ui/core/Button'
 import { WithStyles, withStyles } from '@material-ui/core/styles'
 import React, { ChangeEvent } from 'react'
-import { TInvitation } from '../../src/server/google-auth'
 import { IAccount } from '../../src/types'
-import { onLogin, signInAndReqInvite, TUser, signUp } from '../src/auth'
-import SignInBar from './components/signin-bar'
+import { onLogin, signIn, TUser, authorizeAccess } from '../src/auth'
+import SignInBar from '../src/components/signin-bar'
 
 const content = markdown.require('./content/account.md')
 
@@ -21,7 +20,6 @@ enum CodeState {
 type State = {
   user?: TUser | null
   account?: IAccount | null
-  invitation?: TInvitation | null
   code?: string
   code_state: CodeState
 }
@@ -33,11 +31,6 @@ class Index extends React.Component<Props, State> {
 
   firebase_bound = false
   dispose_on_login: Function
-
-  invitationHandler = (data: firebase.database.DataSnapshot) => {
-    const invitation = data.val() as TInvitation
-    this.setState({ invitation })
-  }
 
   accountHandler = (data: firebase.database.DataSnapshot) => {
     const account = data.val() as IAccount
@@ -67,18 +60,15 @@ class Index extends React.Component<Props, State> {
     const ref1 = window.firebase.database().ref(`accounts`)
     ref1.on('child_changed', this.accountHandler)
     ref1.on('child_added', this.accountHandler)
-    const ref2 = window.firebase.database().ref(`invitations`)
-    ref2.on('child_changed', this.invitationHandler)
-    ref2.on('child_added', this.invitationHandler)
   }
 
   handleSignIn = async () => {
-    const user = await signInAndReqInvite()
+    const user = await signIn()
     this.setState({ user })
   }
 
   handleSignUp = async () => {
-    signUp(this.state.user.id_token)
+    authorizeAccess(this.state.user.id_token)
   }
 
   async componentDidMount() {
@@ -94,11 +84,6 @@ class Index extends React.Component<Props, State> {
     }
     // dispose firebase handlers
     if (this.firebase_bound) {
-      // invitations
-      const ref1 = window.firebase.database().ref(`invitations`)
-      ref1.off('child_added', this.invitationHandler)
-      ref1.off('child_changed', this.invitationHandler)
-      // account
       const ref2 = window.firebase.database().ref(`accounts`)
       ref2.off('child_added', this.accountHandler)
       ref2.off('child_changed', this.accountHandler)
@@ -107,9 +92,9 @@ class Index extends React.Component<Props, State> {
 
   render() {
     const { classes } = this.props
-    const { user } = this.state
+    const { user, account, code, code_state } = this.state
 
-    if (!process.browser || !user) {
+    if (!process.browser || !user || !account) {
       return (
         <>
           <SignInBar />
@@ -119,35 +104,23 @@ class Index extends React.Component<Props, State> {
               Please use the button below to sign in using your Google Account:
             </p>
             <Button
-              className={classes.signIn}
               variant="contained"
               color="primary"
               fullWidth={true}
               onClick={this.handleSignIn}
             >
-              Sign In
-            </Button>
-            <span className={classes.separator}>OR</span>
-            <Button
-              className={classes.signIn}
-              variant="contained"
-              color="primary"
-              fullWidth={true}
-              onClick={this.handleSignIn}
-            >
-              Request Invite
+              Sign In with Google
             </Button>
           </div>
         </>
       )
     }
-    const { account, invitation, code, code_state } = this.state
 
     const disable_code_form =
       code_state === CodeState.IN_PROGRESS || code_state == CodeState.SUCCESS
 
     let invitation_content
-    if (invitation && !invitation.active) {
+    if (!account.invitation_granted) {
       invitation_content = (
         <>
           <h6>Invitation pending</h6>
@@ -175,7 +148,7 @@ class Index extends React.Component<Props, State> {
             )}
         </>
       )
-    } else if (invitation && invitation.active) {
+    } else {
       invitation_content = (
         <>
           <h6>Enable Syncing</h6>
@@ -228,14 +201,6 @@ class Index extends React.Component<Props, State> {
 }
 
 const styles = (/*theme*/) => ({
-  signIn: {
-    width: '45%'
-  },
-  separator: {
-    width: '10%',
-    display: 'inline-block',
-    'text-align': 'center'
-  },
   removeAccount: {
     color: 'red'
   },

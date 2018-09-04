@@ -1,8 +1,8 @@
 import { withStyles, WithStyles } from '@material-ui/core/styles'
 import React from 'react'
 import { BigPlayButton, ControlBar, Player } from 'video-react'
-import InviteForm from './components/invite-form'
-import SignInBar from './components/signin-bar'
+import InviteForm from '../src/components/invite-form'
+import SignInBar from '../src/components/signin-bar'
 
 const content = markdown.require('./content/index.md')
 

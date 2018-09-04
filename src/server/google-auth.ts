@@ -1,27 +1,9 @@
-import * as assert from 'assert'
 import * as firebase from 'firebase-admin'
 import { Request, ResponseToolkit } from 'hapi'
-import * as moment from 'moment-timezone'
 import { App } from '../app/app'
-import { IConfigPrivate } from '../types'
+import { IAccount, IConfigPrivate } from '../types'
 import { TContext } from './server'
 import { Credentials } from 'google-auth-library/build/src/auth/credentials'
-
-// POST /invite
-export async function invite(this: TContext, req: Request, h: ResponseToolkit) {
-  this.logger_info('/invite')
-
-  const { email, uid } = await decodeFirebaseIDToken(
-    this.app,
-    req.payload['id_token']
-  )
-  if (!email) {
-    h.response('ID token not valid').code(403)
-  }
-  await addInvitation(this.app, email, uid)
-
-  return h.response().code(200)
-}
 
 // POST /signup
 export async function signup(this: TContext, req: Request, h: ResponseToolkit) {
@@ -35,8 +17,29 @@ export async function signup(this: TContext, req: Request, h: ResponseToolkit) {
     h.response('ID token not valid').code(403)
   }
 
-  let is_valid = await isInvitationValid(this.app, uid)
-  if (!is_valid) {
+  await this.app.createAccount(uid, email, getIP(req))
+
+  return h.response().code(200)
+}
+
+// POST /authorize
+export async function authorize(
+  this: TContext,
+  req: Request,
+  h: ResponseToolkit
+) {
+  this.logger_info('/authorize')
+
+  const { email, uid } = await decodeFirebaseIDToken(
+    this.app,
+    req.payload['id_token']
+  )
+  if (!email) {
+    h.response('ID token not valid').code(403)
+  }
+
+  const account = await this.app.getAccount(uid)
+  if (!account.invitation_granted) {
     return h.response('Invitation not valid').code(403)
   }
 
@@ -53,13 +56,13 @@ export async function signup(this: TContext, req: Request, h: ResponseToolkit) {
   return h.redirect(url + '&approval_prompt=force')
 }
 
-// GET /signup/done
-export async function signupCallback(
+// GET /authorize/done
+export async function authorizeCallback(
   this: TContext,
   req: Request,
   h: ResponseToolkit
 ) {
-  this.logger_info('/signup/done')
+  this.logger_info('/authorize/done')
   const code = req.query['code']
 
   if (!code) {
@@ -88,11 +91,24 @@ export async function signupCallback(
     return h.response('Email not confirmed or missing').code(400)
   }
 
-  // save the new user to firebase
-  const ip = getIP(req)
-  await this.app.addAccount(tokens, email, ip, true)
+  const account = await this.app.getAccountByEmail(email)
+  if (!account || account.email !== email) {
+    return h.response('Account missing or wrong email').code(400)
+  }
 
+  await this.app.setGoogleAccessTokens(account.uid, tokens)
   return h.redirect('/account')
+}
+
+export async function acceptInvite(this: TContext, req: Request, h: ResponseToolkit) {
+  const code = req.query['code']
+  const id_token = req.payload['id_token']
+  debugger
+  console.log(code, id_token)
+}
+
+export async function removeAccount(this: TContext, req: Request, h: ResponseToolkit) {
+  debugger
 }
 
 // HELPER FUNCTIONS
@@ -144,87 +160,6 @@ async function decodeFirebaseIDToken(
   return { email: payload.email, uid: payload.uid }
 }
 
-async function addInvitation(this: void, app: App, email: string, uid: string) {
-  assert(email && email.includes('@'), 'Invalid email')
-  assert(uid)
-
-  const existing = await getInvitationByUID(app, uid)
-  if (existing) {
-    return false
-  }
-
-  // create a new invitation
-  const invitation: TInvitation = {
-    email,
-    uid,
-    time: moment()
-      .utc()
-      .unix(),
-    active: false,
-    email_sent: false
-  }
-
-  // set under the uid key
-  await app.firebase
-    .database()
-    .ref(`invitations/${uid}`)
-    .set(invitation)
-
-  return true
-}
-
-export type TInvitation = {
-  email: string
-  email_sent: boolean
-  time: number
-  active: boolean
-  // Firebase UID
-  uid: string
-}
-
-async function isInvitationValid(
-  this: void,
-  app: App,
-  uid: string
-): Promise<boolean> {
-  const invite = await getInvitationByUID(app, uid)
-  return Boolean(invite && invite.active)
-}
-
-export async function getInvitationByEmail(
-  app: App,
-  email: string
-): Promise<TInvitation | null> {
-  const ref = await app.firebase
-    .database()
-    .ref('invitations')
-    .orderByChild('email')
-    .equalTo(email)
-    .once('value')
-  const invites = ref.val()
-  if (!invites) {
-    return null
-  }
-  const key = Object.keys(invites)[0]
-  if (!key) {
-    return null
-  }
-  return invites[key] as TInvitation
-}
-
-export async function getInvitationByUID(
-  app: App,
-  uid: string
-): Promise<TInvitation | null> {
-
-  const prev = await app.firebase
-    .database()
-    .ref(`invitations/${uid}`)
-    .once('value')
-
-  return (prev && prev.val()) || null
-}
-
 // TODO move to server.ts
 function getIP(this: void, req: Request) {
   const xff_header = req.headers['x-forwarded-for']
@@ -232,33 +167,31 @@ function getIP(this: void, req: Request) {
   return ip
 }
 
-export async function acceptInvites(
+export async function bulkAcceptInvites(
   this: void,
   config: IConfigPrivate,
   firebase: firebase.app.App,
   amount: number
 ): Promise<number> {
-  const query_ref = await firebase
+  // TODO optimize query
+  const accounts_ref = await firebase
     .database()
-    .ref('invitations')
-    .orderByChild('time')
-    .limitToFirst(amount)
+    .ref('accounts')
     .once('value')
-  const query_val:
-    | { [index: string]: TInvitation }
-    | undefined = query_ref.val()
-  if (!query_val) {
-    return 0
-  }
+  const accounts = (accounts_ref.val() || {}) as { [uid: string]: IAccount }
+  let accepted_amount = 0
   const wait = []
-  for (const [key, invite] of Object.entries(query_val)) {
+  for (const [uid, account] of Object.entries(accounts)) {
+    if (accepted_amount >= amount) break
+    if (account.invitation_granted) continue
     wait.push(
       firebase
         .database()
-        .ref(`invitations/${key}`)
-        .update({ ...invite, active: true } as TInvitation)
+        .ref(`invitations/${uid}`)
+        .update({ invitation_granted: true })
     )
+    accepted_amount++
   }
   await Promise.all(wait)
-  return wait.length
+  return accepted_amount
 }

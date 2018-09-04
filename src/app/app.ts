@@ -3,7 +3,6 @@ import * as fs from 'fs'
 import * as google from 'googleapis'
 import { test_user } from '../../config-accounts'
 import { Credentials as GoogleCredentials } from 'google-auth-library/build/src/auth/credentials'
-import { getInvitationByEmail, TInvitation } from '../server/google-auth'
 import RootSync from '../sync/root'
 import { IConfig, IAccount, IConfigAccount, TRawEmail } from '../types'
 import Connections from './connections'
@@ -26,7 +25,7 @@ export class App {
   firebase: firebase.app.App
   log_info = this.logger.createLogger('app')
   auth: OAuth2Client
-  // TODO merge with auth once googleapis are up to date
+  // TODO merge with `this.auth` once googleapis are up to date
   auth_email: any
 
   constructor(
@@ -40,7 +39,7 @@ export class App {
       databaseURL: config.firebase.url
     })
     if (!process.env['TEST']) {
-      this.listenToChanges()
+      this.listenToAccountsChanges()
     } else {
       this.syncs.push(this.createUserInstance(this.config, test_user.config))
     }
@@ -61,8 +60,7 @@ export class App {
     }
   }
 
-  // TODO split
-  async listenToChanges() {
+  async listenToAccountsChanges() {
     // ACCOUNTS
     const accounts_ref = this.firebase.database().ref('/accounts')
     accounts_ref.on('child_added', (s: firebase.database.DataSnapshot) => {
@@ -70,17 +68,13 @@ export class App {
       if (!this.isAccountEnabled(account)) {
         return false
       }
-      if (account.send_welcome_email) {
+      if (!account.welcome_email_sent) {
         this.sendServiceEmail(
           account.email,
           `Welcome to ${this.config.service.name}`,
           email_welcome
         )
-        // TODO remove instead of `false` ?
-        this.firebase
-          .database()
-          .ref('/accounts/' + s.key)
-          .update({ send_welcome_email: false })
+        this.patchAccount(account.uid, { welcome_email_sent: true })
       }
       const sync = this.createUserInstance(this.config, account.config)
       this.syncs.push(sync)
@@ -98,22 +92,6 @@ export class App {
       const sync = this.createUserInstance(this.config, account.config)
       this.syncs.push(sync)
     })
-
-    // INVITATIONS
-    const invitations_ref = this.firebase.database().ref('/invitations')
-    invitations_ref.on('child_changed', (s: firebase.database.DataSnapshot) => {
-      const invite: TInvitation = s.val()
-      if (!invite.active || invite.email_sent) return
-      this.sendServiceEmail(
-        invite.email,
-        `Invitation to ${this.config.service.name}`,
-        email_invitation
-      )
-      this.firebase
-        .database()
-        .ref('/invitations/' + s.key)
-        .update({ email_sent: true })
-    })
   }
 
   isAccountEnabled(account: IAccount) {
@@ -125,7 +103,11 @@ export class App {
       return false
     }
     // skip disabled ones
-    if (!account.enabled || !account.client_data.enabled) {
+    if (!account.sync_enabled || !account.client_data.sync_enabled) {
+      return false
+    }
+    // skip when no access token
+    if (!account.config.google.access_token) {
       return false
     }
     return true
@@ -150,66 +132,67 @@ export class App {
     return sync
   }
 
-  async isAccountAdded(email: string) {
+  // ACCOUNTS
+
+  async getAccount(uid: string): Promise<IAccount | null> {
+    const ref = await this.firebase
+      .database()
+      .ref(`accounts`)
+      .once('value')
+
+    const accounts = ref.val()
+    return accounts && accounts[uid]
+  }
+
+  async getAccountByEmail(email: string): Promise<IAccount | null> {
     const ref = await this.firebase
       .database()
       .ref('accounts')
       .orderByChild('email')
       .equalTo(email)
       .once('value')
-    const accounts = ref.val()
 
-    return accounts && Object.keys(accounts).length
+    const accounts = ref.val()
+    return (accounts && accounts[Object.keys(accounts)[0]]) || null
   }
 
-  async enableAccount(uid: string, enabled = true) {
+  async patchAccount(uid: string, patch: Partial<IAccount>) {
     await this.firebase
       .database()
       .ref(`accounts/${uid}`)
-      .update({ enabled })
+      .update(patch)
   }
 
-  /**
-   * TODO detect if the email is already added and merge
-   * @param google_tokens
-   * @param email
-   * @param ip
-   * @param enabled
-   */
-  async addAccount(
-    google_tokens: GoogleCredentials,
+  async createAccount(
+    // google_tokens: GoogleCredentials,
+    uid: string,
     email: string,
-    ip: string,
-    enabled: boolean = false
+    ip: string
+    // enabled: boolean = false
   ) {
-    if (await this.isAccountAdded(email)) {
+    if (await this.getAccount(uid)) {
       this.log_info(
-        `Skipping creation of account for ${email} - already present`
+        `Skipping creation of account for ${uid} (${email}) - already present`
       )
       return true
     }
-
-    const invitation = await getInvitationByEmail(this, email)
-
-    if (!invitation || !invitation.active) {
-      return false
-    }
-
-    const { uid } = invitation
 
     const registered = moment()
       .utc()
       .toISOString()
 
     let account: IAccount = {
+      uid,
       email,
       registered,
       client_data: {
-        enabled: true
+        sync_enabled: true
       },
-      send_welcome_email: true,
+      // requires an invitation
+      invitation_granted: false,
+      welcome_email_sent: false,
       // create a disabled account by default
-      enabled,
+      sync_enabled: false,
       ip,
       // create dev accounts in the dev env
       dev: !Boolean(process.env['PROD']),
@@ -219,26 +202,45 @@ export class App {
         },
         // TODO make all google_token fields required (assert)
         google: {
-          username: email,
-          ...google_tokens
+          username: email
         }
       }
     }
+
     // add the account
-    // TODO parallel
     await this.firebase
       .database()
       .ref(`accounts/${uid}`)
       .set(account)
-    await this.sendServiceEmail(email, 'Welcome to TaskBot.app', email_welcome)
 
-    // remove the invite
-    await this.firebase
-      .database()
-      .ref(`invitations/${uid}`)
-      .remove()
+    this.log_info(`Added a new user ${uid} (${email})`)
+    return true
+  }
 
-    this.log_info(`Added a new user ${uid}: ${email}`)
+  // TODO type tokens
+  async setGoogleAccessTokens(uid: string, tokens: any): Promise<boolean> {
+    const account = await this.getAccount(uid)
+    if (!account) {
+      return false
+    }
+
+    const config = account.config
+    config.google = merge(config.google, tokens)
+
+    // set the updated config and enable the account
+    await this.patchAccount(uid, {
+      config,
+      sync_enabled: true
+    })
+
+    if (!account.welcome_email_sent) {
+      await this.sendServiceEmail(
+        account.email,
+        'Welcome to TaskBot.app',
+        email_welcome
+      )
+    }
+
     return true
   }
 
@@ -278,7 +280,7 @@ export class App {
       )
     })
     if (ret && ret.threadId) {
-      this.log_info(`Send email ${ret.threadId} to ${to}`)
+      this.log_info(`Sent email ${ret.threadId} to ${to}`)
       return true
     }
   }

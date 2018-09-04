@@ -1,7 +1,7 @@
 import * as firebase from 'firebase-admin'
 import { argv } from 'yargs'
 import config from '../config-private'
-import { acceptInvites } from '../src/server/google-login'
+import { bulkAcceptInvites } from '../src/server/google-auth'
 
 start()
 async function start() {
@@ -18,7 +18,7 @@ async function start() {
     // TODO move to the config
     databaseURL: 'https://gtd-bot.firebaseio.com'
   })
-  const accepted = await acceptInvites(config, db, amount)
+  const accepted = await bulkAcceptInvites(config, db, amount)
   console.log(`Accepted ${accepted} invites`)
   process.exit()
 }
