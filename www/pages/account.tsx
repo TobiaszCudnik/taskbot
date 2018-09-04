@@ -1,32 +1,34 @@
-import { TextField, Typography } from '@material-ui/core'
+import { TextField } from '@material-ui/core'
 import Button from '@material-ui/core/Button'
 import { WithStyles, withStyles } from '@material-ui/core/styles'
 import React, { ChangeEvent } from 'react'
 import { IAccount } from '../../src/types'
-import { onLogin, signIn, TUser, authorizeAccess } from '../src/auth'
+import {
+  authorizeAccess,
+  onLogin,
+  signIn,
+  signInFirebase,
+  TUser
+} from '../src/auth'
 import SignInBar from '../src/components/signin-bar'
+import { RequestState } from '../src/utils'
 
 const content = markdown.require('./content/account.md')
 
 interface Props extends WithStyles<typeof styles> {}
 
-enum CodeState {
-  NOT_SEND,
-  IN_PROGRESS,
-  ERROR,
-  SUCCESS
-}
-
 type State = {
   user?: TUser | null
   account?: IAccount | null
-  code?: string
-  code_state: CodeState
+  accept_code?: string
+  accept_state: RequestState
+  remove_state: RequestState
 }
 
 class Index extends React.Component<Props, State> {
   state: State = {
-    code_state: CodeState.NOT_SEND
+    accept_state: RequestState.NOT_SENT,
+    remove_state: RequestState.NOT_SENT
   }
 
   firebase_bound = false
@@ -34,25 +36,55 @@ class Index extends React.Component<Props, State> {
 
   accountHandler = (data: firebase.database.DataSnapshot) => {
     const account = data.val() as IAccount
+    const { user } = this.state
+    if (!account || !user || account.email !== this.state.user.email) {
+      return
+    }
     this.setState({ account })
   }
 
   handleCodeChange = (event: ChangeEvent<HTMLInputElement>) => {
-    this.setState({ code: event.target.value })
+    this.setState({ accept_code: event.target.value })
   }
 
-  handleCodeSubmit = () => {
-    const { code } = this.state
-    this.setState({ code_state: CodeState.IN_PROGRESS })
-    // TODO POST /accept_invite/:code
-    alert('TODO')
+  handleCodeSubmit = async () => {
+    const { accept_code, user } = this.state
+    this.setState({ accept_state: RequestState.IN_PROGRESS })
+
+    const res = await fetch('/accept_invite', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8'
+      },
+      body: JSON.stringify({
+        accept_code,
+        id_token: user.id_token
+      })
+    })
+    this.setState({
+      accept_state:
+        res.status === 200 ? RequestState.SUCCESS : RequestState.ERROR
+    })
   }
 
-  handleRemoveAccount = () => {
-    if (window.confirm("Are you sure? This can't be undone.")) {
-      // TODO POST /remove_account
-      alert('TODO')
+  handleRemoveAccount = async () => {
+    if (!window.confirm("Are you sure? This can't be undone.")) {
+      return
     }
+    const { user } = this.state
+    await signInFirebase()
+    const res = await fetch('/remove_account', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8'
+      },
+      body: JSON.stringify({
+        id_token: user.id_token
+      })
+    })
+    if (!res.ok) return
+    await window.firebase.auth().currentUser.delete()
+    alert('You account has been deleted')
   }
 
   async listenFirebase() {
@@ -92,7 +124,7 @@ class Index extends React.Component<Props, State> {
 
   render() {
     const { classes } = this.props
-    const { user, account, code, code_state } = this.state
+    const { user, account, accept_code, accept_state } = this.state
 
     if (!process.browser || !user || !account) {
       return (
@@ -117,10 +149,11 @@ class Index extends React.Component<Props, State> {
     }
 
     const disable_code_form =
-      code_state === CodeState.IN_PROGRESS || code_state == CodeState.SUCCESS
+      accept_state === RequestState.IN_PROGRESS ||
+      accept_state == RequestState.SUCCESS
 
     let invitation_content
-    if (!account.invitation_granted) {
+    if (!account || !account.invitation_granted) {
       invitation_content = (
         <>
           <h6>Invitation pending</h6>
@@ -136,8 +169,8 @@ class Index extends React.Component<Props, State> {
             onChange={this.handleCodeChange}
             disabled={disable_code_form}
           />
-          {code &&
-            code.length >= 10 && (
+          {accept_code &&
+            accept_code.length >= 10 && (
               <Button
                 className={classes.submitCode}
                 onClick={this.handleCodeSubmit}
@@ -148,7 +181,7 @@ class Index extends React.Component<Props, State> {
             )}
         </>
       )
-    } else {
+    } else if (account && account.invitation_granted) {
       invitation_content = (
         <>
           <h6>Enable Syncing</h6>
@@ -157,11 +190,13 @@ class Index extends React.Component<Props, State> {
             enable syncing below.
           </p>
           <p>
-            After you authorize TaskBot, the service will configure itself and start syncing. Don't hesitate to express your
-            feedback on the{' '}
+            After you authorize TaskBot, the service will configure itself and
+            start syncing. Don't hesitate to express your feedback on the{' '}
             <a href="https://groups.google.com/forum/#!forum/taskbotapp">
               Google Group
-            </a> or by dropping an email to <a href="mailto:contact@taskbot.app">contact@taskbot.app</a>.
+            </a>{' '}
+            or by dropping an email to{' '}
+            <a href="mailto:contact@taskbot.app">contact@taskbot.app</a>.
           </p>
           <Button
             variant="contained"

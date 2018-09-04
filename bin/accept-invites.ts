@@ -15,8 +15,7 @@ async function start() {
 
   const db = firebase.initializeApp({
     credential: firebase.credential.cert(config.firebase.admin),
-    // TODO move to the config
-    databaseURL: 'https://gtd-bot.firebaseio.com'
+    databaseURL: config.firebase.url
   })
   const accepted = await bulkAcceptInvites(config, db, amount)
   console.log(`Accepted ${accepted} invites`)

@@ -5,6 +5,15 @@ import { IAccount, IConfigPrivate } from '../types'
 import { TContext } from './server'
 import { Credentials } from 'google-auth-library/build/src/auth/credentials'
 
+export type TInvitation = {
+  remaining: number
+  created: string
+}
+
+export type TInvitationsFB = {
+  [code: string]: TInvitation
+}
+
 // POST /signup
 export async function signup(this: TContext, req: Request, h: ResponseToolkit) {
   this.logger_info('/signup')
@@ -14,7 +23,7 @@ export async function signup(this: TContext, req: Request, h: ResponseToolkit) {
     req.payload['id_token']
   )
   if (!email) {
-    h.response('ID token not valid').code(403)
+    return h.response('ID token not valid').code(403)
   }
 
   await this.app.createAccount(uid, email, getIP(req))
@@ -35,7 +44,7 @@ export async function authorize(
     req.payload['id_token']
   )
   if (!email) {
-    h.response('ID token not valid').code(403)
+    return h.response('ID token not valid').code(403)
   }
 
   const account = await this.app.getAccount(uid)
@@ -100,15 +109,69 @@ export async function authorizeCallback(
   return h.redirect('/account')
 }
 
-export async function acceptInvite(this: TContext, req: Request, h: ResponseToolkit) {
+export async function acceptInvite(
+  this: TContext,
+  req: Request,
+  h: ResponseToolkit
+) {
+  // code
   const code = req.query['code']
-  const id_token = req.payload['id_token']
-  debugger
-  console.log(code, id_token)
+  const invitations_ref = await this.app.firebase
+    .database()
+    .ref(`invitations`)
+    .once('value')
+
+  const invitations = invitations_ref.val() as TInvitationsFB
+  const invitation = invitations && invitations[code]
+  if (!invitation || invitation.remaining < 1) {
+    return h.response('Code not valid').code(403)
+  }
+  // id_token
+  const { email, uid } = await decodeFirebaseIDToken(
+    this.app,
+    req.payload['id_token']
+  )
+  if (!email) {
+    return h.response('ID token not valid').code(403)
+  }
+
+  // accept the account
+  const account = await this.app.getAccount(uid)
+  if (account.invitation_granted) {
+    return h.response('Already invited').code(403)
+  }
+  await this.app.firebase
+    .database()
+    .ref(`invitations/${code}`)
+    .update({ remaining: invitation.remaining - 1 })
+  await this.app.patchAccount(uid, {
+    invitation_granted: true,
+    invitation_code: code
+  })
+
+  return h.response().code(200)
 }
 
-export async function removeAccount(this: TContext, req: Request, h: ResponseToolkit) {
-  debugger
+export async function removeAccount(
+  this: TContext,
+  req: Request,
+  h: ResponseToolkit
+) {
+  // id_token
+  const { email, uid } = await decodeFirebaseIDToken(
+    this.app,
+    req.payload['id_token']
+  )
+  if (!email) {
+    return h.response('ID token not valid').code(403)
+  }
+
+  await this.app.firebase
+    .database()
+    .ref(`accounts/${uid}`)
+    .remove()
+
+  return h.response().code(200)
 }
 
 // HELPER FUNCTIONS
