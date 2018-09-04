@@ -1,4 +1,5 @@
 import submitForm from 'submit-form'
+import { IAccount } from '../../src/types'
 
 export async function initFirebase(config) {
   // TODO tmp
@@ -14,7 +15,7 @@ export async function initFirebase(config) {
   window.firebase.initializeApp(config)
 }
 
-export async function signIn(): Promise<TUser> {
+export async function signInFirebase(): Promise<TUser> {
   let user = window.firebase.auth().currentUser
 
   if (!user) {
@@ -30,15 +31,22 @@ export async function signIn(): Promise<TUser> {
   return { uid, email, id_token }
 }
 
-export async function signInAndReqInvite(): Promise<TUser> {
-  const user = await signIn()
-  const db = window.firebase.database()
-  const data = await db.ref('invitations').once('value')
-  const invitations = data.val()
-  if (!invitations[user.uid]) {
-    await requestInvitation(user.id_token)
+export async function signIn(): Promise<TUser | null> {
+  const user = await signInFirebase()
+  const account = await getAccount(user.uid)
+  if (!account) {
+    if (!(await createAccount(user.id_token))) {
+      return null
+    }
   }
   return user
+}
+
+export async function getAccount(uid): Promise<IAccount | null> {
+  const db = window.firebase.database()
+  const data = await db.ref('accounts').once('value')
+  const accounts = data.val()
+  return (accounts && accounts[uid]) || null
 }
 
 export async function signOut() {
@@ -71,8 +79,8 @@ export function onLogin(
   })
 }
 
-export async function requestInvitation(id_token: string) {
-  const res = await fetch('/invite', {
+export async function createAccount(id_token: string) {
+  const res = await fetch('/signup', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json; charset=utf-8'
@@ -87,7 +95,7 @@ export async function requestInvitation(id_token: string) {
  *
  * @param id_token
  */
-export function signUp(id_token: string) {
+export function authorizeAccess(id_token: string) {
   submitForm('/signup', {
     method: 'POST',
     body: { id_token }

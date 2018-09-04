@@ -52,18 +52,28 @@ export default async function(logger: Logger, app: App) {
     // google
     {
       method: 'POST',
-      path: '/invite',
-      handler: google_login.invite
-    },
-    {
-      method: 'POST',
       path: '/signup',
       handler: google_login.signup
     },
     {
+      method: 'POST',
+      path: '/authorize',
+      handler: google_login.authorize
+    },
+    {
       method: 'GET',
-      path: '/signup/done',
-      handler: google_login.signupCallback
+      path: '/authorize/done',
+      handler: google_login.authorizeCallback
+    },
+    {
+      method: 'GET',
+      path: '/accept_invite',
+      handler: google_login.acceptInvite
+    },
+    {
+      method: 'GET',
+      path: '/remove_account',
+      handler: google_login.removeAccount
     },
     // /www/static
     {

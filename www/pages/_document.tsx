@@ -2,7 +2,7 @@ import Document, { Head, Main, NextScript } from 'next/document'
 import Link from 'next/link'
 import React from 'react'
 import flush from 'styled-jsx/server'
-import Menu from '../pages/components/menu'
+import Menu from '../src/components/menu'
 
 class MyDocument extends Document {
   props: any

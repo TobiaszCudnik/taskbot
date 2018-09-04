@@ -1,15 +1,11 @@
 import Button from '@material-ui/core/Button'
 import React from 'react'
-import {
-  onLogin,
-  requestInvitation,
-  signIn,
-  signInAndReqInvite,
-  TUser
-} from '../../src/auth'
+import { onLogin, createAccount, signInFirebase, signIn, TUser } from '../auth'
 
-const content_form = markdown.require('../content/invite-form.md')
-const content_requested = markdown.require('../content/invite-requested.md')
+const content_form = markdown.require('../../pages/content/invite-form.md')
+const content_requested = markdown.require(
+  '../../pages/content/invite-requested.md'
+)
 
 type Props = {}
 
@@ -47,7 +43,7 @@ export default class InviteForm extends React.Component<Props, State> {
     })
     let user
     try {
-      user = signInAndReqInvite()
+      user = signIn()
     } catch (e) {
       this.setState({
         requested: user ? true : 'error'

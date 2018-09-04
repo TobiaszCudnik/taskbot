@@ -1,7 +1,7 @@
 import { createStyles, withStyles, WithStyles } from '@material-ui/core/styles'
 import Router from 'next/router'
 import React, { MouseEvent } from 'react'
-import { signInAndReqInvite, signOut } from '../../src/auth'
+import { getAccount, onLogin, signIn, signOut } from '../auth'
 
 type State = {
   email?: string | null
@@ -15,23 +15,25 @@ class SignInBar extends React.Component<Props, State> {
   }
 
   componentDidMount() {
-    window.firebase.auth().onAuthStateChanged(user => {
+    onLogin(async user => {
+      let account
+      if (user) {
+        account = await getAccount(user.uid)
+      }
       this.setState({
-        email: user && user.email,
+        email: account && user.email,
         ready: true
       })
-    })
+    }, true)
   }
 
   signInClick = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault()
     const fn = async () => {
-      try {
-        const user = await signInAndReqInvite()
-        if (!user) return
-        this.setState({ email: user.email })
-        Router.push('/account')
-      } catch (e) {}
+      const user = await signIn()
+      if (!user) return
+      this.setState({ email: user.email })
+      Router.push('/account')
     }
     fn()
   }
@@ -53,7 +55,7 @@ class SignInBar extends React.Component<Props, State> {
       <div className={classes.root}>
         {!email && (
           <a href="#" onClick={this.signInClick}>
-            Sign In
+            Sign In with Google
           </a>
         )}
         {email && (

@@ -150,7 +150,8 @@ export interface IConfigPrivateGoogle {
 
 export interface IConfigAccountGoogle extends GoogleCredentials {
   username: string
-  access_token: string
+  // optional for non-authorized accounts
+  access_token?: string
 }
 
 export interface IConfigAccount {
@@ -161,17 +162,20 @@ export interface IConfigAccount {
 }
 
 export interface IAccount {
+  uid: string,
   email: string
   registered: string
   invitation_code?: string
   client_data: {
-    enabled: boolean
+    sync_enabled: boolean
     snapshot?: any
   }
-  enabled: boolean
+  sync_enabled: boolean
   dev: boolean
   config: IConfigAccount
-  send_welcome_email?: boolean
+  welcome_email_sent: boolean
+  invitation_granted: boolean
+  ip: string
 }
 
 export interface IConfigPublicGoogle {

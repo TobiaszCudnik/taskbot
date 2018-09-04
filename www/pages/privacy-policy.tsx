@@ -2,7 +2,7 @@
 
 import { WithStyles, withStyles } from '@material-ui/core/styles'
 import React from 'react'
-import SignInBar from './components/signin-bar'
+import SignInBar from '../src/components/signin-bar'
 
 const content = markdown.require('./content/privacy-policy.md')
 
