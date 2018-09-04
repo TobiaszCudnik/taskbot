@@ -16,7 +16,6 @@ const styles = (/*theme*/) => ({
 interface Props extends WithStyles<typeof styles> {}
 
 class Index extends React.Component<Props, {}> {
-
   render() {
     const { classes } = this.props
 

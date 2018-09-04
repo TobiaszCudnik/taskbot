@@ -6,13 +6,6 @@ import SignInBar from '../src/components/signin-bar'
 
 const content = markdown.require('./content/index.md')
 
-const styles = (/*theme*/) => ({
-  root: {
-    // textAlign: 'center',
-    // paddingTop: theme.spacing.unit * 20
-  }
-})
-
 interface Props extends WithStyles<typeof styles> {}
 
 type State = {}
@@ -21,7 +14,6 @@ class Index extends React.Component<Props, State> {
   render() {
     const { classes } = this.props
 
-    // TODO extract the signup form to a separate component
     return (
       <>
         <SignInBar />
@@ -99,5 +91,12 @@ class Index extends React.Component<Props, State> {
     )
   }
 }
+
+const styles = (/*theme*/) => ({
+  root: {
+    // textAlign: 'center',
+    // paddingTop: theme.spacing.unit * 20
+  }
+})
 
 export default withStyles(styles)(Index)
