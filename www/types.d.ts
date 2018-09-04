@@ -1,12 +1,11 @@
 ///<reference path="node_modules/firebase/index.d.ts"/>
 
-
 interface Window {
   firebase_ready: Promise<void>
   firebase: firebase
 }
 
-var markdown: {
+const markdown: {
   require(path: string): string
 }
 

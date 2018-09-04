@@ -22,7 +22,8 @@
     "include": [
         "typings/index.d.ts",
         "typings/global.d.ts",
-        "src/**/*"
+        "src/**/*",
+        "bin/**/*"
     ]
     // "include": [
     //     "typings/index.d.ts",
