@@ -145,6 +145,22 @@ class Index extends React.Component<Props, State> {
     this.setState({ action_state: RequestState.SUCCESS })
   }
 
+  handleSyncGTasks = async () => {
+    const { user } = this.state
+    this.setState({ action_state: RequestState.IN_PROGRESS })
+    try {
+      await window.firebase
+        .database()
+        .ref(`accounts/${user.uid}/client_data`)
+        .update({
+          sync_gtasks: true
+        })
+    } catch (e) {
+      this.setState({ action_state: RequestState.ERROR })
+    }
+    this.setState({ action_state: RequestState.SUCCESS })
+  }
+
   handleRevokeAccess = async () => {
     const { user } = this.state
     const res = await fetch('/revoke_access', {
@@ -245,7 +261,7 @@ class Index extends React.Component<Props, State> {
           </li>
           <li>
             <strong>Last GTasks sync:</strong> {stats.last_sync_gtasks || '???'}{' '}
-            (<a href="#">sync now</a>)<br />
+            (<a href="#" onClick={this.handleSyncGTasks}>sync now</a>)<br />
             You can also <a href="/faq/#">sync directly in GMail</a> by adding
             the <span className="label command">!T/Sync GTasks</span> label to{' '}
             <strong>any email</strong>.
@@ -261,7 +277,7 @@ class Index extends React.Component<Props, State> {
           </li>
         </ul>
         <p>
-          We hope you're enjoying <strong>TaskBot</strong>! Feedback? Discuss on{' '}
+          We hope you're enjoying <strong>TaskBot</strong>! Feedback? Discuss it on{' '}
           <a href="https://groups.google.com/forum/#!forum/taskbotapp">
             Google Group
           </a>{' '}

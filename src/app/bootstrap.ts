@@ -79,7 +79,7 @@ async function exit() {
     await global.am_logger.dispose()
     console.log(`Saved a snapshot to logs/snapshot.json`)
   }
-  for (const sync of app.syncs) {
+  for (const sync of Object.values(app.syncs)) {
     console.log(`\nUser ${sync.config.user.id}: ${sync.config.google.username}`)
     console.log(sync.getMachines())
     const data = (sync.data && sync.data.toString()) || ''
@@ -112,4 +112,11 @@ async function exit() {
   process.exit()
 }
 
-create_repl(app.syncs, connections, logger, init_am_inspector, config.repl_port)
+// TODO move to app
+create_repl(
+  app.syncs,
+  connections,
+  logger,
+  init_am_inspector,
+  config.repl_port
+)
