@@ -66,12 +66,12 @@ export default async function(logger: Logger, app: App) {
       handler: google_login.authorizeCallback
     },
     {
-      method: 'GET',
+      method: 'POST',
       path: '/accept_invite',
       handler: google_login.acceptInvite
     },
     {
-      method: 'GET',
+      method: 'POST',
       path: '/remove_account',
       handler: google_login.removeAccount
     },

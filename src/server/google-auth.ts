@@ -52,7 +52,6 @@ export async function authorize(
     return h.response('Invitation not valid').code(403)
   }
 
-  // TODO limit auth to the email from id_token
   const url = this.app.auth.generateAuthUrl({
     // will return a refresh token
     access_type: 'offline',
@@ -109,17 +108,15 @@ export async function authorizeCallback(
   return h.redirect('/account')
 }
 
+// POST /accept_invite
 export async function acceptInvite(
   this: TContext,
   req: Request,
   h: ResponseToolkit
 ) {
   // code
-  const code = req.query['code']
-  const invitations_ref = await this.app.firebase
-    .database()
-    .ref(`invitations`)
-    .once('value')
+  const code = req.payload['code']
+  const invitations_ref = await this.app.db.ref(`invitations`).once('value')
 
   const invitations = invitations_ref.val() as TInvitationsFB
   const invitation = invitations && invitations[code]
@@ -134,14 +131,13 @@ export async function acceptInvite(
   if (!email) {
     return h.response('ID token not valid').code(403)
   }
-
+  debugger
   // accept the account
   const account = await this.app.getAccount(uid)
-  if (account.invitation_granted) {
+  if (account && account.invitation_granted) {
     return h.response('Already invited').code(403)
   }
-  await this.app.firebase
-    .database()
+  await this.app.db
     .ref(`invitations/${code}`)
     .update({ remaining: invitation.remaining - 1 })
   await this.app.patchAccount(uid, {
@@ -152,6 +148,7 @@ export async function acceptInvite(
   return h.response().code(200)
 }
 
+// GET /remove_account
 export async function removeAccount(
   this: TContext,
   req: Request,
@@ -166,12 +163,27 @@ export async function removeAccount(
     return h.response('ID token not valid').code(403)
   }
 
-  await this.app.firebase
-    .database()
-    .ref(`accounts/${uid}`)
-    .remove()
+  await this.app.db.ref(`accounts/${uid}`).remove()
 
   return h.response().code(200)
+}
+
+// POST /revoke_access
+export async function revokeAccess(
+  this: TContext,
+  req: Request,
+  h: ResponseToolkit
+) {
+  // TODO
+}
+
+// POST /sync_enabled
+export async function syncEnabled(
+  this: TContext,
+  req: Request,
+  h: ResponseToolkit
+) {
+  // TODO
 }
 
 // HELPER FUNCTIONS

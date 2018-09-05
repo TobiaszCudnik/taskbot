@@ -27,7 +27,7 @@
 A couple of videos showing **GMail** side to side with various **Google Tasks** apps. All the demos follow the same scenario:
 
 1.  New email `buy milk !na #groceries`
-1.  New task `feed the cat #L-home`	
+1.  New task `feed the cat #L-home`
 1.  Complete the first task in **Google Tasks**
 1.  Manual sync via the `!T/Sync GTasks` label
 1.  Complete the second task in **GMail**
