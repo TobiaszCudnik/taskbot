@@ -2,14 +2,21 @@
 
 * after starting the service for 2 users
   * `connections-error [gtd...@gmail.com] Request 'gtasks.api.tasks.list' aborted by the abort() function +0ms`
-* after applying `!S/Expired` it automatically changes to `!S/Finished`
+* auto color of new P/ labels doesnt seem to work
+  * added via gmail, not via text-labels
 
 ## Milestone 1:
 
 * dont add invites for existing accounts
-* www - explain that emails arent being read in the privacy policy
+* www
+  * explain that emails arent being read in the privacy policy
+  * account page
+    * remove account
+    * refresh the access token
+    * revoke access
+    * footer always at the very bottom
+    * handle 2 accounts for the same user with a different uid 
 * disable !S/Expired for now
-* invites via an id_token to avoid fake ones
 * separate log file `debug.log`
   * showing only loggers from the `DEBUG` env var
 * make `tail -f` show ansi colors
@@ -23,21 +30,20 @@
   * only for PROD
   * salt
   * delete prev stackdriver logs
-* user signup (password protected)
-  * collect the ip
 
 ## Milestone 1.2
 
-* coomunicate via tmp messages, which then get's trashed (no perms needed)
+* self replies to self emails should be added to the task description
+  * and mark as read
+* refresh token on unauthorized_client exception
+  * update refreshed tokens in the DB
+* communicate via tmp messages, which then get's trashed (no perms needed)
 * fix client-side routing in the nextjs app
   * currently it fully reloads the page
 * Demo working in the browser ???
 * !S/Expired should hide, but not complete a task
-  * test
-* handle 404 and 500 in hapi
-  * https://futurestud.io/tutorials/hapi-how-to-handle-404-responses-for-missing-routes
-* refresh token on unauthorized_client exception
-  * store refreshed tokens in the DB
+  * write a test
+* handle www errors
 * tests
   * unhide and restore the parent
     * assert the parent stays the same
