@@ -1,6 +1,6 @@
 import Button from '@material-ui/core/Button'
 import React from 'react'
-import { onLogin, createAccount, signInFirebase, signIn, TUser } from '../auth'
+import { onLogin, signIn, TUser } from '../auth'
 
 const content_form = markdown.require('../../pages/content/invite-form.md')
 const content_requested = markdown.require(
@@ -23,7 +23,7 @@ export default class InviteForm extends React.Component<Props, State> {
 
   async componentDidMount() {
     this.dispose_on_login = onLogin(async (user: TUser) => {
-      this.setState({ already_invited: true })
+      this.setState({ already_invited: Boolean(user) })
     }, true)
   }
 

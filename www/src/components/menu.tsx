@@ -5,6 +5,8 @@ type Props = {
   pathname: string
 }
 
+// TODO render along with SignInBar as a PageHeader component
+// allow repaints on client-side routing
 class Menu extends React.Component<Props, {}> {
   isSelected(path: string, exact_match = false) {
     // TODO get the request URL
