@@ -5,6 +5,7 @@ import * as clone from 'deepcopy'
 import * as diff from 'diff'
 import * as moment from 'moment-timezone'
 import { inspect } from 'util'
+import { EventEmitter } from 'events'
 // Machine types
 import {
   IBind,
@@ -65,10 +66,14 @@ export const sync_reader_state: IJSONStates = {
 }
 export type TSyncState = AsyncMachine<TStates, IBind, IEmit>
 
-export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
 // TODO type the machine types
 // implements ITransitions
-{
+export abstract class SyncReader<
+  GConfig,
+  GStates,
+  GBind,
+  GEmit
+> extends EventEmitter {
   state: AsyncMachine<any, any, any>
   get state_reader(): TSyncState {
     return this.state
@@ -144,6 +149,7 @@ export abstract class SyncReader<GConfig, GStates, GBind, GEmit>
 
   // TODO fix the params
   constructor(config: GConfig, root?: RootSync | Logger) {
+    super()
     this.init(config)
     // required for this.initLoggers()
     if (root instanceof Logger) {

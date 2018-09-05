@@ -156,7 +156,8 @@ export interface IConfigAccountGoogle extends GoogleCredentials {
 
 export interface IConfigAccount {
   user: {
-    id: string
+    id: string,
+    uid: string
   }
   google: IConfigAccountGoogle
 }

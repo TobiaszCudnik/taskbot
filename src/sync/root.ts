@@ -149,6 +149,12 @@ export interface DBRecordLabel {
   active: boolean
 }
 
+export type TStatsUser = {
+  last_client_read?: string
+  last_sync_gmail?: string
+  last_sync_gtasks?: string
+}
+
 export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
 // TODO type the machine types
 // implements ITransitions
@@ -465,6 +471,14 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
       .unix()
     const index = sortedIndex(this.exceptions, min_range)
     return this.exceptions.length - index > 100
+  }
+
+  async emitStats(name: keyof TStatsUser, value: string) {
+    this.emit('stats', {
+      uid: this.config.user.uid,
+      name,
+      value
+    })
   }
 
   // Extracts labels from text
