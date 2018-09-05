@@ -2,6 +2,7 @@ import { TextField } from '@material-ui/core'
 import Button from '@material-ui/core/Button'
 import { WithStyles, withStyles } from '@material-ui/core/styles'
 import React, { ChangeEvent } from 'react'
+import { TStatsUser } from '../../src/sync/root'
 import { IAccount } from '../../src/types'
 import {
   authorizeAccess,
@@ -23,13 +24,6 @@ type State = {
   stats: TStatsUser
   accept_code?: string
   action_state: RequestState
-}
-
-export type TStatsUser = {
-  uid?: string
-  last_client_read?: string
-  last_sync_gmail?: string
-  last_sync_gtasks?: string
 }
 
 class Index extends React.Component<Props, State> {
@@ -58,7 +52,7 @@ class Index extends React.Component<Props, State> {
   statsHandler = (data: firebase.database.DataSnapshot) => {
     const stats = (data.val() as TStatsUser) || {}
     const { user } = this.state
-    if (stats.uid !== user.uid) {
+    if (data.key !== user.uid) {
       return
     }
     this.setState({ stats })

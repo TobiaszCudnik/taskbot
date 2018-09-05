@@ -258,6 +258,16 @@ export default class GmailSync extends SyncWriter<
     this.state.add('WritingDone')
   }
 
+  SyncDone_state() {
+    // TODO this is not really true, but almost true
+    this.root.emitStats(
+      'last_sync_gmail',
+      moment()
+        .utc()
+        .toISOString()
+    )
+  }
+
   async FetchingLabels_state() {
     const abort = this.state.getAbort('FetchingLabels')
     const params: gmail_v1.Params$Resource$Users$Labels$List & TGlobalFields = {

@@ -86,11 +86,7 @@ export class App {
         return false
       }
       await this.handleWelcomeEmail(account)
-      this.createUserInstance(
-        s.key,
-        this.config,
-        account.config
-      )
+      this.createUserInstance(s.key, this.config, account.config)
     })
 
     // REMOVE
@@ -174,6 +170,7 @@ export class App {
     this.log_info(`Removing sync for ${sync.config.user.id} (uid: ${uid})`)
     sync.state.drop('Enabled')
     delete this.syncs[uid]
+    sync.removeAllListeners('stats')
     return true
   }
 
@@ -190,10 +187,23 @@ export class App {
       sync.state.addNext('Enabled')
     }
     this.syncs[uid] = sync
+    sync.on('stats', this.handleStats.bind(this))
     return sync
   }
 
   // ACCOUNTS
+
+  async handleStats({
+    uid,
+    value,
+    name
+  }: {
+    uid: string
+    value: string
+    name: string
+  }) {
+    await this.db.ref(`stats/users/${uid}`).update({ [name]: value })
+  }
 
   async getAccount(uid: string): Promise<IAccount | null> {
     const ref = await this.db.ref(`accounts`).once('value')
@@ -261,7 +271,8 @@ export class App {
       dev: !Boolean(process.env['PROD']),
       config: {
         user: {
-          id
+          id,
+          uid
         },
         // TODO make all google_token fields required (assert)
         google: {
@@ -333,7 +344,7 @@ export class App {
     })
     // @ts-ignore TODO
     if (ret && ret.threadId) {
-    // @ts-ignore
+      // @ts-ignore
       this.log_info(`Sent email ${ret.threadId} to ${to}`)
       return true
     }

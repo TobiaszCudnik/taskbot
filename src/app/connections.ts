@@ -55,7 +55,7 @@ export default class Connections {
   restartNetwork() {
     // TODO dispose existing resources
     for (const user_id of Object.keys(this.semaphore_user)) {
-      this.initUser(Number(user_id))
+      this.initUser(user_id)
     }
     this.semaphore_global = new Semaphore(
       this.config_max_active_requests_global
@@ -68,13 +68,13 @@ export default class Connections {
     this.pending_requests_global = 0
   }
 
-  initUser(user_id: number) {
+  initUser(user_id: string) {
     this.semaphore_user[user_id] = new Semaphore(
       this.config_max_active_requests_user
     )
   }
 
-  addUser(user_id: number) {
+  addUser(user_id: string) {
     this.initUser(user_id)
     this.active_requests_user[user_id] = 0
     this.executed_requests_user[user_id] = 0
