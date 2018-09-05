@@ -105,6 +105,10 @@ export async function authorizeCallback(
   }
 
   await this.app.setGoogleAccessTokens(account.uid, tokens)
+  // make sure syncing auto-starts
+  await this.app.db
+    .ref(`accounts/${account.uid}/client_data`)
+    .update({ sync_enabled: true })
   return h.redirect('/account')
 }
 
@@ -174,16 +178,29 @@ export async function revokeAccess(
   req: Request,
   h: ResponseToolkit
 ) {
-  // TODO
-}
+  // id_token
+  const { email, uid } = await decodeFirebaseIDToken(
+    this.app,
+    req.payload['id_token']
+  )
+  if (!email) {
+    return h.response('ID token not valid').code(403)
+  }
 
-// POST /sync_enabled
-export async function syncEnabled(
-  this: TContext,
-  req: Request,
-  h: ResponseToolkit
-) {
-  // TODO
+  // TODO type
+  await this.app.db.ref(`accounts/${uid}/config/google`).update({
+    access_token: null,
+    refresh_token: null,
+    id_token: null,
+    token_type: null,
+    scopes: null,
+    expiry_date: null
+  })
+
+  // TODO call `auth2.disconnect();` on the user instance
+  // TODO handle in app listeners?
+
+  return h.response().code(200)
 }
 
 // HELPER FUNCTIONS

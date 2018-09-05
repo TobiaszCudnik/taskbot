@@ -67,37 +67,53 @@ export class App {
   }
 
   async listenToAccountsChanges() {
-    // ACCOUNTS
     const accounts_ref = this.db.ref('/accounts')
+
+    // ADD
     accounts_ref.on('child_added', async (s: DataSnapshot) => {
       const account = s.val() as IAccount
       if (!this.isAccountEnabled(account)) {
         return false
       }
-      if (!account.welcome_email_sent) {
-        await this.sendServiceEmail(
-          account.email,
-          `Welcome to ${this.config.service.name}`,
-          email_welcome
-        )
-        await this.patchAccount(account.uid, { welcome_email_sent: true })
-      }
+      await this.handleWelcomeEmail(account)
       const sync = this.createUserInstance(this.config, account.config)
       this.syncs.push(sync)
     })
+
+    // REMOVE
     accounts_ref.on('child_removed', (s: DataSnapshot) => {
       const account = s.val() as IAccount
       this.removeUserInstance(account.config.user.id)
     })
-    accounts_ref.on('child_changed', (s: DataSnapshot) => {
+
+    // CHANGE
+    accounts_ref.on('child_changed', async (s: DataSnapshot) => {
+      // TODO diff and detect
+      // - config changes
+      // - sync_enabled, client_data/sync_enabled
+      // - client_data/force_gtasks_sync
       const account = s.val() as IAccount
       this.removeUserInstance(account.config.user.id)
       if (!this.isAccountEnabled(account)) {
         return false
       }
+      await this.handleWelcomeEmail(account)
       const sync = this.createUserInstance(this.config, account.config)
       this.syncs.push(sync)
     })
+  }
+
+  async handleWelcomeEmail(account: IAccount) {
+    if (!account.welcome_email_sent) {
+      await this.sendServiceEmail(
+        account.email,
+        'Welcome to TaskBot.app',
+        email_welcome
+      )
+      await this.patchAccount(account.uid, {
+        welcome_email_sent: true
+      })
+    }
   }
 
   isAccountEnabled(account: IAccount) {
@@ -113,9 +129,10 @@ export class App {
   }
 
   removeUserInstance(user_id: string) {
-    this.log_info(`Remove sync for user ${user_id}`)
     const sync = this.syncs.find(sync => sync.config.user.id === user_id)
     if (!sync) return false
+
+    this.log_info(`Removing sync for user ${user_id}`)
     sync.state.drop('Enabled')
     this.syncs = this.syncs.filter(s => s !== sync)
     return true
@@ -230,14 +247,6 @@ export class App {
       config,
       sync_enabled: true
     })
-
-    if (!account.welcome_email_sent) {
-      await this.sendServiceEmail(
-        account.email,
-        'Welcome to TaskBot.app',
-        email_welcome
-      )
-    }
 
     return true
   }

@@ -75,6 +75,11 @@ export default async function(logger: Logger, app: App) {
       path: '/remove_account',
       handler: google_login.removeAccount
     },
+    {
+      method: 'POST',
+      path: '/revoke_access',
+      handler: google_login.revokeAccess
+    },
     // /www/static
     {
       method: 'GET',
