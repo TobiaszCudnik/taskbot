@@ -20,6 +20,8 @@ const email_welcome = removeHtmlComments(
   fs.readFileSync('www/pages/content/email-welcome.md')
 ).date
 
+type DataSnapshot = firebase.database.DataSnapshot
+
 export class App {
   syncs: RootSync[] = []
   firebase: firebase.app.App
@@ -27,6 +29,10 @@ export class App {
   auth: OAuth2Client
   // TODO merge with `this.auth` once googleapis are up to date
   auth_email: any
+
+  get db() {
+    return this.firebase.database()
+  }
 
   constructor(
     public config: IConfig,
@@ -62,29 +68,29 @@ export class App {
 
   async listenToAccountsChanges() {
     // ACCOUNTS
-    const accounts_ref = this.firebase.database().ref('/accounts')
-    accounts_ref.on('child_added', (s: firebase.database.DataSnapshot) => {
-      const account: IAccount = s.val()
+    const accounts_ref = this.db.ref('/accounts')
+    accounts_ref.on('child_added', async (s: DataSnapshot) => {
+      const account = s.val() as IAccount
       if (!this.isAccountEnabled(account)) {
         return false
       }
       if (!account.welcome_email_sent) {
-        this.sendServiceEmail(
+        await this.sendServiceEmail(
           account.email,
           `Welcome to ${this.config.service.name}`,
           email_welcome
         )
-        this.patchAccount(account.uid, { welcome_email_sent: true })
+        await this.patchAccount(account.uid, { welcome_email_sent: true })
       }
       const sync = this.createUserInstance(this.config, account.config)
       this.syncs.push(sync)
     })
-    accounts_ref.on('child_removed', (s: firebase.database.DataSnapshot) => {
-      const account: IAccount = s.val()
+    accounts_ref.on('child_removed', (s: DataSnapshot) => {
+      const account = s.val() as IAccount
       this.removeUserInstance(account.config.user.id)
     })
-    accounts_ref.on('child_changed', (s: firebase.database.DataSnapshot) => {
-      const account: IAccount = s.val()
+    accounts_ref.on('child_changed', (s: DataSnapshot) => {
+      const account = s.val() as IAccount
       this.removeUserInstance(account.config.user.id)
       if (!this.isAccountEnabled(account)) {
         return false
@@ -135,18 +141,14 @@ export class App {
   // ACCOUNTS
 
   async getAccount(uid: string): Promise<IAccount | null> {
-    const ref = await this.firebase
-      .database()
-      .ref(`accounts`)
-      .once('value')
+    const ref = await this.db.ref(`accounts`).once('value')
 
     const accounts = ref.val()
     return accounts && accounts[uid]
   }
 
   async getAccountByEmail(email: string): Promise<IAccount | null> {
-    const ref = await this.firebase
-      .database()
+    const ref = await this.db
       .ref('accounts')
       .orderByChild('email')
       .equalTo(email)
@@ -157,10 +159,15 @@ export class App {
   }
 
   async patchAccount(uid: string, patch: Partial<IAccount>) {
-    await this.firebase
-      .database()
-      .ref(`accounts/${uid}`)
-      .update(patch)
+    await this.db.ref(`accounts/${uid}`).update(patch)
+  }
+
+  // TODO transaction
+  async nextID() {
+    const ref = await this.db.ref('registered_users').once('value')
+    const amount = ref.val() || 0
+    await this.db.ref('registered_users').set(amount + 1)
+    return amount + 1
   }
 
   async createAccount(
@@ -180,6 +187,7 @@ export class App {
     const registered = moment()
       .utc()
       .toISOString()
+    const id = await this.nextID()
 
     let account: IAccount = {
       uid,
@@ -198,7 +206,7 @@ export class App {
       dev: !Boolean(process.env['PROD']),
       config: {
         user: {
-          id: uid
+          id
         },
         // TODO make all google_token fields required (assert)
         google: {
@@ -208,10 +216,7 @@ export class App {
     }
 
     // add the account
-    await this.firebase
-      .database()
-      .ref(`accounts/${uid}`)
-      .set(account)
+    await this.db.ref(`accounts/${uid}`).set(account)
 
     this.log_info(`Added a new user ${uid} (${email})`)
     return true

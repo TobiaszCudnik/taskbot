@@ -2,7 +2,7 @@
 
 #### What information do we collect?
 
-By signing up to the **TaskBot.app service** we'll collect your **GMail address** (`email`) and Google Cloud API **access tokens** (`access_token` and `refresh_token`) for GMail API and Google Tasks API. Tokens are stored  in Google Cloud to provide the service. We'll also collect **non-sensitive logs** and store them in Google Cloud, to be able to analyze potential problems with the service.
+By signing up to the **TaskBot.app service** we'll collect your **GMail address** (`email`) and Google Cloud API **access tokens** (`access_token` and `refresh_token`) for GMail API and Google Tasks API. Tokens are stored in Google Cloud to provide the service. We'll also collect **non-sensitive logs** and store them in Google Cloud, to be able to analyze potential problems with the service.
 
 #### How do we use the information?
 
@@ -13,6 +13,7 @@ All other data related to synchronizing your GMail and Google Tasks entries is k
 #### What information do we share?
 
 We don't share any information with 3rd partied, besides Google Cloud which initially provides the information (`email`, `access_token` and `refresh_token`) for us, after your consent.
+
 <!--stackedit_data:
 eyJoaXN0b3J5IjpbLTIwNTUwNDUzNTldfQ==
 -->

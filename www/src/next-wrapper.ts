@@ -9,7 +9,6 @@ const nextHandlerWrapper = app => {
 }
 const defaultHandlerWrapper = app => async ({ raw: { req, res }, url }) => {
   const { pathname, query } = parse(url, true)
-  debugger
   return app.renderToHTML(req, res, pathname, query)
 }
 

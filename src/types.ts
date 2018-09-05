@@ -170,6 +170,8 @@ export interface IAccount {
     sync_enabled: boolean
     snapshot?: any
   }
+  // TODO last_sync: {gmail: string, gtasks: string}
+  // TODO last_sync_client_ping: string
   sync_enabled: boolean
   dev: boolean
   config: IConfigAccount

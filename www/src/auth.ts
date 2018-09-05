@@ -15,11 +15,14 @@ export async function initFirebase(config) {
   window.firebase.initializeApp(config)
 }
 
-export async function signInFirebase(): Promise<TUser> {
+export async function signInFirebase(force = false): Promise<TUser> {
   let user = window.firebase.auth().currentUser
 
-  if (!user) {
+  if (!user || force) {
     const provider = new window.firebase.auth.GoogleAuthProvider()
+    if (user) {
+      provider.setCustomParameters({ login_hint: user.email })
+    }
     const result = await window.firebase.auth().signInWithPopup(provider)
     user = result.user
   }
@@ -96,7 +99,7 @@ export async function createAccount(id_token: string) {
  * @param id_token
  */
 export function authorizeAccess(id_token: string) {
-  submitForm('/signup', {
+  submitForm('/authorize', {
     method: 'POST',
     body: { id_token }
   })
