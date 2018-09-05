@@ -249,6 +249,7 @@ const config: IConfigPublic = {
             //   : null
             // this.log(`Executing task label '${label}' (${name})`)
             this.log(`Executing task label '${label}'`)
+            // TODO expose as a callable method, merge with App.handleGTasksSync
             for (const list of this.root.subs.google.subs.tasks.subs.lists) {
               // force refresh
               if (list.state.is('QuotaExceeded')) {

@@ -168,7 +168,7 @@ export interface IAccount {
   invitation_code?: string
   client_data: {
     sync_enabled: boolean
-    snapshot?: any
+    sync_gtasks?: boolean
   }
   // TODO last_sync: {gmail: string, gtasks: string}
   // TODO last_sync_client_ping: string

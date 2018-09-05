@@ -9,7 +9,7 @@ import Logger from './logger'
 export { REPLServer }
 
 export default function create(
-  root: RootSync[],
+  syncs: { [uid: string]: RootSync },
   connections: Connections,
   logger: Logger,
   init_am_inspector: (machines?: TAsyncMachine[]) => void,
@@ -30,7 +30,7 @@ export default function create(
         .on('exit', () => {
           socket.end()
         })
-      r.context.root = root
+      r.context.syncs = syncs
       r.context.connections = connections
       r.context.logger = logger
       r.context.init_am_inspector = init_am_inspector

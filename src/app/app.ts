@@ -23,12 +23,13 @@ const email_welcome = removeHtmlComments(
 type DataSnapshot = firebase.database.DataSnapshot
 
 export class App {
-  syncs: RootSync[] = []
   firebase: firebase.app.App
   log_info = this.logger.createLogger('app')
   auth: OAuth2Client
   // TODO merge with `this.auth` once googleapis are up to date
   auth_email: any
+  syncs: { [uid: string]: RootSync } = {}
+  accounts: { [uid: string]: IAccount } = {}
 
   get db() {
     return this.firebase.database()
@@ -47,7 +48,11 @@ export class App {
     if (!process.env['TEST']) {
       this.listenToAccountsChanges()
     } else {
-      this.syncs.push(this.createUserInstance(this.config, test_user.config))
+      this.syncs['test'] = this.createUserInstance(
+        'test',
+        this.config,
+        test_user.config
+      )
     }
     this.auth = new OAuth2Client(
       config.google.client_id,
@@ -55,13 +60,16 @@ export class App {
       config.google.redirect_url
     )
     // TODO merge with auth once googleapis are up to date
+    // @ts-ignore
     this.auth_email = new google.auth.OAuth2(
       config.google.client_id,
       config.google.client_secret,
       config.google.redirect_url
     )
     this.auth_email.credentials = {
+      // @ts-ignore
       access_token: this.config.service.google_tokens.access_token,
+      // @ts-ignore
       refresh_token: this.config.service.google_tokens.refresh_token
     }
   }
@@ -72,34 +80,49 @@ export class App {
     // ADD
     accounts_ref.on('child_added', async (s: DataSnapshot) => {
       const account = s.val() as IAccount
+      // cache the account data for diffs
+      this.accounts[s.key] = account
       if (!this.isAccountEnabled(account)) {
         return false
       }
       await this.handleWelcomeEmail(account)
-      const sync = this.createUserInstance(this.config, account.config)
-      this.syncs.push(sync)
+      this.createUserInstance(
+        s.key,
+        this.config,
+        account.config
+      )
     })
 
     // REMOVE
     accounts_ref.on('child_removed', (s: DataSnapshot) => {
-      const account = s.val() as IAccount
-      this.removeUserInstance(account.config.user.id)
+      this.removeUserInstance(s.key)
     })
 
     // CHANGE
     accounts_ref.on('child_changed', async (s: DataSnapshot) => {
-      // TODO diff and detect
-      // - config changes
-      // - sync_enabled, client_data/sync_enabled
-      // - client_data/force_gtasks_sync
       const account = s.val() as IAccount
-      this.removeUserInstance(account.config.user.id)
-      if (!this.isAccountEnabled(account)) {
+      const old_account = this.accounts[s.key]
+
+      const config_changed =
+        JSON.stringify(old_account.config) !== JSON.stringify(account.config)
+      const isEnabled = this.isAccountEnabled(account)
+      const wasEnabled = this.isAccountEnabled(old_account)
+      // cache the account data for diffs
+      this.accounts[s.key] = account
+
+      if (config_changed || (wasEnabled && !isEnabled)) {
+        this.removeUserInstance(account.uid)
+      }
+      if (!isEnabled) {
         return false
       }
+      if (!this.syncs[s.key]) {
+        this.createUserInstance(s.key, this.config, account.config)
+      } else {
+        // force gtasks sync only on existing instances
+        await this.handleGTasksSync(account)
+      }
       await this.handleWelcomeEmail(account)
-      const sync = this.createUserInstance(this.config, account.config)
-      this.syncs.push(sync)
     })
   }
 
@@ -116,6 +139,22 @@ export class App {
     }
   }
 
+  // force re-sync of all gtasks lists
+  async handleGTasksSync(account: IAccount) {
+    const sync = this.syncs[account.uid]
+    this.log_info(`Forced sync of GTasks for ${account.uid}`)
+    if (account.client_data.sync_gtasks) {
+      for (const list of sync.subs.google.subs.tasks.subs.lists) {
+        if (!list.state.is('QuotaExceeded')) {
+          list.state.add('Dirty')
+        }
+      }
+    }
+    await this.db
+      .ref(`accounts/${account.uid}/client_data`)
+      .update({ sync_gtasks: false })
+  }
+
   isAccountEnabled(account: IAccount) {
     // skip disabled ones
     if (!account.sync_enabled || !account.client_data.sync_enabled) {
@@ -128,23 +167,29 @@ export class App {
     return true
   }
 
-  removeUserInstance(user_id: string) {
-    const sync = this.syncs.find(sync => sync.config.user.id === user_id)
+  removeUserInstance(uid: string) {
+    const sync = this.syncs[uid]
     if (!sync) return false
 
-    this.log_info(`Removing sync for user ${user_id}`)
+    this.log_info(`Removing sync for ${sync.config.user.id} (uid: ${uid})`)
     sync.state.drop('Enabled')
-    this.syncs = this.syncs.filter(s => s !== sync)
+    delete this.syncs[uid]
     return true
   }
 
-  createUserInstance(config: IConfig, user: IConfigAccount): RootSync {
+  createUserInstance(
+    uid: string,
+    config: IConfig,
+    user: IConfigAccount
+  ): RootSync {
     const config_user = merge(config, user)
+    this.log_info(`Adding sync for ${config_user.user.id} (uid: ${uid})`)
     const sync = new RootSync(config_user, this.logger, this.connections)
     if (!process.env['TEST']) {
       // jump out of this tick
       sync.state.addNext('Enabled')
     }
+    this.syncs[uid] = sync
     return sync
   }
 
@@ -286,7 +331,9 @@ export class App {
         }
       )
     })
+    // @ts-ignore TODO
     if (ret && ret.threadId) {
+    // @ts-ignore
       this.log_info(`Sent email ${ret.threadId} to ${to}`)
       return true
     }
