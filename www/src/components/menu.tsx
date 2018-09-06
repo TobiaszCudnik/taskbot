@@ -1,19 +1,19 @@
 import Link from 'next/link'
 import React from 'react'
+import { withRouter } from 'next/router'
 
 type Props = {
-  pathname: string
+  router?: {
+    pathname: string
+    query: string
+    asPath: string
+  }
 }
 
 // TODO render along with SignInBar as a PageHeader component
-// allow repaints on client-side routing
 class Menu extends React.Component<Props, {}> {
   isSelected(path: string, exact_match = false) {
-    // TODO get the request URL
-    const current =
-      typeof window !== 'undefined'
-        ? window.location.pathname
-        : this.props.pathname
+    const current = this.props.router.pathname
     if (exact_match) {
       return current == path
     } else {
@@ -56,4 +56,4 @@ class Menu extends React.Component<Props, {}> {
   }
 }
 
-export default Menu
+export default withRouter(Menu)

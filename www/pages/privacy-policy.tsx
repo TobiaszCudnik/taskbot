@@ -2,6 +2,7 @@
 
 import { WithStyles, withStyles } from '@material-ui/core/styles'
 import React from 'react'
+import Menu from '../src/components/menu'
 import SignInBar from '../src/components/signin-bar'
 
 const content = markdown.require('./content/privacy-policy.md')
@@ -22,6 +23,7 @@ class Index extends React.Component<Props, {}> {
     return (
       <>
         <SignInBar />
+        <Menu />
         <div className={classes.root}>
           <div dangerouslySetInnerHTML={{ __html: content }} />
         </div>

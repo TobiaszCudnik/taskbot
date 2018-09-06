@@ -2,6 +2,7 @@ import { withStyles, WithStyles } from '@material-ui/core/styles'
 import React from 'react'
 import { BigPlayButton, ControlBar, Player } from 'video-react'
 import InviteForm from '../src/components/invite-form'
+import Menu from '../src/components/menu'
 import SignInBar from '../src/components/signin-bar'
 
 const content = markdown.require('./content/index.md')
@@ -17,6 +18,7 @@ class Index extends React.Component<Props, State> {
     return (
       <>
         <SignInBar />
+        <Menu />
         <div className={classes.root}>
           <div dangerouslySetInnerHTML={{ __html: content }} />
           <h6>GMail with the official Tasks client (iOS)</h6>

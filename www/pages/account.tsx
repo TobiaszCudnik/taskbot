@@ -11,9 +11,11 @@ import {
   signInFirebase,
   TUser
 } from '../src/auth'
+import Menu from '../src/components/menu'
 import SignInBar from '../src/components/signin-bar'
 import { RequestState } from '../src/utils'
 import * as moment from 'moment-timezone'
+import Link from 'next/link'
 
 const content = markdown.require('./content/account.md')
 
@@ -54,9 +56,10 @@ class Index extends React.Component<Props, State> {
   statsHandler = (data: firebase.database.DataSnapshot) => {
     const stats = (data.val() as TStatsUser) || {}
     const { user } = this.state
-    if (data.key !== user.uid) {
+    if (!user || data.key !== user.uid) {
       return
     }
+    // TODO prevent when unmounted
     this.setState({ stats })
   }
 
@@ -242,6 +245,7 @@ class Index extends React.Component<Props, State> {
     return (
       <>
         <SignInBar />
+        <Menu />
         <div>
           <h3>Hi, {user.email}</h3>
           {content}
@@ -292,9 +296,12 @@ class Index extends React.Component<Props, State> {
             >
               sync now
             </a>)<br />
-            You can also <a href="/faq/#">sync directly in GMail</a> by adding
-            the <span className="label command">!T/Sync GTasks</span> label to{' '}
-            <strong>any email</strong>.
+            You can also{' '}
+            <Link href="/faq#test">
+              <a>sync directly in GMail</a>
+            </Link>{' '}
+            by adding the <span className="label command">!T/Sync GTasks</span>{' '}
+            label to <strong>any email</strong>.
           </li>
           <li>
             <strong>Ongoing tasks:</strong> {stats.ongoing_tasks || '0'}
