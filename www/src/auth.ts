@@ -2,16 +2,6 @@ import submitForm from 'submit-form'
 import { IAccount } from '../../src/types'
 
 export async function initFirebase(config) {
-  // TODO tmp
-  config = {
-    apiKey: 'AIzaSyA59EKt5xXeV4SF324SuD-cA_pOXXTIjKE',
-    authDomain: 'gtd-bot.firebaseapp.com',
-    // databaseURL: 'https://gtd-bot.firebaseio.com',
-    databaseURL: 'https://gtd-bot-test.firebaseio.com',
-    projectId: 'gtd-bot',
-    storageBucket: 'gtd-bot.appspot.com',
-    messagingSenderId: '900809192866'
-  }
   window.firebase.initializeApp(config)
 }
 
@@ -34,7 +24,6 @@ export async function signInFirebase(force = false): Promise<TUser> {
   return { uid, email, id_token }
 }
 
-window.taskbot_account = null
 export async function signIn(): Promise<TUser | null> {
   const user = await signInFirebase()
   const account = await getAccount(user.uid)
