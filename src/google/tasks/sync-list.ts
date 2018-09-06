@@ -256,7 +256,7 @@ export default class GTasksListSync extends SyncReader<
       if (!record) {
         const new_record = this.createRecord(task)
         this.log('change')
-        this.log_verbose('new record:\n %O', new_record)
+        this.log_verbose('new record:\n %O', this.root.logRecord(new_record))
         this.root.data.insert(new_record)
         this.root.markListsAsDirty(this, new_record)
         changed++
@@ -472,7 +472,10 @@ export default class GTasksListSync extends SyncReader<
       (this.state.is('Dirty') ? ' (Dirty)' : '') +
       '\n' +
       this.getTasks()
-        .map((t: Task) => (t.status == 'completed' ? 'c ' : '- ') + t.title)
+        .map(
+          (t: Task) =>
+            (t.status == 'completed' ? 'c ' : '- ') + this.root.logText(t.title)
+        )
         .join('\n')
     )
   }

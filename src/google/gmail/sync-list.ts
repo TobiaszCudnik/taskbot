@@ -42,7 +42,6 @@ export default class GmailListSync extends SyncReader<
 {
   state: AsyncMachine<TStates, IBind, IEmit>
   query: GmailQuery
-  verbose = debug(this.state.id(true) + '-verbose')
 
   constructor(config: IListConfig, root: RootSync, public gmail: GmailSync) {
     super(config, root)
@@ -144,7 +143,7 @@ export default class GmailListSync extends SyncReader<
       if (!record) {
         const new_record = this.createRecord(thread)
         this.log('change')
-        this.verbose('new record:\n %O', new_record)
+        this.log_verbose('new record:\n %O', this.root.logRecord(new_record))
         this.root.data.insert(new_record)
         changed++
       } else if (this.mergeRecord(thread, record)) {
@@ -193,7 +192,7 @@ export default class GmailListSync extends SyncReader<
     // TODO indexes - dont update here, update in the top merge
     this.root.data.findAndUpdate(find_orphans, (record: DBRecord) => {
       changed++
-      this.log('new gmail orhpan record:\n%O', record)
+      this.log('new gmail orhpan record:\n%O', this.root.logRecord(record))
       // TODO clone only in debug
       this.root.markListsAsDirty(this, record)
       const before = clone(record)
@@ -324,7 +323,8 @@ export default class GmailListSync extends SyncReader<
       '\n' +
       this.query.threads
         .map((t: Thread) => {
-          let ret = '- ' + this.gmail.getTitleFromThread(t) + '\n  '
+          let ret =
+            '- ' + this.root.logText(this.gmail.getTitleFromThread(t)) + '\n  '
           ret += this.gmail.getLabelsFromThread(t).join(', ')
           return ret
         })

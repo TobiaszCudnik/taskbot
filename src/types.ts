@@ -127,6 +127,7 @@ export interface IConfigPrivate {
   // extract to the account type
   sync_frequency_multi?: number
   service: {
+    salt: string
     email: string
     name: string
     bypass_code: string

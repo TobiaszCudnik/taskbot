@@ -13,6 +13,7 @@ import { sortedIndex, reverse } from 'lodash'
 import * as Loki from 'lokijs'
 import * as moment from 'moment'
 import { promisifyArray } from 'typed-promisify-tob'
+import * as md5 from 'md5'
 // Machine types
 import {
   AsyncMachine,
@@ -322,12 +323,13 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   DBReady_state() {
     this.db = new Loki('gtd-bot')
     this.data = this.db.getCollection('todos') || this.db.addCollection('todos')
+    const root = this
     this.data.toString = function() {
       return this.data
         .map((r: DBRecord) => {
-          let ret = '- ' + r.title
+          let ret = '- ' + root.logText(r.title)
           const snippet = r.content.replace(/\n/g, '')
-          ret += snippet ? `  (${snippet})\n  ` : '\n  '
+          ret += snippet ? `  (${root.logText(snippet)})\n  ` : '\n  '
           ret += r.to_delete ? `  TO DELETE\n` : ''
           ret += Object.entries(r.labels)
             .filter(([name, data]) => {
@@ -716,7 +718,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   private ensureSLabel() {
     const no_s = this.data.where(r => !Boolean(this.recordHasLabel(r, '!S')))
     for (const r of no_s) {
-      this.log_verbose(`Adding !S label to '${r.title}'`)
+      this.log_verbose(`Adding !S label to '${this.logText(r.title)}'`)
       this.modifyLabels(r, { add: ['!S'] })
     }
   }
@@ -767,5 +769,29 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
       }
       return output
     }
+  }
+
+  /**
+   * Hash log data in production logs.
+   *
+   * @param text
+   */
+  logText(text: string) {
+    const is_prod = process.env['PROD']
+    return is_prod ? `text(${md5(this.config.service.salt + text)})` : text
+  }
+
+  /**
+   * Proto copy a record and hash sensitive data (title, content).
+   *
+   * @param record
+   */
+  logRecord(record: DBRecord): DBRecord {
+    const is_prod = process.env['PROD']
+    if (!is_prod) return record
+    const log_record = Object.create(record) as DBRecord
+    log_record.title = this.logText(log_record.title)
+    log_record.content = this.logText(log_record.content)
+    return log_record
   }
 }

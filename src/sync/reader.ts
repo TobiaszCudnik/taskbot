@@ -384,13 +384,13 @@ export abstract class SyncReader<
     delete after.meta
     let msg = 'Record diff'
     if (title) {
-      msg += ` '${title}'`
+      msg += ` '${this.root.logText(title)}'`
     }
     msg += ` from '${this.state.id()}'`
     this.log_db(msg)
     const text_diff = diff.diffChars(
-      inspect(before, false, 3),
-      inspect(after, false, 3)
+      inspect(this.root.logRecord(before), false, 3),
+      inspect(this.root.logRecord(after), false, 3)
     )
     msg = ''
     for (const chunk of text_diff) {
