@@ -434,6 +434,7 @@ class Index extends React.Component<Props, State> {
     return (
       <>
         <SignInBar />
+        <Menu />
         <div>
           <h4>Sign In</h4>
           <p>
@@ -445,7 +446,7 @@ class Index extends React.Component<Props, State> {
             fullWidth={true}
             onClick={this.handleSignIn}
           >
-            Sign In with Google
+            Sign in with Google
           </Button>
         </div>
       </>

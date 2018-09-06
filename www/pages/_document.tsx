@@ -37,13 +37,17 @@ class MyDocument extends Document {
           <script src="https://www.gstatic.com/firebasejs/5.4.1/firebase-database.js" />
         </Head>
         <body>
-          <header>
-            <h1 className="logo">TaskBot.app</h1>
-            <h4 className="logo">GMail Task Organizer</h4>
-          </header>
-          <Main />
-          <NextScript />
-          <footer>
+          <div className="page-wrap">
+            <header>
+              <h1 className="logo">TaskBot.app</h1>
+              <h4 className="logo"><span
+                className='label next-action'>GMail <span
+                className='label project'>Task</span> Organizer</span></h4>
+            </header>
+            <Main />
+            <NextScript />
+          </div>
+          <footer className="site-footer">
             <small>
               <Link href="/privacy-policy">
                 <a>Privacy Policy</a>

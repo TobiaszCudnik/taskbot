@@ -12,6 +12,7 @@ type State = {
 interface Props extends WithStyles<typeof styles> {}
 
 class SignInBar extends React.Component<Props, State> {
+  mounted = false
   state: State = {
     ready: false
   }
@@ -31,7 +32,9 @@ class SignInBar extends React.Component<Props, State> {
   }
 
   componentDidMount() {
+    this.mounted = true
     onLogin(async user => {
+      if (!this.mounted) return
       this.setState({
         user,
         ready: true
@@ -43,6 +46,7 @@ class SignInBar extends React.Component<Props, State> {
   }
 
   componentWillUnmount() {
+    this.mounted = false
     const ref1 = window.firebase.database().ref(`accounts`)
     ref1.off('child_changed', this.accountHandler)
     ref1.off('child_added', this.accountHandler)
@@ -91,7 +95,7 @@ class SignInBar extends React.Component<Props, State> {
       <div className={classes.root}>
         {(!user || !account) && (
           <a href="#" onClick={this.signInClick}>
-            Sign In with Google
+            Sign in with Google
           </a>
         )}
         {user &&
@@ -100,7 +104,7 @@ class SignInBar extends React.Component<Props, State> {
               {user.email}
               <br />
               <a href="#" onClick={this.signOutClick}>
-                Sign Out
+                Sign out
               </a>
             </>
           )}
@@ -113,7 +117,7 @@ const styles = () =>
   createStyles({
     root: {
       position: 'absolute',
-      top: 0,
+      top: 30,
       right: 0,
       'text-align': 'right',
       'margin-right': '1em'
