@@ -150,9 +150,14 @@ export interface DBRecordLabel {
 }
 
 export type TStatsUser = {
-  last_client_read?: string
-  last_sync_gmail?: string
-  last_sync_gtasks?: string
+  // client
+  client_last_read: string
+  // node
+  last_sync_gmail: string
+  last_sync_gtasks: string
+  ongoing_tasks: number
+  total_tasks: number
+  completed_tasks: number
 }
 
 export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
@@ -432,6 +437,21 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     )
     this.last_sync_reads = 0
     this.state.add('Scheduled', this.config.sync_frequency)
+    const completed_tasks = this.countTasks(r =>
+      Boolean(this.recordHasLabel(r, '!S/Finished'))
+    )
+    const ongoing_tasks = this.countTasks(
+      r => !this.recordHasLabel(r, '!S/Finished')
+    )
+    this.emitStats({
+      ongoing_tasks,
+      completed_tasks,
+      total_tasks: completed_tasks + ongoing_tasks
+    })
+  }
+
+  countTasks(query: (record: DBRecord) => boolean) {
+    return this.data.where(query).length
   }
 
   MergeLimitExceeded_state() {
@@ -473,11 +493,10 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     return this.exceptions.length - index > 100
   }
 
-  async emitStats(name: keyof TStatsUser, value: string) {
+  async emitStats(stats: Partial<TStatsUser>) {
     this.emit('stats', {
       uid: this.config.user.uid,
-      name,
-      value
+      stats
     })
   }
 
