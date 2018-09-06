@@ -32,18 +32,14 @@ class MyDocument extends Document {
           <link rel="stylesheet" href="/static/video-react.css" />
           <link rel="stylesheet" href="/static/styles.css" />
 
-          {/* TODO */}
           <script src="https://www.gstatic.com/firebasejs/5.4.1/firebase-app.js" />
           <script src="https://www.gstatic.com/firebasejs/5.4.1/firebase-auth.js" />
           <script src="https://www.gstatic.com/firebasejs/5.4.1/firebase-database.js" />
-
-          {/*<script src="https://www.gstatic.com/firebasejs/5.4.1/firebase.js" />*/}
         </Head>
         <body>
           <header>
             <h1 className="logo">TaskBot.app</h1>
             <h4 className="logo">GMail Task Organizer</h4>
-            <Menu pathname={pathname} />
           </header>
           <Main />
           <NextScript />
