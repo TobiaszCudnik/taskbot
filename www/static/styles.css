@@ -12,7 +12,7 @@ body {
     serif;
   font-size: 12px;
   line-height: 1.5em;
-  padding: 0 1em 1em 1em;
+  padding: 0 1em 0 1em;
   margin: auto;
   max-width: 42em;
   background: white !important;
@@ -258,18 +258,24 @@ td {
 
 footer {
   text-align: center;
-  margin-top: 1em;
 }
 
 /* LOGO */
 
 h1.logo {
   margin-bottom: 0.2em;
+  margin-top: 0;
+  padding-top: 30px;
 }
 
 h4.logo {
   color: dimgray;
   margin-top: 0;
+  padding-left: 0.5em;
+}
+
+h4.logo .label {
+  font-size: 1em;
 }
 
 /* MENU */
@@ -393,4 +399,23 @@ h6 {
 h4 > a {
   font-size: 1.4em;
   color: #83a9e6;
+}
+
+
+/* FOOTER */
+html, body {
+  height: 100%;
+}
+.page-wrap {
+  min-height: 100%;
+  /* equal to footer height */
+  margin-bottom: -60px;
+}
+.page-wrap:after {
+  content: "";
+  display: block;
+}
+.site-footer, .page-wrap:after {
+  padding-top: 10px;
+  height: 60px;
 }
