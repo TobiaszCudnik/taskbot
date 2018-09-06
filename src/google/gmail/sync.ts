@@ -496,7 +496,7 @@ export default class GmailSync extends SyncWriter<
           this.log_error(
             `Missing record for the thread ${
               thread.id
-            } '${this.getTitleFromThread(thread)}'`
+            } '${this.root.logText(this.getTitleFromThread(thread))}'`
           )
           return [thread.id, [], []]
         }
@@ -612,7 +612,7 @@ export default class GmailSync extends SyncWriter<
       ? `'${this.getTitleFromThread(thread)}'`
       : `ID: ${thread_id}`
 
-    let log_msg = `Modifying labels for thread ${title} `
+    let log_msg = `Modifying labels for thread ${this.root.logText(title)} `
     if (add_labels.length) {
       log_msg += `+('${add_labels.join("', '")}') `
     }
