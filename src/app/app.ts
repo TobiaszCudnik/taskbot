@@ -177,7 +177,12 @@ export class App {
     this.log_info(`Removing sync for ${sync.config.user.id} (uid: ${uid})`)
     sync.state.drop('Enabled')
     delete this.syncs[uid]
+    // dispose emitter
     sync.removeAllListeners('stats')
+    // dispose firebase
+    for (const listener of this.stats_uid[uid].firebase) {
+      listener()
+    }
     return true
   }
 
@@ -195,10 +200,49 @@ export class App {
     }
     this.syncs[uid] = sync
     sync.on('stats', this.handleStats.bind(this))
+    this.stats_uid[uid] = this.stats_uid[uid] || {
+      firebase: [],
+      cache: {}
+    }
+    this.stats_uid[uid].firebase.push(
+      this.db
+        .ref(`stats/users/${uid}`)
+        .on('value', this.handleStatsClient.bind(this))
+    )
     return sync
   }
 
   // ACCOUNTS
+
+  // per uid stats data
+  stats_uid: {
+    [uid: string]: {
+      // TODO extract a generic firebase-per-uid listeners array
+      firebase: Function[]
+      // cache of stats, available to trasmit to the user
+      cache: Partial<TStatsUser>
+    }
+  } = {}
+
+  // TODO use last_sync_gmail instead of last_cache_push, reduce
+  // number of changes
+  async handleStatsClient(s: DataSnapshot) {
+    const val = s.val() as TStatsUser
+    if (!val.client_last_read) return
+    const seconds_ago = moment(moment().utc()).diff(
+      val.client_last_read,
+      'seconds'
+    )
+    // quit in case client was seen longer than 5 sec ago or already has
+    // cache pushed
+    if (seconds_ago > 5 || val.last_cache_push === val.client_last_read) {
+      return
+    }
+    await this.db.ref(`stats/users/${s.key}`).update({
+      ...this.stats_uid[s.key].cache,
+      last_cache_push: val.client_last_read
+    })
+  }
 
   async handleStats({
     uid,
@@ -207,7 +251,30 @@ export class App {
     uid: string
     stats: Partial<TStatsUser>
   }) {
-    await this.db.ref(`stats/users/${uid}`).update(stats)
+    const client_last_read_ref = await this.db
+      .ref(`stats/users/${uid}/client_last_read`)
+      .once('value')
+    const client_last_read = client_last_read_ref.val()
+    // check if the client is active
+    if (client_last_read) {
+      const seconds_ago = moment(moment().utc()).diff(
+        client_last_read,
+        'seconds'
+      )
+      if (seconds_ago > 5) {
+        // skip as client isnt active
+        return
+      }
+    } else {
+      // no client
+      return
+    }
+
+    // update the cache
+    this.stats_uid[uid].cache = {
+      ...this.stats_uid[uid].cache,
+      ...stats
+    }
   }
 
   async getAccount(uid: string): Promise<IAccount | null> {
