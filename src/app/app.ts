@@ -183,6 +183,7 @@ export class App {
     for (const listener of this.stats_uid[uid].firebase) {
       listener()
     }
+    delete this.stats_uid[uid]
     return true
   }
 
@@ -227,6 +228,7 @@ export class App {
   // TODO use last_sync_gmail instead of last_cache_push, reduce
   // number of changes
   async handleStatsClient(s: DataSnapshot) {
+    if (!s || !this.stats_uid[s.key]) return
     const val = s.val() as TStatsUser
     if (!val.client_last_read) return
     const seconds_ago = moment(moment().utc()).diff(

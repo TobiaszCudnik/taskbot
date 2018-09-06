@@ -318,8 +318,9 @@ class Index extends React.Component<Props, State> {
         <div className={classes.account_buttons}>
           <Button
             variant="contained"
-            color="primary"
+            color={sync_enabled ? null : 'primary'}
             onClick={() => this.handleSyncEnabled(!sync_enabled)}
+            title="Temporarily disable / enable syncing"
           >
             {sync_enabled ? 'Disable' : 'Enable'} Syncing
           </Button>
@@ -327,13 +328,14 @@ class Index extends React.Component<Props, State> {
             variant="contained"
             color="primary"
             onClick={this.handleAuthorize}
+            title="Refresh the access token, in case your sync stopped working"
           >
             Refresh access
           </Button>
           <Button
             variant="contained"
-            color="primary"
             onClick={this.handleRevokeAccess}
+            title="Remove access tokens from our database"
           >
             Revoke access
           </Button>
