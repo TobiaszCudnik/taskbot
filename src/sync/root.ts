@@ -155,6 +155,7 @@ export type TStatsUser = {
   // node
   last_sync_gmail: string
   last_sync_gtasks: string
+  last_cache_push: string
   ongoing_tasks: number
   total_tasks: number
   completed_tasks: number

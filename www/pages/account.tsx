@@ -35,6 +35,7 @@ class Index extends React.Component<Props, State> {
 
   firebase_bound = false
   dispose_on_login: Function
+  stats_update_timer = null
 
   accountHandler = (data: firebase.database.DataSnapshot) => {
     const account = data.val() as IAccount
@@ -172,14 +173,37 @@ class Index extends React.Component<Props, State> {
     this.setState({ action_state })
   }
 
+  updateStatsRead = async () => {
+    const { user } = this.state
+    if (!user) return
+    await window.firebase
+      .database()
+      .ref(`stats/users/${user.uid}/client_last_read`)
+      .set(
+        moment()
+          .utc()
+          .toISOString()
+      )
+  }
+
   async componentDidMount() {
     this.dispose_on_login = onLogin(async (user: TUser) => {
       this.setState({ user })
       this.listenFirebase()
+      // mark as active in firebase
+      this.updateStatsRead()
+      // schedule it every 1 second
+      this.stats_update_timer = setInterval(
+        this.updateStatsRead.bind(this),
+        1000
+      )
     }, true)
   }
 
   componentWillUnmount() {
+    if (this.stats_update_timer) {
+      clearInterval(this.stats_update_timer)
+    }
     if (this.dispose_on_login) {
       this.dispose_on_login()
     }
