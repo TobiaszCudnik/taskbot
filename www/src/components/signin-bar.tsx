@@ -21,9 +21,9 @@ class SignInBar extends React.Component<Props, State> {
     if (!process.browser) return
     // auto set cached data to avoid blinking
     const user = window.firebase.auth().currentUser
-    if (user && window.taskbotAccount) {
+    if (user && window.taskbot_account) {
       this.state = {
-        account: window.taskbotAccount,
+        account: window.taskbot_account,
         user,
         ready: true
       }
@@ -59,7 +59,8 @@ class SignInBar extends React.Component<Props, State> {
     ) {
       return
     }
-    window.taskbotAccount = account
+    // cache
+    window.taskbot_account = account
     this.setState({ account })
   }
 

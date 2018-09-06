@@ -39,6 +39,17 @@ class Index extends React.Component<Props, State> {
   dispose_on_login: Function
   stats_update_timer = null
 
+  constructor(props: Props) {
+    super(props)
+    if (!process.browser) return
+    // auto set cached data to avoid blinking
+    const user = window.firebase.auth().currentUser
+    if (user && window.taskbot_account) {
+      this.state.account = window.taskbot_account
+      this.state.user = user
+    }
+  }
+
   accountHandler = (data: firebase.database.DataSnapshot) => {
     const account = data.val() as IAccount
     const { user } = this.state

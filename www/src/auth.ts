@@ -34,7 +34,7 @@ export async function signInFirebase(force = false): Promise<TUser> {
   return { uid, email, id_token }
 }
 
-window.taskbotAccount = null
+window.taskbot_account = null
 export async function signIn(): Promise<TUser | null> {
   const user = await signInFirebase()
   const account = await getAccount(user.uid)
@@ -43,7 +43,7 @@ export async function signIn(): Promise<TUser | null> {
       return null
     }
   }
-  window.taskbotAccount = account
+  window.taskbot_account = account
   return user
 }
 
@@ -55,7 +55,7 @@ export async function getAccount(uid): Promise<IAccount | null> {
 }
 
 export async function signOut() {
-  window.taskbotAccount = null
+  window.taskbot_account = null
   await window.firebase.auth().signOut()
 }
 
