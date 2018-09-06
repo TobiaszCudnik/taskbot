@@ -260,12 +260,11 @@ export default class GmailSync extends SyncWriter<
 
   SyncDone_state() {
     // TODO this is not really true, but almost true
-    this.root.emitStats(
-      'last_sync_gmail',
-      moment()
+    this.root.emitStats({
+      last_sync_gmail: moment()
         .utc()
         .toISOString()
-    )
+    })
   }
 
   async FetchingLabels_state() {

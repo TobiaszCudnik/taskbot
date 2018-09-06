@@ -174,7 +174,9 @@ export default class GTasksSync extends SyncWriter<
       return false
     })
     const last_read = moment.max(this.subs_flat.map(s => s.last_read_start))
-    this.root.emitStats('last_sync_gtasks', last_read.toISOString())
+    this.root.emitStats({
+      last_sync_gtasks: last_read.toISOString()
+    })
   }
 
   SubsInited_state() {

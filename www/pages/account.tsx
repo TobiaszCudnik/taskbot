@@ -13,6 +13,7 @@ import {
 } from '../src/auth'
 import SignInBar from '../src/components/signin-bar'
 import { RequestState } from '../src/utils'
+import * as moment from 'moment-timezone'
 
 const content = markdown.require('./content/account.md')
 
@@ -21,7 +22,7 @@ interface Props extends WithStyles<typeof styles> {}
 type State = {
   user?: TUser | null
   account?: IAccount | null
-  stats: TStatsUser
+  stats: Partial<TStatsUser>
   accept_code?: string
   action_state: RequestState
 }
@@ -240,8 +241,15 @@ class Index extends React.Component<Props, State> {
   private contentAccount() {
     const { classes } = this.props
     const { account, stats } = this.state
+
     const sync_enabled =
       account.sync_enabled && account.client_data.sync_enabled
+    const last_sync_gmail =
+      (stats.last_sync_gmail && moment(stats.last_sync_gmail).fromNow()) ||
+      '???'
+    const last_sync_gtasks =
+      (stats.last_sync_gtasks && moment(stats.last_sync_gtasks).fromNow()) ||
+      '???'
 
     return (
       <>
@@ -251,27 +259,32 @@ class Index extends React.Component<Props, State> {
             {sync_enabled ? 'Enabled' : 'Disabled'}
           </li>
           <li>
-            <strong>Last GMail sync:</strong> {stats.last_sync_gmail || '???'}
+            <strong>Last GMail sync:</strong> {last_sync_gmail}
           </li>
           <li>
-            <strong>Last GTasks sync:</strong> {stats.last_sync_gtasks || '???'}{' '}
-            (<a href="#" onClick={this.handleSyncGTasks}>sync now</a>)<br />
+            <strong>Last GTasks sync:</strong> {last_sync_gtasks} (<a
+              href="#"
+              onClick={this.handleSyncGTasks}
+            >
+              sync now
+            </a>)<br />
             You can also <a href="/faq/#">sync directly in GMail</a> by adding
             the <span className="label command">!T/Sync GTasks</span> label to{' '}
             <strong>any email</strong>.
           </li>
           <li>
-            <strong>Ongoing tasks:</strong> {stats.ongoing_tasks || '???'}
+            <strong>Ongoing tasks:</strong> {stats.ongoing_tasks || '0'}
           </li>
           <li>
-            <strong>Completed tasks:</strong> {stats.completed_tasks || '???'}
+            <strong>Completed tasks:</strong> {stats.completed_tasks || '0'}
           </li>
           <li>
-            <strong>Tasks in total:</strong> {stats.total_tasks || '???'}
+            <strong>Tasks in total:</strong> {stats.total_tasks || '0'}
           </li>
         </ul>
         <p>
-          We hope you're enjoying <strong>TaskBot</strong>! Feedback? Discuss it on{' '}
+          We hope you're enjoying <strong>TaskBot</strong>! Feedback? Discuss it
+          on{' '}
           <a href="https://groups.google.com/forum/#!forum/taskbotapp">
             Google Group
           </a>{' '}

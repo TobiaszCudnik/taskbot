@@ -3,7 +3,7 @@ import * as fs from 'fs'
 import * as google from 'googleapis'
 import { test_user } from '../../config-accounts'
 import { Credentials as GoogleCredentials } from 'google-auth-library/build/src/auth/credentials'
-import RootSync from '../sync/root'
+import RootSync, { TStatsUser } from '../sync/root'
 import { IConfig, IAccount, IConfigAccount, TRawEmail } from '../types'
 import Connections from './connections'
 import Logger from './logger'
@@ -195,14 +195,12 @@ export class App {
 
   async handleStats({
     uid,
-    value,
-    name
+    stats
   }: {
     uid: string
-    value: string
-    name: string
+    stats: Partial<TStatsUser>
   }) {
-    await this.db.ref(`stats/users/${uid}`).update({ [name]: value })
+    await this.db.ref(`stats/users/${uid}`).update(stats)
   }
 
   async getAccount(uid: string): Promise<IAccount | null> {
