@@ -396,7 +396,20 @@ h6 {
   margin-bottom: 0;
 }
 
-h4 > a {
+h1 .header-anchor,
+h2 .header-anchor,
+h3 .header-anchor,
+h4 .header-anchor {
+  display: none;
+}
+
+.page-faq h4 .header-anchor {
+  display: inline;
+}
+
+h4 > a,
+h4 > a:visited,
+h4 > a:active {
   font-size: 1.4em;
   color: #83a9e6;
 }

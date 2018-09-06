@@ -24,7 +24,8 @@ class Index extends React.Component<Props, {}> {
       <>
         <SignInBar />
         <Menu />
-        <div className={classes.root}>
+        <h3>FAQ</h3>
+        <div className={classes.root + ' page-faq'}>
           <div dangerouslySetInnerHTML={{ __html: content }} />
         </div>
       </>

@@ -120,7 +120,8 @@ const styles = () =>
       top: 30,
       right: 0,
       'text-align': 'right',
-      'margin-right': '1em'
+      'margin-right': '1em',
+      'max-width': '30%'
     }
   })
 
