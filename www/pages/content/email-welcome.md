@@ -1,6 +1,7 @@
 Welcome to TaskBot.app,
 
-You account has been created.
+TaskBot is now syncing your GMail and Google Tasks.
+https://taskbot.app/account
 
 --
 TaskBot.app

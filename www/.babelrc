@@ -1,6 +1,4 @@
 {
-  //  "presets": ["next/babel", "@zeit/next-typescript/babel"],
-  //   https://spectrum.chat/next-js?thread=97a6570d-572f-42e0-915d-5398594d6ea5
   "presets": [
     [
       "next/babel",
@@ -18,7 +16,17 @@
     [
       "markdown",
       {
-        "html": true
+        "html": true,
+        "plugins": [
+          [
+            "anchor",
+            {
+              "permalink": true,
+              "permalinkBefore": true
+            }
+          ],
+          "toc-done-right"
+        ]
       }
     ],
     "babel-plugin-inline-import"

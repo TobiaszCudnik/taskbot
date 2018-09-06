@@ -17,8 +17,6 @@ import { RequestState } from '../src/utils'
 import * as moment from 'moment-timezone'
 import Link from 'next/link'
 
-const content = markdown.require('./content/account.md')
-
 interface Props extends WithStyles<typeof styles> {}
 
 type State = {
@@ -308,7 +306,7 @@ class Index extends React.Component<Props, State> {
               sync now
             </a>)<br />
             You can also{' '}
-            <Link href="/faq#test">
+            <Link href="/faq#how-to-manually-trigger-a-google-tasks-sync%3F">
               <a>sync directly in GMail</a>
             </Link>{' '}
             by adding the <span className="label command">!T/Sync GTasks</span>{' '}
