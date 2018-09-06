@@ -123,23 +123,23 @@ const config: IConfigPublic = {
         fg: '#000000'
       }
     },
-    {
-      symbol: '!',
-      shortcut: 'e',
-      name: 'Expired',
-      alias: ['!S/Finished'],
-      prefix: '!S/',
-      colors: {
-        bg: '#cccccc',
-        // TODO black
-        fg: '#ffffff'
-      }
-    },
+    // {
+    //   symbol: '!',
+    //   shortcut: 'e',
+    //   name: 'Expired',
+    //   alias: ['!S/Finished'],
+    //   prefix: '!S/',
+    //   colors: {
+    //     bg: '#cccccc',
+    //     // TODO black
+    //     fg: '#ffffff'
+    //   }
+    // },
     {
       symbol: '!',
       shortcut: 'f',
       name: 'Finished',
-      alias: ['!S/Expired'],
+      // alias: ['!S/Expired'],
       prefix: '!S/',
       // TODO
       colors: {

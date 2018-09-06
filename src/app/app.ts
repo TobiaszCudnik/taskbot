@@ -138,8 +138,8 @@ export class App {
   // force re-sync of all gtasks lists
   async handleGTasksSync(account: IAccount) {
     const sync = this.syncs[account.uid]
-    this.log_info(`Forced sync of GTasks for ${account.uid}`)
     if (account.client_data.sync_gtasks) {
+      this.log_info(`Forced sync of GTasks for ${account.uid}`)
       for (const list of sync.subs.google.subs.tasks.subs.lists) {
         if (!list.state.is('QuotaExceeded')) {
           list.state.add('Dirty')
