@@ -5,6 +5,7 @@ import React from 'react'
 import JssProvider from 'react-jss/lib/JssProvider'
 import { initFirebase } from '../src/auth'
 import getPageContext from '../src/getPageContext'
+import config from '../config.json'
 
 class MyApp extends App {
   props: any
@@ -13,7 +14,7 @@ class MyApp extends App {
     super(props)
     this.pageContext = getPageContext()
     if (process.browser) {
-      window.firebase_ready = initFirebase({})
+      window.firebase_ready = initFirebase(config.firebase)
     }
   }
 
