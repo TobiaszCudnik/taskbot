@@ -36,6 +36,7 @@ class Index extends React.Component<Props, State> {
   firebase_bound = false
   dispose_on_login: Function
   stats_update_timer = null
+  mounted = false
 
   constructor(props: Props) {
     super(props)
@@ -49,6 +50,7 @@ class Index extends React.Component<Props, State> {
   }
 
   accountHandler = (data: firebase.database.DataSnapshot) => {
+    if (!this.mounted) return
     const account = data.val() as IAccount
     const { user } = this.state
     if (
@@ -63,12 +65,12 @@ class Index extends React.Component<Props, State> {
   }
 
   statsHandler = (data: firebase.database.DataSnapshot) => {
+    if (!this.mounted) return
     const stats = (data.val() as TStatsUser) || {}
     const { user } = this.state
     if (!user || data.key !== user.uid) {
       return
     }
-    // TODO prevent when unmounted
     this.setState({ stats })
   }
 
@@ -199,6 +201,7 @@ class Index extends React.Component<Props, State> {
   }
 
   async componentDidMount() {
+    this.mounted = true
     this.dispose_on_login = onLogin(async (user: TUser) => {
       this.setState({ user })
       this.listenFirebase()
@@ -213,6 +216,7 @@ class Index extends React.Component<Props, State> {
   }
 
   componentWillUnmount() {
+    this.mounted = false
     if (this.stats_update_timer) {
       clearInterval(this.stats_update_timer)
     }
