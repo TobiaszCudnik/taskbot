@@ -11,7 +11,7 @@
 #### Features
 
 * Syncs **GMail** -\> **GTasks** in real time
-* Syncs **GTasks** -\> **GMail** every 10mins or by adding a label
+* Syncs **GTasks** -\> **GMail** every 10mins or by [adding a label](/faq#how-to-manually-trigger-a-google-tasks-sync%3F)
 * Works with any **GMail**, **Google Tasks** and some IMAP apps
 * Keeps only the newest status label per email
 * `#hashtags` converted to and from labels

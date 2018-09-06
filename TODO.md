@@ -8,11 +8,8 @@
 ## Milestone 1:
 
 * www
-  * explain that emails arent being read in the privacy policy
-  * footer always at the very bottom
   * videos following the scenario
     * host on a bucket
-  * signin bar doesnt refresh after signing in
 * separate log file `debug.log`
   * showing only loggers from the `DEBUG` env var
 * make `tail -f` show ansi colors
