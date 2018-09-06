@@ -7,24 +7,22 @@
 
 ## Milestone 1:
 
-* dont add invites for existing accounts
+* disable !S/Expired for now
 * www
   * explain that emails arent being read in the privacy policy
   * account page
-    * remove account
-    * refresh the access token
-    * revoke access
-    * footer always at the very bottom
-    * handle 2 accounts for the same user with a different uid 
-* disable !S/Expired for now
+  * footer always at the very bottom
+  * videos followin scenarios
+    * host on a bucket
+  * workaround client side routing
+    * use `Router`
+    * move Menu to the page
 * separate log file `debug.log`
   * showing only loggers from the `DEBUG` env var
 * make `tail -f` show ansi colors
 * make `combined.log` optional
 * use stackdriver for errors only in PROD
 * welcome email with instructions
-  * `Welcome to TaskBot.app`
-    * reply to contact@taskbot.app
   * `!T/Sync GTasks`
 * mangle sensitive info in the logs with hashes
   * only for PROD
