@@ -1,3 +1,4 @@
+import dynamic from 'next/dynamic'
 import { withStyles, WithStyles } from '@material-ui/core/styles'
 import React from 'react'
 import { BigPlayButton, ControlBar, Player } from 'video-react'
@@ -7,20 +8,92 @@ import SignInBar from '../src/components/signin-bar'
 import { Carousel } from 'react-responsive-carousel'
 
 // non-module imports
+const Lightbox = dynamic(import('react-image-lightbox'))
 require('react-responsive-carousel/lib/styles/carousel.min.css')
+require('react-image-lightbox/style.css')
 const content = markdown.require('./content/index.md')
 const content_preface = markdown.require('./content/index-preface.md')
 
 interface Props extends WithStyles<typeof styles_local> {}
 
-type State = {}
+type State = {
+  screenshot_index: number
+  modal_open: boolean
+}
+
+const base_url = '/static/images/screenshots/'
+const screenshots = [
+  'gmail-right-sidebar.png',
+  'gmail-left-sidebar.png',
+  'tasks-ios.png',
+  'tasks-ios-lists.png',
+  'gtasks-ios.png',
+  'gmail-ios.png',
+  'gmail-ios-labels.png',
+  'gmail-both-sidebars.png'
+]
 
 class Index extends React.Component<Props, State> {
+  state = {
+    screenshot_index: 0,
+    modal_open: false
+  }
+
+  openModalImage = (e: React.MouseEvent<HTMLElement>, index: number) => {
+    e.preventDefault()
+    this.setState({
+      modal_open: true,
+      screenshot_index: index
+    })
+  }
+
+  closeModalImage = () => {
+    this.setState({
+      modal_open: false
+    })
+  }
+
+  nextModalImage = () => {
+    const index = this.state.screenshot_index
+    this.setState({
+      screenshot_index: (index + 1) % screenshots.length
+    })
+  }
+
+  prevModalImage = () => {
+    const index = this.state.screenshot_index
+    this.setState({
+      screenshot_index: (index + screenshots.length - 1) % screenshots.length
+    })
+  }
+
+  renderModalImage() {
+    const index = this.state.screenshot_index
+
+    return (
+      process.browser &&
+      this.state.modal_open && (
+        <Lightbox
+          mainSrc={base_url + screenshots[index]}
+          nextSrc={base_url + screenshots[(index + 1) % screenshots.length]}
+          prevSrc={
+            base_url +
+            screenshots[(index + screenshots.length - 1) % screenshots.length]
+          }
+          onCloseRequest={this.closeModalImage}
+          onMovePrevRequest={this.prevModalImage}
+          onMoveNextRequest={this.nextModalImage}
+        />
+      )
+    )
+  }
+
   render() {
     const { classes } = this.props
 
     return (
       <>
+        {this.renderModalImage()}
         <SignInBar />
         <Menu />
         <div className={classes.root}>
@@ -29,32 +102,14 @@ class Index extends React.Component<Props, State> {
             showThumbs={false}
             showStatus={false}
             infiniteLoop={true}
-            autoPlay={true}
+            autoPlay={false}
+            verticalSwipe="natural"
           >
-            <div>
-              <img src="/static/images/screenshots/gmail-right-sidebar.png" />
-            </div>
-            <div>
-              <img src="/static/images/screenshots/gmail-left-sidebar.png" />
-            </div>
-            <div>
-              <img src="/static/images/screenshots/tasks-ios.png" />
-            </div>
-            <div>
-              <img src="/static/images/screenshots/tasks-ios-lists.png" />
-            </div>
-            <div>
-              <img src="/static/images/screenshots/gtasks-ios.png" />
-            </div>
-            <div>
-              <img src="/static/images/screenshots/gmail-ios.png" />
-            </div>
-            <div>
-              <img src="/static/images/screenshots/gmail-ios-labels.png" />
-            </div>
-            <div>
-              <img src="/static/images/screenshots/gmail-both-sidebars.png" />
-            </div>
+            {screenshots.map((name, index) => (
+              <div key={name} onClick={e => this.openModalImage(e, index)}>
+                <img key={name} src={base_url + name} />
+              </div>
+            ))}
           </Carousel>
           <div dangerouslySetInnerHTML={{ __html: content }} />
           <h6>GMail with the official Tasks client (iOS)</h6>

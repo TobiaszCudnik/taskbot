@@ -435,10 +435,34 @@ body {
 }
 
 /* CAROUSEL */
+
 .carousel .slide {
   background-color: white;
 }
+
 .carousel .slide img {
-  max-height: 500px;
+  max-height: 240px;
   width: auto;
+}
+
+@media only screen and (min-width: 560px) {
+  .carousel .slide img {
+    max-height: 420px;
+    width: auto;
+  }
+}
+
+@media only screen and (min-width: 768px) {
+  .carousel .slide img {
+    max-height: 500px;
+    width: auto;
+  }
+}
+
+.carousel.carousel-slider .control-dots {
+  margin: 0;
+}
+
+.carousel.carousel-slider .slider-wrapper {
+  margin-bottom: 25px;
 }
