@@ -1,0 +1,1 @@
+**TaskBot.app** is a background **GMail** service which manages your emails using the [Getting Things Done](https://en.wikipedia.org/wiki/Getting_Things_Done) (**GTD**) flow. Everything is synchronized to **Google Tasks**, so you're covered on the go and on any device.

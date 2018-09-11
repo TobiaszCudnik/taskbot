@@ -29,7 +29,10 @@ class MyDocument extends Document {
             rel="stylesheet"
             href="https://fonts.googleapis.com/css?family=Roboto:300,400,500"
           />
+          <link rel="stylesheet" href="/_next/static/style.css" />
+          {/* TODO import as a module */}
           <link rel="stylesheet" href="/static/video-react.css" />
+          {/* TODO import as a module */}
           <link rel="stylesheet" href="/static/styles.css" />
 
           <script src="https://www.gstatic.com/firebasejs/5.4.1/firebase-app.js" />
@@ -40,9 +43,11 @@ class MyDocument extends Document {
           <div className="page-wrap">
             <header>
               <h1 className="logo">TaskBot.app</h1>
-              <h4 className="logo"><span
-                className='label next-action'>GMail <span
-                className='label project'>Task</span> Organizer</span></h4>
+              <h4 className="logo">
+                <span className="label next-action">
+                  GMail <span className="label project">Task</span> Organizer
+                </span>
+              </h4>
             </header>
             <Main />
             <NextScript />
