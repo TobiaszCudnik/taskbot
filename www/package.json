@@ -19,6 +19,7 @@
     "next": "^6.1.1",
     "react": "^16.4.2",
     "react-dom": "^16.4.2",
+    "react-image-lightbox": "^5.0.0",
     "react-jss": "^8.6.1",
     "react-responsive-carousel": "^3.1.41",
     "submit-form": "^2.0.0",
