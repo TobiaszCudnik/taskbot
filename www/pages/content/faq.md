@@ -83,6 +83,10 @@ Although changes from **GMail** are propagated to **Google Tasks** in real time,
 
 To trigger a sync from **Google Tasks** to **GMail** any time you need it, add a <span class='label command'>!T/Sync GTasks</span> to **any email** (doesn't have to have any `!S/` label or any label for that matter). **TaskBot** will pick it up immediately, trigger the sync and remove the label. That's it.
 
+#### Does TaskBot need my password?
+
+No. You don't have to give **TaskBot** your password, simply because we're using **Google Cloud API**s, which have token-based authentication. 
+
 #### Other questions?
 
 If you have't found an answer to your question here, you can always ask it on the [Google Group](https://groups.google.com/forum/#!forum/taskbotapp).

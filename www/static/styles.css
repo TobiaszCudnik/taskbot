@@ -414,9 +414,9 @@ h4 > a:active {
   color: #83a9e6;
 }
 
-
 /* FOOTER */
-html, body {
+html,
+body {
   height: 100%;
 }
 .page-wrap {
@@ -425,10 +425,20 @@ html, body {
   margin-bottom: -60px;
 }
 .page-wrap:after {
-  content: "";
+  content: '';
   display: block;
 }
-.site-footer, .page-wrap:after {
+.site-footer,
+.page-wrap:after {
   padding-top: 10px;
   height: 60px;
+}
+
+/* CAROUSEL */
+.carousel .slide {
+  background-color: white;
+}
+.carousel .slide img {
+  max-height: 500px;
+  width: auto;
 }
