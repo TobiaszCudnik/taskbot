@@ -46,7 +46,7 @@ class Menu extends React.Component<Props, {}> {
             </Link>
           </li>
           <li>
-            <Link href="https://github.com/TobiaszCudnik/gtd-bot">
+            <Link href="https://github.com/TaskSync/TaskBot.app">
               <a>GitHub</a>
             </Link>
           </li>

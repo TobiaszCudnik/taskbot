@@ -14,7 +14,10 @@ class MyApp extends App {
     super(props)
     this.pageContext = getPageContext()
     if (process.browser) {
-      window.firebase_ready = initFirebase(config.firebase)
+      const fb_config = window.PROD
+        ? config.firebase
+        : Object.assign({}, config.firebase, config.firebase_test)
+      window.firebase_ready = initFirebase(fb_config)
     }
   }
 

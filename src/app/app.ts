@@ -13,12 +13,14 @@ import { OAuth2Client } from 'google-auth-library'
 import * as removeHtmlComments from 'remove-html-comments'
 import { Base64 } from 'js-base64'
 
-const email_invitation = removeHtmlComments(
-  fs.readFileSync('www/pages/content/email-invitation.md')
-).data
-const email_welcome = removeHtmlComments(
-  fs.readFileSync('www/pages/content/email-welcome.md')
-).date
+const email_invitation = fs.readFileSync(
+  'www/pages/content/email-invitation.md',
+  'utf8'
+)
+const email_welcome = fs.readFileSync(
+  'www/pages/content/email-welcome.md',
+  'utf8'
+)
 
 type DataSnapshot = firebase.database.DataSnapshot
 
@@ -42,7 +44,6 @@ export class App {
   ) {
     this.firebase = firebase.initializeApp({
       credential: firebase.credential.cert(config.firebase.admin),
-      // TODO move to the config
       databaseURL: config.firebase.url
     })
     if (!process.env['TEST']) {
@@ -82,6 +83,7 @@ export class App {
       const account = s.val() as IAccount
       // cache the account data for diffs
       this.accounts[s.key] = account
+      await this.handleInvitationEmail(account)
       if (!this.isAccountEnabled(account)) {
         return false
       }
@@ -119,6 +121,7 @@ export class App {
         await this.handleGTasksSync(account)
       }
       await this.handleWelcomeEmail(account)
+      await this.handleInvitationEmail(account)
     })
   }
 
@@ -131,6 +134,19 @@ export class App {
       )
       await this.patchAccount(account.uid, {
         welcome_email_sent: true
+      })
+    }
+  }
+
+  async handleInvitationEmail(account: IAccount) {
+    if (!account.invitation_email_sent) {
+      await this.sendServiceEmail(
+        account.email,
+        'Invitation to TaskBot.app!',
+        email_invitation
+      )
+      await this.patchAccount(account.uid, {
+        invitation_email_sent: true
       })
     }
   }
@@ -338,6 +354,7 @@ export class App {
       // requires an invitation
       invitation_granted: false,
       welcome_email_sent: false,
+      invitation_email_sent: false,
       // create a disabled account by default
       sync_enabled: false,
       ip,

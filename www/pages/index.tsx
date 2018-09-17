@@ -30,6 +30,7 @@ const screenshots = [
   'gtasks-ios.png',
   'gmail-ios.png',
   'gmail-ios-labels.png',
+  'taskbot-account.png',
   'gmail-both-sidebars.png'
 ]
 
@@ -102,7 +103,7 @@ class Index extends React.Component<Props, State> {
             showThumbs={false}
             showStatus={false}
             infiniteLoop={true}
-            autoPlay={false}
+            autoPlay={true}
             verticalSwipe="natural"
           >
             {screenshots.map((name, index) => (
@@ -116,8 +117,8 @@ class Index extends React.Component<Props, State> {
           <div style={{ width: '100%' }}>
             <Player
               playsInline
-              src="/static/videos/gmail-web-tasks-ios.m4v"
-              poster="/static/images/vid1.png"
+              src="/static/videos/gmail-web-tasks-ios.mp4"
+              poster="/static/videos/gmail-web-tasks-ios.png"
             >
               <BigPlayButton position="center" />
               <ControlBar autoHide={true} />

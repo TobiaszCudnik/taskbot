@@ -376,7 +376,7 @@ class Index extends React.Component<Props, State> {
         </p>
         <p>
           After you authorize <strong>TaskBot</strong>, the service will
-          configure itself and start syncing. Don't hesitate to express your
+          configure itself and start syncing automatically. Don't hesitate to express your
           feedback on the{' '}
           <a href="https://groups.google.com/forum/#!forum/taskbotapp">
             Google Group
