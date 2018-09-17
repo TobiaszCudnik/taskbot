@@ -4,12 +4,16 @@
   * `connections-error [gtd...@gmail.com] Request 'gtasks.api.tasks.list' aborted by the abort() function +0ms`
 * auto color of new P/ labels doesnt seem to work
   * added via gmail, not via text-labels
+  * periodic color check doesnt work?
 
 ## Milestone 1:
 
 * www
-  * videos following the scenario
-    * host on a bucket
+  * host on a bucket
+  * faq
+    * anchor without special chars (function in babel config)
+    * mention label filters (the gmail ones) as a useful thing
+    * label shortcuts
 * separate log file `debug.log`
   * showing only loggers from the `DEBUG` env var
 * make `tail -f` show ansi colors
@@ -18,9 +22,8 @@
 * welcome email with instructions
   * `!T/Sync GTasks`
 * mangle sensitive info in the logs with hashes
-  * only for PROD
-  * salt
   * delete prev stackdriver logs
+  * hash all non-status labels (keep the prefix)
 
 ## Milestone 1.2
 
@@ -182,8 +185,10 @@
 * OCR interface
 * google spreadsheets backend
 * other todo app backend
+  * wunderlist?
   * Todoist?
   * remember the milk?
+  * any.do?
 * integrate google contacts, add @ mention
   * define shortcuts (where?)
 * integrate google calendar

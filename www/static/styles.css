@@ -354,6 +354,18 @@ nav.menu li.selected a {
   border-color: #efa093;
 }
 
+.label.someday {
+  color: #000000;
+  background-color: #c9daf8;
+  border-color: #c9daf8;
+}
+
+.label.finished {
+  color: #ffffff;
+  background-color: #e07798;
+  border-color: #e07798;
+}
+
 .label.project {
   background-color: #a4c2f4;
   border-color: #a4c2f4;
