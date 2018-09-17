@@ -29,7 +29,7 @@ Configure "Current searches" as follows:
 * **Next** `(label:!s-next-action -label:s-finished -label:!s-expired -label:!s-pending) OR (label:!s-pending AND label:unread)`
 * **Actions** `label:!s-action -label:!s-next-action -label:!s-finished -label:!s-expired`
 * **Next** `( label:drafts OR label:!s-pending ) -label:!s-expired`
-* **GTD** `label:!s-action OR label:!s-next-action OR label:!s-pending OR label:!s-finished OR label:!s-some-day`
+* **GTD** `label:!s`
 * **Sent** `label:sent -label:chats`
 
 After performing all the steps, save the changes.
@@ -69,19 +69,19 @@ Save some space by hiding the left sidebar in **GMail**. You can always access i
 To hide the the left sidebar, click the top-right hamburger icon ☰.
 ![GMail left sidebar image](/static/images/gmail-left-sidebar.png)
 
-#### Will TaskBot read my emails?
-
-**TaskBot** will not read the contents of your emails, although it will read the subjects and labels assigned to them. Details about accessed and stored data can be found in our [Privacy Policy](/privacy-policy).
-
-#### Can I share a Google Tasks list with someone?
-
-Not at the moment, but we're working on it! Soon you'll be able to share a custom list in **Google Tasks** with another **TaskBot** user, without using any dedicated UI. Tasks from that list will still be able to have a status assigned to them, which will make them show up in one of the status lists. That way you can organize your **GTD** independently of the shared list.
-
 #### How to manually trigger a Google Tasks sync?
 
 Although changes from **GMail** are propagated to **Google Tasks** in real time, the other way around happens only once per 10 minutes (it's an API limitation).
 
 To trigger a sync from **Google Tasks** to **GMail** any time you need it, add a <span class='label command'>!T/Sync GTasks</span> to **any email** (doesn't have to have any `!S/` label or any label for that matter). **TaskBot** will pick it up immediately, trigger the sync and remove the label. That's it.
+
+#### Will TaskBot read my emails?
+
+**TaskBot** will not read the contents of your emails, although it will read the subjects and labels assigned to them. Details about accessed and stored data can be found in our [Privacy Policy](/privacy-policy). You can also check the code running the service on [GitHub](https://github.com/TaskSync/TaskBot.app) (it's open source).
+
+#### Can I share a Google Tasks list with someone?
+
+Not at the moment, but we're working on it! Soon you'll be able to share a custom list in **Google Tasks** with another **TaskBot** user, without using any dedicated UI. Tasks from that list will still be able to have a status assigned to them, which will make them show up in one of the status lists. That way you can organize your **GTD** independently of the shared list.
 
 #### Does TaskBot need my password?
 

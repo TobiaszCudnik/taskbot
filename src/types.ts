@@ -177,8 +177,9 @@ export interface IAccount {
   sync_enabled: boolean
   dev: boolean
   config: IConfigAccount
-  welcome_email_sent: boolean
   invitation_granted: boolean
+  welcome_email_sent: boolean
+  invitation_email_sent: boolean
   ip: string
 }
 

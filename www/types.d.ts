@@ -4,6 +4,7 @@ interface Window {
   firebase_ready: Promise<void>
   firebase: firebase
   taskbot_account: any
+  PROD: boolean
 }
 
 const markdown: {

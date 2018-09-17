@@ -9,6 +9,7 @@ class MyDocument extends Document {
 
   render() {
     const { pageContext, pathname } = this.props
+    const script = `window.PROD = ${Boolean(process.env.PROD)};`;
 
     return (
       <html lang="en" dir="ltr">
@@ -38,6 +39,7 @@ class MyDocument extends Document {
           <script src="https://www.gstatic.com/firebasejs/5.4.1/firebase-app.js" />
           <script src="https://www.gstatic.com/firebasejs/5.4.1/firebase-auth.js" />
           <script src="https://www.gstatic.com/firebasejs/5.4.1/firebase-database.js" />
+          <script dangerouslySetInnerHTML={{__html: script}}/>
         </Head>
         <body>
           <div className="page-wrap">

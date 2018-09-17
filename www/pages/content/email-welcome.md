@@ -1,8 +1,8 @@
-Welcome to TaskBot,
+Welcome to TaskBot.app,
 
-TaskBot is now syncing your GMail and Google Tasks. Changes in GMail are synced in real time, while those in Google Tasks sync every 10 minutes.
+TaskBot is now syncing your GMail with Google Tasks. Changes in GMail are synced in real time, while those in Google Tasks sync every 10 minutes.
 
-You can manually trigger a Google Tasks -\> GMail sync by adding the '!T/Sync GTasks' label to any email or via a link on your account page.
+You can manually trigger a Google Tasks -> GMail sync by adding the '!T/Sync GTasks' label to any email or via a link on your account page.
 
 Account page:
 https://taskbot.app/account

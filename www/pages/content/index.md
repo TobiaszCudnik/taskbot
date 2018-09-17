@@ -1,21 +1,24 @@
-* <span class='label next-action'>!S/</span> - Statuses <span class='label next-action'>!S/Next Action</span> <span class='label action'>!S/Action</span> <span class='label pending'>!S/Pending</span>
-* <span class='label project'>P/</span> - Projects <span class='label project'>P/Groceries</span> <span class='label project'>P/college</span> <span class='label project'>P/work</span>
-* <span class='label reference'>R/</span> - References <span class='label reference'>R/document</span> <span class='label reference'>R/photo</span>
-* <span class='label location'>L/</span> - Locations <span class='label location'>L/Home</span> <span class='label location'>L/London</span>
-* <span class='label command'>!T/</span> - Commands <span class='label command'>!T/Sync GTasks</span>
+* <span class='label next-action'>!S/</span> Statuses <span class='label next-action'>!S/Next Action</span> <span class='label action'>!S/Action</span> <span class='label pending'>!S/Pending</span> <span class='label finished'>!S/Finished</span> <span class='label someday'>!S/Someday</span>
+* <span class='label project'>P/</span> Projects <span class='label project'>P/shopping</span> <span class='label project'>P/college</span> <span class='label project'>P/work</span>
+* <span class='label reference'>R/</span> References <span class='label reference'>R/document</span> <span class='label reference'>R/photo</span>
+* <span class='label location'>L/</span> Locations <span class='label location'>L/Home</span> <span class='label location'>L/London</span>
+* <span class='label command'>!T/</span> Commands <span class='label command'>!T/Sync GTasks</span>
 
 #### Features
 
+* Send emails to yourself or mark existing emails to create new tasks
+* Create new tasks to create new self emails
 * Syncs **GMail** -\> **GTasks** in real time
 * Syncs **GTasks** -\> **GMail** every 10mins or by [adding a label](/faq#how-to-manually-trigger-a-google-tasks-sync%3F)
 * Works with any **GMail**, **Google Tasks** and some IMAP apps
 * Keeps only the newest status label per email
-* `#hashtags` converted to and from labels
+* `#hashtags` converted **to** and **from** labels
 * Shortcuts for statuses, eg `!na` is `!S/Next Action`
 * Moving tasks between lists (including sub-tasks)
 * Auto setup after signing up
 * Auto colors for labels
 * Auto adds new labels
+* Links to email in tasks
 * Keyboard friendly
 
 #### Demos
