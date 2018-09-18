@@ -1,9 +1,9 @@
 runtime: nodejs
-#service: sync
+service: staging
 env: flex
 
 env_variables:
-  TB_ENV: "production"
+  TB_ENV: "staging"
 
 # This sample incurs costs to run on the App Engine flexible environment. 
 # The settings below are to reduce costs during testing and are not appropriate
