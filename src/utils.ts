@@ -17,3 +17,19 @@ export function machineLogToDebug(
     log(msg)
   })
 }
+
+export function isProdEnv() {
+  return process.env['TB_ENV'] == 'production'
+}
+
+export function isStagingEnv() {
+  return process.env['TB_ENV'] == 'staging'
+}
+
+export function isDevEnv() {
+  return process.env['TB_ENV'] == 'dev' || !process.env['TB_ENV']
+}
+
+export function isTestEnv() {
+  return process.env['TB_ENV'] == 'test'
+}

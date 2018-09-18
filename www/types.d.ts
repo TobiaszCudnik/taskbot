@@ -4,11 +4,17 @@ interface Window {
   firebase_ready: Promise<void>
   firebase: firebase
   taskbot_account: any
-  PROD: boolean
+  TB_ENV: 'production' | 'staging' | 'dev'
+  gtag: Function
 }
 
 const markdown: {
   require(path: string): string
+}
+
+declare module '*.json' {
+  const value: any;
+  export default value;
 }
 
 declare namespace NodeJS {

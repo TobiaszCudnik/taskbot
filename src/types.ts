@@ -112,15 +112,20 @@ export interface IConfigPublic {
   www?: IConfigWWW
 }
 
+export interface IFirebaseConfig {
+  apiKey: string
+  authDomain: string
+  databaseURL: string
+  projectId: string
+  storageBucket: string
+  messagingSenderId: string
+}
+
 export interface IConfigWWW {
-  google: {
-    client_id: string
-    scope: string
-  }
-  firebase: {
-    url: string
-    credentials: object
-  }
+  firebase: IFirebaseConfig,
+  firebase_staging?: Partial<IFirebaseConfig>
+  firebase_dev?: Partial<IFirebaseConfig>,
+  ga_tracking_id: string
 }
 
 export interface IConfigPrivate {
@@ -130,7 +135,6 @@ export interface IConfigPrivate {
     salt: string
     email: string
     name: string
-    bypass_code: string
     // TODO type
     google_tokens: object
   }
@@ -157,14 +161,14 @@ export interface IConfigAccountGoogle extends GoogleCredentials {
 
 export interface IConfigAccount {
   user: {
-    id: string,
+    id: string
     uid: string
   }
   google: IConfigAccountGoogle
 }
 
 export interface IAccount {
-  uid: string,
+  uid: string
   email: string
   registered: string
   invitation_code?: string
@@ -172,10 +176,7 @@ export interface IAccount {
     sync_enabled: boolean
     sync_gtasks?: boolean
   }
-  // TODO last_sync: {gmail: string, gtasks: string}
-  // TODO last_sync_client_ping: string
   sync_enabled: boolean
-  dev: boolean
   config: IConfigAccount
   invitation_granted: boolean
   welcome_email_sent: boolean
