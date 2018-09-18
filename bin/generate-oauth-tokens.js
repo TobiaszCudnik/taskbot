@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const credentials = require('../../../config-credentials').default
-const config = require('../../../config').default
+const credentials = require('../config-private').default
+const config = require('../config').default
 
 var readline = require('readline')
 
@@ -44,7 +44,9 @@ rl.question('Enter the code here:', function(code) {
   oauth2Client.getToken(code, function(err, tokens) {
     // set tokens to the client
     // TODO: tokens should be set by OAuth2 client.
-    if (err) console.error(err)
+    if (err) {
+      console.error(err)
+    }
     console.log(tokens)
     oauth2Client.credentials = tokens
   })
