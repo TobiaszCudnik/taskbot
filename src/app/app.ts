@@ -46,6 +46,7 @@ export class App {
       credential: firebase.credential.cert(config.firebase.admin),
       databaseURL: config.firebase.url
     })
+    // TODO use env.TB_ENV
     if (!process.env['TEST']) {
       this.listenToAccountsChanges()
     } else {
@@ -83,11 +84,16 @@ export class App {
       const account = s.val() as IAccount
       // cache the account data for diffs
       this.accounts[s.key] = account
-      await this.handleInvitationEmail(account)
+
+      // handle emails
+      // pass async
+      this.handleWelcomeEmail(account)
+      // pass async
+      this.handleInvitationEmail(account)
+
       if (!this.isAccountEnabled(account)) {
         return false
       }
-      await this.handleWelcomeEmail(account)
       this.createUserInstance(s.key, this.config, account.config)
     })
 
@@ -100,6 +106,12 @@ export class App {
     accounts_ref.on('child_changed', async (s: DataSnapshot) => {
       const account = s.val() as IAccount
       const old_account = this.accounts[s.key]
+
+      // handle emails
+      // pass async
+      this.handleWelcomeEmail(account)
+      // pass async
+      this.handleInvitationEmail(account)
 
       const config_changed =
         JSON.stringify(old_account.config) !== JSON.stringify(account.config)
@@ -118,15 +130,14 @@ export class App {
         this.createUserInstance(s.key, this.config, account.config)
       } else {
         // force gtasks sync only on existing instances
-        await this.handleGTasksSync(account)
+        // pass async
+        this.handleGTasksSync(account)
       }
-      await this.handleWelcomeEmail(account)
-      await this.handleInvitationEmail(account)
     })
   }
 
   async handleWelcomeEmail(account: IAccount) {
-    if (!account.welcome_email_sent) {
+    if (!account.welcome_email_sent && account.sync_enabled) {
       await this.sendServiceEmail(
         account.email,
         'Welcome to TaskBot.app',
@@ -139,7 +150,7 @@ export class App {
   }
 
   async handleInvitationEmail(account: IAccount) {
-    if (!account.invitation_email_sent) {
+    if (!account.invitation_email_sent && account.invitation_granted) {
       await this.sendServiceEmail(
         account.email,
         'Invitation to TaskBot.app!',
@@ -351,8 +362,6 @@ export class App {
       // create a disabled account by default
       sync_enabled: false,
       ip,
-      // create dev accounts in the dev env
-      dev: !Boolean(process.env['PROD']),
       config: {
         user: {
           id,

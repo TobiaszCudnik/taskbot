@@ -28,6 +28,7 @@ import {
 import Connections from '../app/connections'
 import GoogleSync from '../google/sync'
 import { IConfig, ILabelDefinition, IListConfig } from '../types'
+import { isProdEnv } from '../utils'
 import GC from './gc'
 import LabelFilterSync from './label-filter'
 import Logger, { log_fn } from '../app/logger'
@@ -775,9 +776,10 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
    *
    * @param text
    */
-  logText(text: string) {
-    const is_prod = process.env['PROD']
-    return is_prod ? `text(${md5(this.config.service.salt + text)})` : text
+  logText(text: string, name = 'text') {
+    return isProdEnv()
+      ? `${name}(${md5(this.config.service.salt + text)})`
+      : text
   }
 
   /**
@@ -786,11 +788,12 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
    * @param record
    */
   logRecord(record: DBRecord): DBRecord {
-    const is_prod = process.env['PROD']
-    if (!is_prod) return record
+    if (!isProdEnv()) {
+      return record
+    }
     const log_record = Object.create(record) as DBRecord
-    log_record.title = this.logText(log_record.title)
-    log_record.content = this.logText(log_record.content)
+    log_record.title = this.logText(log_record.title, 'title')
+    log_record.content = this.logText(log_record.content, 'content')
     return log_record
   }
 }

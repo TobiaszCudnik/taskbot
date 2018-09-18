@@ -5,8 +5,7 @@
   "description": "GTD Bot service.",
   "contributors": [],
   "scripts": {
-    "start": "make start-prod",
-    "start-dev": "make start",
+    "start": "make start",
     "test": "make test",
     "test-service": "TEST=1 make start-am",
     "test-debug": "make test-debug",
@@ -29,7 +28,6 @@
     "service"
   ],
   "dependencies": {
-    "@google-cloud/logging-winston": "^0.9.0",
     "@types/inert": "^5.1.1",
     "ami-logger": "^0.3.22",
     "asyncmachine": "^3.4.0",

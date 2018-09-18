@@ -3,13 +3,14 @@ import Link from 'next/link'
 import React from 'react'
 import flush from 'styled-jsx/server'
 import Menu from '../src/components/menu'
+import config from '../config.json'
 
 class MyDocument extends Document {
   props: any
 
   render() {
     const { pageContext, pathname } = this.props
-    const script = `window.PROD = ${Boolean(process.env.PROD)};`;
+    const script = `window.TB_ENV = '${process.env.TB_ENV || 'dev'}'`
 
     return (
       <html lang="en" dir="ltr">
@@ -39,7 +40,30 @@ class MyDocument extends Document {
           <script src="https://www.gstatic.com/firebasejs/5.4.1/firebase-app.js" />
           <script src="https://www.gstatic.com/firebasejs/5.4.1/firebase-auth.js" />
           <script src="https://www.gstatic.com/firebasejs/5.4.1/firebase-database.js" />
-          <script dangerouslySetInnerHTML={{__html: script}}/>
+
+          <script dangerouslySetInnerHTML={{ __html: script }} />
+
+          {/* Global Site Tag (gtag.js) - Google Analytics */}
+          {process.env.TB_ENV == 'production' && (
+            <>
+              <script
+                async
+                src={`https://www.googletagmanager.com/gtag/js?id=${
+                  config.ga_tracking_id
+                }`}
+              />
+              <script
+                dangerouslySetInnerHTML={{
+                  __html: `
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${config.ga_tracking_id}');
+          `
+                }}
+              />
+            </>
+          )}
         </Head>
         <body>
           <div className="page-wrap">

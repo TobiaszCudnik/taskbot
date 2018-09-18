@@ -18,8 +18,6 @@ export function machineLogToDebug(
   })
 }
 
-export type TUnboxPromise<T> = T extends Promise<infer U> ? U : T;
-
 export function isProdEnv() {
   return process.env['TB_ENV'] == 'production'
 }
@@ -33,5 +31,5 @@ export function isDevEnv() {
 }
 
 export function isTestEnv() {
-  return process.env['TB_ENV'] == 'test' || process.env['TEST']
+  return process.env['TB_ENV'] == 'test'
 }
