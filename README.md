@@ -71,6 +71,6 @@ Configs for Multi Inbox Panes:
 * Pending
   * Query: `( label:drafts OR label:!s-pending ) -label:!s-expired`
 * GTD
-  * Query: `label:!s-action OR label:!s-next-action OR label:!s-pending OR label:!s-finished OR label:!s-some-day`
+  * Query: `label:!s`
 * Sent
   * Query: `label:sent -label:chats`
