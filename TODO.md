@@ -9,11 +9,15 @@
 ## Milestone 1:
 
 * www
-  * host on a bucket
+  * redir from `www.` to `.`
+  * refresh `client_last_read` only for invited accounts
+  * pointer cursor on the screenshots
+  * host statics on a bucket
   * faq
     * anchor without special chars (function in babel config)
     * mention label filters (the gmail ones) as a useful thing
     * label shortcuts
+* refactor TEST=1 to TB_ENV=test
 * separate log file `debug.log`
   * showing only loggers from the `DEBUG` env var
 * make `tail -f` show ansi colors
