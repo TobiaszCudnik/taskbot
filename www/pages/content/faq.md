@@ -33,7 +33,7 @@ Configure "Current searches" as follows:
 * **Sent** `label:sent -label:chats`
 
 After performing all the steps, save the changes.
-![GMail keyboard shortcuts image](https://taskbot.app/static/images/gmail-multi-inbox.png)
+![GMail keyboard shortcuts image](https://taskbot.app/static/images/faq/gmail-multi-inbox.png)
 
 #### How to enable the keyboard shortcuts?
 
@@ -42,7 +42,7 @@ While in the [**GMail** settings](https://mail.google.com/mail/u/0/#settings/gen
 * [_"General"_ Tab](https://mail.google.com/mail/u/0/#settings/general)
 * Enable _"Keyboard shortcuts"_
 * Save Changes
-  ![GMail keyboard shortcuts image](https://taskbot.app/static/images/gmail-keyboard.png)
+  ![GMail keyboard shortcuts image](https://taskbot.app/static/images/faq/gmail-keyboard.png)
 
 #### Which of the keyboard shortcuts are useful for TaskBot?
 
@@ -67,7 +67,7 @@ While in the [**GMail** settings](https://mail.google.com/mail/u/0/#settings/gen
 Save some space by hiding the left sidebar in **GMail**. You can always access it by hovering with the cursor or you can jump to labels by using [keyboard shortcuts](/faq/#5).
 
 To hide the the left sidebar, click the top-right hamburger icon ☰.
-![GMail left sidebar image](/static/images/gmail-left-sidebar.png)
+![GMail left sidebar image](https://taskbot.app/static/images/faq/gmail-left-sidebar.png)
 
 #### How to manually trigger a Google Tasks sync?
 
