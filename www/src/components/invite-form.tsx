@@ -33,6 +33,7 @@ export default class InviteForm extends React.Component<Props, State> {
     }
   }
 
+  // TODO support user closing the popup
   onRequestInviteClick = async () => {
     const { requested } = this.state
     if (requested && requested !== 'error') {
@@ -62,7 +63,7 @@ export default class InviteForm extends React.Component<Props, State> {
     let label: string
     switch (requested) {
       case false:
-        label = 'Request an invite'
+        label = 'Request an invite using'
         break
       case 'error':
         label = 'Error'
@@ -84,7 +85,11 @@ export default class InviteForm extends React.Component<Props, State> {
               disabled={requested === 'processing'}
               onClick={this.onRequestInviteClick}
             >
-              {label}
+              {label} &nbsp;
+              <img
+                src="/static/images/google/btn_google_dark_normal_ios.svg"
+                alt="Sign in with Google"
+              />
             </Button>
           </React.Fragment>
         )}

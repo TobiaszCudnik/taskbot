@@ -6,8 +6,8 @@
 
 #### Features
 
-* Send emails to yourself or mark existing emails to create new tasks
-* Create new tasks to create new self emails
+* Send emails to yourself or mark existing ones to create new tasks
+* Create new tasks and have them as emails
 * Syncs **GMail** -\> **GTasks** in real time
 * Syncs **GTasks** -\> **GMail** every 10mins or by [adding a label](/faq#how-to-manually-trigger-a-google-tasks-sync%3F)
 * Works with any **GMail**, **Google Tasks** and some IMAP apps

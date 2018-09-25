@@ -3,6 +3,7 @@ import Router from 'next/router'
 import React, { MouseEvent } from 'react'
 import { IAccount } from '../../../src/types'
 import { getAccount, onLogin, signIn, signOut, TUser } from '../auth'
+import Link from 'next/link'
 
 type State = {
   user?: TUser
@@ -93,22 +94,36 @@ class SignInBar extends React.Component<Props, State> {
 
     return (
       <div className={classes.root}>
-        {(!user || !account) && (
-          <a href="#" onClick={this.signInClick}>
-            Sign in with Google
-          </a>
-        )}
-        {user &&
-          account && (
-            <>
-              {user.email}
-              <br />
-              <a href="#" onClick={this.signOutClick}>
-                Sign out
-              </a>
-            </>
-          )}
+        {(!user || !account) && this.renderNotSignedIn()}
+        {user && account && this.renderSignedIn()}
       </div>
+    )
+  }
+
+  renderNotSignedIn() {
+    return (
+      <a href="#" onClick={this.signInClick}>
+        <img
+          src="/static/images/google/btn_google_signin_light_normal_web.png"
+          alt="Sign in with Google"
+        />
+      </a>
+    )
+  }
+
+  renderSignedIn() {
+    const { user } = this.state
+
+    return (
+      <>
+        <Link href="/account">
+          <a>{user.email}</a>
+        </Link>
+        <br />
+        <a href="#" onClick={this.signOutClick}>
+          Sign out
+        </a>
+      </>
     )
   }
 }

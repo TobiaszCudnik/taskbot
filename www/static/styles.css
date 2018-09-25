@@ -478,3 +478,7 @@ body {
 .carousel.carousel-slider .slider-wrapper {
   margin-bottom: 25px;
 }
+
+.carousel .slider {
+  cursor: pointer;
+}
