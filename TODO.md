@@ -9,6 +9,11 @@
 ## Milestone 1:
 
 * www
+  * update to next7
+  * compress imgs with webp etc and use `picture`
+  * `robots.txt` file
+  * meta description in `head`
+  * `alt` for imgs
   * redir from `www.` to `.`
   * refresh `client_last_read` only for invited accounts
   * pointer cursor on the screenshots
@@ -22,11 +27,7 @@
   * showing only loggers from the `DEBUG` env var
 * make `tail -f` show ansi colors
 * make `combined.log` optional
-* use stackdriver for errors only in PROD
-* welcome email with instructions
-  * `!T/Sync GTasks`
 * mangle sensitive info in the logs with hashes
-  * delete prev stackdriver logs
   * hash all non-status labels (keep the prefix)
 
 ## Milestone 1.2
