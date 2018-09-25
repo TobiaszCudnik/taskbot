@@ -250,7 +250,7 @@ export class App {
   async handleStatsClient(s: DataSnapshot) {
     if (!s || !this.stats_uid[s.key]) return
     const val = s.val() as TStatsUser
-    if (!val.client_last_read) return
+    if (!val || !val.client_last_read) return
     const seconds_ago = moment(moment().utc()).diff(
       val.client_last_read,
       'seconds'

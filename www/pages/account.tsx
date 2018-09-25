@@ -350,7 +350,11 @@ class Index extends React.Component<Props, State> {
             onClick={this.handleAuthorize}
             title="Refresh the access token, in case your sync stopped working"
           >
-            Refresh access
+            Refresh access &nbsp;
+            <img
+              src="/static/images/google/btn_google_dark_normal_ios.svg"
+              alt="Sign in with Google"
+            />
           </Button>
           <Button
             variant="contained"
@@ -376,8 +380,8 @@ class Index extends React.Component<Props, State> {
         </p>
         <p>
           After you authorize <strong>TaskBot</strong>, the service will
-          configure itself and start syncing automatically. Don't hesitate to express your
-          feedback on the{' '}
+          configure itself and start syncing automatically. Don't hesitate to
+          express your feedback on the{' '}
           <a href="https://groups.google.com/forum/#!forum/taskbotapp">
             Google Group
           </a>{' '}
@@ -391,7 +395,11 @@ class Index extends React.Component<Props, State> {
           fullWidth={true}
           onClick={this.handleAuthorize}
         >
-          Enable Syncing
+          Enable Syncing using &nbsp;
+          <img
+            src="/static/images/google/btn_google_dark_normal_ios.svg"
+            alt="Sign in with Google"
+          />
         </Button>
       </>
     )
@@ -448,7 +456,11 @@ class Index extends React.Component<Props, State> {
             fullWidth={true}
             onClick={this.handleSignIn}
           >
-            Sign in with Google
+            Sign in with &nbsp;{' '}
+            <img
+              src="/static/images/google/btn_google_dark_normal_ios.svg"
+              alt="Sign in with Google"
+            />
           </Button>
         </div>
       </>
