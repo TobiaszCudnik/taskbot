@@ -8,6 +8,9 @@
 
 ## Milestone 1:
 
+* check if completing a task and clicking "clear completed" works OK
+* keep original email title in task notes
+* more descriptive for `gmail.fetchThread`
 * www
   * update to next7
   * compress imgs with webp etc and use `picture`
