@@ -23,21 +23,21 @@ build-watch:
 
 start:
 	DEBUG_FILE=1 \
-		DEBUG=root:\*-info,\*-error \
+		DEBUG=root:\*-info,\*-error,app-info \
 		node src/app/bootstrap.js
 
 start-production-env:
 	# forcing production
 	NODE_ENV=production TB_ENV=production \
 		DEBUG_FILE=1 \
-		DEBUG=root:\*-info,\*-error \
+		DEBUG=root:\*-info,\*-error,app-info \
 		node src/app/bootstrap.js
 
 start-staging-env:
 	# forcing staging
 	NODE_ENV=production TB_ENV=staging \
 		DEBUG_FILE=1 \
-		DEBUG=root:\*-info,\*-error \
+		DEBUG=root:\*-info,\*-error,app-info \
 		node src/app/bootstrap.js
 
 start-am:
@@ -48,7 +48,7 @@ start-am:
 		src/app/bootstrap.js
 
 start-verbose:
-	DEBUG=\*-error,\*-verbose,root:\*-info,gmail-root,gtasks-root,record-diff-verboses \
+	DEBUG=\*-error,\*-verbose,root:\*-info,gmail-root,gtasks-root,record-diff-verboses \stat
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node --inspect \
@@ -82,15 +82,17 @@ site:
 		-i static/privacy-policy.md -o static/privacy-policy-output.html
 
 deploy-production:
+	# TODO switch to the correct project
 	make build-www
-	gcloud app deploy app.yaml --version=production
+	gcloud app deploy configs/production.yaml --version=production
 	# sudo docker exec -t -i gaeapp /bin/bash
 	# sudo apt-get install mc fish htop
 	# kill -HUP 1
 
 deploy-staging:
+	# TODO switch to the correct project
 	make build-www
-	gcloud app deploy staging.yaml --version=staging-default
+	gcloud app deploy configs/staging.yaml --version=staging
 	# sudo docker exec -t -i gaeapp /bin/bash
 	# sudo apt-get install mc fish htop
 	# kill -HUP 1
