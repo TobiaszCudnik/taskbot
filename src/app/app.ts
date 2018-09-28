@@ -5,6 +5,7 @@ import { test_user } from '../../config-accounts'
 import { Credentials as GoogleCredentials } from 'google-auth-library/build/src/auth/credentials'
 import RootSync, { TStatsUser } from '../sync/root'
 import { IConfig, IAccount, IConfigAccount, TRawEmail } from '../types'
+import { isProdEnv } from '../utils'
 import Connections from './connections'
 import Logger from './logger'
 import * as merge from 'deepmerge'
@@ -401,6 +402,12 @@ export class App {
   }
 
   async sendServiceEmail(to: string, subject: string, content?: string) {
+    if (!isProdEnv()) {
+      // dont send email in non-prod
+      this.log_info(`Email to ${to}\nSubject: ${subject}\nContent:\n${content}`)
+      return
+    }
+
     let email = [
       `From: ${this.config.service.name} <${this.config.service.email}>`,
       `To: ${to}`,

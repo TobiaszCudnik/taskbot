@@ -31,5 +31,5 @@ export function isDevEnv() {
 }
 
 export function isTestEnv() {
-  return process.env['TB_ENV'] == 'test'
+  return process.env['TB_ENV'] == 'test' || process.env['TEST']
 }
