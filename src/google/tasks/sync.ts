@@ -10,7 +10,10 @@ import * as moment from 'moment'
 import * as delay from 'delay'
 import * as roundTo from 'round-to'
 import { map } from 'typed-promisify-tob'
-import { tasks_v1 } from 'googleapis/build/src/apis/tasks/v1'
+import {
+  Params$Resource$Tasks$Insert,
+  tasks_v1
+} from 'googleapis/build/src/apis/tasks/v1'
 // Machine types
 import {
   AsyncMachine,
