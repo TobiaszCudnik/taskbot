@@ -2,7 +2,7 @@ import * as debug from 'debug'
 import * as fs from 'fs'
 import * as winston from 'winston'
 import * as printf from 'printf'
-import { LoggingWinston as StackDriver } from '@google-cloud/logging-winston'
+// import { LoggingWinston as StackDriver } from '@google-cloud/logging-winston'
 
 // @ts-ignore
 const { combine, timestamp } = winston.format
@@ -14,12 +14,6 @@ const winston_format = winston.format.printf(info => {
 export type level = 'info' | 'verbose' | 'error'
 export type log_fn = (...msg: any[]) => void
 
-function isProd(): boolean {
-  // TODO debug
-  return false
-  return Boolean(process.env['PROD'])
-}
-
 // TODO  Split to ProdLogger and DevLogger
 // TODO fix all the process.env['PROD'] and env['DEBUG_FILE']
 export default class Logger {
@@ -27,27 +21,35 @@ export default class Logger {
 
   // TODO read from env.DEBUG
   constructor() {
-    if (!isProd()) {
-      try {
-        fs.mkdirSync('logs')
-      } catch (e) {}
-    }
-    const transports = isProd()
-      ? [new StackDriver()]
-      : [
-          new winston.transports.File({
-            filename: 'logs/error.log',
-            level: 'error'
-          }),
-          new winston.transports.File({ filename: 'logs/combined.log' })
-        ]
+    // if (!isProd()) {
+    try {
+      fs.mkdirSync('logs')
+    } catch (e) {}
+    // }
+    // const transports = isProd()
+    //   ? [new StackDriver()]
+    //   : [
+    //       new winston.transports.File({
+    //         filename: 'logs/error.log',
+    //         level: 'error'
+    //       }),
+    //       new winston.transports.File({ filename: 'logs/combined.log' })
+    //     ]
+    const transports = [
+      new winston.transports.File({
+        filename: 'logs/error.log',
+        level: 'error'
+      }),
+      new winston.transports.File({ filename: 'logs/combined.log' })
+    ]
 
     // @ts-ignore
     this.winston = winston.createLogger({
       level: 'verbose',
-      format: isProd()
-        ? winston.format.json()
-        : combine(timestamp(), winston_format),
+      // format: isProd()
+      //   ? winston.format.json()
+      //   : combine(timestamp(), winston_format),
+      format: combine(timestamp(), winston_format),
       transports
     })
   }
@@ -70,7 +72,9 @@ export default class Logger {
       // First msg has to be a string
       msgs[0] = (msgs[0] && msgs[0].toString()) || ''
       // dont log to console on PROD, except for errors
-      if (!debug.disabled && (!isProd() || level == 'error')) {
+      // if (!debug.disabled && (!isProd() || level == 'error')) {
+      // @ts-ignore
+      if (!debug.disabled) {
         // @ts-ignore
         terminal(...msgs)
       }
@@ -89,14 +93,15 @@ export default class Logger {
       let log_data = {
         // labels,
         labels: base_labels,
-        message: isProd() ? msgs : printf(...msgs),
+        // message: isProd() ? msgs : printf(...msgs),
+        message: printf(...msgs),
         level
       }
       // provide `label` only for local (file) transports
-      if (!isProd()) {
-        // @ts-ignore
-        log_data.label = name2
-      }
+      // if (!isProd()) {
+      // @ts-ignore
+      log_data.label = name2
+      // }
       this.winston.log(log_data)
     }
   }
@@ -104,5 +109,5 @@ export default class Logger {
 
 export type TLoggerName = {
   name: string
-  user_id?: number
+  user_id?: string
 }

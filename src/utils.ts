@@ -17,3 +17,21 @@ export function machineLogToDebug(
     log(msg)
   })
 }
+
+export type TUnboxPromise<T> = T extends Promise<infer U> ? U : T;
+
+export function isProdEnv() {
+  return process.env['TB_ENV'] == 'production'
+}
+
+export function isStagingEnv() {
+  return process.env['TB_ENV'] == 'staging'
+}
+
+export function isDevEnv() {
+  return process.env['TB_ENV'] == 'dev' || !process.env['TB_ENV']
+}
+
+export function isTestEnv() {
+  return process.env['TB_ENV'] == 'test' || process.env['TEST']
+}

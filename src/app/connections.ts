@@ -101,15 +101,12 @@ export default class Connections {
     user_id: string,
     method_name: string,
     method: (params: A) => T,
-    pointer: [object, Function],
+    context: object,
     params: A,
     abort: (() => boolean) | null | undefined,
     options?: object,
     retries = 3
   ): T {
-    // TODO tmp
-    if (!pointer.length) return null
-    debugger
     // prepare a version of params for logging
     let params_log = null
     if (!params) {
@@ -166,7 +163,7 @@ export default class Connections {
       // TODO googleapis specific code should be in google/sync.ts
       try {
         // @ts-ignore
-        res = await pointer[1].call(pointer[0], params, options)
+        res = await method.call(context, params, options)
         const was2xx = res && res.status.toString().match(/^2/)
         const wasNoContent = res && res.statusText == 'No Content'
         if (was2xx && res.data === undefined && !wasNoContent) {

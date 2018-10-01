@@ -1,6 +1,8 @@
 import { machine } from 'asyncmachine'
 import { TAbortFunction } from 'asyncmachine/types'
+import { AxiosResponse } from 'axios'
 import { google } from 'googleapis'
+import { gmail_v1 } from 'googleapis/build/src/apis/gmail/v1'
 import * as _ from 'lodash'
 import * as delay from 'delay'
 import * as moment from 'moment'
@@ -22,6 +24,7 @@ import { SyncReader } from '../../sync/reader'
 import RootSync, { DBRecord } from '../../sync/root'
 import { sync_writer_state, SyncWriter } from '../../sync/writer'
 import { IConfig, ILabelDefinition, IListConfig, TRawEmail } from '../../types'
+import { TUnboxPromise } from '../../utils'
 import Auth from '../auth'
 ///<reference path="../../../node_modules/typed-promisify-tob/index.ts"/>
 import { Thread } from './query'
@@ -93,7 +96,7 @@ export const sync_state: IJSONStates = {
   })
 }
 
-export type Label = google.gmail.v1.Label
+export type Label = gmail_v1.Schema$Label
 export default class GmailSync extends SyncWriter<
   IConfig,
   TStates,
@@ -255,19 +258,19 @@ export default class GmailSync extends SyncWriter<
 
   async FetchingLabels_state() {
     let abort = this.state.getAbort('FetchingLabels')
-    let res = await this.req(
+    let res: AxiosResponse<gmail_v1.Schema$ListLabelsResponse> = await this.req(
       'users.labels.list',
       this.api.users.labels.list,
+      this.api.users.labels,
       {
         userId: 'me',
         fields:
           'labels(id,name,color,labelListVisibility,messageListVisibility)'
       },
-      abort,
-      false
+      abort
     )
     if (abort()) return
-    this.labels = res.labels
+    this.labels = res.data.labels
     await this.assertPredefinedLabelsExist(abort)
     // TODO simple hack for a mass label re-coloring
     try {
@@ -283,18 +286,18 @@ export default class GmailSync extends SyncWriter<
 
   async FetchingHistoryId_state(abort?: () => boolean) {
     this.log('[FETCH] history ID')
-    let response = await this.req(
+    let response: AxiosResponse<gmail_v1.Schema$Profile> = await this.req(
       'users.getProfile',
       this.api.users.getProfile,
+      this.api.users,
       {
         userId: 'me',
         fields: 'historyId'
       },
-      abort,
-      false
+      abort
     )
     if (abort && abort()) return
-    this.history_id_latest = parseInt(response.historyId, 10)
+    this.history_id_latest = parseInt(response.data.historyId, 10)
     this.history_ids.push({ id: this.history_id_latest, time: moment().unix() })
     this.last_sync_time = moment().unix()
     this.state.add('HistoryIdFetched')
@@ -310,43 +313,27 @@ export default class GmailSync extends SyncWriter<
 
   /**
    * Request decorator
-   * TODO extract as a GoogleRequestMixin
    */
-  async req<A, T, T2>(
-    method_name: string,
-    method: (arg: A, cb: (err: any, res: T, res2: T2) => void) => void,
-    params: A,
-    abort: (() => boolean) | null | undefined,
-    returnArray: true,
-    options?: object
-  ): Promise<[T, T2] | null>
   async req<A, T>(
     method_name: string,
-    method: (arg: A, cb: (err: any, res: T) => void) => void,
+    method: (params: A) => T,
+    context: object,
     params: A,
     abort: (() => boolean) | null | undefined,
-    returnArray: false,
     options?: object
-  ): Promise<T | null>
-  async req<A, T>(
-    method_name: string,
-    method: (arg: A, cb: (err: any, res: T) => void) => void,
-    params: A,
-    abort: (() => boolean) | null | undefined,
-    return_array: boolean,
-    options?: object
-  ): Promise<any> {
+  ): T {
     // @ts-ignore
     params.auth = this.auth.client
     return await this.root.connections.req(
       this.root.config.user.id,
       'gmail.' + method_name,
       method,
+      context,
       params,
       abort,
-      // @ts-ignore
-      return_array,
       {
+        // TODO keep alive
+        // shouldKeepAlive
         forever: true,
         ...options
       }
@@ -401,13 +388,13 @@ export default class GmailSync extends SyncWriter<
         await this.req(
           'users.labels.patch',
           this.api.users.labels.patch,
+          this.api.users.labels,
           {
             userId: 'me',
             id: label.id,
             resource
           },
-          abort,
-          false
+          abort
         )
         Object.assign(label, resource)
       }
@@ -420,14 +407,18 @@ export default class GmailSync extends SyncWriter<
     }
     await Promise.all(
       this.labels_to_fetch.map(async id => {
-        const res = await await this.req(
+        const res: AxiosResponse<gmail_v1.Schema$Label> = await await this.req(
           'users.labels.get',
           this.api.users.labels.get,
-          { userId: 'me', id, fields: 'id,name,color' },
-          abort,
-          false
+          this.api.users.labels,
+          {
+            userId: 'me',
+            id,
+            fields: 'id,name,color'
+          },
+          abort
         )
-        this.labels.push(res)
+        this.labels.push(res.data)
       })
     )
     this.labels_to_fetch = []
@@ -620,9 +611,10 @@ export default class GmailSync extends SyncWriter<
 
     this.log(log_msg)
 
-    let ret = await this.req(
+    let ret: AxiosResponse<gmail_v1.Schema$Thread> = await this.req(
       'users.threads.modify',
       this.api.users.threads.modify,
+      this.api.users.threads,
       {
         id: thread_id,
         userId: 'me',
@@ -632,13 +624,12 @@ export default class GmailSync extends SyncWriter<
           removeLabelIds: remove_label_ids
         }
       },
-      abort,
-      false
+      abort
     )
     // immediately re-fetch the thread, so its refreshed even if included in
     // any other query
     await this.fetchThread(thread_id, abort)
-    return Boolean(ret)
+    return Boolean(ret.data)
   }
 
   async getHistoryId(abort?: () => boolean): Promise<number | null> {
@@ -653,11 +644,12 @@ export default class GmailSync extends SyncWriter<
   async fetchThread(
     id: string,
     abort?: () => boolean
-  ): Promise<google.gmail.v1.Thread | null> {
+  ): Promise<Thread | null> {
     // TODO limit the max msgs amount
-    let thread = await this.req(
+    let thread: AxiosResponse<gmail_v1.Schema$Thread> = await this.req(
       'users.threads.get',
       this.api.users.threads.get,
+      this.api.users.threads,
       {
         id,
         userId: 'me',
@@ -665,20 +657,19 @@ export default class GmailSync extends SyncWriter<
         format: 'metadata',
         fields: 'id,historyId,messages(id,labelIds,payload(headers))'
       },
-      abort,
-      false
+      abort
     )
     if (!thread) {
       throw Error('Missing thread')
     }
     // memorize the time the resource was fetched
     // @ts-ignore
-    thread.fetched = moment().unix()
-    this.threads.set(thread.id, thread)
+    thread.data.fetched = moment().unix()
+    this.threads.set(thread.data.id, thread.data)
 
     if (abort && abort()) return null
 
-    return thread
+    return thread.data
   }
 
   // TODO make it async and download if msgs missing, as a param ???
@@ -705,6 +696,7 @@ export default class GmailSync extends SyncWriter<
     const ret = await this.req(
       'users.messages.insert',
       this.api.users.messages.insert,
+      this.api.users.messages,
       {
         userId: 'me',
         fields: 'threadId',
@@ -713,10 +705,9 @@ export default class GmailSync extends SyncWriter<
           labelIds: labels.map(l => this.getLabelID(l))
         }
       },
-      abort,
-      false
+      abort
     )
-    this.log_verbose(`New thread ID - '${ret.threadId}'`)
+    this.log_verbose(`New thread ID - '${ret.data.threadId}'`)
     return ret.threadId
   }
 
@@ -770,9 +761,10 @@ export default class GmailSync extends SyncWriter<
       // decorate with local definiton
       const gmail_def = def ? this.labelDefToGmailDef(def) : null
       this.log(`Creating a new label '${name}'`)
-      const res = await this.req(
+      const res: AxiosResponse<gmail_v1.Schema$Label> = await this.req(
         'users.labels.create',
         this.api.users.labels.create,
+        this.api.users.labels,
         {
           userId: 'me',
           resource: {
@@ -782,10 +774,9 @@ export default class GmailSync extends SyncWriter<
             ...gmail_def
           }
         },
-        abort,
-        false
+        abort
       )
-      this.labels.push(res)
+      this.labels.push(res.data)
       return res
     })
   }

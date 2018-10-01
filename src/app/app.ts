@@ -71,15 +71,12 @@ export class App {
   }
 
   isAccountEnabled(account: IAccount) {
-    // handle dev accounts
-    if (process.env['PROD'] && account.dev) {
-      return false
-    }
-    if (!process.env['PROD'] && !account.dev) {
-      return false
-    }
     // skip disabled ones
-    if (!account.enabled || !account.client_data.enabled) {
+    if (!account.sync_enabled || !account.client_data.sync_enabled) {
+      return false
+    }
+    // skip when no access token
+    if (!account.config.google.access_token) {
       return false
     }
     return true

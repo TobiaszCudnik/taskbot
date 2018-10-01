@@ -91,7 +91,8 @@ export default class GTasksListSync extends SyncReader<
     // TODO port to new googleapis
     const [list, res] = await this.gtasks.req(
       'api.tasks.list',
-      [this.gtasks.api.tasks, list],
+      this.gtasks.api.tasks.list,
+      this.gtasks.api.tasks,
       {
         tasklist: this.list.id,
         fields: 'etag,items(id,title,notes,updated,etag,status,parent)',
@@ -106,7 +107,6 @@ export default class GTasksListSync extends SyncReader<
           : {}
       },
       abort,
-      true
     )
 
     if (abort()) return
@@ -286,6 +286,7 @@ export default class GTasksListSync extends SyncReader<
           ? await this.gtasks.req(
               'api.tasks.patch',
               this.gtasks.api.tasks.patch,
+              this.gtasks.api.tasks,
               {
                 tasklist: this.list.id,
                 task: task.id,
@@ -295,7 +296,6 @@ export default class GTasksListSync extends SyncReader<
                 }
               },
               abort,
-              false
             )
           : null
       // hidden and completed

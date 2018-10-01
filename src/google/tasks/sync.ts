@@ -9,7 +9,10 @@ import * as moment from 'moment'
 import * as delay from 'delay'
 import * as roundTo from 'round-to'
 import { map } from 'typed-promisify-tob'
-import { tasks_v1 } from 'googleapis/build/src/apis/tasks/v1'
+import {
+  Params$Resource$Tasks$Insert,
+  tasks_v1
+} from 'googleapis/build/src/apis/tasks/v1'
 // Machine types
 import {
   AsyncMachine,
@@ -25,6 +28,7 @@ import GC from '../../sync/gc'
 import RootSync, { DBRecord } from '../../sync/root'
 import { sync_writer_state, SyncWriter } from '../../sync/writer'
 import { IConfig } from '../../types'
+import { TUnboxPromise } from '../../utils'
 import Auth from '../auth'
 import GTasksListSync, { Task, TaskList } from './sync-list'
 import * as regexEscape from 'escape-string-regexp'
@@ -184,11 +188,11 @@ export default class GTasksSync extends SyncWriter<
     const res = await this.req(
       'tasklists.list',
       this.api.tasklists.list,
-      [this.api.tasklists, this.api.tasklists.list],
+      this.api.tasklists,
       params,
-      null, // abort
+      null // abort
     )
-    const {data } = res
+    const { data } = res
 
     if (abort()) return
     if (res.statusCode !== 304) {
@@ -233,11 +237,11 @@ export default class GTasksSync extends SyncWriter<
   async req<A, T>(
     method_name: string,
     method: (params: A) => T,
-    pointer: [object, Function],
+    pointer: object,
     params: A,
     abort: (() => boolean) | null | undefined,
     options?: object
-  ): T {
+  ): Promise<TUnboxPromise<T>> {
     this.root.connections.requests.gtasks.push(moment().unix())
     // @ts-ignore
     params.auth = this.auth.client
@@ -267,9 +271,9 @@ export default class GTasksSync extends SyncWriter<
       await this.req(
         'tasklists.insert',
         this.api.tasklists.insert,
+        this.api.tasklists,
         { resource: { title: name } },
-        abort,
-        true
+        abort
       )
     })
   }
@@ -424,7 +428,7 @@ export default class GTasksSync extends SyncWriter<
         }`
       )
       // add the task
-      const params = {
+      const params: Params$Resource$Tasks$Insert = {
         tasklist: list_id,
         fields: 'id',
         parent: parent_id,
@@ -441,9 +445,9 @@ export default class GTasksSync extends SyncWriter<
       const res = await this.req(
         'tasks.insert',
         this.api.tasks.insert,
+        this.api.tasks,
         params,
-        abort,
-        false
+        abort
       )
       previous_sibling_id = res.id
       // add nested tasks, if any
@@ -473,7 +477,13 @@ export default class GTasksSync extends SyncWriter<
       fields: ''
     }
     this.log(`Updating task '${task.title}' in '${list.title}'\n%O`, patch)
-    await this.req('tasks.patch', this.api.tasks.patch, params, abort, true)
+    await this.req(
+      'tasks.patch',
+      this.api.tasks.patch,
+      this.api.tasks,
+      params,
+      abort
+    )
   }
 
   async deleteTask(task: Task, list: TaskList, abort: () => boolean) {
@@ -482,7 +492,13 @@ export default class GTasksSync extends SyncWriter<
       tasklist: list.id,
       task: task.id
     }
-    await this.req('tasks.delete', this.api.tasks.delete, params, abort, true)
+    await this.req(
+      'tasks.delete',
+      this.api.tasks.delete,
+      this.api.tasks,
+      params,
+      abort
+    )
     // delete from cache
     const cache = this.getListByID(list.id).tasks
     cache.items = cache.items.filter(t => t.id != task.id)
@@ -546,9 +562,9 @@ export default class GTasksSync extends SyncWriter<
         const res = await this.req(
           'tasks.insert',
           this.api.tasks.insert,
+          this.api.tasks,
           params,
-          abort,
-          false
+          abort
         )
         if (abort && abort()) abort()
         record.gtasks_ids = record.gtasks_ids || {}

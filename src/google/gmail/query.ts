@@ -1,5 +1,6 @@
 import { machine } from 'asyncmachine'
-import { google } from 'googleapis'
+import { AxiosResponse } from 'axios'
+import { gmail_v1, google } from 'googleapis'
 import { map } from 'typed-promisify-tob'
 // Machine types
 import {
@@ -13,7 +14,7 @@ import { log_fn } from '../../app/logger'
 import { machineLogToDebug } from '../../utils'
 import GmailSync from './sync'
 
-export type Thread = google.gmail.v1.Thread
+export type Thread = gmail_v1.Schema$Thread
 
 export const sync_state: IJSONStates = {
   Enabled: {},
@@ -115,17 +116,12 @@ export default class GmailQuery {
     let results: google.gmail.v1.Thread[] = []
     let prevRes: any
     while (true) {
-      let params: {
-        pageToken?: string
-        maxResults: number
-        q: string
-        userId: string
-        fields: string
-      } = {
+      let params: gmail_v1.Params$Resource$Users$Threads$List = {
         maxResults: 1000,
         q: this.query,
         userId: 'me',
         // TODO is 'snippet' useful?
+        // @ts-ignore
         fields: 'nextPageToken,threads(historyId,id)'
       }
       if (prevRes && prevRes.nextPageToken) {
@@ -133,21 +129,23 @@ export default class GmailQuery {
         params.pageToken = prevRes.nextPageToken
       }
 
-      let list = await this.gmail.req(
+      type TResponse = AxiosResponse<gmail_v1.Schema$ListThreadsResponse>
+
+      let list: TResponse = await this.gmail.req(
         'users.threads.list',
         this.gmail.api.users.threads.list,
+        this.gmail.api.users.threads,
         params,
-        abort,
-        false
+        abort
       )
       if (!list) break
       if (abort()) return
 
-      if (list.threads) {
-        results.push(...list.threads)
+      if (list.data.threads) {
+        results.push(...list.data.threads)
       }
 
-      if (!list.nextPageToken) break
+      if (!list.data.nextPageToken) break
 
       prevRes = list
     }
