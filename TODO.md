@@ -61,6 +61,8 @@
   * gtasks paging support
   * max limit of results per query/gtask list
 * per-user ip to skip 100 per user quota
+  * check ipv6 support
+  * update the ip when user visits the site
 * separate service for the website on GAE std
 * logger
   * ability to turn on debug per specific user
@@ -76,6 +78,7 @@
   * activate user accounts
   * sync per api in the last 1h, 24h
 * `A/answer` labels auto-removed after a certain amount of time
+* handle exceptions from `fetchThread`
 
 ## TODO
 
