@@ -164,6 +164,7 @@ export class App {
   }
 
   // force re-sync of all gtasks lists
+  // TODO rename the field to sth obvious like sync_gtasks_requested
   async handleGTasksSync(account: IAccount) {
     const sync = this.syncs[account.uid]
     if (account.client_data.sync_gtasks) {
@@ -221,6 +222,7 @@ export class App {
       sync.state.addNext('Enabled')
     }
     this.syncs[uid] = sync
+    // bind the stats listeners
     sync.on('stats', this.handleStats.bind(this))
     this.stats_uid[uid] = this.stats_uid[uid] || {
       firebase: [],
@@ -231,6 +233,13 @@ export class App {
         .ref(`stats/users/${uid}`)
         .on('value', this.handleStatsClient.bind(this))
     )
+    // bind the exception listener
+    // TODO dispose
+    sync.on('Exception_state', (e: Error) => {
+      this.db
+        .ref(`accounts/${uid}/last_error`)
+        .set(e.toString())
+    })
     return sync
   }
 

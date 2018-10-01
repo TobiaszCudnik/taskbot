@@ -109,5 +109,5 @@ export default class Logger {
 
 export type TLoggerName = {
   name: string
-  user_id?: number
+  user_id?: string
 }

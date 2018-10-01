@@ -209,7 +209,11 @@ export default class GmailSync extends SyncWriter<
         this.log_verbose('re-fetching')
         let refreshed
         try {
-          refreshed = await this.fetchThread(record.gmail_id, abort)
+          refreshed = await this.fetchThread(
+            record.gmail_id,
+            abort,
+            'FetchingOrphans_state'
+          )
         } catch {
           if (thread) {
             this.threads.delete(thread.id)
@@ -490,7 +494,7 @@ export default class GmailSync extends SyncWriter<
       this.root.markListsAsDirty(this, record)
       // @ts-ignore
       this.root.markWritersAsDirty(this, record)
-      await this.fetchThread(id, abort)
+      await this.fetchThread(id, abort, 'processThreadsToAdd')
     })
   }
 
@@ -500,9 +504,9 @@ export default class GmailSync extends SyncWriter<
         const record: DBRecord = this.getRecordByGmailID(thread.id)
         if (!record) {
           this.log_error(
-            `Missing record for the thread ${
-              thread.id
-            } '${this.root.logText(this.getTitleFromThread(thread))}'`
+            `Missing record for the thread ${thread.id} '${this.root.logText(
+              this.getTitleFromThread(thread)
+            )}'`
           )
           return [thread.id, [], []]
         }
@@ -646,7 +650,8 @@ export default class GmailSync extends SyncWriter<
     )
     // immediately re-fetch the thread, so its refreshed even if included in
     // any other query
-    await this.fetchThread(thread_id, abort)
+    // TODO catch the error when thread disappears
+    await this.fetchThread(thread_id, abort, 'writeThreadLabels')
     return Boolean(ret)
   }
 
@@ -661,7 +666,8 @@ export default class GmailSync extends SyncWriter<
 
   async fetchThread(
     id: string,
-    abort?: () => boolean
+    abort?: () => boolean,
+    caller = ''
   ): Promise<google.gmail.v1.Thread | null> {
     // TODO limit the max msgs amount
     let thread = await this.req(
@@ -678,7 +684,16 @@ export default class GmailSync extends SyncWriter<
       false
     )
     if (!thread) {
-      throw Error('Missing thread')
+      // TODO stacktrace / label
+      const previous = this.threads.get(id)
+      let msg = `Missing thread ${id}`
+      if (caller) {
+        msg += ` (caller: ${caller})`
+      }
+      if (previous) {
+        msg += `, previous: "${this.getTitleFromThread(previous)}"`
+      }
+      throw Error(msg)
     }
     // memorize the time the resource was fetched
     // @ts-ignore
