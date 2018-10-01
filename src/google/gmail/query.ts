@@ -2,6 +2,9 @@ import { machine } from 'asyncmachine'
 import { AxiosResponse } from 'axios'
 import { gmail_v1, google } from 'googleapis'
 import { map } from 'typed-promisify-tob'
+import { log_fn } from '../../app/logger'
+import { machineLogToDebug } from '../../utils'
+import GmailSync from './sync'
 // Machine types
 import {
   AsyncMachine,
@@ -172,12 +175,16 @@ export default class GmailQuery {
   async FetchingMsgs_state(history_id: number, abort?: () => boolean) {
     abort = this.state.getAbort('FetchingMsgs', abort)
 
-    let threads = await map(this.threads, async (thread: TThread) => {
+    const threads_promises = this.threads.map(async (thread: TThread) => {
       // check if the thread has been previously downloaded and if
       // the history ID has changed
       const previous = this.gmail.threads.get(thread.id)
       if (!previous || previous.historyId != thread.historyId) {
-        const refreshed = await this.gmail.fetchThread(thread.id, abort)
+        const refreshed = await this.gmail.fetchThread(
+          thread.id,
+          abort,
+          'FetchingMsgs_state'
+        )
         if (previous) {
           this.log(
             `History ID changed for thread '${this.gmail.getTitleFromThread(
@@ -189,6 +196,8 @@ export default class GmailQuery {
       }
       return previous
     })
+
+    const threads = await Promise.all(threads_promises)
 
     if (abort()) return
 
