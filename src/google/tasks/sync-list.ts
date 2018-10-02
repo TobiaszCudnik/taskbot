@@ -4,6 +4,8 @@ import * as debug from 'debug'
 import * as clone from 'deepcopy'
 import * as delay from 'delay'
 import { google } from 'googleapis'
+import { AxiosResponse } from 'axios'
+import { tasks_v1 } from 'googleapis/build/src/apis/tasks/v1'
 import * as _ from 'lodash'
 import * as moment from 'moment'
 // Machine types
@@ -19,19 +21,8 @@ import {
 import RootSync, { DBRecord } from '../../sync/root'
 import { SyncReader, sync_reader_state } from '../../sync/reader'
 import { IListConfig } from '../../types'
-import GTasksSync, { TaskTree } from './sync'
+import GTasksSync, { TTask, TTaskList, TTasksRes, TTaskTree } from './sync'
 import * as regexEscape from 'escape-string-regexp'
-
-export type Task = google.tasks.v1.Task
-export type TaskList = google.tasks.v1.TaskList
-
-// TODO use from googleapis
-export interface ITasks {
-  etag: string
-  items: Task[]
-  kind: string
-  nextPageToken: string
-}
 
 export const sync_state: IJSONStates = sync_reader_state
 
@@ -42,8 +33,8 @@ export default class GTasksListSync extends SyncReader<
   IEmit
 > {
   state: AsyncMachine<TStates, IBind, IEmit>
-  tasks: ITasks | null
-  prev_tasks: ITasks | null
+  tasks: TTasksRes | null
+  prev_tasks: TTasksRes | null
   // TODO theres no other etags?
   etags: {
     tasks: string | null
@@ -54,11 +45,11 @@ export default class GTasksListSync extends SyncReader<
     tasks_reqs: 0
     // tasks_completed: null
   }
-  get list(): google.tasks.v1.TaskList | null {
+  get list(): TTaskList | null {
     if (!this.gtasks.lists) {
       throw Error('Lists not fetched')
     }
-    return this.gtasks.lists.find(l => l.title == this.config.name)
+    return this.gtasks.lists.items.find(l => l.title == this.config.name)
   }
 
   constructor(config: IListConfig, root: RootSync, public gtasks: GTasksSync) {
@@ -88,12 +79,13 @@ export default class GTasksListSync extends SyncReader<
 
     const quota = this.gtasks.short_quota_usage
     const abort = this.state.getAbort('Reading')
-    // TODO port to new googleapis
-    const [list, res] = await this.gtasks.req(
+    type TResponse = AxiosResponse<TTasksRes>
+    const res: TResponse = await this.gtasks.req(
       'api.tasks.list',
       this.gtasks.api.tasks.list,
       this.gtasks.api.tasks,
       {
+        // TODO manually type params
         tasklist: this.list.id,
         fields: 'etag,items(id,title,notes,updated,etag,status,parent)',
         // TODO paging
@@ -106,20 +98,20 @@ export default class GTasksListSync extends SyncReader<
           ? { 'If-None-Match': this.etags.tasks }
           : {}
       },
-      abort,
+      abort
     )
 
     if (abort()) return
 
     this.state.drop('Dirty')
-    if (res.statusCode === 304) {
+    if (res.status === 304) {
       this.state.add('Cached')
       this.log(`[CACHED:${quota}] tasks for '${this.config.name}'`)
     } else {
       this.state.drop('Cached')
       this.log(`[FETCH:${quota}] tasks for '${this.config.name}'`)
-      if (!list.items) {
-        list.items = []
+      if (!res.data.items) {
+        res.data.items = []
       }
       // preserve the request counter per etag
       if (this.etags.tasks != res.headers['etag']) {
@@ -128,7 +120,7 @@ export default class GTasksListSync extends SyncReader<
         this.etags.tasks_reqs = 0
       }
       this.prev_tasks = this.tasks
-      this.tasks = list
+      this.tasks = res.data
     }
 
     this.state.add('ReadingDone')
@@ -150,16 +142,16 @@ export default class GTasksListSync extends SyncReader<
   }
 
   // return a filtered list of tasks
-  getTasks(): Task[] {
+  getTasks(): TTask[] {
     return this.tasks ? this.tasks.items.filter(this.tasksFilter) : []
   }
 
   // return a filtered list of tasks
-  getPrevTasks(): Task[] {
+  getPrevTasks(): TTask[] {
     return this.prev_tasks ? this.prev_tasks.items.filter(this.tasksFilter) : []
   }
 
-  private tasksFilter(task: Task) {
+  private tasksFilter(task: TTask) {
     return !task.parent && task.title && task.title[0] != '-'
   }
 
@@ -221,7 +213,7 @@ export default class GTasksListSync extends SyncReader<
    */
   getChildren(
     task_id: string
-  ): { root_tasks: TaskTree[]; all_tasks: TaskTree[] } {
+  ): { root_tasks: TTaskTree[]; all_tasks: TTaskTree[] } {
     const tasks = this.tasks.items
     const root_tasks = []
     const index = tasks.findIndex(t => t.id == task_id)
@@ -229,7 +221,7 @@ export default class GTasksListSync extends SyncReader<
     let i
     let all_tasks = []
     for (i = index + 1; tasks[i] && tasks[i].parent; i++) {
-      let target: TaskTree[]
+      let target: TTaskTree[]
       if (tasks[i].parent == task_id) {
         target = root_tasks
       } else {
@@ -279,14 +271,16 @@ export default class GTasksListSync extends SyncReader<
       if (!record || record.gtasks_hidden_completed) {
         continue
       }
+      type TResponse = AxiosResponse<TTask>
       // check if not hidden (new google's clients behavior)
       // only during the first merge run
-      const refreshed =
+      const refreshed: TResponse | null =
         this.root.merge_tries == 1
           ? await this.gtasks.req(
               'api.tasks.patch',
               this.gtasks.api.tasks.patch,
               this.gtasks.api.tasks,
+              // TODO manually type params
               {
                 tasklist: this.list.id,
                 task: task.id,
@@ -295,13 +289,13 @@ export default class GTasksListSync extends SyncReader<
                   hidden: false
                 }
               },
-              abort,
+              abort
             )
           : null
       // hidden and completed
       if (
         refreshed &&
-        !refreshed.deleted &&
+        !refreshed.data.deleted &&
         this.gtasks.isCompleted(refreshed)
       ) {
         changed++
@@ -355,7 +349,7 @@ export default class GTasksListSync extends SyncReader<
   }
 
   // TODO try to make it in one query, indexes
-  getFromDB(task: Task): DBRecord | null {
+  getFromDB(task: TTask): DBRecord | null {
     const id = this.gtasks.toGmailID(task)
     if (id) {
       const record = this.root.data.findOne({ gmail_id: id })
@@ -371,7 +365,7 @@ export default class GTasksListSync extends SyncReader<
     return ret[0] || null
   }
 
-  createRecord(task: Task): DBRecord {
+  createRecord(task: TTask): DBRecord {
     const id = this.gtasks.toGmailID(task)
     const text_labels = this.root.getLabelsFromText(task.title, true)
     const record: DBRecord = {
@@ -426,7 +420,7 @@ export default class GTasksListSync extends SyncReader<
   }
 
   // TODO support duplicating in case of a conflict ???
-  mergeRecord(task: Task, record: DBRecord): boolean {
+  mergeRecord(task: TTask, record: DBRecord): boolean {
     const before = clone(record)
     const task_updated = moment(task.updated).unix()
     // apply title labels on the initial record's sync
@@ -473,7 +467,7 @@ export default class GTasksListSync extends SyncReader<
       (this.state.is('Dirty') ? ' (Dirty)' : '') +
       '\n' +
       this.getTasks()
-        .map((t: Task) => (t.status == 'completed' ? 'c ' : '- ') + t.title)
+        .map((t: TTask) => (t.status == 'completed' ? 'c ' : '- ') + t.title)
         .join('\n')
     )
   }

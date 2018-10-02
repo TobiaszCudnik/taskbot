@@ -1,5 +1,6 @@
 import { machine, PipeFlags } from 'asyncmachine'
 import { TAbortFunction } from 'asyncmachine/types'
+import { AxiosResponse } from 'axios'
 import * as debug from 'debug'
 import { google } from 'googleapis'
 import * as http from 'http'
@@ -10,7 +11,6 @@ import * as delay from 'delay'
 import * as roundTo from 'round-to'
 import { map } from 'typed-promisify-tob'
 import {
-  Params$Resource$Tasks$Insert,
   tasks_v1
 } from 'googleapis/build/src/apis/tasks/v1'
 // Machine types
@@ -30,7 +30,7 @@ import { sync_writer_state, SyncWriter } from '../../sync/writer'
 import { IConfig } from '../../types'
 import { TUnboxPromise } from '../../utils'
 import Auth from '../auth'
-import GTasksListSync, { Task, TaskList } from './sync-list'
+import GTasksListSync from './sync-list'
 import * as regexEscape from 'escape-string-regexp'
 
 const SEC = 1000
@@ -61,16 +61,18 @@ export const sync_state: IJSONStates = {
   }
 }
 
-export type TaskTree = {
+export type TTaskTree = {
   // ID is ignored
   id: string
   title: string
   notes?: string
-  children: TaskTree[]
+  children: TTaskTree[]
   completed: boolean
 }
-
-type TaskLists = tasks_v1.Schema$TaskLists
+export type TTask = tasks_v1.Schema$Task
+export type TTaskList = tasks_v1.Schema$TaskList
+export type TTasksRes = tasks_v1.Schema$Tasks
+export type TTaskListsRes = tasks_v1.Schema$TaskLists
 
 export default class GTasksSync extends SyncWriter<
   IConfig,
@@ -95,7 +97,7 @@ export default class GTasksSync extends SyncWriter<
     ['QuotaExceeded', 'QuotaExceeded', PipeFlags.FINAL],
     ['Restarting', 'Restarting', PipeFlags.FINAL]
   ]
-  lists: TaskLists
+  lists: TTaskList[]
   subs: {
     lists: GTasksListSync[]
   }
@@ -105,7 +107,7 @@ export default class GTasksSync extends SyncWriter<
   children_to_move: {
     list_id: string
     gmail_id: string
-    children: TaskTree[]
+    children: TTaskTree[]
   }[]
   // internal user sync quota per day, range between 0 (full limit) to
   email_url = `https://${this.root.config.gmail.domain}/mail/u/0/#all/`
@@ -184,21 +186,26 @@ export default class GTasksSync extends SyncWriter<
 
   async FetchingTaskLists_state() {
     let abort = this.state.getAbort('FetchingTaskLists')
-    let params = { headers: { 'If-None-Match': this.etags.task_lists } }
-    const res = await this.req(
+    // TODO pass the etag somehow else?
+    let params: tasks_v1.Params$Resource$Tasklists$List = {
+      headers: {
+        'If-None-Match': this.etags.task_lists
+      }
+    }
+    const res: AxiosResponse<TTaskListsRes> = await this.req(
       'tasklists.list',
       this.api.tasklists.list,
       this.api.tasklists,
+      // @ts-ignore typed manually
       params,
       null // abort
     )
-    const { data } = res
 
     if (abort()) return
-    if (res.statusCode !== 304) {
+    if (res.status !== 304) {
       this.log('[FETCHED] tasks lists')
       this.etags.task_lists = <string>res.headers.etag
-      this.lists = data.items
+      this.lists = res.data.items
     } else {
       this.log('[CACHED] tasks lists')
     }
@@ -241,7 +248,7 @@ export default class GTasksSync extends SyncWriter<
     params: A,
     abort: (() => boolean) | null | undefined,
     options?: object
-  ): Promise<TUnboxPromise<T>> {
+  ): T {
     this.root.connections.requests.gtasks.push(moment().unix())
     // @ts-ignore
     params.auth = this.auth.client
@@ -268,11 +275,17 @@ export default class GTasksSync extends SyncWriter<
   async createTaskLists(names, abort: TAbortFunction) {
     await map(names, async name => {
       this.log(`Creating a new list tasklist '${name}'`)
+      const params: tasks_v1.Params$Resource$Tasklists$Insert = {
+        requestBody: {
+          title: name
+        }
+      }
       await this.req(
         'tasklists.insert',
         this.api.tasklists.insert,
         this.api.tasklists,
-        { resource: { title: name } },
+        // @ts-ignore typed manually
+        params,
         abort
       )
     })
@@ -282,7 +295,7 @@ export default class GTasksSync extends SyncWriter<
     return this.subs.lists.map(l => l.toString()).join('\n') + '\n'
   }
 
-  toGmailID(task: Task): string | null {
+  toGmailID(task: TTask): string | null {
     // legacy format
     let match = (task.notes || '').match(/\bemail:([\w-]+)\b/)
     if (match) {
@@ -295,7 +308,7 @@ export default class GTasksSync extends SyncWriter<
     }
   }
 
-  isCompleted(task: Task) {
+  isCompleted(task: TTask) {
     return task.status == 'completed'
   }
 
@@ -306,7 +319,7 @@ export default class GTasksSync extends SyncWriter<
   processTasksToModify(abort: () => boolean) {
     this.children_to_move = []
     return map(this.subs.lists, async (sync: GTasksListSync) => {
-      await map(sync.getTasks(), async (task: Task) => {
+      await map(sync.getTasks(), async (task: TTask) => {
         const db_res = <DBRecord>(<any>this.root.data
           .chain()
           .where((record: DBRecord) => {
@@ -415,7 +428,7 @@ export default class GTasksSync extends SyncWriter<
   async saveChildren(
     list_id: string,
     parent_id: string,
-    children: TaskTree[],
+    children: TTaskTree[],
     abort: TAbortFunction
   ) {
     const list = this.getListByID(list_id)
@@ -428,8 +441,9 @@ export default class GTasksSync extends SyncWriter<
         }`
       )
       // add the task
-      const params: Params$Resource$Tasks$Insert = {
+      const params: tasks_v1.Params$Resource$Tasks$Insert = {
         tasklist: list_id,
+        // @ts-ignore TODO global fields
         fields: 'id',
         parent: parent_id,
         resource: {
@@ -446,6 +460,7 @@ export default class GTasksSync extends SyncWriter<
         'tasks.insert',
         this.api.tasks.insert,
         this.api.tasks,
+        // @ts-ignore manually typed
         params,
         abort
       )
@@ -464,16 +479,16 @@ export default class GTasksSync extends SyncWriter<
   }
 
   async modifyTask(
-    task: Task,
-    list: TaskList,
+    task: TTask,
+    list: TTaskList,
     patch: object,
     abort: () => boolean
   ) {
-    const params = {
+    const params: tasks_v1.Params$Resource$Tasks$Patch = {
       tasklist: list.id,
       task: task.id,
-      resource: patch,
-      // TODO test
+      requestBody: patch,
+      // @ts-ignore
       fields: ''
     }
     this.log(`Updating task '${task.title}' in '${list.title}'\n%O`, patch)
@@ -481,14 +496,15 @@ export default class GTasksSync extends SyncWriter<
       'tasks.patch',
       this.api.tasks.patch,
       this.api.tasks,
+      // @ts-ignore typed manually
       params,
       abort
     )
   }
 
-  async deleteTask(task: Task, list: TaskList, abort: () => boolean) {
+  async deleteTask(task: TTask, list: TTaskList, abort: () => boolean) {
     this.log(`Deleting task '${task.title}' in '${list.title}'`)
-    const params = {
+    const params: tasks_v1.Params$Resource$Tasks$Delete = {
       tasklist: list.id,
       task: task.id
     }
@@ -496,6 +512,7 @@ export default class GTasksSync extends SyncWriter<
       'tasks.delete',
       this.api.tasks.delete,
       this.api.tasks,
+      // @ts-ignore typed manually
       params,
       abort
     )
@@ -548,8 +565,9 @@ export default class GTasksSync extends SyncWriter<
         if (task_id) return
         // omit tasks marked for deletion
         if (record.to_delete) return
-        const params = {
+        const params: tasks_v1.Params$Resource$Tasks$Insert = {
           tasklist: sync.list.id,
+          // @ts-ignore missing global attrs
           fields: 'id',
           resource: {
             title:
@@ -559,22 +577,29 @@ export default class GTasksSync extends SyncWriter<
           }
         }
         this.log(`Adding a new task '${record.title}' to '${sync.list.title}'`)
-        const res = await this.req(
+        type TResponse = AxiosResponse<TTask>
+        const res: TResponse = await this.req(
           'tasks.insert',
           this.api.tasks.insert,
           this.api.tasks,
+          // @ts-ignore manual typing
           params,
           abort
         )
         if (abort && abort()) abort()
         record.gtasks_ids = record.gtasks_ids || {}
-        record.gtasks_ids[res.id] = sync.list.id
+        record.gtasks_ids[res.data.id] = sync.list.id
         const to_move = this.children_to_move.find(
           item =>
             item.gmail_id == record.gmail_id && item.list_id == sync.list.id
         )
         if (to_move) {
-          await this.saveChildren(sync.list.id, res.id, to_move.children, abort)
+          await this.saveChildren(
+            sync.list.id,
+            res.data.id,
+            to_move.children,
+            abort
+          )
           if (abort && abort()) abort()
           this.children_to_move = _.without(this.children_to_move, to_move)
         }

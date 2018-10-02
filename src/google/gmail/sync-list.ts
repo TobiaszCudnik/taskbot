@@ -19,8 +19,8 @@ import {
 import RootSync, { DBRecord } from '../../sync/root'
 import { SyncReader, sync_reader_state } from '../../sync/reader'
 import { IListConfig } from '../../types'
-import GmailQuery, { Thread } from './query'
-import GmailSync from './sync'
+import GmailQuery from './query'
+import GmailSync, { TThread } from './sync'
 import * as _ from 'lodash'
 
 export const sync_state: IJSONStates = {
@@ -29,7 +29,6 @@ export const sync_state: IJSONStates = {
   Ready: { auto: true, drop: ['Initializing'] }
 }
 
-type GmailAPI = google.gmail.v1.Gmail
 type DBCollection = loki.Collection<DBRecord>
 export default class GmailListSync extends SyncReader<
   IListConfig,
@@ -215,7 +214,7 @@ export default class GmailListSync extends SyncReader<
     return changed ? [changed] : []
   }
 
-  createRecord(thread: google.gmail.v1.Thread): DBRecord {
+  createRecord(thread: TThread): DBRecord {
     const me = this.root.config.google.username
     const from = this.gmail.getThreadAuthor(thread)
     const to = this.gmail.getThreadAddressee(thread)
@@ -250,7 +249,7 @@ export default class GmailListSync extends SyncReader<
     return record
   }
 
-  toDBID(source: Thread | string) {
+  toDBID(source: TThread | string) {
     // TODO tmp casts
     return (<any>source).id ? (<any>source).id : source
   }
@@ -265,7 +264,7 @@ export default class GmailListSync extends SyncReader<
   //   or send a new email in the thread?
   //   if sending a new thread, resolve conflicts properly with other sources
   //   introduce a universal conflict resolution pattern?
-  mergeRecord(thread: Thread, record: DBRecord): boolean {
+  mergeRecord(thread: TThread, record: DBRecord): boolean {
     // TODO clone only in debug
     const before = clone(record)
     const hid = parseInt(thread.historyId, 10)
@@ -323,7 +322,7 @@ export default class GmailListSync extends SyncReader<
       (this.state.is('Dirty') ? ' (Dirty)' : '') +
       '\n' +
       this.query.threads
-        .map((t: Thread) => {
+        .map((t: TThread) => {
           let ret = '- ' + this.gmail.getTitleFromThread(t) + '\n  '
           ret += this.gmail.getLabelsFromThread(t).join(', ')
           return ret

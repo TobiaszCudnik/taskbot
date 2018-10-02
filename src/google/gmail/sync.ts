@@ -27,7 +27,6 @@ import { IConfig, ILabelDefinition, IListConfig, TRawEmail } from '../../types'
 import { TUnboxPromise } from '../../utils'
 import Auth from '../auth'
 ///<reference path="../../../node_modules/typed-promisify-tob/index.ts"/>
-import { Thread } from './query'
 import GmailListSync from './sync-list'
 import { trim } from 'lodash'
 import * as merge from 'deepmerge'
@@ -95,8 +94,9 @@ export const sync_state: IJSONStates = {
     drop: ['FetchingHistoryId']
   })
 }
+export type TLabel = gmail_v1.Schema$Label
+export type TThread = gmail_v1.Schema$Thread
 
-export type Label = gmail_v1.Schema$Label
 export default class GmailSync extends SyncWriter<
   IConfig,
   TStates,
@@ -111,11 +111,11 @@ export default class GmailSync extends SyncWriter<
   history_id_timeout = 1
   history_id_latest: number | null
   last_sync_time: number
-  labels: Label[]
+  labels: TLabel[]
   history_ids: { id: number; time: number }[] = []
   // @ts-ignore
   sub_states_outbound = [['Reading', 'Reading'], ['Enabled', 'Enabled']]
-  threads = new Map<string, Thread>()
+  threads = new Map<string, TThread>()
   subs: {
     lists: GmailListSync[]
   }
@@ -257,16 +257,19 @@ export default class GmailSync extends SyncWriter<
   }
 
   async FetchingLabels_state() {
-    let abort = this.state.getAbort('FetchingLabels')
-    let res: AxiosResponse<gmail_v1.Schema$ListLabelsResponse> = await this.req(
+    const abort = this.state.getAbort('FetchingLabels')
+    const params: gmail_v1.Params$Resource$Users$Labels$List = {
+      userId: 'me',
+      // @ts-ignore global field
+      fields: 'labels(id,name,color,labelListVisibility,messageListVisibility)'
+    }
+    const res: AxiosResponse<
+      gmail_v1.Schema$ListLabelsResponse
+    > = await this.req(
       'users.labels.list',
       this.api.users.labels.list,
       this.api.users.labels,
-      {
-        userId: 'me',
-        fields:
-          'labels(id,name,color,labelListVisibility,messageListVisibility)'
-      },
+      params,
       abort
     )
     if (abort()) return
@@ -286,14 +289,16 @@ export default class GmailSync extends SyncWriter<
 
   async FetchingHistoryId_state(abort?: () => boolean) {
     this.log('[FETCH] history ID')
-    let response: AxiosResponse<gmail_v1.Schema$Profile> = await this.req(
+    const params: gmail_v1.Params$Resource$Users$Getprofile = {
+      userId: 'me',
+      // @ts-ignore global field
+      fields: 'historyId'
+    }
+    const response: AxiosResponse<gmail_v1.Schema$Profile> = await this.req(
       'users.getProfile',
       this.api.users.getProfile,
       this.api.users,
-      {
-        userId: 'me',
-        fields: 'historyId'
-      },
+      params,
       abort
     )
     if (abort && abort()) return
@@ -361,7 +366,7 @@ export default class GmailSync extends SyncWriter<
   }
 
   async syncLabels(abort: TAbortFunction) {
-    await map(this.labels, async (label: Label) => {
+    await map(this.labels, async (label: TLabel) => {
       const def = this.root.getLabelDefinition(label.name)
       if (!def) return
       let sync = false
@@ -407,15 +412,17 @@ export default class GmailSync extends SyncWriter<
     }
     await Promise.all(
       this.labels_to_fetch.map(async id => {
+        const params: gmail_v1.Params$Resource$Users$Labels$Get = {
+          userId: 'me',
+          id,
+          // @ts-ignore global field
+          fields: 'id,name,color'
+        }
         const res: AxiosResponse<gmail_v1.Schema$Label> = await await this.req(
           'users.labels.get',
           this.api.users.labels.get,
           this.api.users.labels,
-          {
-            userId: 'me',
-            id,
-            fields: 'id,name,color'
-          },
+          params,
           abort
         )
         this.labels.push(res.data)
@@ -478,7 +485,7 @@ export default class GmailSync extends SyncWriter<
 
   async processThreadsToModify(abort: () => boolean): Promise<void[]> {
     const diff_threads = [...this.threads.values()]
-      .map((thread: Thread) => {
+      .map((thread: TThread) => {
         const record: DBRecord = this.getRecordByGmailID(thread.id)
         if (!record) {
           this.log_error(
@@ -611,19 +618,22 @@ export default class GmailSync extends SyncWriter<
 
     this.log(log_msg)
 
+    const params: gmail_v1.Params$Resource$Users$Threads$Modify = {
+      id: thread_id,
+      userId: 'me',
+      // @ts-ignore global field
+      fields: 'id',
+      resource: {
+        addLabelIds: add_label_ids,
+        removeLabelIds: remove_label_ids
+      }
+    }
+
     let ret: AxiosResponse<gmail_v1.Schema$Thread> = await this.req(
       'users.threads.modify',
       this.api.users.threads.modify,
       this.api.users.threads,
-      {
-        id: thread_id,
-        userId: 'me',
-        fields: 'id',
-        resource: {
-          addLabelIds: add_label_ids,
-          removeLabelIds: remove_label_ids
-        }
-      },
+      params,
       abort
     )
     // immediately re-fetch the thread, so its refreshed even if included in
@@ -644,19 +654,20 @@ export default class GmailSync extends SyncWriter<
   async fetchThread(
     id: string,
     abort?: () => boolean
-  ): Promise<Thread | null> {
+  ): Promise<TThread | null> {
     // TODO limit the max msgs amount
+    const params: gmail_v1.Params$Resource$Users$Threads$Get = {
+      id,
+      userId: 'me',
+      metadataHeaders: ['SUBJECT', 'FROM', 'TO'],
+      format: 'metadata',
+      fields: 'id,historyId,messages(id,labelIds,payload(headers))'
+    }
     let thread: AxiosResponse<gmail_v1.Schema$Thread> = await this.req(
       'users.threads.get',
       this.api.users.threads.get,
       this.api.users.threads,
-      {
-        id,
-        userId: 'me',
-        metadataHeaders: ['SUBJECT', 'FROM', 'TO'],
-        format: 'metadata',
-        fields: 'id,historyId,messages(id,labelIds,payload(headers))'
-      },
+      params,
       abort
     )
     if (!thread) {
@@ -673,7 +684,7 @@ export default class GmailSync extends SyncWriter<
   }
 
   // TODO make it async and download if msgs missing, as a param ???
-  getThread(id: string, with_content = false): google.gmail.v1.Thread | null {
+  getThread(id: string, with_content = false): TThread | null {
     const thread = this.threads.get(id)
     if (!thread) return null
     if (with_content && !(thread.messages && thread.messages.length)) {
@@ -693,22 +704,24 @@ export default class GmailSync extends SyncWriter<
   ): Promise<string | null> {
     await this.createLabelsIfMissing(labels, abort)
     this.log(`Creating thread '${subject}' (${labels.join(', ')})`)
-    const ret = await this.req(
+    const params: gmail_v1.Params$Resource$Users$Messages$Insert = {
+      userId: 'me',
+      // @ts-ignore global field
+      fields: 'threadId',
+      resource: {
+        raw: this.createEmail(subject),
+        labelIds: labels.map(l => this.getLabelID(l))
+      }
+    }
+    const ret: AxiosResponse<gmail_v1.Schema$Message> = await this.req(
       'users.messages.insert',
       this.api.users.messages.insert,
       this.api.users.messages,
-      {
-        userId: 'me',
-        fields: 'threadId',
-        resource: {
-          raw: this.createEmail(subject),
-          labelIds: labels.map(l => this.getLabelID(l))
-        }
-      },
+      params,
       abort
     )
     this.log_verbose(`New thread ID - '${ret.data.threadId}'`)
-    return ret.threadId
+    return ret.data.threadId
   }
 
   createEmail(subject: string): TRawEmail {
@@ -728,7 +741,7 @@ export default class GmailSync extends SyncWriter<
       .replace(/\//g, '_') as TRawEmail
   }
 
-  threadHasLabel(thread: google.gmail.v1.Thread, label_name: string) {
+  threadHasLabel(thread: TThread, label_name: string) {
     if (!this.state.is('LabelsFetched')) {
       throw new Error('Labels not fetched')
     }
@@ -739,7 +752,7 @@ export default class GmailSync extends SyncWriter<
     return thread.messages.some(msg => msg.labelIds.includes(id))
   }
 
-  getLabelsFromThread(thread: Thread, filter = true): string[] {
+  getLabelsFromThread(thread: TThread, filter = true): string[] {
     const labels = new Set<string>()
     for (const msg of thread.messages) {
       for (const id of msg.labelIds) {
@@ -761,19 +774,20 @@ export default class GmailSync extends SyncWriter<
       // decorate with local definiton
       const gmail_def = def ? this.labelDefToGmailDef(def) : null
       this.log(`Creating a new label '${name}'`)
+      const params: gmail_v1.Params$Resource$Users$Labels$Create = {
+        userId: 'me',
+        requestBody: {
+          labelListVisibility: 'labelShow',
+          messageListVisibility: 'show',
+          name,
+          ...gmail_def
+        }
+      }
       const res: AxiosResponse<gmail_v1.Schema$Label> = await this.req(
         'users.labels.create',
         this.api.users.labels.create,
         this.api.users.labels,
-        {
-          userId: 'me',
-          resource: {
-            labelListVisibility: 'labelShow',
-            messageListVisibility: 'show',
-            name,
-            ...gmail_def
-          }
-        },
+        params,
         abort
       )
       this.labels.push(res.data)
@@ -809,10 +823,7 @@ export default class GmailSync extends SyncWriter<
     return Object.keys(ret).length ? ret : null
   }
 
-  getTitleFromThread(
-    thread: google.gmail.v1.Thread,
-    filter_text_labels = true
-  ) {
+  getTitleFromThread(thread: TThread, filter_text_labels = true) {
     if (!thread.messages || !thread.messages.length)
       throw new Error(`Thread content not fetched, id: ${thread.id}`)
     let title
@@ -827,7 +838,7 @@ export default class GmailSync extends SyncWriter<
     return title || '(no subject)'
   }
 
-  getThreadAuthor(thread: Thread) {
+  getThreadAuthor(thread: TThread) {
     if (!thread.messages || !thread.messages.length)
       throw new Error(`Thread content not fetched, id: ${thread.id}`)
     const author = thread.messages[0].payload.headers.find(
@@ -837,7 +848,7 @@ export default class GmailSync extends SyncWriter<
     return email ? email[1] : author
   }
 
-  getThreadAddressee(thread: Thread) {
+  getThreadAddressee(thread: TThread) {
     if (!thread.messages || !thread.messages.length)
       throw new Error(`Thread content not fetched, id: ${thread.id}`)
     const author = thread.messages[0].payload.headers.find(h => h.name == 'To')

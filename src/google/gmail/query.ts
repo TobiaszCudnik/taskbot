@@ -12,9 +12,7 @@ import {
 } from '../../../typings/machines/google/gmail/query'
 import { log_fn } from '../../app/logger'
 import { machineLogToDebug } from '../../utils'
-import GmailSync from './sync'
-
-export type Thread = gmail_v1.Schema$Thread
+import GmailSync, { TThread } from './sync'
 
 export const sync_state: IJSONStates = {
   Enabled: {},
@@ -48,8 +46,8 @@ export default class GmailQuery {
   state: AsyncMachine<TStates, IBind, IEmit>
   // history ID from the moment of reading
   history_id_synced: number | null
-  threads: Thread[] = []
-  prev_threads: Thread[] = []
+  threads: TThread[] = []
+  prev_threads: TThread[] = []
 
   log: log_fn
 
@@ -113,7 +111,7 @@ export default class GmailQuery {
     if (abort()) return
 
     this.log(`[FETCH] threads list for '${this.query}'`)
-    let results: google.gmail.v1.Thread[] = []
+    let results: TThread[] = []
     let prevRes: any
     while (true) {
       let params: gmail_v1.Params$Resource$Users$Threads$List = {
@@ -174,7 +172,7 @@ export default class GmailQuery {
   async FetchingMsgs_state(history_id: number, abort?: () => boolean) {
     abort = this.state.getAbort('FetchingMsgs', abort)
 
-    let threads = await map(this.threads, async (thread: Thread) => {
+    let threads = await map(this.threads, async (thread: TThread) => {
       // check if the thread has been previously downloaded and if
       // the history ID has changed
       const previous = this.gmail.threads.get(thread.id)
