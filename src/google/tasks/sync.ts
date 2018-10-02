@@ -10,9 +10,7 @@ import * as moment from 'moment'
 import * as delay from 'delay'
 import * as roundTo from 'round-to'
 import { map } from 'typed-promisify-tob'
-import {
-  tasks_v1
-} from 'googleapis/build/src/apis/tasks/v1'
+import { tasks_v1 } from 'googleapis/build/src/apis/tasks/v1'
 // Machine types
 import {
   AsyncMachine,
@@ -30,8 +28,10 @@ import { sync_writer_state, SyncWriter } from '../../sync/writer'
 import { IConfig } from '../../types'
 import { TUnboxPromise } from '../../utils'
 import Auth from '../auth'
+import { TGlobalFields } from '../sync'
 import GTasksListSync from './sync-list'
 import * as regexEscape from 'escape-string-regexp'
+import { MethodOptions } from 'googleapis-common/build/src/api'
 
 const SEC = 1000
 
@@ -186,8 +186,7 @@ export default class GTasksSync extends SyncWriter<
 
   async FetchingTaskLists_state() {
     let abort = this.state.getAbort('FetchingTaskLists')
-    // TODO pass the etag somehow else?
-    let params: tasks_v1.Params$Resource$Tasklists$List = {
+    let params: tasks_v1.Params$Resource$Tasklists$List & TGlobalFields = {
       headers: {
         'If-None-Match': this.etags.task_lists
       }
@@ -247,7 +246,8 @@ export default class GTasksSync extends SyncWriter<
     pointer: object,
     params: A,
     abort: (() => boolean) | null | undefined,
-    options?: object
+    options?: MethodOptions
+    // @ts-ignore TODO fix type
   ): T {
     this.root.connections.requests.gtasks.push(moment().unix())
     // @ts-ignore
@@ -263,12 +263,7 @@ export default class GTasksSync extends SyncWriter<
       pointer,
       params,
       abort,
-      {
-        // TODO keep alive
-        // shouldKeepAlive
-        forever: true,
-        ...options
-      }
+      options
     )
   }
 
@@ -441,22 +436,20 @@ export default class GTasksSync extends SyncWriter<
         }`
       )
       // add the task
-      const params: tasks_v1.Params$Resource$Tasks$Insert = {
+      const params: tasks_v1.Params$Resource$Tasks$Insert & TGlobalFields = {
         tasklist: list_id,
-        // @ts-ignore TODO global fields
         fields: 'id',
         parent: parent_id,
-        resource: {
+        requestBody: {
           title: task.title,
           notes: task.notes,
           status: task.completed ? 'completed' : 'needsAction'
         }
       }
       if (previous_sibling_id) {
-        // @ts-ignore
         params.previous = previous_sibling_id
       }
-      const res = await this.req(
+      const res: AxiosResponse<TTask> = await this.req(
         'tasks.insert',
         this.api.tasks.insert,
         this.api.tasks,
@@ -464,13 +457,13 @@ export default class GTasksSync extends SyncWriter<
         params,
         abort
       )
-      previous_sibling_id = res.id
+      previous_sibling_id = res.data.id
       // add nested tasks, if any
       // process children in parallel, but wait for all to finish
       // TODO use proper tree traversal, avoid recursion
       if (task.children.length) {
         process_children.push(
-          this.saveChildren(list_id, res.id, task.children, abort)
+          this.saveChildren(list_id, res.data.id, task.children, abort)
         )
       }
     }
@@ -565,11 +558,10 @@ export default class GTasksSync extends SyncWriter<
         if (task_id) return
         // omit tasks marked for deletion
         if (record.to_delete) return
-        const params: tasks_v1.Params$Resource$Tasks$Insert = {
+        const params: tasks_v1.Params$Resource$Tasks$Insert & TGlobalFields = {
           tasklist: sync.list.id,
-          // @ts-ignore missing global attrs
           fields: 'id',
-          resource: {
+          requestBody: {
             title:
               record.title +
               this.root.getRecordLabelsAsText(record, sync.config),

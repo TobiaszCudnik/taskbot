@@ -2,9 +2,11 @@ import { Semaphore } from 'await-semaphore'
 import { google } from 'googleapis'
 import { gmail_v1 } from 'googleapis/build/src/apis/gmail/v1'
 import { tasks_v1 } from 'googleapis/build/src/apis/tasks/v1'
+import * as https from 'https'
 import GC from '../sync/gc'
 import { log_fn, default as Logger } from './logger'
 import { AxiosResponse } from 'axios'
+import { MethodOptions } from 'googleapis-common/build/src/api'
 
 /**
  * TODO logger mixin
@@ -40,6 +42,8 @@ export default class Connections {
     gtasks: null,
     gmail: null
   }
+
+  agent = new https.Agent({ keepAlive: true })
 
   // Request log used to calculate the quota (API wide)
   // TODO extract TimeArray
@@ -104,8 +108,9 @@ export default class Connections {
     context: object,
     params: A,
     abort: (() => boolean) | null | undefined,
-    options?: object,
+    options: MethodOptions = {},
     retries = 3
+    // @ts-ignore TODO fix type
   ): T {
     // prepare a version of params for logging
     let params_log = null
@@ -162,6 +167,7 @@ export default class Connections {
       this.log_stats('Stats:\n%O', this.getReqsStats())
       // TODO googleapis specific code should be in google/sync.ts
       try {
+        options.httpsAgent = this.agent
         // @ts-ignore
         res = await method.call(context, params, options)
         const was2xx = res && res.status.toString().match(/^2/)

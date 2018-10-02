@@ -49,7 +49,7 @@ export default class GTasksListSync extends SyncReader<
     if (!this.gtasks.lists) {
       throw Error('Lists not fetched')
     }
-    return this.gtasks.lists.items.find(l => l.title == this.config.name)
+    return this.gtasks.lists.find(l => l.title == this.config.name)
   }
 
   constructor(config: IListConfig, root: RootSync, public gtasks: GTasksSync) {

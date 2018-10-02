@@ -36,6 +36,13 @@ export const sync_state: IJSONStates = {
   }
 }
 
+export type TGlobalFields = {
+  // request headers
+  headers?: { [name: string]: string }
+  // fields to return
+  fields?: string
+}
+
 export default class GoogleSync extends SyncWriter<
   IConfig,
   TStates,
