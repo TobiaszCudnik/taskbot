@@ -11,7 +11,6 @@ import * as delay from 'delay'
 import * as roundTo from 'round-to'
 import { map } from 'typed-promisify-tob'
 import {
-  Params$Resource$Tasks$Insert,
   tasks_v1
 } from 'googleapis/build/src/apis/tasks/v1'
 // Machine types
@@ -76,8 +75,6 @@ export type TTask = tasks_v1.Schema$Task
 export type TTaskList = tasks_v1.Schema$TaskList
 export type TTasksRes = tasks_v1.Schema$Tasks
 export type TTaskListsRes = tasks_v1.Schema$TaskLists
-
-type TaskLists = tasks_v1.Schema$TaskLists
 
 export default class GTasksSync extends SyncWriter<
   IConfig,
@@ -447,6 +444,7 @@ export default class GTasksSync extends SyncWriter<
       // add the task
       const params: tasks_v1.Params$Resource$Tasks$Insert & TGlobalFields = {
         tasklist: list_id,
+        // @ts-ignore TODO global fields
         fields: 'id',
         parent: parent_id,
         requestBody: {
@@ -569,6 +567,7 @@ export default class GTasksSync extends SyncWriter<
         if (record.to_delete) return
         const params: tasks_v1.Params$Resource$Tasks$Insert & TGlobalFields = {
           tasklist: sync.list.id,
+          // @ts-ignore missing global attrs
           fields: 'id',
           requestBody: {
             title:

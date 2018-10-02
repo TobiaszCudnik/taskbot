@@ -3,7 +3,6 @@ import { TAbortFunction } from 'asyncmachine/types'
 import * as debug from 'debug'
 import * as clone from 'deepcopy'
 import * as delay from 'delay'
-import { google } from 'googleapis'
 import { AxiosResponse } from 'axios'
 import { tasks_v1 } from 'googleapis/build/src/apis/tasks/v1'
 import * as _ from 'lodash'
@@ -49,7 +48,7 @@ export default class GTasksListSync extends SyncReader<
     if (!this.gtasks.lists) {
       throw Error('Lists not fetched')
     }
-    return this.gtasks.lists.find(l => l.title == this.config.name)
+    return this.gtasks.lists.items.find(l => l.title == this.config.name)
   }
 
   constructor(config: IListConfig, root: RootSync, public gtasks: GTasksSync) {

@@ -2,9 +2,6 @@ import { machine } from 'asyncmachine'
 import { AxiosResponse } from 'axios'
 import { gmail_v1, google } from 'googleapis'
 import { map } from 'typed-promisify-tob'
-import { log_fn } from '../../app/logger'
-import { machineLogToDebug } from '../../utils'
-import GmailSync from './sync'
 // Machine types
 import {
   AsyncMachine,
