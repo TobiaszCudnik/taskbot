@@ -1,5 +1,5 @@
 import AsyncMachine from 'asyncmachine'
-import * as google from 'googleapis'
+import { OAuth2Client } from 'google-auth-library'
 // Machine types
 import {
   IBind,
@@ -8,41 +8,40 @@ import {
   TStates
 } from '../../typings/machines/google/auth'
 import Logger from '../app/logger'
-import { IConfig, IConfigGoogle } from '../types'
+import { IConfig, IConfigAccountGoogle, IConfigPrivateGoogle } from '../types'
 import { machineLogToDebug } from '../utils'
 
 // TODO add logging
 // TODO compose asyncmachine
 export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
   Enabled: IState = {}
-
   CredentialsSet: IState = {}
-
   RefreshingToken: IState = {
     // auto: true,
     require: ['CredentialsSet', 'Enabled'],
     drop: ['TokenRefreshed']
   }
-
   TokenRefreshed: IState = {
     auto: true,
     require: ['CredentialsSet'],
     drop: ['RefreshingToken']
   }
-
   Ready: IState = {
     auto: true,
     require: ['TokenRefreshed']
   }
-
   Error: IState = {
     drop: ['Ready']
   }
 
-  client: any
-  config: IConfigGoogle
+  client: OAuth2Client
+  config: IConfigAccountGoogle & IConfigPrivateGoogle
 
-  constructor(config: IConfigGoogle, user_id: number, logger: Logger) {
+  constructor(
+    config: IConfigAccountGoogle & IConfigPrivateGoogle,
+    user_id: string,
+    logger: Logger
+  ) {
     super(null, false)
     // google.options({ params: { quotaUser: 'user123@example.com' } });
     this.config = config
@@ -61,8 +60,7 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
         global.am_network.addMachine(this)
       }
     }
-    // TODO missing type
-    this.client = new google.auth.OAuth2(
+    this.client = new OAuth2Client(
       config.client_id,
       config.client_secret,
       config.redirect_url
@@ -75,10 +73,10 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
   }
 
   CredentialsSet_state(access_token: string, refresh_token: string) {
-    this.client.credentials = {
+    this.client.setCredentials({
       access_token: access_token,
       refresh_token: refresh_token
-    }
+    })
   }
 
   RefreshingToken_state() {

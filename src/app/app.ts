@@ -1,17 +1,17 @@
 import * as firebase from 'firebase-admin'
 import * as fs from 'fs'
-import * as google from 'googleapis'
 import { test_user } from '../../config-accounts'
 import { Credentials as GoogleCredentials } from 'google-auth-library/build/src/auth/credentials'
+import { gmail_v1 } from 'googleapis/build/src/apis/gmail/v1'
+import { TGlobalFields } from '../google/sync'
 import RootSync, { TStatsUser } from '../sync/root'
 import { IConfig, IAccount, IConfigAccount, TRawEmail } from '../types'
-import { isProdEnv } from '../utils'
+import { isProdEnv, isTestEnv } from '../utils'
 import Connections from './connections'
 import Logger from './logger'
 import * as merge from 'deepmerge'
 import * as moment from 'moment-timezone'
 import { OAuth2Client } from 'google-auth-library'
-import * as removeHtmlComments from 'remove-html-comments'
 import { Base64 } from 'js-base64'
 
 const email_invitation = fs.readFileSync(
@@ -29,8 +29,6 @@ export class App {
   firebase: firebase.app.App
   log_info = this.logger.createLogger('app')
   auth: OAuth2Client
-  // TODO merge with `this.auth` once googleapis are up to date
-  auth_email: any
   syncs: { [uid: string]: RootSync } = {}
   accounts: { [uid: string]: IAccount } = {}
 
@@ -47,34 +45,26 @@ export class App {
       credential: firebase.credential.cert(config.firebase.admin),
       databaseURL: config.firebase.url
     })
-    // TODO use env.TB_ENV
-    if (!process.env['TEST']) {
+    if (!isTestEnv()) {
       this.listenToAccountsChanges()
     } else {
+      // create a test only instance
       this.syncs['test'] = this.createUserInstance(
         'test',
         this.config,
         test_user.config
       )
     }
+    this.initServiceAccount(config)
+  }
+
+  private initServiceAccount(config: IConfig) {
     this.auth = new OAuth2Client(
       config.google.client_id,
       config.google.client_secret,
       config.google.redirect_url
     )
-    // TODO merge with auth once googleapis are up to date
-    // @ts-ignore
-    this.auth_email = new google.auth.OAuth2(
-      config.google.client_id,
-      config.google.client_secret,
-      config.google.redirect_url
-    )
-    this.auth_email.credentials = {
-      // @ts-ignore
-      access_token: this.config.service.google_tokens.access_token,
-      // @ts-ignore
-      refresh_token: this.config.service.google_tokens.refresh_token
-    }
+    this.auth.setCredentials(this.config.service.google_tokens)
   }
 
   async listenToAccountsChanges() {
@@ -236,9 +226,7 @@ export class App {
     // bind the exception listener
     // TODO dispose
     sync.on('Exception_state', (e: Error) => {
-      this.db
-        .ref(`accounts/${uid}/last_error`)
-        .set(e.toString())
+      this.db.ref(`accounts/${uid}/last_error`).set(e.toString())
     })
     return sync
   }
@@ -340,7 +328,6 @@ export class App {
   }
 
   async createAccount(
-    // google_tokens: GoogleCredentials,
     uid: string,
     email: string,
     ip: string
@@ -377,7 +364,6 @@ export class App {
           id,
           uid
         },
-        // TODO make all google_token fields required (assert)
         google: {
           username: email
         }
@@ -391,8 +377,10 @@ export class App {
     return true
   }
 
-  // TODO type tokens
-  async setGoogleAccessTokens(uid: string, tokens: any): Promise<boolean> {
+  async setGoogleAccessTokens(
+    uid: string,
+    tokens: GoogleCredentials
+  ): Promise<boolean> {
     const account = await this.getAccount(uid)
     if (!account) {
       return false
@@ -432,27 +420,20 @@ export class App {
 
     // TODO port Base64 to the gmail sync client
     const raw = Base64.encodeURI(email) as TRawEmail
+    const params: gmail_v1.Params$Resource$Users$Messages$Send &
+      TGlobalFields = {
+      userId: 'me',
+      fields: 'threadId',
+      requestBody: {
+        raw: raw
+      },
+      // payload: { mimeType: 'text/html' },
+      // @ts-ignore TS / d.ts issue
+      auth: this.auth
+    }
 
-    const ret = await new Promise((resolve, reject) => {
-      this.connections.apis.gmail.users.messages.send(
-        {
-          userId: 'me',
-          fields: 'threadId',
-          // @ts-ignore
-          resource: {
-            raw: raw
-          },
-          // payload: { mimeType: 'text/html' },
-          auth: this.auth_email
-        },
-        (err, body) => {
-          if (err) return reject(err)
-          resolve(body)
-        }
-      )
-    })
-    // @ts-ignore TODO
-    if (ret && ret.threadId) {
+    const ret = await this.connections.apis.gmail.users.messages.send(params)
+    if (ret && ret.data.threadId) {
       // @ts-ignore
       this.log_info(`Sent email ${ret.threadId} to ${to}`)
       return true

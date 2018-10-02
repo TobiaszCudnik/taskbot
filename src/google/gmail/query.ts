@@ -1,7 +1,6 @@
 import { machine } from 'asyncmachine'
 import { AxiosResponse } from 'axios'
-import { gmail_v1, google } from 'googleapis'
-import { map } from 'typed-promisify-tob'
+import { gmail_v1 } from 'googleapis'
 // Machine types
 import {
   AsyncMachine,
@@ -133,6 +132,7 @@ export default class GmailQuery {
         'users.threads.list',
         this.gmail.api.users.threads.list,
         this.gmail.api.users.threads,
+        // @ts-ignore manually typed params
         params,
         abort
       )

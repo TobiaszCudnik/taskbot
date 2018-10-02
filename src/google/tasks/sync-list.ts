@@ -1,10 +1,9 @@
 import { machine } from 'asyncmachine'
 import { TAbortFunction } from 'asyncmachine/types'
-import * as debug from 'debug'
 import * as clone from 'deepcopy'
 import * as delay from 'delay'
 import { AxiosResponse } from 'axios'
-import { tasks_v1 } from 'googleapis/build/src/apis/tasks/v1'
+import { tasks_v1 } from 'googleapis'
 import * as _ from 'lodash'
 import * as moment from 'moment'
 // Machine types
@@ -20,6 +19,7 @@ import {
 import RootSync, { DBRecord } from '../../sync/root'
 import { SyncReader, sync_reader_state } from '../../sync/reader'
 import { IListConfig } from '../../types'
+import { TGlobalFields } from '../sync'
 import GTasksSync, { TTask, TTaskList, TTasksRes, TTaskTree } from './sync'
 import * as regexEscape from 'escape-string-regexp'
 
@@ -78,25 +78,26 @@ export default class GTasksListSync extends SyncReader<
 
     const quota = this.gtasks.short_quota_usage
     const abort = this.state.getAbort('Reading')
+    const params: tasks_v1.Params$Resource$Tasks$List & TGlobalFields = {
+      tasklist: this.list.id,
+      fields: 'etag,items(id,title,notes,updated,etag,status,parent)',
+      // TODO paging
+      maxResults: '1000',
+      showHidden: false,
+      // request a cached version after an etag is confirmed twice
+      // its a gtasks' api bug, where the same etag can be attached to 2
+      // different responses
+      headers: this.etags.tasks_reqs++
+        ? { 'If-None-Match': this.etags.tasks }
+        : {}
+    }
     type TResponse = AxiosResponse<TTasksRes>
     const res: TResponse = await this.gtasks.req(
       'api.tasks.list',
       this.gtasks.api.tasks.list,
       this.gtasks.api.tasks,
-      {
-        // TODO manually type params
-        tasklist: this.list.id,
-        fields: 'etag,items(id,title,notes,updated,etag,status,parent)',
-        // TODO paging
-        maxResults: '1000',
-        showHidden: false,
-        // request a cached version after an etag is confirmed twice
-        // its a gtasks' api bug, where the same etag can be attached to 2
-        // different responses
-        headers: this.etags.tasks_reqs++
-          ? { 'If-None-Match': this.etags.tasks }
-          : {}
-      },
+      // @ts-ignore manually typed params
+      params,
       abort
     )
 
@@ -270,24 +271,25 @@ export default class GTasksListSync extends SyncReader<
       if (!record || record.gtasks_hidden_completed) {
         continue
       }
+      const params: tasks_v1.Params$Resource$Tasks$Patch = {
+        tasklist: this.list.id,
+        task: task.id,
+        requestBody: {
+          hidden: false
+        }
+      }
       type TResponse = AxiosResponse<TTask>
       // check if not hidden (new google's clients behavior)
       // only during the first merge run
+      // @ts-ignore manually typed
       const refreshed: TResponse | null =
         this.root.merge_tries == 1
           ? await this.gtasks.req(
               'api.tasks.patch',
               this.gtasks.api.tasks.patch,
               this.gtasks.api.tasks,
-              // TODO manually type params
-              {
-                tasklist: this.list.id,
-                task: task.id,
-                // fields: 'id',
-                resource: {
-                  hidden: false
-                }
-              },
+              // @ts-ignore manually typed params
+              params,
               abort
             )
           : null
@@ -295,12 +297,12 @@ export default class GTasksListSync extends SyncReader<
       if (
         refreshed &&
         !refreshed.data.deleted &&
-        this.gtasks.isCompleted(refreshed)
+        this.gtasks.isCompleted(refreshed.data)
       ) {
         changed++
         this.state.add('Dirty')
         // add back to the cache
-        this.tasks.items.push(refreshed)
+        this.tasks.items.push(refreshed.data)
         record.gtasks_hidden_completed = true
       } else {
         // task was really deleted

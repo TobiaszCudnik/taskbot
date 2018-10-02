@@ -1,18 +1,14 @@
 import * as assert from 'assert'
 import { machine } from 'asyncmachine'
 import { TAbortFunction } from 'asyncmachine/types'
-import { Semaphore } from 'await-semaphore'
 import 'colors'
 import * as debug from 'debug'
 import * as delay from 'delay'
 import * as diff from 'diff'
-import * as clone from 'deepcopy'
 import * as regexEscape from 'escape-string-regexp'
-import * as http from 'http'
 import { sortedIndex, reverse } from 'lodash'
 import * as Loki from 'lokijs'
 import * as moment from 'moment'
-import { promisifyArray } from 'typed-promisify-tob'
 import * as md5 from 'md5'
 // Machine types
 import {
@@ -27,7 +23,7 @@ import {
 } from '../../typings/machines/sync/root'
 import Connections from '../app/connections'
 import GoogleSync from '../google/sync'
-import { IConfig, ILabelDefinition, IListConfig } from '../types'
+import { IConfig, IConfigParsed, ILabelDefinition, IListConfig } from '../types'
 import { isProdEnv } from '../utils'
 import GC from './gc'
 import LabelFilterSync from './label-filter'
@@ -163,7 +159,12 @@ export type TStatsUser = {
   completed_tasks: number
 }
 
-export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
+export default class RootSync extends SyncWriter<
+  IConfig | IConfigParsed,
+  TStates,
+  IBind,
+  IEmit
+>
 // TODO type the machine types
 // implements ITransitions
 {
@@ -176,6 +177,10 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   exceptions_gc = new GC('gtasks', this.exceptions)
   get last_exception(): number | null {
     return this.exceptions[this.exceptions.length - 1] || null
+  }
+
+  get config_parsed(): IConfigParsed {
+    return this.config as IConfigParsed
   }
 
   // TODO debug only
@@ -198,8 +203,6 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
   network_errors = ['EADDRNOTAVAIL', 'ETIMEDOUT']
   // seconds
   merge_tries: number
-
-  log_db_diff: log_fn
 
   constructor(
     config: IConfig,
@@ -469,6 +472,7 @@ export default class RootSync extends SyncWriter<IConfig, TStates, IBind, IEmit>
     // shallow copy the config
     this.config = { ...config }
     // parse lazy list configs
+    // IConfig into IConfigParsed
     this.config.lists = this.config.lists.map(
       list => (_.isFunction(list) ? list(this.config) : list)
     )

@@ -1,16 +1,13 @@
 import { machine, PipeFlags } from 'asyncmachine'
 import { TAbortFunction } from 'asyncmachine/types'
 import { AxiosResponse } from 'axios'
-import * as debug from 'debug'
-import * as google from 'googleapis'
-import * as http from 'http'
 import * as _ from 'lodash'
 import { Moment } from 'moment'
 import * as moment from 'moment'
 import * as delay from 'delay'
 import * as roundTo from 'round-to'
 import { map } from 'typed-promisify-tob'
-import { tasks_v1 } from 'googleapis/build/src/apis/tasks/v1'
+import { tasks_v1 } from 'googleapis'
 // Machine types
 import {
   AsyncMachine,
@@ -25,8 +22,7 @@ import {
 import GC from '../../sync/gc'
 import RootSync, { DBRecord } from '../../sync/root'
 import { sync_writer_state, SyncWriter } from '../../sync/writer'
-import { IConfig } from '../../types'
-import { TUnboxPromise } from '../../utils'
+import { IConfig, IConfigParsed } from '../../types'
 import Auth from '../auth'
 import { TGlobalFields } from '../sync'
 import GTasksListSync from './sync-list'
@@ -75,7 +71,7 @@ export type TTasksRes = tasks_v1.Schema$Tasks
 export type TTaskListsRes = tasks_v1.Schema$TaskLists
 
 export default class GTasksSync extends SyncWriter<
-  IConfig,
+  IConfigParsed,
   TStates,
   IBind,
   IEmit
@@ -148,7 +144,7 @@ export default class GTasksSync extends SyncWriter<
   }
 
   constructor(root: RootSync, public auth: Auth) {
-    super(root.config, root)
+    super(root.config_parsed, root)
     this.api = this.root.connections.apis.gtasks
   }
 

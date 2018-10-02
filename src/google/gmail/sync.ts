@@ -1,8 +1,7 @@
 import { machine } from 'asyncmachine'
 import { TAbortFunction } from 'asyncmachine/types'
 import { AxiosResponse } from 'axios'
-import { google } from 'googleapis'
-import { gmail_v1 } from 'googleapis/build/src/apis/gmail/v1'
+import { gmail_v1 } from 'googleapis'
 import * as _ from 'lodash'
 import * as delay from 'delay'
 import * as moment from 'moment'
@@ -20,10 +19,15 @@ import {
   ITransitions
 } from '../../../typings/machines/google/gmail/sync'
 import GC from '../../sync/gc'
-import { SyncReader } from '../../sync/reader'
 import RootSync, { DBRecord } from '../../sync/root'
 import { sync_writer_state, SyncWriter } from '../../sync/writer'
-import { IConfig, ILabelDefinition, IListConfig, TRawEmail } from '../../types'
+import {
+  IConfig,
+  IConfigParsed,
+  ILabelDefinition,
+  IListConfig,
+  TRawEmail
+} from '../../types'
 import Auth from '../auth'
 import { TGlobalFields } from '../sync'
 import GmailListSync from './sync-list'
@@ -98,7 +102,7 @@ export type TLabel = gmail_v1.Schema$Label
 export type TThread = gmail_v1.Schema$Thread
 
 export default class GmailSync extends SyncWriter<
-  IConfig,
+  IConfigParsed,
   TStates,
   IBind,
   IEmit
@@ -107,7 +111,7 @@ export default class GmailSync extends SyncWriter<
 // implements ITransitions
 {
   state: AsyncMachine<TStates, IBind, IEmit>
-  api: google.gmail.v1.Gmail
+  api: gmail_v1.Gmail
   history_id_timeout = 1
   history_id_latest: number | null
   last_sync_time: number
@@ -123,7 +127,7 @@ export default class GmailSync extends SyncWriter<
   labels_to_fetch: string[]
 
   constructor(root: RootSync, public auth: Auth) {
-    super(root.config, root)
+    super(root.config_parsed, root)
     this.api = this.root.connections.apis.gmail
   }
 
@@ -133,7 +137,7 @@ export default class GmailSync extends SyncWriter<
 
   SubsInited_state() {
     this.subs = {
-      lists: (this.config.lists as IListConfig[])
+      lists: this.config.lists
         .filter(config => !config.writers || config.writers.includes('gmail'))
         .map(config => new GmailListSync(config, this.root, this))
     }
@@ -281,6 +285,7 @@ export default class GmailSync extends SyncWriter<
       'users.labels.list',
       this.api.users.labels.list,
       this.api.users.labels,
+      // @ts-ignore params typed manually
       params,
       abort
     )) as any
@@ -309,6 +314,7 @@ export default class GmailSync extends SyncWriter<
       'users.getProfile',
       this.api.users.getProfile,
       this.api.users,
+      // @ts-ignore params typed manually
       params,
       abort
     )) as any
@@ -396,19 +402,21 @@ export default class GmailSync extends SyncWriter<
       // sync the definition
       if (sync) {
         this.log(`Syncing label '${label.name}'`)
-        const resource = this.labelDefToGmailDef(def)
+        const patch = this.labelDefToGmailDef(def)
+        const params: gmail_v1.Params$Resource$Users$Labels$Patch = {
+          userId: 'me',
+          id: label.id,
+          requestBody: patch
+        }
         await this.req(
           'users.labels.patch',
           this.api.users.labels.patch,
           this.api.users.labels,
-          {
-            userId: 'me',
-            id: label.id,
-            resource
-          },
+          // @ts-ignore params typed manually
+          params,
           abort
         )
-        Object.assign(label, resource)
+        Object.assign(label, patch)
       }
     })
   }
@@ -429,6 +437,7 @@ export default class GmailSync extends SyncWriter<
           'users.labels.get',
           this.api.users.labels.get,
           this.api.users.labels,
+          // @ts-ignore params typed manually
           params,
           abort
         )) as any
@@ -640,6 +649,7 @@ export default class GmailSync extends SyncWriter<
       'users.threads.modify',
       this.api.users.threads.modify,
       this.api.users.threads,
+      // @ts-ignore params typed manually
       params,
       abort
     )) as any
@@ -671,12 +681,13 @@ export default class GmailSync extends SyncWriter<
       format: 'metadata',
       fields: 'id,historyId,messages(id,labelIds,payload(headers))',
       // @ts-ignore wrong d.ts
-      metadataHeaders: ['SUBJECT', 'FROM', 'TO'],
+      metadataHeaders: ['SUBJECT', 'FROM', 'TO']
     }
     let thread: AxiosResponse<gmail_v1.Schema$Thread> = (await this.req(
       'users.threads.get',
       this.api.users.threads.get,
       this.api.users.threads,
+      // @ts-ignore params typed manually
       params,
       abort
     )) as any
@@ -736,6 +747,7 @@ export default class GmailSync extends SyncWriter<
       'users.messages.insert',
       this.api.users.messages.insert,
       this.api.users.messages,
+      // @ts-ignore params typed manually
       params,
       abort
     )) as any
@@ -806,6 +818,7 @@ export default class GmailSync extends SyncWriter<
         'users.labels.create',
         this.api.users.labels.create,
         this.api.users.labels,
+        // @ts-ignore params typed manually
         params,
         abort
       )) as any

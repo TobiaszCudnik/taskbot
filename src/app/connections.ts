@@ -1,7 +1,5 @@
 import { Semaphore } from 'await-semaphore'
-import { google } from 'googleapis'
-import { gmail_v1 } from 'googleapis/build/src/apis/gmail/v1'
-import { tasks_v1 } from 'googleapis/build/src/apis/tasks/v1'
+import { google, gmail_v1, tasks_v1 } from 'googleapis'
 import * as https from 'https'
 import GC from '../sync/gc'
 import { log_fn, default as Logger } from './logger'

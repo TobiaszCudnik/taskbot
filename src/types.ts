@@ -59,21 +59,28 @@ export interface ILabelDefinition2 {
   name: string
   prefix: string
   // ignore errors on those
-  symbol?: string
-  shortcut?: string
+  symbol?: undefined
+  shortcut?: undefined
 }
 
 export interface ILabelDefinition3 {
   symbol: string
   prefix: string
   // ignore errors on those
-  name?: string
-  shortcut?: string
+  name?: undefined
+  shortcut?: undefined
 }
 
 export interface ILabelDefinition4 {
   prefix: ''
   name: string
+  // ignore errors on those
+  symbol?: undefined
+  shortcut?: undefined
+}
+
+export interface IConfigParsed extends IConfig {
+  lists: IListConfig[]
 }
 
 export interface IConfig extends IConfigPublic, IConfigPrivate, IConfigAccount {
@@ -135,8 +142,7 @@ export interface IConfigPrivate {
     salt: string
     email: string
     name: string
-    // TODO type
-    google_tokens: object
+    google_tokens: GoogleCredentials
   }
   google: IConfigPrivateGoogle
   firebase: {
@@ -155,8 +161,6 @@ export interface IConfigPrivateGoogle {
 
 export interface IConfigAccountGoogle extends GoogleCredentials {
   username: string
-  // optional for non-authorized accounts
-  access_token?: string
 }
 
 export interface IConfigAccount {
