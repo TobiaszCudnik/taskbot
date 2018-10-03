@@ -166,12 +166,14 @@ export interface IConfigAccountGoogle extends GoogleCredentials {
 export interface IConfigAccount {
   user: {
     id: string
+    // duplicated IAccount.uid
     uid: string
   }
   google: IConfigAccountGoogle
 }
 
 export interface IAccount {
+  // duplicated from config.user.uid
   uid: string
   email: string
   registered: string

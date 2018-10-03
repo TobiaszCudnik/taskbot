@@ -5,7 +5,6 @@ import { gmail_v1 } from 'googleapis'
 import * as _ from 'lodash'
 import * as delay from 'delay'
 import * as moment from 'moment'
-import { map } from 'typed-promisify-tob'
 import * as regexEscape from 'escape-string-regexp'
 // Machine types
 import {
@@ -205,49 +204,51 @@ export default class GmailSync extends SyncWriter<
     this.log_verbose(
       `Processing ${records_without_threads.length} orphaned threads`
     )
-    await map(records_without_threads, async (record: DBRecord) => {
-      let thread = this.threads.get(record.gmail_id)
-      // TODO time to config
-      const too_old = moment()
-        .subtract(this.config.gmail.orphans_freq_min || 5, 'minutes')
-        .unix()
-      // @ts-ignore `fetched` is set manually
-      if (!thread || thread.fetched < too_old) {
-        this.log_verbose('re-fetching')
-        let refreshed
-        try {
-          refreshed = await this.fetchThread(
-            record.gmail_id,
-            abort,
-            'FetchingOrphans_state'
-          )
-        } catch {
-          if (thread) {
-            this.threads.delete(thread.id)
+    await Promise.all(
+      records_without_threads.map(async (record: DBRecord) => {
+        let thread = this.threads.get(record.gmail_id)
+        // TODO time to config
+        const too_old = moment()
+          .subtract(this.config.gmail.orphans_freq_min || 5, 'minutes')
+          .unix()
+        // @ts-ignore `fetched` is set manually
+        if (!thread || thread.fetched < too_old) {
+          this.log_verbose('re-fetching')
+          let refreshed
+          try {
+            refreshed = await this.fetchThread(
+              record.gmail_id,
+              abort,
+              'FetchingOrphans_state'
+            )
+          } catch {
+            if (thread) {
+              this.threads.delete(thread.id)
+            }
+            // thread doesnt exist
+            this.log_verbose(
+              `Thread '${
+                record.gmail_id
+              }' doesn't exist, marking the record for deletion`
+            )
+            delete record.gmail_id
+            record.to_delete = true
+            // @ts-ignore
+            this.root.markListsAsDirty(this, record)
+            this.root.data.update(record)
+            return
           }
-          // thread doesnt exist
-          this.log_verbose(
-            `Thread '${
-              record.gmail_id
-            }' doesn't exist, marking the record for deletion`
-          )
-          delete record.gmail_id
-          record.to_delete = true
-          // @ts-ignore
-          this.root.markListsAsDirty(this, record)
-          this.root.data.update(record)
-          return
+          thread = refreshed
         }
-        thread = refreshed
-      }
-      // TODO OMG WHAT HAVE I DONE !!!1111!!1
-      // TODO extract as GmailMergeMixin or GmailReader or OrphanedThreadsList
-      const context = Object.create(this)
-      context.gmail = this
-      GmailListSync.prototype.mergeRecord.call(context, thread, record)
-      // TODO update in bulk
-      this.root.data.update(record)
-    })
+        // TODO OMG WHAT HAVE I DONE !!!1111!!1
+        // TODO extract as GmailMergeMixin or GmailReader or OrphanedThreadsList
+        const context = Object.create(this)
+        context.gmail = this
+        GmailListSync.prototype.mergeRecord.call(context, thread, record)
+        // TODO update in bulk
+        this.root.data.update(record)
+      })
+    )
     this.state.add('OrphansFetched')
   }
 
@@ -379,46 +380,48 @@ export default class GmailSync extends SyncWriter<
   }
 
   async syncLabels(abort: TAbortFunction) {
-    await map(this.labels, async (label: TLabel) => {
-      const def = this.root.getLabelDefinition(label.name)
-      if (!def) return
-      let sync = false
-      // sync colors
-      if (
-        def.colors &&
-        (!label.color ||
-          label.color.textColor != def.colors.fg ||
-          label.color.backgroundColor != def.colors.bg)
-      ) {
-        sync = true
-      }
-      // sync visibility
-      if (
-        (def.hide_menu && label.labelListVisibility != 'labelHide') ||
-        (def.hide_list && label.messageListVisibility != 'hide')
-      ) {
-        sync = true
-      }
-      // sync the definition
-      if (sync) {
-        this.log(`Syncing label '${label.name}'`)
-        const patch = this.labelDefToGmailDef(def)
-        const params: gmail_v1.Params$Resource$Users$Labels$Patch = {
-          userId: 'me',
-          id: label.id,
-          requestBody: patch
+    await Promise.all(
+      this.labels.map(async (label: TLabel) => {
+        const def = this.root.getLabelDefinition(label.name)
+        if (!def) return
+        let sync = false
+        // sync colors
+        if (
+          def.colors &&
+          (!label.color ||
+            label.color.textColor != def.colors.fg ||
+            label.color.backgroundColor != def.colors.bg)
+        ) {
+          sync = true
         }
-        await this.req(
-          'users.labels.patch',
-          this.api.users.labels.patch,
-          this.api.users.labels,
-          // @ts-ignore params typed manually
-          params,
-          abort
-        )
-        Object.assign(label, patch)
-      }
-    })
+        // sync visibility
+        if (
+          (def.hide_menu && label.labelListVisibility != 'labelHide') ||
+          (def.hide_list && label.messageListVisibility != 'hide')
+        ) {
+          sync = true
+        }
+        // sync the definition
+        if (sync) {
+          this.log(`Syncing label '${label.name}'`)
+          const patch = this.labelDefToGmailDef(def)
+          const params: gmail_v1.Params$Resource$Users$Labels$Patch = {
+            userId: 'me',
+            id: label.id,
+            requestBody: patch
+          }
+          await this.req(
+            'users.labels.patch',
+            this.api.users.labels.patch,
+            this.api.users.labels,
+            // @ts-ignore params typed manually
+            params,
+            abort
+          )
+          Object.assign(label, patch)
+        }
+      })
+    )
   }
 
   async processLabelsToFetch(abort: TAbortFunction) {
@@ -458,19 +461,21 @@ export default class GmailSync extends SyncWriter<
     if (to_delete.length) {
       this.log(`Deleting ${to_delete.length} threads`)
     }
-    return await map(to_delete, async (record: DBRecord) => {
-      // Delete from gmail by moving to Trash
-      await this.writeThreadLabels(record.gmail_id, ['TRASH'], [], abort)
-      // Delete from the global gmail cache
-      await this.threads.delete(record.gmail_id)
-      // TODO delete also from all the matching lists?
-      delete record.gmail_id
-      // mark touched lists as Dirty to trigger a re-read
-      // @ts-ignore
-      this.root.markListsAsDirty(this, record)
-      // TODO update in bulk
-      this.root.data.update(record)
-    })
+    return await Promise.all(
+      to_delete.map(async (record: DBRecord) => {
+        // Delete from gmail by moving to Trash
+        await this.writeThreadLabels(record.gmail_id, ['TRASH'], [], abort)
+        // Delete from the global gmail cache
+        await this.threads.delete(record.gmail_id)
+        // TODO delete also from all the matching lists?
+        delete record.gmail_id
+        // mark touched lists as Dirty to trigger a re-read
+        // @ts-ignore
+        this.root.markListsAsDirty(this, record)
+        // TODO update in bulk
+        this.root.data.update(record)
+      })
+    )
   }
 
   async processThreadsToAdd(abort: () => boolean): Promise<void[]> {
@@ -483,24 +488,31 @@ export default class GmailSync extends SyncWriter<
     if (new_threads.length) {
       this.log(`Creating ${new_threads.length} new threads`)
     }
-    return await map(new_threads, async (record: DBRecord) => {
-      const labels = Object.entries(record.labels)
-        .filter(([name, data]) => data.active)
-        .map(([name]) => name)
-      const id = await this.createThread(record.title, labels, abort)
-      record.gmail_id = id
-      this.root.data.update(record)
-      // mark touched lists as Dirty to trigger a re-read
-      // @ts-ignore
-      this.root.markListsAsDirty(this, record)
-      // @ts-ignore
-      this.root.markWritersAsDirty(this, record)
-      await this.fetchThread(id, abort, 'processThreadsToAdd')
-    })
+    return await Promise.all(
+      new_threads.map(async (record: DBRecord) => {
+        const labels = Object.entries(record.labels)
+          .filter(([name, data]) => data.active)
+          .map(([name]) => name)
+        const id = await this.createThread(record.title, labels, abort)
+        record.gmail_id = id
+        this.root.data.update(record)
+        // mark touched lists as Dirty to trigger a re-read
+        // @ts-ignore
+        this.root.markListsAsDirty(this, record)
+        // @ts-ignore
+        this.root.markWritersAsDirty(this, record)
+        await this.fetchThread(id, abort, 'processThreadsToAdd')
+      })
+    )
   }
 
   async processThreadsToModify(abort: () => boolean): Promise<void[]> {
-    const diff_threads = [...this.threads.values()]
+    type LabelsChange = {
+      id: string
+      add?: string[]
+      remove?: string[]
+    }
+    const diff_threads: LabelsChange[] = [...this.threads.values()]
       .map((thread: TThread) => {
         const record: DBRecord = this.getRecordByGmailID(thread.id)
         if (!record) {
@@ -509,7 +521,7 @@ export default class GmailSync extends SyncWriter<
               this.getTitleFromThread(thread)
             )}'`
           )
-          return [thread.id, [], []]
+          return null
         }
         // TODO time of write (and latter reading) should not update
         //   record.updated?
@@ -527,7 +539,7 @@ export default class GmailSync extends SyncWriter<
           return null
         }
         // mark touched lists as Dirty to trigger a re-read
-        // @ts-ignore
+        // @ts-ignore TODO fix SyncReader
         this.root.markListsAsDirty(this, record)
         // check cache of other lists if the thread was there before
         // TODO get this info from the record's history
@@ -535,16 +547,18 @@ export default class GmailSync extends SyncWriter<
           if (!list.hasThread(record.gmail_id)) continue
           list.state.add('Dirty')
         }
-        return [thread.id, add, remove]
+        return { id: thread.id, add, remove }
       })
-      .filter(i => i)
+      .filter(Boolean)
 
     if (diff_threads.length) {
       this.log(`Modifying ${diff_threads.length} new threads`)
     }
-    return await map(diff_threads, async ([id, add, remove]) => {
-      await this.writeThreadLabels(id, add, remove, abort)
-    })
+    return await Promise.all(
+      diff_threads.map(async ({ id, add, remove }) => {
+        await this.writeThreadLabels(id, add, remove, abort)
+      })
+    )
   }
 
   getRecordByGmailID(id: string) {
@@ -800,31 +814,33 @@ export default class GmailSync extends SyncWriter<
 
   async createLabelsIfMissing(labels: string[], abort?) {
     const no_id = labels.filter(name => !this.getLabelID(name))
-    return map(no_id, async name => {
-      const def = this.root.getLabelDefinition(name)
-      // decorate with local definiton
-      const gmail_def = def ? this.labelDefToGmailDef(def) : null
-      this.log(`Creating a new label '${name}'`)
-      const params: gmail_v1.Params$Resource$Users$Labels$Create = {
-        userId: 'me',
-        requestBody: {
-          labelListVisibility: 'labelShow',
-          messageListVisibility: 'show',
-          name,
-          ...gmail_def
+    return Promise.all(
+      no_id.map(async name => {
+        const def = this.root.getLabelDefinition(name)
+        // decorate with local definiton
+        const gmail_def = def ? this.labelDefToGmailDef(def) : null
+        this.log(`Creating a new label '${name}'`)
+        const params: gmail_v1.Params$Resource$Users$Labels$Create = {
+          userId: 'me',
+          requestBody: {
+            labelListVisibility: 'labelShow',
+            messageListVisibility: 'show',
+            name,
+            ...gmail_def
+          }
         }
-      }
-      const res: AxiosResponse<gmail_v1.Schema$Label> = (await this.req(
-        'users.labels.create',
-        this.api.users.labels.create,
-        this.api.users.labels,
-        // @ts-ignore params typed manually
-        params,
-        abort
-      )) as any
-      this.labels.push(res.data)
-      return res
-    })
+        const res: AxiosResponse<gmail_v1.Schema$Label> = (await this.req(
+          'users.labels.create',
+          this.api.users.labels.create,
+          this.api.users.labels,
+          // @ts-ignore params typed manually
+          params,
+          abort
+        )) as any
+        this.labels.push(res.data)
+        return res
+      })
+    )
   }
 
   labelDefToGmailDef(

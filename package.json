@@ -55,13 +55,11 @@
     "moment": "^2.22.1",
     "moment-timezone": "^0.5.17",
     "printf": "^0.2.5",
-    "remove-html-comments": "^1.0.2",
     "round-to": "^2.0.0",
     "simple-random-id": "^1.0.1",
     "source-map-support": "^0.5.6",
     "supports-color": "^5.4.0",
     "suspend": "^0.7.0",
-    "typed-promisify-tob": "^0.2.0",
     "winston": "^3.0.0"
   },
   "license": "MIT",

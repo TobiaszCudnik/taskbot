@@ -172,7 +172,7 @@ export default class GmailListSync extends SyncReader<
         this.gmail.threads.get(record.gmail_id) &&
         // only from this list
         this.config.db_query(record) &&
-        this.root.config.lists.reduce((p, i) => {
+        this.root.config_parsed.lists.reduce((p, i) => {
           if (i.db_query && i.db_query(record)) {
             p++
           }

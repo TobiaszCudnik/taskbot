@@ -6,7 +6,6 @@ import { Moment } from 'moment'
 import * as moment from 'moment'
 import * as delay from 'delay'
 import * as roundTo from 'round-to'
-import { map } from 'typed-promisify-tob'
 import { tasks_v1 } from 'googleapis'
 // Machine types
 import {
@@ -268,22 +267,24 @@ export default class GTasksSync extends SyncWriter<
   }
 
   async createTaskLists(names, abort: TAbortFunction) {
-    await map(names, async name => {
-      this.log(`Creating a new list tasklist '${name}'`)
-      const params: tasks_v1.Params$Resource$Tasklists$Insert = {
-        requestBody: {
-          title: name
+    await Promise.all(
+      names.map(async name => {
+        this.log(`Creating a new list tasklist '${name}'`)
+        const params: tasks_v1.Params$Resource$Tasklists$Insert = {
+          requestBody: {
+            title: name
+          }
         }
-      }
-      await this.req(
-        'tasklists.insert',
-        this.api.tasklists.insert,
-        this.api.tasklists,
-        // @ts-ignore typed manually
-        params,
-        abort
-      )
-    })
+        await this.req(
+          'tasklists.insert',
+          this.api.tasklists.insert,
+          this.api.tasklists,
+          // @ts-ignore typed manually
+          params,
+          abort
+        )
+      })
+    )
   }
 
   toString() {
@@ -313,111 +314,128 @@ export default class GTasksSync extends SyncWriter<
 
   processTasksToModify(abort: () => boolean) {
     this.children_to_move = []
-    return map(this.subs.lists, async (sync: GTasksListSync) => {
-      await map(sync.getTasks(), async (task: TTask) => {
-        const db_res = <DBRecord>(<any>this.root.data
-          .chain()
-          .where((record: DBRecord) => {
-            // TODO implement gtasks_hidden_ids
-            return Boolean(record.gtasks_ids && record.gtasks_ids[task.id])
-          })
-          .limit(1)
-          .data())
-        const record: DBRecord = db_res[0]
-        if (record.to_delete) {
-          return
-        }
-        // TODO type
-        const patch: any = {}
-        // TODO this should wait for gmail to write
-        // @ts-ignore
-        if (record.gmail_id && this.toGmailID(task) != record.gmail_id) {
-          patch.notes = this.addGmailID(record.content, record.gmail_id)
-        }
-        const title =
-          record.title + this.root.getRecordLabelsAsText(record, sync.config)
-        if (task.title != title) {
-          patch.title = title
-        }
-        let other_list_id
-        if (sync.config.db_query(record) && this.isCompleted(task)) {
-          // Un-complete
-          patch.status = 'needsAction'
-          patch.completed = null
-        } else if (!sync.config.db_query(record)) {
-          // Delete
-          // TODO get the IDs - list's ID and the local tasks ID
-          other_list_id = this.taskIsUncompletedElsewhere(
-            record,
-            sync.config.name
-          )
-          // Complete
-          if (!other_list_id && !this.isCompleted(task)) {
-            patch.status = 'completed'
-          } else if (other_list_id) {
-            const children = sync.getChildren(task.id)
-            if (children.root_tasks.length) {
-              this.log(
-                `Moving ${children.root_tasks.length} children for '${
-                  task.title
-                }'`
-              )
-              // defer writing children until all the lists are done
-              // TODO ideally wait only for the target list
-              this.children_to_move.push({
-                list_id: other_list_id,
-                gmail_id: record.gmail_id,
-                children: children.root_tasks
+    return Promise.all(
+      this.subs.lists.map(async (sync: GTasksListSync) => {
+        await Promise.all(
+          sync.getTasks().map(async (task: TTask) => {
+            const db_res = <DBRecord>(<any>this.root.data
+              .chain()
+              .where((record: DBRecord) => {
+                // TODO implement gtasks_hidden_ids
+                return Boolean(record.gtasks_ids && record.gtasks_ids[task.id])
               })
-              // remove children from this list
-              await map(children.all_tasks, async t =>
-                this.deleteTask(t, sync.list, abort)
-              )
+              .limit(1)
+              .data())
+            const record: DBRecord = db_res[0]
+            if (record.to_delete) {
+              return
             }
-          }
-        }
-        if (other_list_id) {
-          delete record.gtasks_ids[task.id]
-          await this.deleteTask(task, sync.list, abort)
-          sync.state.add('Dirty')
-        } else if (Object.keys(patch).length) {
-          await this.modifyTask(task, sync.list, patch, abort)
-          sync.state.add('Dirty')
-        }
+            // TODO type
+            const patch: any = {}
+            // TODO this should wait for gmail to write
+            // @ts-ignore
+            if (record.gmail_id && this.toGmailID(task) != record.gmail_id) {
+              patch.notes = this.addGmailID(record.content, record.gmail_id)
+            }
+            const title =
+              record.title +
+              this.root.getRecordLabelsAsText(record, sync.config)
+            if (task.title != title) {
+              patch.title = title
+            }
+            let other_list_id
+            if (sync.config.db_query(record) && this.isCompleted(task)) {
+              // Un-complete
+              patch.status = 'needsAction'
+              patch.completed = null
+            } else if (!sync.config.db_query(record)) {
+              // Delete
+              // TODO get the IDs - list's ID and the local tasks ID
+              other_list_id = this.taskIsUncompletedElsewhere(
+                record,
+                sync.config.name
+              )
+              // Complete
+              if (!other_list_id && !this.isCompleted(task)) {
+                patch.status = 'completed'
+              } else if (other_list_id) {
+                const children = sync.getChildren(task.id)
+                if (children.root_tasks.length) {
+                  this.log(
+                    `Moving ${children.root_tasks.length} children for '${
+                      task.title
+                    }'`
+                  )
+                  // defer writing children until all the lists are done
+                  // TODO ideally wait only for the target list
+                  this.children_to_move.push({
+                    list_id: other_list_id,
+                    gmail_id: record.gmail_id,
+                    children: children.root_tasks
+                  })
+                  // remove children from this list
+                  await Promise.all(
+                    children.all_tasks.map(async t =>
+                      // @ts-ignore TODO pass the IDs only
+                      this.deleteTask(t, sync.list, abort)
+                    )
+                  )
+                }
+              }
+            }
+            if (other_list_id) {
+              delete record.gtasks_ids[task.id]
+              // @ts-ignore TODO pass IDs
+              await this.deleteTask(task, sync.list, abort)
+              sync.state.add('Dirty')
+            } else if (Object.keys(patch).length) {
+              await this.modifyTask(task, sync.list, patch, abort)
+              sync.state.add('Dirty')
+            }
+          })
+        )
       })
-    })
+    )
   }
 
   processTasksToDelete(abort: () => boolean) {
-    return map(this.subs.lists, async (sync: GTasksListSync) => {
-      await map(sync.getTasks(), async task => {
-        const db_res = this.root.data
-          .chain()
-          .where((record: DBRecord) => {
-            // TODO implement gtasks_hidden_ids
-            return Boolean(
-              record.gtasks_ids &&
-                record.gtasks_ids[task.id] &&
-                record.to_delete
+    return Promise.all(
+      this.subs.lists.map(async (sync: GTasksListSync) => {
+        await Promise.all(
+          sync.getTasks().map(async task => {
+            const db_res = this.root.data
+              .chain()
+              .where((record: DBRecord) => {
+                // TODO implement gtasks_hidden_ids
+                return Boolean(
+                  record.gtasks_ids &&
+                    record.gtasks_ids[task.id] &&
+                    record.to_delete
+                )
+              })
+              .limit(1)
+              .data()
+            if (!db_res[0]) return
+            const record: DBRecord = db_res[0]
+            delete record.gtasks_ids[task.id]
+            const children = sync.getChildren(task.id)
+            // remove children, if any
+            await Promise.all(
+              children.all_tasks.map(async t =>
+                // @ts-ignore TODO pass the IDs only
+                this.deleteTask(t, sync.list, abort)
+              )
             )
+            // @ts-ignore TODO pass IDs only
+            await this.deleteTask(task, sync.list, abort)
+            // update the local cache manually
+            sync.tasks.items = _.without(sync.tasks.items, task)
+            // mark as dirty to force re-read
+            sync.state.add('Dirty')
           })
-          .limit(1)
-          .data()
-        if (!db_res[0]) return
-        const record: DBRecord = db_res[0]
-        delete record.gtasks_ids[task.id]
-        const children = sync.getChildren(task.id)
-        // remove children, if any
-        await map(children.all_tasks, async t =>
-          this.deleteTask(t, sync.list, abort)
         )
-        await this.deleteTask(task, sync.list, abort)
-        // update the local cache manually
-        sync.tasks.items = _.without(sync.tasks.items, task)
-        // mark as dirty to force re-read
-        sync.state.add('Dirty')
       })
-    })
+    )
   }
 
   async saveChildren(
@@ -471,6 +489,7 @@ export default class GTasksSync extends SyncWriter<
     await Promise.all(process_children)
   }
 
+  // TODO require IDs only
   async modifyTask(
     task: TTask,
     list: TTaskList,
@@ -495,7 +514,18 @@ export default class GTasksSync extends SyncWriter<
     )
   }
 
-  async deleteTask(task: TTask, list: TTaskList, abort: () => boolean) {
+  /**
+   * TODO accept IDs as params
+   *
+   * @param task
+   * @param list
+   * @param abort
+   */
+  async deleteTask(
+    task: { id: string; title: string },
+    list: { id: string; title: string },
+    abort: () => boolean
+  ) {
     this.log(`Deleting task '${task.title}' in '${list.title}'`)
     const params: tasks_v1.Params$Resource$Tasks$Delete = {
       tasklist: list.id,
@@ -547,58 +577,68 @@ export default class GTasksSync extends SyncWriter<
   }
 
   processTasksToAdd(abort: () => boolean) {
-    return map(this.subs.lists, async (sync: GTasksListSync) => {
-      const records = this.root.data.where((record: DBRecord) => {
-        // TODO implement gtasks_hidden_ids
-        return !record.to_delete && sync.config.db_query(record)
-      })
-      await map(records, async (record: DBRecord) => {
-        const task_id = _.findKey(record.gtasks_ids, id => id == sync.list.id)
-        // omit tasks who are already on the list
-        if (task_id) return
-        // omit tasks marked for deletion
-        if (record.to_delete) return
-        const params: tasks_v1.Params$Resource$Tasks$Insert & TGlobalFields = {
-          tasklist: sync.list.id,
-          fields: 'id',
-          requestBody: {
-            title:
-              record.title +
-              this.root.getRecordLabelsAsText(record, sync.config),
-            notes: this.addGmailID(record.content, record.gmail_id)
-          }
-        }
-        this.log(`Adding a new task '${record.title}' to '${sync.list.title}'`)
-        type TResponse = AxiosResponse<TTask>
-        const res: TResponse = await this.req(
-          'tasks.insert',
-          this.api.tasks.insert,
-          this.api.tasks,
-          // @ts-ignore manual typing
-          params,
-          abort
+    return Promise.all(
+      this.subs.lists.map(async (sync: GTasksListSync) => {
+        const records = this.root.data.where((record: DBRecord) => {
+          // TODO implement gtasks_hidden_ids
+          return !record.to_delete && sync.config.db_query(record)
+        })
+        await Promise.all(
+          records.map(async (record: DBRecord) => {
+            const task_id = _.findKey(
+              record.gtasks_ids,
+              id => id == sync.list.id
+            )
+            // omit tasks who are already on the list
+            if (task_id) return
+            // omit tasks marked for deletion
+            if (record.to_delete) return
+            const params: tasks_v1.Params$Resource$Tasks$Insert &
+              TGlobalFields = {
+              tasklist: sync.list.id,
+              fields: 'id',
+              requestBody: {
+                title:
+                  record.title +
+                  this.root.getRecordLabelsAsText(record, sync.config),
+                notes: this.addGmailID(record.content, record.gmail_id)
+              }
+            }
+            this.log(
+              `Adding a new task '${record.title}' to '${sync.list.title}'`
+            )
+            type TResponse = AxiosResponse<TTask>
+            const res: TResponse = await this.req(
+              'tasks.insert',
+              this.api.tasks.insert,
+              this.api.tasks,
+              // @ts-ignore manual typing
+              params,
+              abort
+            )
+            if (abort && abort()) abort()
+            record.gtasks_ids = record.gtasks_ids || {}
+            record.gtasks_ids[res.data.id] = sync.list.id
+            const to_move = this.children_to_move.find(
+              item =>
+                item.gmail_id == record.gmail_id && item.list_id == sync.list.id
+            )
+            if (to_move) {
+              await this.saveChildren(
+                sync.list.id,
+                res.data.id,
+                to_move.children,
+                abort
+              )
+              if (abort && abort()) abort()
+              this.children_to_move = _.without(this.children_to_move, to_move)
+            }
+            // TODO batch
+            this.root.data.update(record)
+            sync.state.add('Dirty')
+          })
         )
-        if (abort && abort()) abort()
-        record.gtasks_ids = record.gtasks_ids || {}
-        record.gtasks_ids[res.data.id] = sync.list.id
-        const to_move = this.children_to_move.find(
-          item =>
-            item.gmail_id == record.gmail_id && item.list_id == sync.list.id
-        )
-        if (to_move) {
-          await this.saveChildren(
-            sync.list.id,
-            res.data.id,
-            to_move.children,
-            abort
-          )
-          if (abort && abort()) abort()
-          this.children_to_move = _.without(this.children_to_move, to_move)
-        }
-        // TODO batch
-        this.root.data.update(record)
-        sync.state.add('Dirty')
       })
-    })
+    )
   }
 }
