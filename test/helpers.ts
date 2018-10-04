@@ -1,32 +1,33 @@
 ///<reference path="../typings/index.d.ts"/>
 
-export const DELAY = 5000
+export const DELAY = 500
 export const scenarios = [0, 1, 2]
 
 import * as assert from 'assert'
-import * as google from 'googleapis'
+import { AxiosResponse } from 'axios'
 import * as debug from 'debug'
+import { MethodOptions } from 'googleapis-common'
 import * as _ from 'lodash'
-import { promisifyArray } from 'typed-promisify-tob/index'
 import { test_user } from '../config-accounts'
 import { getConfig } from '../src/app/config'
 import Connections from '../src/app/connections'
 import Logger from '../src/app/logger'
 import GmailSync from '../src/google/gmail/sync'
+import { TGlobalFields } from '../src/google/sync'
 import GTasksSync from '../src/google/tasks/sync'
 import RootSync from '../src/sync/root'
 import * as delay from 'delay'
+import { OAuth2Client } from 'google-auth-library'
+import { google, gmail_v1, tasks_v1 } from 'googleapis'
 
-import { OAuth2Client } from 'google-auth-library/build/src/auth/oauth2client'
-
-export type Label = google.gmail.v1.Label
-export type Thread = google.gmail.v1.Thread
-export type Task = google.tasks.v1.Task
-export type TaskList = google.tasks.v1.TaskList
+export type Label = gmail_v1.Schema$Label
+export type Thread = gmail_v1.Schema$Thread
+export type Task = tasks_v1.Schema$Task
+export type TaskList = tasks_v1.Schema$TaskList
 
 export default async function createHelpers() {
-  let gtasks: google.tasks.v1.Tasks
-  let gmail: google.gmail.v1.Gmail
+  let gtasks: tasks_v1.Tasks
+  let gmail: gmail_v1.Gmail
   let auth: OAuth2Client
   let sync: RootSync
   let gmail_sync: GmailSync
@@ -34,7 +35,8 @@ export default async function createHelpers() {
   const log_inner = debug('tests')
   const log = (msg, ...rest) => {
     // @ts-ignore
-    if (debug.disabled) return
+    // TODO tmp
+    // if (debug.disabled) return
     log_inner(msg, ...rest)
   }
 
@@ -79,28 +81,28 @@ export default async function createHelpers() {
       id: thread_id,
       userId: 'me',
       fields: 'id',
-      resource: {
+      requestBody: {
         addLabelIds: add.map(labelID),
         removeLabelIds: remove.map(labelID)
       }
     })
   }
 
-  function hasLabel(thread: google.gmail.v1.Thread, label: string): boolean {
+  function hasLabel(thread: Thread, label: string): boolean {
     return thread.messages[0].labelIds.includes(labelID(label))
   }
 
   async function listQuery(
     query = 'label:!s-next-action'
-  ): Promise<google.gmail.v1.ListThreadsResponse> {
-    const [list, res] = await req('gmail.users.threads.list', {
+  ): Promise<gmail_v1.Schema$ListThreadsResponse> {
+    const res = await req('gmail.users.threads.list', {
       maxResults: 1000,
       q: query,
       userId: 'me',
       // TODO is 'snippet' useful?
       fields: 'nextPageToken,threads(historyId,id)'
     })
-    return list
+    return res.data
   }
 
   async function deleteThread(thread_id: string): Promise<true> {
@@ -112,24 +114,24 @@ export default async function createHelpers() {
   }
 
   async function getThread(id: string): Promise<Thread> {
-    const [body, res] = await req('gmail.users.threads.get', {
+    const res: AxiosResponse<Thread> = await req('gmail.users.threads.get', {
       id,
       userId: 'me',
       metadataHeaders: ['SUBJECT', 'FROM', 'TO'],
       format: 'metadata',
       fields: 'id,historyId,messages(id,labelIds,payload(headers))'
     })
-    return body
+    return res.data
   }
 
-  async function listTasklist(name = '!next'): Promise<google.tasks.v1.Tasks> {
-    const [body] = await req('gtasks.tasks.list', {
+  async function listTasklist(name = '!next'): Promise<tasks_v1.Schema$Tasks> {
+    const res = await req('gtasks.tasks.list', {
       maxResults: 1000,
       tasklist: gtasks_sync.getListByName(name).list.id,
       fields: 'etag,items(id,title,notes,updated,etag,status,parent)',
       showHidden: false
     })
-    return body
+    return res.data
   }
 
   function printDB() {
@@ -146,7 +148,7 @@ export default async function createHelpers() {
     // init sync
     const logger = new Logger()
     const connections = new Connections(logger)
-    const config = getConfig(test_user)
+    const config = getConfig(test_user.config)
     // disable auto sync
     config.sync_frequency = 10000 * 100
     config.gtasks.sync_frequency = 10000 * 100
@@ -236,35 +238,44 @@ export default async function createHelpers() {
   }
 
   // TODO retry on Backend Error
-  async function req(method: string, params = {}, options = {}) {
+  // async function req<P, R>(
+  //   name: string,
+  //   method: (params: P, options: MethodOptions) => AxiosPromise<R>,
+  //   context: object,
+  //   params: P & TGlobalFields,
+  //   options: MethodOptions = {}
+  // ): Promise<AxiosResponse<R>> {
+  async function req<P, R = null>(
+    method: string,
+    params: P & TGlobalFields,
+    options: MethodOptions = {}
+  ): Promise<AxiosResponse<R>> {
     log(`req ${method}:\n%O`, params)
     if (DELAY) {
       await delay(delay)
     }
     // @ts-ignore
     params.auth = auth
-    // prevent JIT from shadowing those
+    // prevent JIT from shadowing those, so eval works
     // @ts-ignore
     void (gmail, gtasks)
-    // log(method)
-    // @ts-ignore
-    options = {
-      forever: true,
-      options
-    }
-    // @ts-ignore
-    return await promisifyArray(eval(method))(params, options)
+    console.log(method)
+    // TODO keep alive
+    return await eval(method)(params, options)
   }
 
   async function truncateQuery(query) {
-    const [body, res] = await req('gmail.users.threads.list', {
-      maxResults: 1000,
-      q: query,
-      userId: 'me',
-      fields: 'nextPageToken,threads(historyId,id)'
-    })
+    const res: AxiosResponse<gmail_v1.Schema$ListThreadsResponse> = await req(
+      'gmail.users.threads.list',
+      {
+        maxResults: 1000,
+        q: query,
+        userId: 'me',
+        fields: 'nextPageToken,threads(historyId,id)'
+      }
+    )
 
-    const threads = body.threads || []
+    const threads = res.data.threads || []
     await Promise.all(
       threads.map(
         async thread =>
@@ -278,8 +289,11 @@ export default async function createHelpers() {
 
   async function truncateGTasks() {
     // get all the lists
-    const [body, res] = await req('gtasks.tasklists.list', {})
-    const lists = body.items || []
+    const res: AxiosResponse<tasks_v1.Schema$TaskLists> = await req(
+      'gtasks.tasklists.list',
+      {}
+    )
+    const lists = res.data.items || []
     // delete every list
     await Promise.all(
       lists.map(async (list: TaskList) => {
@@ -295,10 +309,13 @@ export default async function createHelpers() {
     const list = gtasks_sync.getListByName(name)
     assert(list, `list doesn't exist`)
     // get all the lists
-    const [body, res] = await req('gtasks.tasks.list', {
-      tasklist: list.list.id
-    })
-    const lists = body.items || []
+    const res: AxiosResponse<tasks_v1.Schema$Tasks> = await req(
+      'gtasks.tasks.list',
+      {
+        tasklist: list.list.id
+      }
+    )
+    const lists = res.data.items || []
     // delete every list
     await Promise.all(
       lists.map(async (task: TaskList) => {
@@ -370,13 +387,13 @@ export default async function createHelpers() {
   async function getTask(
     task_id: string,
     list: string = '!next'
-  ): Promise<google.tasks.v1.Task> {
-    const [body, res] = await req('gtasks.tasks.get', {
+  ): Promise<Task> {
+    const res: AxiosResponse<Task> = await req('gtasks.tasks.get', {
       tasklist: gtasks_sync.getListByName(list).list.id,
       task: task_id,
       fields: 'id,title,updated,status,notes'
     })
-    return body
+    return res.data
   }
 
   /**
@@ -389,37 +406,33 @@ export default async function createHelpers() {
     completed = false,
     parent?: string
   ): Promise<string> {
-    const [body, res] = await req('gtasks.tasks.insert', {
+    const res: AxiosResponse<Task> = await req('gtasks.tasks.insert', {
       tasklist: gtasks_sync.getListByName(list).list.id,
       fields: 'id',
       parent,
-      resource: {
+      requestBody: {
         title,
         notes,
         status: completed ? 'completed' : 'needsAction'
       }
     })
-    return body.id
+    return res.data.id
   }
 
   /**
    * @param id Task ID
-   * @param patch Partial Task resource
+   * @param patch Partial Task requestBody
    * @param list List name (not the ID)
    * @return Task ID
    */
-  async function patchTask(
-    id,
-    patch: Partial<google.tasks.v1.Task>,
-    list = '!next'
-  ): Promise<string> {
-    const [body, res] = await req('gtasks.tasks.patch', {
+  async function patchTask(id, patch: Task, list = '!next'): Promise<string> {
+    const res: AxiosResponse<Task> = await req('gtasks.tasks.patch', {
       tasklist: gtasks_sync.getListByName(list).list.id,
       task: id,
       fields: 'id',
-      resource: patch
+      requestBody: patch
     })
-    return body.id
+    return res.data.id
   }
 
   // TODO reset exceptions too, maybe clone states from after the inital sync

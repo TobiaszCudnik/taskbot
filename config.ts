@@ -2,6 +2,7 @@ import LabelFilterSync from './src/sync/label-filter'
 import { DBRecord, default as RootSync } from './src/sync/root'
 import { IConfig, IConfigPublic } from './src/types'
 import * as _ from 'lodash'
+import { isTestEnv } from './src/utils'
 import moment = require('moment-timezone')
 
 // TODO move functions to /src/sync/label-filter.ts
@@ -40,7 +41,7 @@ const config: IConfigPublic = {
       'https://www.googleapis.com/auth/userinfo.email',
       'https://www.googleapis.com/auth/tasks',
       // tests can delete emails
-      process.env['TEST']
+      isTestEnv()
         ? 'https://mail.google.com/'
         : 'https://www.googleapis.com/auth/gmail.modify'
     ]

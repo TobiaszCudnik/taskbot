@@ -1,6 +1,6 @@
 ///<reference path="../typings/index.d.ts"/>
 
-import * as debug from 'debug'
+import { gmail_v1 } from 'googleapis'
 import createHelpers from './helpers'
 
 const scenario = parseInt(process.env['SCENARIO'], 10) || 0
@@ -64,35 +64,43 @@ describe(`sync (sync_type: ${scenario})`, function() {
     ])
     await h.syncList()
     // add !S/Action
-    await h.req('gmail.users.threads.modify', {
-      id: thread_id_1,
-      userId: 'me',
-      fields: 'id',
-      resource: {
-        addLabelIds: [h.labelID('!S/Finished')]
+    // TODO extract to a helper
+    await h.req<gmail_v1.Params$Resource$Users$Threads$Modify>(
+      'gmail.users.threads.modify',
+      {
+        id: thread_id_1,
+        userId: 'me',
+        fields: 'id',
+        requestBody: {
+          addLabelIds: [h.labelID('!S/Finished')]
+        }
       }
-    })
+    )
     // add !S/Expired
-    await h.req('gmail.users.threads.modify', {
-      id: thread_id_2,
-      userId: 'me',
-      fields: 'id',
-      resource: {
-        addLabelIds: [h.labelID('!S/Expired')]
+    // TODO extract to a helper
+    await h.req<gmail_v1.Params$Resource$Users$Threads$Modify>(
+      'gmail.users.threads.modify',
+      {
+        id: thread_id_2,
+        userId: 'me',
+        fields: 'id',
+        requestBody: {
+          addLabelIds: [h.labelID('!S/Expired')]
+        }
       }
-    })
+    )
     await h.syncListScenario(scenario)
     // assert
     expect(h.sync.data.data).toHaveLength(2)
     const record_1 = h.gmail_sync.getRecordByGmailID(thread_id_1)
     expect(record_1.labels).toMatchObject({
       '!S/Next Action': { active: false },
-      '!S/Finished': { active: true },
+      '!S/Finished': { active: true }
     })
     const record_2 = h.gmail_sync.getRecordByGmailID(thread_id_2)
     expect(record_2.labels).toMatchObject({
       '!S/Next Action': { active: false },
-      '!S/Expired': { active: true },
+      '!S/Expired': { active: true }
     })
   })
 })

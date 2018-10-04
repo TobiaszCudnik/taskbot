@@ -1,7 +1,6 @@
 ///<reference path="../typings/index.d.ts"/>
 
-import * as debug from 'debug'
-import * as google from 'googleapis'
+import { tasks_v1 } from 'googleapis'
 import createHelpers from './helpers'
 
 const scenario = parseInt(process.env['SCENARIO'], 10) || 0
@@ -30,19 +29,20 @@ afterAll(function() {
 
 describe(`gtasks (sync_type: ${scenario})`, function() {
   if (!scenario) {
-  it('should create the lists', async function() {
-    const [lists]: [google.tasks.v1.TaskLists] = await h.req(
-      'gtasks.tasklists.list'
-    )
-    const list_names = lists.items.map(l => l.title.toLowerCase())
-    for (const list of h.sync.config.lists) {
-      // skip gmail-only lists
-      if (list.writers && !list.writers.includes('gtasks')) {
-        continue
+    it('should create the lists', async function() {
+      const lists = await h.req<
+        tasks_v1.Params$Resource$Tasklists$List,
+        tasks_v1.Schema$TaskLists
+      >('gtasks.tasklists.list', {})
+      const list_names = lists.data.items.map(l => l.title.toLowerCase())
+      for (const list of h.sync.config_parsed.lists) {
+        // skip gmail-only lists
+        if (list.writers && !list.writers.includes('gtasks')) {
+          continue
+        }
+        expect(list_names).toContain(list.name.toLowerCase())
       }
-      expect(list_names).toContain(list.name.toLowerCase())
-    }
-  })
+    })
   }
 
   it.skip('should cache with etags', function() {})

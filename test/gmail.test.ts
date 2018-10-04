@@ -1,8 +1,7 @@
-///<reference path="../typings/index.d.ts"/>
-
-import * as google from 'googleapis'
-import * as debug from 'debug'
+import { AxiosResponse } from 'axios'
+import { Params$Resource$Users$Labels$List } from 'googleapis/build/src/apis/gmail/v1'
 import createHelpers, { Label, Thread, Task, TaskList } from './helpers'
+import { gmail_v1 } from 'googleapis'
 
 const scenario = parseInt(process.env['SCENARIO'], 10) || 0
 // types for the helpers
@@ -31,14 +30,14 @@ afterAll(function() {
 // DEBUG=tests,\*-error,record-diffs,db-diffs,connections-\*,root\*-info DEBUG_FILE=1 node_modules/jest/bin/jest.js
 describe(`gmail (sync_type: ${scenario})`, function() {
   if (!scenario) {
-    it('should create the labels', async function() {
+    it.only('should create the labels', async function() {
       h.log('\n\nTEST: should create the labels')
       // TODO test with missing labels
       // TODO test adding colors to existing labels
-      const [list]: [google.gmail.v1.ListLabelsResponse] = await h.req(
-        'gmail.users.labels.list',
-        { userId: 'me' }
-      )
+      const list = await h.req<
+        gmail_v1.Params$Resource$Users$Labels$List,
+        gmail_v1.Schema$ListLabelsResponse
+      >('gmail.users.labels.list', { userId: 'me' })
       const expected = [
         // name, bg, fg, hidden
         ['!S/Next Action', '#fb4c2f', '#ffffff', false],
@@ -47,7 +46,7 @@ describe(`gmail (sync_type: ${scenario})`, function() {
         ['P/project_1', '#a4c2f4', '#000000', false]
       ]
       for (const item of expected) {
-        const found = list.labels.find((l: Label) => l.name == item[0])
+        const found = list.data.labels.find((l: Label) => l.name == item[0])
         expect(found).toBeTruthy()
         expect(found.color.backgroundColor).toEqual(item[1])
         expect(found.color.textColor).toEqual(item[2])
@@ -193,7 +192,7 @@ describe(`gmail (sync_type: ${scenario})`, function() {
         id: thread_id,
         userId: 'me',
         fields: 'id',
-        resource: {
+        requestBody: {
           addLabelIds: [h.labelID('!S/Action')]
         }
       })
@@ -229,7 +228,7 @@ describe(`gmail (sync_type: ${scenario})`, function() {
         id: thread_id,
         userId: 'me',
         fields: 'id',
-        resource: {
+        requestBody: {
           addLabelIds: [h.labelID('!S/Finished')]
         }
       })
@@ -293,7 +292,7 @@ describe(`gmail (sync_type: ${scenario})`, function() {
         id: thread_id,
         userId: 'me',
         fields: 'id',
-        resource: {
+        requestBody: {
           addLabelIds: [h.labelID('!S/Expired')]
         }
       })
