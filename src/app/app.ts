@@ -207,7 +207,7 @@ export class App {
     const config_user = merge(config, user)
     this.log_info(`Adding sync for ${config_user.user.id} (uid: ${uid})`)
     const sync = new RootSync(config_user, this.logger, this.connections)
-    if (!process.env['TEST']) {
+    if (!isTestEnv()) {
       // jump out of this tick
       sync.state.addNext('Enabled')
     }

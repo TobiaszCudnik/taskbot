@@ -2,6 +2,7 @@ import * as firebase from 'firebase-admin'
 import { Request, ResponseToolkit } from 'hapi'
 import { App } from '../app/app'
 import { IAccount, IConfigPrivate } from '../types'
+import { isTestEnv } from '../utils'
 import { TContext } from './server'
 import { Credentials } from 'google-auth-library/build/src/auth/credentials'
 
@@ -90,7 +91,8 @@ export async function authorizeCallback(
   )
   this.logger_info('tokens fetched')
 
-  if (process.env['TEST']) {
+  // return tokens immediately for
+  if (isTestEnv()) {
     return tokens
   }
 
