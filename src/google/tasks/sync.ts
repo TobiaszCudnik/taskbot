@@ -186,9 +186,10 @@ export default class GTasksSync extends SyncWriter<
   async FetchingTaskLists_state() {
     let abort = this.state.getAbort('FetchingTaskLists')
     let params: tasks_v1.Params$Resource$Tasklists$List & TGlobalFields = {
-      headers: {
-        'If-None-Match': this.etags.task_lists
-      }
+      headers: {}
+    }
+    if (this.etags.task_lists) {
+      params.headers['If-None-Match'] = this.etags.task_lists
     }
     const res: AxiosResponse<TTaskListsRes> = await this.req(
       'tasklists.list',

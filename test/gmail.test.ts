@@ -1,5 +1,3 @@
-import { AxiosResponse } from 'axios'
-import { Params$Resource$Users$Labels$List } from 'googleapis/build/src/apis/gmail/v1'
 import createHelpers, { Label, Thread, Task, TaskList } from './helpers'
 import { gmail_v1 } from 'googleapis'
 
@@ -13,6 +11,7 @@ beforeAll(async function() {
   h = await createHelpers()
 })
 beforeAll(async function() {
+  if (!h) return
   await h.gmail_sync.createLabelsIfMissing([
     'P/project_1',
     'P/project_2',
@@ -30,7 +29,8 @@ afterAll(function() {
 // DEBUG=tests,\*-error,record-diffs,db-diffs,connections-\*,root\*-info DEBUG_FILE=1 node_modules/jest/bin/jest.js
 describe(`gmail (sync_type: ${scenario})`, function() {
   if (!scenario) {
-    it.only('should create the labels', async function() {
+    it('should create the labels', async function() {
+      debugger
       h.log('\n\nTEST: should create the labels')
       // TODO test with missing labels
       // TODO test adding colors to existing labels

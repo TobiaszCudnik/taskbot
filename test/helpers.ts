@@ -35,8 +35,7 @@ export default async function createHelpers() {
   const log_inner = debug('tests')
   const log = (msg, ...rest) => {
     // @ts-ignore
-    // TODO tmp
-    // if (debug.disabled) return
+    if (debug.disabled) return
     log_inner(msg, ...rest)
   }
 
@@ -256,12 +255,13 @@ export default async function createHelpers() {
     }
     // @ts-ignore
     params.auth = auth
-    // prevent JIT from shadowing those, so eval works
-    // @ts-ignore
+    // @ts-ignore prevent JIT from shadowing those, so eval works
     void (gmail, gtasks)
-    console.log(method)
+    const fn = eval(method)
+    // remove the method name
+    const context = eval(method.replace(/\.\w+$/, ''))
     // TODO keep alive
-    return await eval(method)(params, options)
+    return await fn.call(context, params, options)
   }
 
   async function truncateQuery(query) {
