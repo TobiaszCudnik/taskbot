@@ -1,17 +1,32 @@
 ## Bugs
 
+* heartbeat based auto restart doesnt work
 * after starting the service for 2 users
   * `connections-error [gtd...@gmail.com] Request 'gtasks.api.tasks.list' aborted by the abort() function +0ms`
 * auto color of new P/ labels doesnt seem to work
   * added via gmail, not via text-labels
   * periodic color check doesnt work?
+* web/account - `Completed tasks` shows only the number of monitored tasks
+  * not all of the `!f` tasks are counted in
+  * create a dedicated query
+  * and take only the estimated amount?
+* throttle account stats refreshes
 
 ## Milestone 1:
 
+* progress bar when auto-signin in
+  * go to the page, youre not signed, wait, you signed
+  * during waiting - a progress bar should be visible
+* fix layout for google icons inside of buttons
+* keep server stats in firebase (per hour)
+  * number of active users (instances)
+  * number of active tasks from all instances
 * check if completing a task and clicking "clear completed" works OK
 * keep original email title in task notes
-* more descriptive for `gmail.fetchThread`
 * www
+  * demo screenshots contain wrong addresses in task descriptions
+    * should be the fake one
+    * name should be TaskBot Demo
   * update to next7
   * compress imgs with webp etc and use `picture`
   * `robots.txt` file
@@ -35,6 +50,8 @@
 
 ## Milestone 1.2
 
+* convert task description (or email content) into subtasks
+  * regexp for lists
 * self replies to self emails should be added to the task description
   * and mark as read
 * refresh token on unauthorized_client exception
@@ -132,6 +149,9 @@
 
 ## Optimizations
 
+* check if downloading only the first message (instead of all of them)
+  * will give the proper suject
+  * will give all the labels
 * reduce the number of appengine health checks
 * share the same http agent across all the users on the node
 * apply the change manually on the internal readers' data structs
