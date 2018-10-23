@@ -8,11 +8,11 @@ ${toc}
 * Colors
 * **Google Tasks** lists
 
-Optional (but recommended) steps the user has to perform manually are:
+Optional (yet recommended) steps the user has to perform manually are:
 
-1.  [Enabling Multi Inbox](/faq#5)
-2.  [Hiding the left sidebar](/faq#5)
-3.  [Enabling the keyboard shortcuts](/faq#5)
+1.  [Enabling Multi Inbox](/faq#how-to-configure-multi-inbox%3F)
+2.  [Hiding the left sidebar](/faq#how-to-hide-the-left-gmail-sidebar%3F)
+3.  [Enabling the keyboard shortcuts](/faq#which-of-the-keyboard-shortcuts-are-useful-for-taskbot%3F)
 
 #### How to configure Multi Inbox?
 
@@ -77,15 +77,15 @@ To trigger a sync from **Google Tasks** to **GMail** any time you need it, add a
 
 #### Will TaskBot read my emails?
 
-**TaskBot** will not read the contents of your emails, although it will read the subjects and labels assigned to them. Details about accessed and stored data can be found in our [Privacy Policy](/privacy-policy). You can also check the code running the service on [GitHub](https://github.com/TaskSync/TaskBot.app) (it's open source).
+**TaskBot** will not read the contents of your emails, although it will read the subjects and labels assigned to them. Details about accessed and stored data can be found in our [Privacy Policy](/privacy-policy). Our source code is **open source** and you can review it on [GitHub](https://github.com/TaskSync/TaskBot.app).
 
 #### Can I share a Google Tasks list with someone?
 
-Not at the moment, but we're working on it! Soon you'll be able to share a custom list in **Google Tasks** with another **TaskBot** user, without using any dedicated UI. Tasks from that list will still be able to have a status assigned to them, which will make them show up in one of the status lists. That way you can organize your **GTD** independently of the shared list.
+Not at the moment, but we're working on it! Soon, you'll be able to share a custom list in **Google Tasks** with another **TaskBot** user by using a **Google Tasks client only**. Tasks from that list will still be able to have a status assigned to them, which will make them show up in one of the status lists. That way you can organize your **GTD** independently of the shared list.
 
 #### Does TaskBot need my password?
 
-No. You don't have to give **TaskBot** your password, simply because we're using **Google Cloud API**s, which have token-based authentication. 
+No, **TaskBot** will never ask you for your password, simply because we're using **Google Cloud API**s, which have token-based authentication. You login only on the **google.com** domain.
 
 #### Other questions?
 
