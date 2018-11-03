@@ -86,6 +86,7 @@ export default class Connections {
     if (this.apis.gtasks) {
       // TODO dispose
     }
+    // TODO pass the https agent here
     this.apis.gtasks = google.tasks({version: 'v1'})
   }
 
@@ -94,6 +95,7 @@ export default class Connections {
     if (this.apis.gmail) {
       // TODO dispose
     }
+    // TODO pass the https agent here
     this.apis.gmail = google.gmail({version: 'v1'})
   }
 
