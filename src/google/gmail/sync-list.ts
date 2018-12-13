@@ -28,7 +28,6 @@ export const sync_state: IJSONStates = {
   Ready: { auto: true, drop: ['Initializing'] }
 }
 
-type DBCollection = loki.Collection<DBRecord>
 export default class GmailListSync extends SyncReader<
   IListConfig,
   TStates,
