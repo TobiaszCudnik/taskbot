@@ -25,16 +25,20 @@ function ok<T>(data: T): AxiosResponse<T> {
     data,
     status: 200,
     statusText: 'OK',
+    // TODO
     headers: {},
+    // TODO?
     config: {}
   }
 }
+
+// ----- GMAIL
 
 class Gmail {
   threads: Thread[]
   labels: Label[]
   messages: Message[]
-  historyId: number
+  historyId: string
 
   users: Partial<AsyncMethods<gmail_v1.Resource$Users>> = new GmailUsers(this)
 
@@ -46,7 +50,9 @@ class GmailChild {
 }
 
 class GmailUsers extends GmailChild {
-  labels = new GmailUsersLabels(this.gmail)
+  labels: Partial<
+    AsyncMethods<gmail_v1.Resource$Users$Labels>
+  > = new GmailUsersLabels(this.gmail)
   // drafts: Resource$Users$Drafts
   // history: Resource$Users$History
   messages: Partial<
@@ -73,53 +79,72 @@ class GmailUsers extends GmailChild {
 class GmailUsersMessages extends GmailChild
   implements Partial<AsyncMethods<gmail_v1.Resource$Users$Messages>> {
   async send(
-    params: gmail_v1.Params$Resource$Users$Messages$Send & TGlobalFields,
-    options?: MethodOptions
+    params: gmail_v1.Params$Resource$Users$Messages$Send & TGlobalFields
+    // options?: MethodOptions
   ): Promise<AxiosResponse<Message>> {
-    return ok(params.requestBody)
+    // TODO match the schema
+    const threadId = Math.random().toString()
+    return ok({
+      threadId,
+      ...params.requestBody
+      // TODO missing fields?
+    })
   }
 
   async insert(
-    params: gmail_v1.Params$Resource$Users$Messages$Insert & TGlobalFields,
-    options?: MethodOptions
+    params: gmail_v1.Params$Resource$Users$Messages$Insert & TGlobalFields
+    // options?: MethodOptions
   ): Promise<AxiosResponse<Message>> {
-    return ok(params.requestBody)
+    const hid = (parseInt(this.gmail.historyId) + 1).toString()
+    const msg = params.requestBody
+    const thread: Thread = {
+      historyId: hid,
+      id: Math.random().toString(),
+      snippet: 'foo bar',
+      messages: [msg]
+    }
+    this.gmail.historyId = hid
+    this.gmail.messages.push(msg)
+    this.gmail.threads.push(thread)
+    return ok(msg)
   }
 }
 
 class GmailUsersLabels extends GmailChild {
   async list(
-    params: gmail_v1.Params$Resource$Users$Labels$List & TGlobalFields,
-    options?: MethodOptions
+    params: gmail_v1.Params$Resource$Users$Labels$List & TGlobalFields
+    // options?: MethodOptions
   ): Promise<AxiosResponse<gmail_v1.Schema$ListLabelsResponse>> {
-    // TODO
+    // TODO query
     return ok({
-      labels: []
+      labels: this.gmail.labels
     })
   }
 
   async patch(
-    params: gmail_v1.Params$Resource$Users$Labels$Patch & TGlobalFields,
-    options?: MethodOptions
+    params: gmail_v1.Params$Resource$Users$Labels$Patch & TGlobalFields
+    // options?: MethodOptions
   ): Promise<AxiosResponse<Label>> {
-    // TODO
-    return ok({})
+    const label = this.gmail.labels.find(l => l.id === params.id)
+    Object.assign(label, params.requestBody)
+    return ok(label)
   }
 
   async get(
-    params: gmail_v1.Params$Resource$Users$Labels$Get & TGlobalFields,
-    options?: MethodOptions
+    params: gmail_v1.Params$Resource$Users$Labels$Get & TGlobalFields
+    // options?: MethodOptions
   ): Promise<AxiosResponse<Label>> {
-    // TODO
-    return ok({})
+    const label = this.gmail.labels.find(l => l.id === params.id)
+    return ok(label)
   }
 
   async create(
-    params: gmail_v1.Params$Resource$Users$Labels$Create & TGlobalFields,
-    options?: MethodOptions
+    params: gmail_v1.Params$Resource$Users$Labels$Create & TGlobalFields
+    // options?: MethodOptions
   ): Promise<AxiosResponse<Label>> {
-    // TODO
-    return ok({})
+    const label = params.requestBody
+    this.gmail.labels.push(label)
+    return ok(label)
   }
 }
 
@@ -150,6 +175,8 @@ class GmailUsersThreads extends GmailChild {
     return ok({})
   }
 }
+
+// ----- TASKS
 
 class Tasks {
   tasks: Task[]
@@ -194,7 +221,7 @@ class TasksTasks extends TasksChild {
     options?: MethodOptions
   ): Promise<AxiosResponse<void>> {
     // TODO
-    return ok(void)
+    return ok(void 0)
   }
 }
 
