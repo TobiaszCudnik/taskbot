@@ -1,7 +1,7 @@
 import { AxiosResponse } from 'axios'
 import { MethodOptions } from 'googleapis-common'
 import * as sinon from 'sinon'
-import { google, gmail_v1 } from 'googleapis'
+import { google, gmail_v1, tasks_v1 } from 'googleapis'
 import { TGlobalFields } from '../src/google/sync'
 
 sinon.stub(google, 'gmail', () => new Gmail('test@gmail.com'))
@@ -9,6 +9,8 @@ sinon.stub(google, 'gmail', () => new Gmail('test@gmail.com'))
 type Thread = gmail_v1.Schema$Thread
 type Label = gmail_v1.Schema$Label
 type Message = gmail_v1.Schema$Message
+type Task = tasks_v1.Schema$Task
+type TaskList = tasks_v1.Schema$TaskList
 
 // all methods returning a promise
 type ReturnsPromise<T> = {
@@ -144,6 +146,75 @@ class GmailUsersThreads extends GmailChild {
     params: gmail_v1.Params$Resource$Users$Threads$Modify & TGlobalFields,
     options?: MethodOptions
   ): Promise<AxiosResponse<Thread>> {
+    // TODO
+    return ok({})
+  }
+}
+
+class Tasks {
+  tasks: Task[]
+  lists: TaskList[]
+}
+
+class TasksChild {
+  constructor(public tasks: Tasks) {}
+}
+
+class TasksTasks extends TasksChild {
+  async list(
+    params: tasks_v1.Params$Resource$Tasks$List & TGlobalFields,
+    options?: MethodOptions
+  ): Promise<AxiosResponse<tasks_v1.Schema$Tasks>> {
+    // TODO
+    return ok({
+      // etag
+      items: [],
+      kind: 'tasks#tasks'
+    })
+  }
+
+  async insert(
+    params: tasks_v1.Params$Resource$Tasks$Insert & TGlobalFields,
+    options?: MethodOptions
+  ): Promise<AxiosResponse<Task>> {
+    // TODO
+    return ok({})
+  }
+
+  async patch(
+    params: tasks_v1.Params$Resource$Tasks$Patch & TGlobalFields,
+    options?: MethodOptions
+  ): Promise<AxiosResponse<Task>> {
+    // TODO
+    return ok({})
+  }
+
+  async delete(
+    params: tasks_v1.Params$Resource$Tasks$Patch & TGlobalFields,
+    options?: MethodOptions
+  ): Promise<AxiosResponse<void>> {
+    // TODO
+    return ok(void)
+  }
+}
+
+class TasksTasklists extends TasksChild {
+  async list(
+    params: tasks_v1.Params$Resource$Tasklists$List & TGlobalFields,
+    options?: MethodOptions
+  ): Promise<AxiosResponse<tasks_v1.Schema$TaskLists>> {
+    // TODO
+    return ok({
+      // etag
+      items: [],
+      kind: 'tasks#taskLists'
+    })
+  }
+
+  async insert(
+    params: tasks_v1.Params$Resource$Tasklists$Insert & TGlobalFields,
+    options?: MethodOptions
+  ): Promise<AxiosResponse<TaskList>> {
     // TODO
     return ok({})
   }
