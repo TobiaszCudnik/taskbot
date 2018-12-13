@@ -1,5 +1,7 @@
+import { AxiosResponse } from 'axios'
+import { MethodOptions } from 'googleapis-common'
 import * as sinon from 'sinon'
-import { google, gmail_v1, tasks_v1 } from 'googleapis'
+import { google, gmail_v1 } from 'googleapis'
 import { TGlobalFields } from '../src/google/sync'
 
 sinon.stub(google, 'gmail', () => new Gmail('test@gmail.com'))
@@ -8,42 +10,141 @@ type Thread = gmail_v1.Schema$Thread
 type Label = gmail_v1.Schema$Label
 type Message = gmail_v1.Schema$Message
 
+// all methods returning a promise
+type ReturnsPromise<T> = {
+  [K in keyof T]: T[K] extends (...args: any) => any
+    ? ReturnType<T[K]> extends Promise<any> ? K : never
+    : never
+}[keyof T]
+type AsyncMethods<T> = Pick<T, ReturnsPromise<T>>
+
+function ok<T>(data: T): AxiosResponse<T> {
+  return {
+    data,
+    status: 200,
+    statusText: 'OK',
+    headers: {},
+    config: {}
+  }
+}
+
 class Gmail {
   threads: Thread[]
   labels: Label[]
   messages: Message[]
   historyId: number
 
-  users = new GmailUsers(this)
+  users: Partial<AsyncMethods<gmail_v1.Resource$Users>> = new GmailUsers(this)
 
-  constructor(public email: string) {
-
-  }
+  constructor(public email: string) {}
 }
 
-class GmailUsers {
-  labels = new GmailUsersLabels(this.gmail)
-
+class GmailChild {
   constructor(public gmail: Gmail) {}
+}
+
+class GmailUsers extends GmailChild {
+  labels = new GmailUsersLabels(this.gmail)
+  // drafts: Resource$Users$Drafts
+  // history: Resource$Users$History
+  messages: Partial<
+    AsyncMethods<gmail_v1.Resource$Users$Messages>
+  > = new GmailUsersMessages(this.gmail)
+  // settings: Resource$Users$Settings
+  threads: Partial<
+    AsyncMethods<gmail_v1.Resource$Users$Threads>
+  > = new GmailUsersThreads(this.gmail)
 
   async getProfile(
-    params: gmail_v1.Params$Resource$Users$Getprofile & TGlobalFields
-  ): Promise<gmail_v1.Schema$Profile> {
-    return {
+    params: gmail_v1.Params$Resource$Users$Getprofile & TGlobalFields,
+    options?: MethodOptions
+  ): Promise<AxiosResponse<gmail_v1.Schema$Profile>> {
+    return ok({
       emailAddress: this.gmail.email,
       historyId: String(this.gmail.historyId),
       messagesTotal: this.gmail.messages.length,
       threadsTotal: this.gmail.threads.length
-    }
+    })
   }
 }
 
-class GmailUsersLabels {
-  constructor(public gmail: Gmail) {}
+class GmailUsersMessages extends GmailChild
+  implements Partial<AsyncMethods<gmail_v1.Resource$Users$Messages>> {
+  async send(
+    params: gmail_v1.Params$Resource$Users$Messages$Send & TGlobalFields,
+    options?: MethodOptions
+  ): Promise<AxiosResponse<Message>> {
+    return ok(params.requestBody)
+  }
 
+  async insert(
+    params: gmail_v1.Params$Resource$Users$Messages$Insert & TGlobalFields,
+    options?: MethodOptions
+  ): Promise<AxiosResponse<Message>> {
+    return ok(params.requestBody)
+  }
+}
+
+class GmailUsersLabels extends GmailChild {
   async list(
-    params: gmail_v1.Params$Resource$Users$Labels$List & TGlobalFields
-  ) {
-    return this.gmail.labels
+    params: gmail_v1.Params$Resource$Users$Labels$List & TGlobalFields,
+    options?: MethodOptions
+  ): Promise<AxiosResponse<gmail_v1.Schema$ListLabelsResponse>> {
+    // TODO
+    return ok({
+      labels: []
+    })
+  }
+
+  async patch(
+    params: gmail_v1.Params$Resource$Users$Labels$Patch & TGlobalFields,
+    options?: MethodOptions
+  ): Promise<AxiosResponse<Label>> {
+    // TODO
+    return ok({})
+  }
+
+  async get(
+    params: gmail_v1.Params$Resource$Users$Labels$Get & TGlobalFields,
+    options?: MethodOptions
+  ): Promise<AxiosResponse<Label>> {
+    // TODO
+    return ok({})
+  }
+
+  async create(
+    params: gmail_v1.Params$Resource$Users$Labels$Create & TGlobalFields,
+    options?: MethodOptions
+  ): Promise<AxiosResponse<Label>> {
+    // TODO
+    return ok({})
+  }
+}
+
+class GmailUsersThreads extends GmailChild {
+  async list(
+    params: gmail_v1.Params$Resource$Users$Threads$List & TGlobalFields,
+    options?: MethodOptions
+  ): Promise<AxiosResponse<gmail_v1.Schema$ListThreadsResponse>> {
+    // TODO query the threads based on `param.q`
+    return ok({
+      threads: []
+    })
+  }
+
+  async get(
+    params: gmail_v1.Params$Resource$Users$Threads$Get & TGlobalFields,
+    options?: MethodOptions
+  ): Promise<AxiosResponse<Thread>> {
+    // TODO
+    return ok({})
+  }
+
+  async modify(
+    params: gmail_v1.Params$Resource$Users$Threads$Modify & TGlobalFields,
+    options?: MethodOptions
+  ): Promise<AxiosResponse<Thread>> {
+    // TODO
+    return ok({})
   }
 }
