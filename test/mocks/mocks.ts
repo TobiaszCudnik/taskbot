@@ -238,7 +238,6 @@ function query(threads: Thread[], labels: Label[], q: string) {
       .toLocaleLowerCase()
     return thread
   })
-  console.log(threads)
   return threads.filter(lucene(parse(q || '')))
 }
 
