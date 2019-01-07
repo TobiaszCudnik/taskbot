@@ -1,5 +1,6 @@
 ## Bugs
 
+* login status (email) sticks out of viewport on mobile
 * heartbeat based auto restart doesnt work
 * after starting the service for 2 users
   * `connections-error [gtd...@gmail.com] Request 'gtasks.api.tasks.list' aborted by the abort() function +0ms`

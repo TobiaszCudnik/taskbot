@@ -179,6 +179,6 @@ test-debug:
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node ./node_modules/jest/bin/jest.js \
-		gmail
+		mocks
 
 .PHONY: test break build

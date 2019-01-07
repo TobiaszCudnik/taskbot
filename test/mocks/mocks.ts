@@ -1,24 +1,36 @@
 import { AxiosResponse } from 'axios'
 import { MethodOptions } from 'googleapis-common'
-import * as sinon from 'sinon'
-import { google, gmail_v1, tasks_v1 } from 'googleapis'
-import { TGlobalFields } from '../src/google/sync'
+// import * as sinon from 'sinon'
+import { gmail_v1, tasks_v1 } from 'googleapis'
+import { TGlobalFields } from '../../src/google/sync'
 
-sinon.stub(google, 'gmail', () => new Gmail('test@gmail.com'))
+// sinon.stub(google, 'gmail', () => new Gmail('test@gmail.com'))
 
-type Thread = gmail_v1.Schema$Thread
+interface Thread extends gmail_v1.Schema$Thread {
+  labelIds: string[]
+}
 type Label = gmail_v1.Schema$Label
 type Message = gmail_v1.Schema$Message
 type Task = tasks_v1.Schema$Task
 type TaskList = tasks_v1.Schema$TaskList
 
+// conditional and mapped types
 // all methods returning a promise
 type ReturnsPromise<T> = {
   [K in keyof T]: T[K] extends (...args: any) => any
-    ? ReturnType<T[K]> extends Promise<any> ? K : never
+    ? ReturnType<T[K]> extends Promise<any>
+      ? K
+      : never
     : never
 }[keyof T]
 type AsyncMethods<T> = Pick<T, ReturnsPromise<T>>
+// all class fields
+// type NonFunctionPropertyNames<T> = {
+//   [K in keyof T]: T[K] extends Function ? never : K
+// }[keyof T]
+// type NonFunctionProperties<T> = Pick<T, NonFunctionPropertyNames<T>>
+
+type MockedAPI<T> = Partial<AsyncMethods<T>>
 
 function ok<T>(data: T): AxiosResponse<T> {
   return {
@@ -32,40 +44,97 @@ function ok<T>(data: T): AxiosResponse<T> {
   }
 }
 
+// TODO check if return not depended on the `data`
+export class NotFound extends Error {
+  // TODO
+}
+
 // ----- GMAIL
 
-class Gmail {
-  threads: Thread[]
-  labels: Label[]
-  messages: Message[]
-  historyId: string
+export class Gmail {
+  // non-API
+  email: string
+  // API
+  // TODO keep 'from' and 'to' directly in Thread
+  threads: Thread[] = []
+  labels: Label[] = []
+  messages: Message[] = []
+  historyId: string = '0'
 
-  users: Partial<AsyncMethods<gmail_v1.Resource$Users>> = new GmailUsers(this)
+  users = new GmailUsers(this)
 
-  constructor(public email: string) {}
+  constructor() {
+    this.email = 'mock@google.com'
+  }
+
+  addThread(
+    from: string,
+    subject: string,
+    messages: string[],
+    labels: string[] = []
+  ) {
+    const hid = (parseInt(this.historyId) + 1).toString()
+    // create non existing labels
+    // TODO extract
+    for (const name of labels) {
+      if (!this.getLabelIDs([name]).length) {
+        const label: Label = {
+          name,
+          id: Math.random().toString()
+        }
+        this.labels.push(label)
+      }
+    }
+    const labelIds = this.getLabelIDs(labels)
+    const thread: Thread = {
+      historyId: hid,
+      id: Math.random().toString(),
+      snippet: messages.join(' ').substr(0, 200),
+      labelIds
+    }
+    // to = this.email
+    thread.messages = messages.map(m => ({
+      snippet: m,
+      threadId: thread.id,
+      historyId: hid,
+      labelIds: labelIds,
+      raw: 'TODO',
+      payload: {}
+    }))
+    this.threads.push(thread)
+  }
+
+  getLabelIDs(labels: string[]) {
+    debugger
+    const ids = []
+    for (const name of labels) {
+      const i = this.labels.find(l => l.name == name)
+      if (i) {
+        ids.push(i.id)
+      }
+    }
+    return ids
+  }
 }
 
 class GmailChild {
   constructor(public gmail: Gmail) {}
 }
 
-class GmailUsers extends GmailChild {
-  labels: Partial<
-    AsyncMethods<gmail_v1.Resource$Users$Labels>
-  > = new GmailUsersLabels(this.gmail)
+export class GmailUsers extends GmailChild
+  implements MockedAPI<gmail_v1.Resource$Users> {
+  labels = new GmailUsersLabels(this.gmail)
   // drafts: Resource$Users$Drafts
   // history: Resource$Users$History
-  messages: Partial<
-    AsyncMethods<gmail_v1.Resource$Users$Messages>
-  > = new GmailUsersMessages(this.gmail)
+  messages = new GmailUsersMessages(this.gmail)
   // settings: Resource$Users$Settings
-  threads: Partial<
-    AsyncMethods<gmail_v1.Resource$Users$Threads>
-  > = new GmailUsersThreads(this.gmail)
+  threads = new GmailUsersThreads(this.gmail)
 
   async getProfile(
     params: gmail_v1.Params$Resource$Users$Getprofile & TGlobalFields,
-    options?: MethodOptions
+    options?: MethodOptions,
+    // TODO this sould error
+    a?: string
   ): Promise<AxiosResponse<gmail_v1.Schema$Profile>> {
     return ok({
       emailAddress: this.gmail.email,
@@ -76,8 +145,8 @@ class GmailUsers extends GmailChild {
   }
 }
 
-class GmailUsersMessages extends GmailChild
-  implements Partial<AsyncMethods<gmail_v1.Resource$Users$Messages>> {
+export class GmailUsersMessages extends GmailChild
+  implements MockedAPI<gmail_v1.Resource$Users$Messages> {
   async send(
     params: gmail_v1.Params$Resource$Users$Messages$Send & TGlobalFields
     // options?: MethodOptions
@@ -96,6 +165,7 @@ class GmailUsersMessages extends GmailChild
     // options?: MethodOptions
   ): Promise<AxiosResponse<Message>> {
     const hid = (parseInt(this.gmail.historyId) + 1).toString()
+    // TODO support `params.requestBody.raw`
     const msg = params.requestBody
     const thread: Thread = {
       historyId: hid,
@@ -110,7 +180,8 @@ class GmailUsersMessages extends GmailChild
   }
 }
 
-class GmailUsersLabels extends GmailChild {
+export class GmailUsersLabels extends GmailChild
+  implements MockedAPI<gmail_v1.Resource$Users$Labels> {
   async list(
     params: gmail_v1.Params$Resource$Users$Labels$List & TGlobalFields
     // options?: MethodOptions
@@ -135,6 +206,9 @@ class GmailUsersLabels extends GmailChild {
     // options?: MethodOptions
   ): Promise<AxiosResponse<Label>> {
     const label = this.gmail.labels.find(l => l.id === params.id)
+    if (!label) {
+      throw new NotFound()
+    }
     return ok(label)
   }
 
@@ -148,14 +222,41 @@ class GmailUsersLabels extends GmailChild {
   }
 }
 
-class GmailUsersThreads extends GmailChild {
+import * as lucene from 'lucene-filter'
+function query(threads: Thread[], labels: Label[], q: string) {
+  function parse(query) {
+    return query.replace(/label:([\w-!]+)/, 'label:/(,|^)$1(,|$)/')
+  }
+  // merge labels into a string
+  threads = threads.map((thread: Thread) => {
+    // TODO dont replace in text
+    thread.label = thread.labelIds
+      .map(id => labels.find(l => l.id == id).name)
+      .join(',')
+      .replace(/ /g, '-')
+      .replace(/\//g, '-')
+      .toLocaleLowerCase()
+    return thread
+  })
+  console.log(threads)
+  return threads.filter(lucene(parse(q || '')))
+}
+
+export class GmailUsersThreads extends GmailChild
+  implements MockedAPI<gmail_v1.Resource$Users$Threads> {
   async list(
     params: gmail_v1.Params$Resource$Users$Threads$List & TGlobalFields,
     options?: MethodOptions
   ): Promise<AxiosResponse<gmail_v1.Schema$ListThreadsResponse>> {
-    // TODO query the threads based on `param.q`
+    let threads = this.gmail.threads
+
+    // evaluate the search expression
+    if (params.q) {
+      threads = query(threads, this.gmail.labels, params.q)
+    }
+
     return ok({
-      threads: []
+      threads
     })
   }
 
@@ -163,31 +264,48 @@ class GmailUsersThreads extends GmailChild {
     params: gmail_v1.Params$Resource$Users$Threads$Get & TGlobalFields,
     options?: MethodOptions
   ): Promise<AxiosResponse<Thread>> {
-    // TODO
-    return ok({})
+    const thread = this.gmail.threads.find(t => t.id === params.id)
+    if (!thread) {
+      throw new NotFound()
+    }
+    return ok(thread)
   }
 
   async modify(
     params: gmail_v1.Params$Resource$Users$Threads$Modify & TGlobalFields,
     options?: MethodOptions
   ): Promise<AxiosResponse<Thread>> {
-    // TODO
-    return ok({})
+    const thread = this.gmail.threads.find(t => t.id === params.id)
+    if (!thread) {
+      throw new NotFound()
+    }
+    const remove =
+      (params.requestBody && params.requestBody.removeLabelIds) || []
+    const add = (params.requestBody && params.requestBody.addLabelIds) || []
+    // remove
+    thread.labelIds = thread.labelIds.filter(id => !remove.includes(id))
+    // add
+    for (const id of add) {
+      if (!thread.labelIds.includes(id)) {
+        thread.labelIds.push(id)
+      }
+    }
+    return ok(thread)
   }
 }
 
 // ----- TASKS
 
-class Tasks {
+export class Tasks {
   tasks: Task[]
   lists: TaskList[]
 }
 
-class TasksChild {
+export class TasksChild {
   constructor(public tasks: Tasks) {}
 }
 
-class TasksTasks extends TasksChild {
+export class TasksTasks extends TasksChild {
   async list(
     params: tasks_v1.Params$Resource$Tasks$List & TGlobalFields,
     options?: MethodOptions
@@ -225,7 +343,7 @@ class TasksTasks extends TasksChild {
   }
 }
 
-class TasksTasklists extends TasksChild {
+export class TasksTasklists extends TasksChild {
   async list(
     params: tasks_v1.Params$Resource$Tasklists$List & TGlobalFields,
     options?: MethodOptions
@@ -246,3 +364,13 @@ class TasksTasklists extends TasksChild {
     return ok({})
   }
 }
+
+// ----- PUBLIC API
+
+const api = {
+  gmail(version: string): Gmail {
+    return new Gmail()
+  }
+}
+
+export { api as google }

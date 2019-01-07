@@ -9,7 +9,8 @@
         ],
         "declaration": true,
         "module": "commonjs",
-        "sourceMap": true
+        "sourceMap": true,
+//        "strict": true
         // "noUnusedLocals": true,
         // "noUnusedParameters": true,
         // "strictNullChecks": true,

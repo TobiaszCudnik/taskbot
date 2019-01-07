@@ -272,9 +272,9 @@ const config: IConfigPublic = {
     // all the `!T/Task` labels (anywhere, gmail only)
     (config: IConfig) => {
       const query = config.labels
-        // @ts-ignore
+        // @ts-ignore `!T/sync-tasks`
         .filter(l => l.prefix == '!T/')
-        // @ts-ignore
+        // @ts-ignore `P/name` or `name`
         .map(l => `label:${l.prefix || ''}${l.name}`)
         .join(' ')
 

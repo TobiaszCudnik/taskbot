@@ -1,8 +1,8 @@
 {
-  "name": "gtd-bot",
+  "name": "taskbot",
   "version": "0.2.0",
   "author": "Tobiasz Cudnik <tobiasz.cudnik@gmail.com>",
-  "description": "GTD Bot service.",
+  "description": "TaskBot sync service",
   "contributors": [],
   "scripts": {
     "start": "make start",
@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/TobiaszCudnik/gtd-bot/gtd-bot.git"
+    "url": "https://github.com/TaskSync/taskBot.app"
   },
   "keywords": [
     "gtd",
@@ -51,6 +51,7 @@
     "js-base64": "^2.4.8",
     "lodash": "^4.17.10",
     "lokijs": "^1.5.4",
+    "lucene-filter": "0.0.10",
     "md5": "^2.2.1",
     "moment": "^2.22.1",
     "moment-timezone": "^0.5.17",
@@ -68,6 +69,7 @@
   },
   "devDependencies": {
     "@types/debug": "0.0.30",
+    "@types/deepmerge": "^2.2.0",
     "@types/hapi": "^17.0.17",
     "@types/jest": "^23.1.5",
     "@types/lodash": "^4.14.110",
