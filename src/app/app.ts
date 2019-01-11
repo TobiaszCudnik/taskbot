@@ -6,13 +6,12 @@ import { gmail_v1 } from 'googleapis/build/src/apis/gmail/v1'
 import { TGlobalFields } from '../google/sync'
 import RootSync, { TStatsUser } from '../sync/root'
 import { IConfig, IAccount, IConfigAccount, TRawEmail } from '../types'
-import { isProdEnv, isTestEnv } from '../utils'
+import { createRawEmail, isProdEnv, isTestEnv, TRawEmailInput } from '../utils'
 import Connections from './connections'
 import Logger from './logger'
 import * as merge from 'deepmerge'
 import * as moment from 'moment-timezone'
 import { OAuth2Client } from 'google-auth-library'
-import { Base64 } from 'js-base64'
 
 const email_invitation = fs.readFileSync(
   'www/pages/content/email-invitation.md',
@@ -404,28 +403,17 @@ export class App {
       this.log_info(`Email to ${to}\nSubject: ${subject}\nContent:\n${content}`)
       return
     }
-
-    let email = [
-      `From: ${this.config.service.name} <${this.config.service.email}>`,
-      `To: ${to}`,
-      'Content-type: text/plain;charset=utf-8',
-      'Content-Transfer-Encoding: quoted-printable',
-      'MIME-Version: 1.0',
-      `Subject: ${subject}`
-    ].join('\r\n')
-
-    if (content) {
-      email += `\r\n\r\n${content.replace(`\n`, `\r\n`)}`
+    const raw: TRawEmailInput = {
+      from: [this.config.service.name, this.config.service.email],
+      to,
+      subject
     }
-
-    // TODO port Base64 to the gmail sync client
-    const raw = Base64.encodeURI(email) as TRawEmail
     const params: gmail_v1.Params$Resource$Users$Messages$Send &
       TGlobalFields = {
       userId: 'me',
       fields: 'threadId',
       requestBody: {
-        raw: raw
+        raw: createRawEmail(raw)
       },
       // payload: { mimeType: 'text/html' },
       // @ts-ignore TS / d.ts issue

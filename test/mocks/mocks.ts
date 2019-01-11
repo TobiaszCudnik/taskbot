@@ -3,11 +3,16 @@ import { MethodOptions } from 'googleapis-common'
 // import * as sinon from 'sinon'
 import { gmail_v1, tasks_v1 } from 'googleapis'
 import { TGlobalFields } from '../../src/google/sync'
+import { simpleParser } from 'mailparser'
+import { Base64 } from 'js-base64'
 
 // sinon.stub(google, 'gmail', () => new Gmail('test@gmail.com'))
 
-interface Thread extends gmail_v1.Schema$Thread {
+export interface Thread extends gmail_v1.Schema$Thread {
   labelIds: string[]
+  subject: string
+  from: string
+  to: string
 }
 type Label = gmail_v1.Schema$Label
 type Message = gmail_v1.Schema$Message
@@ -104,13 +109,24 @@ export class Gmail {
     this.threads.push(thread)
   }
 
+  /**
+   * Get or create labels and return IDs.
+   */
   getLabelIDs(labels: string[]) {
     debugger
     const ids = []
     for (const name of labels) {
-      const i = this.labels.find(l => l.name == name)
-      if (i) {
-        ids.push(i.id)
+      const label = this.labels.find(l => l.name == name)
+      if (label) {
+        ids.push(label.id)
+      } else {
+        let id = Math.random().toString()
+        const label: Label = {
+          name,
+          id
+        }
+        this.labels.push(label)
+        ids.push(id)
       }
     }
     return ids
@@ -151,8 +167,34 @@ export class GmailUsersMessages extends GmailChild
     params: gmail_v1.Params$Resource$Users$Messages$Send & TGlobalFields
     // options?: MethodOptions
   ): Promise<AxiosResponse<Message>> {
+    const hid = (parseInt(this.gmail.historyId) + 1).toString()
     // TODO match the schema
     const threadId = Math.random().toString()
+    const mail = await simpleParser(Base64.decode(params.requestBody.raw))
+    const msg: Message = {
+      id: Math.random().toString(),
+      threadId,
+      labelIds: params.requestBody.labelIds || []
+      // TODO more fields
+    }
+    let thread: Thread
+    try {
+      thread = {
+        historyId: hid,
+        id: threadId,
+        snippet: (mail.text || '').substr(0, 200),
+        messages: [msg],
+        labelIds: params.requestBody.labelIds || [],
+        subject: mail.subject,
+        to: mail.to.text,
+        from: mail.from.text
+      }
+    } catch (e) {
+      console.error(e)
+    }
+    this.gmail.historyId = hid
+    this.gmail.messages.push(msg)
+    this.gmail.threads.push(thread)
     return ok({
       threadId,
       ...params.requestBody
@@ -164,19 +206,7 @@ export class GmailUsersMessages extends GmailChild
     params: gmail_v1.Params$Resource$Users$Messages$Insert & TGlobalFields
     // options?: MethodOptions
   ): Promise<AxiosResponse<Message>> {
-    const hid = (parseInt(this.gmail.historyId) + 1).toString()
-    // TODO support `params.requestBody.raw`
-    const msg = params.requestBody
-    const thread: Thread = {
-      historyId: hid,
-      id: Math.random().toString(),
-      snippet: 'foo bar',
-      messages: [msg]
-    }
-    this.gmail.historyId = hid
-    this.gmail.messages.push(msg)
-    this.gmail.threads.push(thread)
-    return ok(msg)
+    throw Error('TODO')
   }
 }
 
@@ -231,7 +261,13 @@ function query(threads: Thread[], labels: Label[], q: string) {
   threads = threads.map((thread: Thread) => {
     // TODO dont replace in text
     thread.label = thread.labelIds
-      .map(id => labels.find(l => l.id == id).name)
+      .map(id => {
+        const label = labels.find(l => l.id == id)
+        if (!label) {
+          throw new Error(`label ${id} doesnt exist`)
+        }
+        return label.name
+      })
       .join(',')
       .replace(/ /g, '-')
       .replace(/\//g, '-')

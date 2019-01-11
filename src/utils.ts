@@ -1,6 +1,8 @@
 import { TAsyncMachine } from 'asyncmachine'
 import * as debug from 'debug'
 import Logger from './app/logger'
+import { TRawEmail } from './types'
+import { Base64 } from 'js-base64'
 
 export function machineLogToDebug(
   logger: Logger,
@@ -32,4 +34,31 @@ export function isDevEnv() {
 
 export function isTestEnv() {
   return process.env['TB_ENV'] == 'test' || process.env['TEST']
+}
+
+export type TRawEmailInput = {
+  from: string | [string, string]
+  to: string
+  subject: string
+}
+
+export function createRawEmail(
+  input: TRawEmailInput,
+  content?: string
+): TRawEmail {
+  let email = [
+    `From: ${
+      Array.isArray(input) ? `${input.from[0]} <${input.from[1]}>` : input.from
+    }`,
+    `To: ${input.to}`,
+    'Content-type: text/plain;charset=utf-8',
+    'Content-Transfer-Encoding: quoted-printable',
+    'MIME-Version: 1.0',
+    `Subject: ${input.subject}`
+  ].join('\r\n')
+
+  if (content) {
+    email += `\r\n\r\n${content.replace(`\n`, `\r\n`)}`
+  }
+  return Base64.encodeURI(email) as TRawEmail
 }

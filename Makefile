@@ -172,8 +172,10 @@ test:
 	sleep 5
 	-SCENARIO=2 npx jest sync
 
-test-debug:
-		# connections-verbose,
+test-mocks:
+	# lucene is an optional dep and doesnt support the regexp query syntax
+	rm -R node_modules/lucene
+	rm -R node_modules/lucene-queryparser
 	SCENARIO=0 \
 		DEBUG=tests,google\*-info,gmail-root\*-info,gtasks-root\*-info,gmail-query-next\*,gmail-list-next\*,gtasks-list-next\*,\*-error,db\*,label-filter-\*,\*inbox-labels\*,root:\* \
 		DEBUG_FILE=1 \
