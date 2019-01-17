@@ -2,9 +2,11 @@ import { AxiosResponse } from 'axios'
 import { MethodOptions } from 'googleapis-common'
 // import * as sinon from 'sinon'
 import { gmail_v1, tasks_v1 } from 'googleapis'
+import { normalizeLabelName } from '../../src/google/gmail/sync'
 import { TGlobalFields } from '../../src/google/sync'
 import { simpleParser } from 'mailparser'
 import { Base64 } from 'js-base64'
+import * as filter from 'lucene-filter'
 
 // sinon.stub(google, 'gmail', () => new Gmail('test@gmail.com'))
 
@@ -13,6 +15,8 @@ export interface Thread extends gmail_v1.Schema$Thread {
   subject: string
   from: string
   to: string
+  // flattened label names for lucene queries, eg "foo,bar,!s-action"
+  label: string
 }
 type Label = gmail_v1.Schema$Label
 type Message = gmail_v1.Schema$Message
@@ -72,55 +76,18 @@ export class Gmail {
     this.email = 'mock@google.com'
   }
 
-  addThread(
-    from: string,
-    subject: string,
-    messages: string[],
-    labels: string[] = []
-  ) {
-    const hid = (parseInt(this.historyId) + 1).toString()
-    // create non existing labels
-    // TODO extract
-    for (const name of labels) {
-      if (!this.getLabelIDs([name]).length) {
-        const label: Label = {
-          name,
-          id: Math.random().toString()
-        }
-        this.labels.push(label)
-      }
-    }
-    const labelIds = this.getLabelIDs(labels)
-    const thread: Thread = {
-      historyId: hid,
-      id: Math.random().toString(),
-      snippet: messages.join(' ').substr(0, 200),
-      labelIds
-    }
-    // to = this.email
-    thread.messages = messages.map(m => ({
-      snippet: m,
-      threadId: thread.id,
-      historyId: hid,
-      labelIds: labelIds,
-      raw: 'TODO',
-      payload: {}
-    }))
-    this.threads.push(thread)
-  }
-
   /**
    * Get or create labels and return IDs.
    */
-  getLabelIDs(labels: string[]) {
+  getLabelIDs(labels: string[]): string[] {
     debugger
     const ids = []
     for (const name of labels) {
-      const label = this.labels.find(l => l.name == name)
+      const label = this.labels.find(l => l.id == normalizeLabelName(name))
       if (label) {
         ids.push(label.id)
       } else {
-        let id = Math.random().toString()
+        let id = normalizeLabelName(name)
         const label: Label = {
           name,
           id
@@ -247,12 +214,12 @@ export class GmailUsersLabels extends GmailChild
     // options?: MethodOptions
   ): Promise<AxiosResponse<Label>> {
     const label = params.requestBody
+    label.id = normalizeLabelName(label.name)
     this.gmail.labels.push(label)
     return ok(label)
   }
 }
 
-import * as lucene from 'lucene-filter'
 function query(threads: Thread[], labels: Label[], q: string) {
   function parse(query) {
     return query.replace(/label:([\w-!]+)/, 'label:/(,|^)$1(,|$)/')
@@ -274,7 +241,7 @@ function query(threads: Thread[], labels: Label[], q: string) {
       .toLocaleLowerCase()
     return thread
   })
-  return threads.filter(lucene(parse(q || '')))
+  return threads.filter(filter(parse(q || '')))
 }
 
 export class GmailUsersThreads extends GmailChild
@@ -329,7 +296,7 @@ export class GmailUsersThreads extends GmailChild
   }
 }
 
-// ----- TASKS
+// ----- TASKS TODO
 
 export class Tasks {
   tasks: Task[]
@@ -337,7 +304,7 @@ export class Tasks {
 }
 
 export class TasksChild {
-  constructor(public tasks: Tasks) {}
+  constructor(public root: Tasks) {}
 }
 
 export class TasksTasks extends TasksChild {
@@ -345,10 +312,11 @@ export class TasksTasks extends TasksChild {
     params: tasks_v1.Params$Resource$Tasks$List & TGlobalFields,
     options?: MethodOptions
   ): Promise<AxiosResponse<tasks_v1.Schema$Tasks>> {
+    const items = this.root.tasks.filter(t => t.tasklist === params.tasklist)
     // TODO
     return ok({
       // etag
-      items: [],
+      items,
       kind: 'tasks#tasks'
     })
   }
@@ -357,6 +325,7 @@ export class TasksTasks extends TasksChild {
     params: tasks_v1.Params$Resource$Tasks$Insert & TGlobalFields,
     options?: MethodOptions
   ): Promise<AxiosResponse<Task>> {
+
     // TODO
     return ok({})
   }

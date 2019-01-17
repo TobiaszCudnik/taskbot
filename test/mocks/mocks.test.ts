@@ -49,6 +49,32 @@ describe('gmail', () => {
     expect(thread.to).toEqual('test@gmail.com')
     expect(thread.subject).toEqual('test subject')
   })
+  it('modify labels', async () => {
+    // next action
+    await readFixture(gmail, data)
+    const list = await gmail.users.threads.list({
+      q: 'label:!s-next-action'
+    })
+    const [label_action, label_next] = gmail.getLabelIDs([
+      '!s-action',
+      '!s-next-action'
+    ])
+    const thread = list.data.threads[0]
+    expect(thread.labelIds).toContain(label_next)
+    await gmail.users.threads.modify({
+      id: thread.id,
+      requestBody: {
+        addLabelIds: [label_action],
+        removeLabelIds: [label_next]
+      }
+    })
+    const get = await gmail.users.threads.get({
+      id: thread.id
+    })
+    expect(get.data.labelIds).toContain(label_action)
+    expect(get.data.labelIds).not.toContain(label_next)
+  })
+  // TODO test labels.patch
 })
 
 async function readFixture(gmail: Gmail, data: DBRecord[]) {
