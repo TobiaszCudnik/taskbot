@@ -80,7 +80,7 @@ export default class GTasksListSync extends SyncReader<
     const abort = this.state.getAbort('Reading')
     const params: tasks_v1.Params$Resource$Tasks$List & TGlobalFields = {
       tasklist: this.list.id,
-      fields: 'etag,items(id,title,notes,updated,etag,status,parent)',
+      fields: 'etag,items(id,title,notes,updated,status,parent)',
       // TODO paging
       maxResults: '1000',
       showHidden: false,

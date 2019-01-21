@@ -7,6 +7,7 @@ import { TGlobalFields } from '../../src/google/sync'
 import { simpleParser } from 'mailparser'
 import { Base64 } from 'js-base64'
 import * as filter from 'lucene-filter'
+import * as md5 from 'md5'
 
 // sinon.stub(google, 'gmail', () => new Gmail('test@gmail.com'))
 
@@ -20,7 +21,6 @@ export interface Thread extends gmail_v1.Schema$Thread {
 }
 type Label = gmail_v1.Schema$Label
 type Message = gmail_v1.Schema$Message
-type Task = tasks_v1.Schema$Task
 type TaskList = tasks_v1.Schema$TaskList
 
 // conditional and mapped types
@@ -41,21 +41,26 @@ type AsyncMethods<T> = Pick<T, ReturnsPromise<T>>
 
 type MockedAPI<T> = Partial<AsyncMethods<T>>
 
-function ok<T>(data: T): AxiosResponse<T> {
+type Response = {
+  headers?: {}
+  status?: number
+  statusText?: string
+}
+
+function ok<T>(data: T, response?: Response): AxiosResponse<T> {
   return {
     data,
-    status: 200,
-    statusText: 'OK',
-    // TODO
-    headers: {},
+    status: response.status || 200,
+    statusText: response.statusText || 'OK',
+    headers: response.headers || {},
     // TODO?
     config: {}
   }
 }
 
 // TODO check if return not depended on the `data`
-export class NotFound extends Error {
-  // TODO
+export class NotFoundError extends Error {
+  code: 404
 }
 
 // ----- GMAIL
@@ -144,20 +149,16 @@ export class GmailUsersMessages extends GmailChild
       labelIds: params.requestBody.labelIds || []
       // TODO more fields
     }
-    let thread: Thread
-    try {
-      thread = {
-        historyId: hid,
-        id: threadId,
-        snippet: (mail.text || '').substr(0, 200),
-        messages: [msg],
-        labelIds: params.requestBody.labelIds || [],
-        subject: mail.subject,
-        to: mail.to.text,
-        from: mail.from.text
-      }
-    } catch (e) {
-      console.error(e)
+    const thread: Thread = {
+      historyId: hid,
+      id: threadId,
+      snippet: (mail.text || '').substr(0, 200),
+      messages: [msg],
+      labelIds: params.requestBody.labelIds || [],
+      subject: mail.subject,
+      to: mail.to.text,
+      from: mail.from.text,
+      label: ''
     }
     this.gmail.historyId = hid
     this.gmail.messages.push(msg)
@@ -183,7 +184,6 @@ export class GmailUsersLabels extends GmailChild
     params: gmail_v1.Params$Resource$Users$Labels$List & TGlobalFields
     // options?: MethodOptions
   ): Promise<AxiosResponse<gmail_v1.Schema$ListLabelsResponse>> {
-    // TODO query
     return ok({
       labels: this.gmail.labels
     })
@@ -204,7 +204,7 @@ export class GmailUsersLabels extends GmailChild
   ): Promise<AxiosResponse<Label>> {
     const label = this.gmail.labels.find(l => l.id === params.id)
     if (!label) {
-      throw new NotFound()
+      throw new NotFoundError()
     }
     return ok(label)
   }
@@ -268,7 +268,7 @@ export class GmailUsersThreads extends GmailChild
   ): Promise<AxiosResponse<Thread>> {
     const thread = this.gmail.threads.find(t => t.id === params.id)
     if (!thread) {
-      throw new NotFound()
+      throw new NotFoundError()
     }
     return ok(thread)
   }
@@ -279,7 +279,7 @@ export class GmailUsersThreads extends GmailChild
   ): Promise<AxiosResponse<Thread>> {
     const thread = this.gmail.threads.find(t => t.id === params.id)
     if (!thread) {
-      throw new NotFound()
+      throw new NotFoundError()
     }
     const remove =
       (params.requestBody && params.requestBody.removeLabelIds) || []
@@ -298,6 +298,10 @@ export class GmailUsersThreads extends GmailChild
 
 // ----- TASKS TODO
 
+export interface Task extends tasks_v1.Schema$Task {
+  tasklist: string
+}
+
 export class Tasks {
   tasks: Task[]
   lists: TaskList[]
@@ -307,42 +311,88 @@ export class TasksChild {
   constructor(public root: Tasks) {}
 }
 
-export class TasksTasks extends TasksChild {
+export class TasksTasks extends TasksChild
+  implements MockedAPI<tasks_v1.Resource$Tasks> {
   async list(
     params: tasks_v1.Params$Resource$Tasks$List & TGlobalFields,
     options?: MethodOptions
   ): Promise<AxiosResponse<tasks_v1.Schema$Tasks>> {
     const items = this.root.tasks.filter(t => t.tasklist === params.tasklist)
-    // TODO
-    return ok({
-      // etag
-      items,
-      kind: 'tasks#tasks'
-    })
+    // TODO support the 'If-None-Match' header
+    return ok(
+      {
+        items,
+        kind: 'tasks#tasks'
+      },
+      {
+        headers: {
+          etag: md5(JSON.stringify(items))
+        }
+      }
+    )
+  }
+
+  async get(
+    params?: tasks_v1.Params$Resource$Tasks$Get & TGlobalFields,
+    options?: MethodOptions
+  ): Promise<AxiosResponse<Task>> {
+    // TODO check params.tasklist
+    // TODO check params.task
+    // TODO check params.requestBody
+    // TODO check params.maxResults
+    const task = this.root.tasks.find(
+      t => t.tasklist === params.tasklist && t.id === params.task
+    )
+    if (!task) {
+      throw new NotFoundError()
+    }
+    return ok(task)
   }
 
   async insert(
     params: tasks_v1.Params$Resource$Tasks$Insert & TGlobalFields,
     options?: MethodOptions
   ): Promise<AxiosResponse<Task>> {
-
-    // TODO
-    return ok({})
+    // TODO check params.tasklist
+    // TODO check params.requestBody
+    // TODO check params.parent
+    const defaults = {
+      kind: 'tasks#task'
+    }
+    const task: Task = Object.create(params.requestBody)
+    task.kind = 'tasks#task'
+    task.id = Math.random().toString()
+    return ok(task)
   }
 
   async patch(
     params: tasks_v1.Params$Resource$Tasks$Patch & TGlobalFields,
     options?: MethodOptions
   ): Promise<AxiosResponse<Task>> {
-    // TODO
-    return ok({})
+    // TODO check params.requestBody
+    // TODO check params.requestBody.parent
+    const task = this.root.tasks.find(
+      t => t.tasklist === params.tasklist && t.id === params.task
+    )
+    if (!task) {
+      throw new NotFoundError()
+    }
+    Object.assign(task, params.requestBody)
+    return ok(task)
   }
 
   async delete(
     params: tasks_v1.Params$Resource$Tasks$Patch & TGlobalFields,
     options?: MethodOptions
   ): Promise<AxiosResponse<void>> {
-    // TODO
+    const index = this.root.tasks.findIndex(
+      t => t.tasklist === params.tasklist && t.id === params.task
+    )
+    if (!index) {
+      throw new NotFoundError()
+    }
+    // remove in-place
+    this.root.tasks.splice(index, 1)
     return ok(void 0)
   }
 }
@@ -352,20 +402,31 @@ export class TasksTasklists extends TasksChild {
     params: tasks_v1.Params$Resource$Tasklists$List & TGlobalFields,
     options?: MethodOptions
   ): Promise<AxiosResponse<tasks_v1.Schema$TaskLists>> {
-    // TODO
-    return ok({
-      // etag
-      items: [],
-      kind: 'tasks#taskLists'
-    })
+    // TODO support the 'If-None-Match' header
+    // TODO check params.maxResults
+    const items = this.root.lists
+    return ok(
+      {
+        items,
+        kind: 'tasks#taskLists'
+      },
+      {
+        headers: {
+          etag: md5(JSON.stringify(items))
+        }
+      }
+    )
   }
 
   async insert(
     params: tasks_v1.Params$Resource$Tasklists$Insert & TGlobalFields,
     options?: MethodOptions
   ): Promise<AxiosResponse<TaskList>> {
-    // TODO
-    return ok({})
+    // TODO check params.requestBody
+    const list: TaskList = Object.create(params.requestBody)
+    list.kind = 'tasks#taskList'
+    list.id = Math.random().toString()
+    return ok(list)
   }
 }
 
@@ -374,6 +435,9 @@ export class TasksTasklists extends TasksChild {
 const api = {
   gmail(version: string): Gmail {
     return new Gmail()
+  },
+  tasks(version: string): Tasks {
+    return new Tasks()
   }
 }
 
