@@ -116,7 +116,7 @@ export default class GTasksListSync extends SyncReader<
       // preserve the request counter per etag
       if (this.etags.tasks != res.headers['etag']) {
         // @ts-ignore
-        this.etags.tasks = res.headers['etag']
+        this.etags.data_tasks = res.headers['etag']
         this.etags.tasks_reqs = 0
       }
       this.prev_tasks = this.tasks

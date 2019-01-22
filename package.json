@@ -9,6 +9,7 @@
     "test": "make test",
     "test-service": "TEST=1 make start-am",
     "test-debug": "make test-debug",
+    "test-mocks": "make test-mocks",
     "next-dev": "cd www && npm run dev"
   },
   "repository": {

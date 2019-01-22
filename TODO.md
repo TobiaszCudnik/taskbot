@@ -17,6 +17,8 @@
 
 ## Milestone 1:
 
+* periodically "Clean completed" tasks
+  * switch in the settings
 * progress bar when auto-signin in
   * go to the page, youre not signed, wait, you signed
   * during waiting - a progress bar should be visible

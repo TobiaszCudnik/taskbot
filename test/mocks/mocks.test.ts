@@ -1,5 +1,5 @@
 import { Thread } from '../mocks'
-import { google, Gmail } from './mocks'
+import { google, Gmail, Tasks } from './mocks'
 import { DBRecord } from '../../src/sync/root'
 // declare module '../data.json' {
 //   const records: DBRecord[]
@@ -9,13 +9,15 @@ import * as data from '../data.json'
 import { createRawEmail } from '../../src/utils'
 
 let gmail: Gmail
+let tasks: Tasks
 beforeEach(() => {
   gmail = google.gmail('v1')
+  tasks = google.tasks('v1')
 })
 
 describe('gmail', () => {
   it('query by labels', async () => {
-    await readFixture(gmail, data)
+    await fixturesToThreads(gmail, data)
     let res
     // next action
     res = await gmail.users.threads.list({
@@ -51,7 +53,7 @@ describe('gmail', () => {
   })
   it('modify labels', async () => {
     // next action
-    await readFixture(gmail, data)
+    await fixturesToThreads(gmail, data)
     const list = await gmail.users.threads.list({
       q: 'label:!s-next-action'
     })
@@ -77,7 +79,22 @@ describe('gmail', () => {
   // TODO test labels.patch
 })
 
-async function readFixture(gmail: Gmail, data: DBRecord[]) {
+describe('tasks', () => {
+  it('list tasks', async () => {
+    await fixturesToTasks(tasks, data)
+    const res_lists = await tasks.tasklists.list({})
+    expect(res_lists.data.items).toHaveLength(3)
+
+    const res_tasks = await tasks.tasks.list({
+      tasklist: res_lists.data.items[0].id
+    })
+    expect(res_tasks.data.items).toHaveLength(5)
+  })
+  it.skip('modify a task', async () => {})
+  it.skip('modify a list', async () => {})
+})
+
+async function fixturesToThreads(gmail: Gmail, data: DBRecord[]) {
   for (const row of data) {
     const raw = createRawEmail(
       {
@@ -91,6 +108,36 @@ async function readFixture(gmail: Gmail, data: DBRecord[]) {
     // next action
     await gmail.users.messages.send({
       requestBody: { raw, labelIds: gmail.getLabelIDs(Object.keys(row.labels)) }
+    })
+  }
+}
+
+async function fixturesToTasks(tasks: Tasks, data: DBRecord[]) {
+  const lists = ['!S/Action', '!S/Next Action', '!S/Pending']
+  const list_ids = new Map<string, string>()
+  // create the lists
+  for (const title of lists) {
+    const res = await tasks.tasklists.insert({
+      requestBody: {
+        title
+      }
+    })
+    list_ids.set(title, res.data.id)
+  }
+  // insert the tasks
+  for (const row of data) {
+    // check if tasks is in any of the predefined lists
+    const list_title = lists.find(title => {
+      return row.labels[title] && row.labels[title].active
+    })
+    if (!list_title) {
+      continue
+    }
+    tasks.tasks.insert({
+      requestBody: {
+        title: row.title
+      },
+      tasklist: list_ids.get(list_title)
     })
   }
 }

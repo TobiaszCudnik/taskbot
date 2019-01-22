@@ -180,7 +180,8 @@ test-mocks:
 		DEBUG=tests,google\*-info,gmail-root\*-info,gtasks-root\*-info,gmail-query-next\*,gmail-list-next\*,gtasks-list-next\*,\*-error,db\*,label-filter-\*,\*inbox-labels\*,root:\* \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
-		node ./node_modules/jest/bin/jest.js \
+		node \
+		./node_modules/jest/bin/jest.js \
 		mocks
 
 .PHONY: test break build

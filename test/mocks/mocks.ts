@@ -2,6 +2,7 @@ import { AxiosResponse } from 'axios'
 import { MethodOptions } from 'googleapis-common'
 // import * as sinon from 'sinon'
 import { gmail_v1, tasks_v1 } from 'googleapis'
+import * as assert from 'assert'
 import { normalizeLabelName } from '../../src/google/gmail/sync'
 import { TGlobalFields } from '../../src/google/sync'
 import { simpleParser } from 'mailparser'
@@ -9,19 +10,7 @@ import { Base64 } from 'js-base64'
 import * as filter from 'lucene-filter'
 import * as md5 from 'md5'
 
-// sinon.stub(google, 'gmail', () => new Gmail('test@gmail.com'))
-
-export interface Thread extends gmail_v1.Schema$Thread {
-  labelIds: string[]
-  subject: string
-  from: string
-  to: string
-  // flattened label names for lucene queries, eg "foo,bar,!s-action"
-  label: string
-}
-type Label = gmail_v1.Schema$Label
-type Message = gmail_v1.Schema$Message
-type TaskList = tasks_v1.Schema$TaskList
+// ----- COMMON
 
 // conditional and mapped types
 // all methods returning a promise
@@ -47,7 +36,7 @@ type Response = {
   statusText?: string
 }
 
-function ok<T>(data: T, response?: Response): AxiosResponse<T> {
+function ok<T>(data: T, response: Response = {}): AxiosResponse<T> {
   return {
     data,
     status: response.status || 200,
@@ -64,6 +53,17 @@ export class NotFoundError extends Error {
 }
 
 // ----- GMAIL
+
+export interface Thread extends gmail_v1.Schema$Thread {
+  labelIds: string[]
+  subject: string
+  from: string
+  to: string
+  // flattened label names for lucene queries, eg "foo,bar,!s-action"
+  label: string
+}
+type Label = gmail_v1.Schema$Label
+type Message = gmail_v1.Schema$Message
 
 export class Gmail {
   // non-API
@@ -85,7 +85,6 @@ export class Gmail {
    * Get or create labels and return IDs.
    */
   getLabelIDs(labels: string[]): string[] {
-    debugger
     const ids = []
     for (const name of labels) {
       const label = this.labels.find(l => l.id == normalizeLabelName(name))
@@ -296,15 +295,24 @@ export class GmailUsersThreads extends GmailChild
   }
 }
 
-// ----- TASKS TODO
+// ----- TASKS
 
 export interface Task extends tasks_v1.Schema$Task {
   tasklist: string
 }
+type TaskList = tasks_v1.Schema$TaskList
 
 export class Tasks {
-  tasks: Task[]
-  lists: TaskList[]
+  data: {
+    tasks: Task[]
+    lists: TaskList[]
+  } = {
+    tasks: [],
+    lists: []
+  }
+
+  tasks = new TasksTasks(this)
+  tasklists = new TasksTasklists(this)
 }
 
 export class TasksChild {
@@ -317,8 +325,14 @@ export class TasksTasks extends TasksChild
     params: tasks_v1.Params$Resource$Tasks$List & TGlobalFields,
     options?: MethodOptions
   ): Promise<AxiosResponse<tasks_v1.Schema$Tasks>> {
-    const items = this.root.tasks.filter(t => t.tasklist === params.tasklist)
+    assert(params.tasklist)
+    const items = this.root.data.tasks.filter(
+      t => t.tasklist === params.tasklist
+    )
     // TODO support the 'If-None-Match' header
+    // TODO support params.showHidden
+    // TODO support params.showCompeted
+    // TODO support params.showDeleted
     return ok(
       {
         items,
@@ -340,7 +354,7 @@ export class TasksTasks extends TasksChild
     // TODO check params.task
     // TODO check params.requestBody
     // TODO check params.maxResults
-    const task = this.root.tasks.find(
+    const task = this.root.data.tasks.find(
       t => t.tasklist === params.tasklist && t.id === params.task
     )
     if (!task) {
@@ -360,8 +374,11 @@ export class TasksTasks extends TasksChild
       kind: 'tasks#task'
     }
     const task: Task = Object.create(params.requestBody)
+    // TODO dates
     task.kind = 'tasks#task'
     task.id = Math.random().toString()
+    task.tasklist = params.tasklist
+    this.root.data.tasks.push(task)
     return ok(task)
   }
 
@@ -371,7 +388,7 @@ export class TasksTasks extends TasksChild
   ): Promise<AxiosResponse<Task>> {
     // TODO check params.requestBody
     // TODO check params.requestBody.parent
-    const task = this.root.tasks.find(
+    const task = this.root.data.tasks.find(
       t => t.tasklist === params.tasklist && t.id === params.task
     )
     if (!task) {
@@ -385,14 +402,14 @@ export class TasksTasks extends TasksChild
     params: tasks_v1.Params$Resource$Tasks$Patch & TGlobalFields,
     options?: MethodOptions
   ): Promise<AxiosResponse<void>> {
-    const index = this.root.tasks.findIndex(
+    const index = this.root.data.tasks.findIndex(
       t => t.tasklist === params.tasklist && t.id === params.task
     )
     if (!index) {
       throw new NotFoundError()
     }
     // remove in-place
-    this.root.tasks.splice(index, 1)
+    this.root.data.tasks.splice(index, 1)
     return ok(void 0)
   }
 }
@@ -404,7 +421,7 @@ export class TasksTasklists extends TasksChild {
   ): Promise<AxiosResponse<tasks_v1.Schema$TaskLists>> {
     // TODO support the 'If-None-Match' header
     // TODO check params.maxResults
-    const items = this.root.lists
+    const items = this.root.data.lists
     return ok(
       {
         items,
@@ -424,8 +441,10 @@ export class TasksTasklists extends TasksChild {
   ): Promise<AxiosResponse<TaskList>> {
     // TODO check params.requestBody
     const list: TaskList = Object.create(params.requestBody)
+    // TODO dates
     list.kind = 'tasks#taskList'
     list.id = Math.random().toString()
+    this.root.data.lists.push(list)
     return ok(list)
   }
 }
