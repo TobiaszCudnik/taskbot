@@ -3,6 +3,7 @@ import { MethodOptions } from 'googleapis-common'
 // import * as sinon from 'sinon'
 import { gmail_v1, tasks_v1 } from 'googleapis'
 import * as assert from 'assert'
+import * as moment from 'moment-timezone'
 import { normalizeLabelName } from '../../src/google/gmail/sync'
 import { TGlobalFields } from '../../src/google/sync'
 import { simpleParser } from 'mailparser'
@@ -374,6 +375,9 @@ export class TasksTasks extends TasksChild
       kind: 'tasks#task'
     }
     const task: Task = Object.create(params.requestBody)
+    task.updated = moment()
+      .utc()
+      .toISOString()
     // TODO dates
     task.kind = 'tasks#task'
     task.id = Math.random().toString()
@@ -441,7 +445,9 @@ export class TasksTasklists extends TasksChild {
   ): Promise<AxiosResponse<TaskList>> {
     // TODO check params.requestBody
     const list: TaskList = Object.create(params.requestBody)
-    // TODO dates
+    list.updated = moment()
+      .utc()
+      .toISOString()
     list.kind = 'tasks#taskList'
     list.id = Math.random().toString()
     this.root.data.lists.push(list)
