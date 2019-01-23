@@ -399,6 +399,9 @@ export class TasksTasks extends TasksChild
       throw new NotFoundError()
     }
     Object.assign(task, params.requestBody)
+    task.updated = moment()
+      .utc()
+      .toISOString()
     return ok(task)
   }
 
@@ -406,14 +409,17 @@ export class TasksTasks extends TasksChild
     params: tasks_v1.Params$Resource$Tasks$Patch & TGlobalFields,
     options?: MethodOptions
   ): Promise<AxiosResponse<void>> {
-    const index = this.root.data.tasks.findIndex(
+    const task = this.root.data.tasks.find(
       t => t.tasklist === params.tasklist && t.id === params.task
     )
-    if (!index) {
+    if (!task) {
       throw new NotFoundError()
     }
-    // remove in-place
-    this.root.data.tasks.splice(index, 1)
+    task.updated = moment()
+      .utc()
+      .toISOString()
+    // mark as deleted
+    task.deleted = true
     return ok(void 0)
   }
 }
