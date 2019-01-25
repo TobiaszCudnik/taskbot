@@ -60,6 +60,12 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
         global.am_network.addMachine(this)
       }
     }
+    // support mocked APIs
+    if (process.env['MOCK']) {
+      this.log('Mocking GoogleAuth')
+      this.add('Ready')
+      return
+    }
     this.client = new OAuth2Client(
       config.client_id,
       config.client_secret,

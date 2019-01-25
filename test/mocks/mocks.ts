@@ -151,7 +151,7 @@ export class GmailUsersMessages extends GmailChild
     const msg: Message = {
       id: Math.random().toString(),
       threadId,
-      labelIds: params.requestBody.labelIds || []
+      labelIds: clone(params.requestBody.labelIds) || []
       // TODO more fields
     }
     const thread: Thread = {
@@ -159,18 +159,19 @@ export class GmailUsersMessages extends GmailChild
       id: threadId,
       snippet: (mail.text || '').substr(0, 200),
       messages: [msg],
-      labelIds: params.requestBody.labelIds || [],
+      labelIds: clone(params.requestBody.labelIds) || [],
       subject: mail.subject,
       to: mail.to.text,
       from: mail.from.text,
       label: ''
     }
+    const res = clone(params.requestBody)
     this.gmail.historyId = hid
     this.gmail.messages.push(msg)
     this.gmail.threads.push(thread)
     return ok({
       threadId,
-      ...params.requestBody
+      ...res
       // TODO missing fields?
     })
   }
@@ -221,7 +222,7 @@ export class GmailUsersLabels extends GmailChild
     params: gmail_v1.Params$Resource$Users$Labels$Create & TGlobalFields
     // options?: MethodOptions
   ): Promise<AxiosResponse<Label>> {
-    const label = params.requestBody
+    const label = clone(params.requestBody)
     label.id = normalizeLabelName(label.name)
     this.gmail.labels.push(label)
     return ok(label)
@@ -268,9 +269,12 @@ export class GmailUsersThreads extends GmailChild
     if (!thread) {
       throw new NotFoundError()
     }
-    const remove =
+    const remove = clone(
       (params.requestBody && params.requestBody.removeLabelIds) || []
-    const add = (params.requestBody && params.requestBody.addLabelIds) || []
+    )
+    const add = clone(
+      (params.requestBody && params.requestBody.addLabelIds) || []
+    )
     // remove
     thread.labelIds = thread.labelIds.filter(id => !remove.includes(id))
     // add
@@ -336,13 +340,24 @@ export class TasksTasks extends TasksChild
     options?: MethodOptions
   ): Promise<AxiosResponse<tasks_v1.Schema$Tasks>> {
     assert(params.tasklist)
-    const items = this.root.data.tasks.filter(
-      t => t.tasklist === params.tasklist
-    )
+    const items = []
+    for (const item of this.root.data.tasks) {
+      if (item.tasklist !== params.tasklist) {
+        continue
+      }
+      if (item.hidden && !params.showHidden) {
+        continue
+      }
+      // snow completed by default
+      if (item.completed && params.showCompleted === false) {
+        continue
+      }
+      if (item.deleted && !params.showDeleted) {
+        continue
+      }
+      items.push(item)
+    }
     // TODO support the 'If-None-Match' header
-    // TODO support params.showHidden
-    // TODO support params.showCompeted
-    // TODO support params.showDeleted
     return ok(
       {
         items,
@@ -383,7 +398,7 @@ export class TasksTasks extends TasksChild
     const defaults = {
       kind: 'tasks#task'
     }
-    const task: Task = Object.create(params.requestBody)
+    const task: Task = clone(params.requestBody)
     task.updated = moment()
       .utc()
       .toISOString()
@@ -448,6 +463,7 @@ export class TasksTasklists extends TasksChild {
     params: tasks_v1.Params$Resource$Tasklists$List & TGlobalFields,
     options?: MethodOptions
   ): Promise<AxiosResponse<tasks_v1.Schema$TaskLists>> {
+    console.log('[mock] tasks.tasklists.list', params)
     // TODO support the 'If-None-Match' header
     // TODO check params.maxResults
     const items = this.root.data.lists
@@ -469,7 +485,7 @@ export class TasksTasklists extends TasksChild {
     options?: MethodOptions
   ): Promise<AxiosResponse<TaskList>> {
     assert(params.requestBody)
-    const list: TaskList = Object.create(params.requestBody)
+    const list: TaskList = clone(params.requestBody)
     list.updated = moment()
       .utc()
       .toISOString()

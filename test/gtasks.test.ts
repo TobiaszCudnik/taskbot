@@ -2,6 +2,12 @@
 
 import { tasks_v1 } from 'googleapis'
 import createHelpers from './helpers'
+import { google } from './mocks/mocks'
+
+if (process.env['MOCK']) {
+  // mock 'googleapis'
+  global.GOOGLEAPIS_MOCK = google
+}
 
 const scenario = parseInt(process.env['SCENARIO'], 10) || 0
 // types for the helpers

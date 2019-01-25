@@ -1,7 +1,7 @@
-import LabelFilterSync from './src/sync/label-filter'
-import { DBRecord, default as RootSync } from './src/sync/root'
-import { IConfig, IConfigPublic } from './src/types'
 import * as _ from 'lodash'
+import LabelFilterSync from './src/sync/label-filter'
+import { DBRecord } from './src/sync/root'
+import { IConfig, IConfigPublic } from './src/types'
 import { isTestEnv } from './src/utils'
 import moment = require('moment-timezone')
 

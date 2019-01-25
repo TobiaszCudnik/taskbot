@@ -25,6 +25,19 @@ export type Thread = gmail_v1.Schema$Thread
 export type Task = tasks_v1.Schema$Task
 export type TaskList = tasks_v1.Schema$TaskList
 
+function exit(sync) {
+  console.log(`\nUser ${sync.config.user.id}: ${sync.config.google.username}`)
+  console.log(sync.getMachines())
+  const data = (sync.data && sync.data.toString()) || ''
+  if (data.trim()) {
+    console.log(`\nUser ${sync.config.user.id}: ${sync.config.google.username}`)
+    console.log(data)
+    const subs = sync.subs.google.subs
+    console.log(subs.gmail.toString())
+    console.log(subs.tasks.toString())
+  }
+}
+
 export default async function createHelpers() {
   let gtasks: tasks_v1.Tasks
   let gmail: gmail_v1.Gmail
@@ -143,7 +156,7 @@ export default async function createHelpers() {
   }
 
   async function initTest() {
-    disableDebug()
+    // disableDebug()
     // init sync
     const logger = new Logger()
     const connections = new Connections(logger)
@@ -152,6 +165,11 @@ export default async function createHelpers() {
     config.sync_frequency = 10000 * 100
     config.gtasks.sync_frequency = 10000 * 100
     sync = new RootSync(config, logger, connections)
+    console.log('BEFORE')
+    setTimeout(() => {
+      console.log('PRINT EXIT')
+      exit(sync)
+    }, 5000)
     // disable heartbeat
     sync.state.on('HeartBeat_enter', () => false)
     sync.state.on('Scheduled_enter', () => false)
@@ -233,7 +251,7 @@ export default async function createHelpers() {
     log('connected')
     await sync.state.when('WritingDone')
     log('initial sync OK')
-    enableDebug()
+    // enableDebug()
   }
 
   // TODO retry on Backend Error

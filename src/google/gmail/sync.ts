@@ -1,11 +1,14 @@
 import { machine } from 'asyncmachine'
 import { TAbortFunction } from 'asyncmachine/types'
 import { AxiosResponse } from 'axios'
-import { gmail_v1 } from 'googleapis'
-import * as _ from 'lodash'
+import * as merge from 'deepmerge'
 import * as delay from 'delay'
-import * as moment from 'moment'
 import * as regexEscape from 'escape-string-regexp'
+import { gmail_v1 } from 'googleapis'
+import { MethodOptions } from 'googleapis-common/build/src/api'
+import * as _ from 'lodash'
+import { trim } from 'lodash'
+import * as moment from 'moment'
 // Machine types
 import {
   AsyncMachine,
@@ -17,7 +20,6 @@ import {
   IEmitBase,
   ITransitions
 } from '../../../typings/machines/google/gmail/sync'
-import GC from '../../sync/gc'
 import RootSync, { DBRecord } from '../../sync/root'
 import { sync_writer_state, SyncWriter } from '../../sync/writer'
 import {
@@ -30,9 +32,6 @@ import {
 import Auth from '../auth'
 import { TGlobalFields } from '../sync'
 import GmailListSync from './sync-list'
-import { trim } from 'lodash'
-import * as merge from 'deepmerge'
-import { MethodOptions } from 'googleapis-common/build/src/api'
 
 const SEC = 1000
 

@@ -48,7 +48,7 @@ start-am:
 		src/app/bootstrap.js
 
 start-verbose:
-	DEBUG=\*-error,\*-verbose,root:\*-info,gmail-root,gtasks-root,record-diff-verboses \stat
+	DEBUG=\*-error,\*-verbose,root:\*-info,gmail-root,gtasks-root,record-diff-verbose \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node --inspect \
@@ -108,7 +108,7 @@ debug-list-next:
 		#node --inspect-brk src/app/bootstrap.js
 
 debug-gmail:
-	DEBUG=record-diff-verboses,google,gmail-root,gmail-verbose,\*-error,gtasks \
+	DEBUG=record-diff-verbose,google,gmail-root,gmail-verbose,\*-error,gtasks \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node --inspect src/app/bootstrap.js
@@ -172,10 +172,13 @@ test:
 	sleep 5
 	-SCENARIO=2 npx jest sync
 
-test-mocks:
+fix-lucene:
 	# lucene is an optional dep and doesnt support the regexp query syntax
 	rm -Rf node_modules/lucene
 	rm -Rf node_modules/lucene-queryparser
+
+test-mocks:
+	make fix-lucene
 	SCENARIO=0 \
 		DEBUG=tests,google\*-info,gmail-root\*-info,gtasks-root\*-info,gmail-query-next\*,gmail-list-next\*,gtasks-list-next\*,\*-error,db\*,label-filter-\*,\*inbox-labels\*,root:\* \
 		DEBUG_FILE=1 \
@@ -183,5 +186,13 @@ test-mocks:
 		node \
 		./node_modules/jest/bin/jest.js \
 		mocks
+
+test-gtasks-mocked:
+	make fix-lucene
+	DEBUG=root:\*-info,\*-error,app-info,\*-am \
+		DEBUG_AM=3 \
+		MOCK=true \
+		npx jest \
+			gtasks
 
 .PHONY: test break build

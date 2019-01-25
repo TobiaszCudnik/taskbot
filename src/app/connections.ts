@@ -86,8 +86,14 @@ export default class Connections {
     if (this.apis.gtasks) {
       // TODO dispose
     }
-    // TODO pass the https agent here
-    this.apis.gtasks = google.tasks({version: 'v1'})
+    // support for a mocked 'googleapis' module
+    if (global.GOOGLEAPIS_MOCK) {
+      this.log('Using a mocked API for Tasks')
+      this.apis.gtasks = global.GOOGLEAPIS_MOCK.tasks({ version: 'v1' })
+    } else {
+      // TODO pass the https agent here
+      this.apis.gtasks = google.tasks({ version: 'v1' })
+    }
   }
 
   initGmailAPI() {
@@ -95,8 +101,14 @@ export default class Connections {
     if (this.apis.gmail) {
       // TODO dispose
     }
-    // TODO pass the https agent here
-    this.apis.gmail = google.gmail({version: 'v1'})
+    // support for a mocked 'googleapis' module
+    if (global.GOOGLEAPIS_MOCK) {
+      this.log('Using a mocked API for GMail')
+      this.apis.gmail = global.GOOGLEAPIS_MOCK.gmail({ version: 'v1' })
+    } else {
+      // TODO pass the https agent here
+      this.apis.gmail = google.gmail({ version: 'v1' })
+    }
   }
 
   // TODO take abort() as the second param
@@ -111,6 +123,7 @@ export default class Connections {
     retries = 3
     // @ts-ignore TODO fix type
   ): T {
+    debugger
     // prepare a version of params for logging
     let params_log = null
     if (!params) {
@@ -177,6 +190,7 @@ export default class Connections {
           throw Error('Response and body empty')
         }
         // stop redoing
+        this.log_verbose(`${method_name} request finished`)
         break
       } catch (e) {
         // retry on backend errors only

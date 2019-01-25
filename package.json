@@ -10,6 +10,7 @@
     "test-service": "TEST=1 make start-am",
     "test-debug": "make test-debug",
     "test-mocks": "make test-mocks",
+    "test-gtasks-mocked": "make test-gtasks-mocked",
     "next-dev": "cd www && npm run dev"
   },
   "repository": {
@@ -78,7 +79,7 @@
     "@types/moment": "^2.13.0",
     "@types/moment-timezone": "^0.5.6",
     "@types/node": "^10.3.4",
-    "jest": "^23.3.0",
+    "jest": "^24.0.0-alpha.16",
     "mailparser": "^2.4.3",
     "md5": "^2.2.1",
     "prettier": "^1.15.3",
