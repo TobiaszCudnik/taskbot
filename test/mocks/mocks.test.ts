@@ -1,10 +1,11 @@
-import { Thread } from '../mocks'
+import { Thread } from './mocks'
 import { google, Gmail, Tasks } from './mocks'
 import { DBRecord } from '../../src/sync/root'
 // declare module '../data.json' {
 //   const records: DBRecord[]
 //   export = records
 // }
+// @ts-ignore
 import * as data from '../data.json'
 import { createRawEmail } from '../../src/utils'
 
@@ -61,7 +62,7 @@ describe('gmail', () => {
       '!s-action',
       '!s-next-action'
     ])
-    const thread = list.data.threads[0]
+    const thread = list.data.threads[0] as Thread
     expect(thread.labelIds).toContain(label_next)
     await gmail.users.threads.modify({
       id: thread.id,
@@ -90,7 +91,15 @@ describe('tasks', () => {
     })
     expect(res_tasks.data.items).toHaveLength(5)
   })
-  it.skip('modify a task', async () => {})
+  it('modify a task', async () => {
+    await fixturesToTasks(tasks, data)
+    const res_lists = await tasks.tasklists.list({})
+    const res_tasks = await tasks.tasks.list({
+      tasklist: res_lists.data.items[0].id
+    })
+    tasks.tasks.patch({tasklist: })
+    expect(res_tasks.data.items).toHaveLength(5)
+  })
   it.skip('modify a list', async () => {})
 })
 

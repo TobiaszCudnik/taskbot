@@ -193,6 +193,8 @@ export class GmailUsersLabels extends GmailChild
     params: gmail_v1.Params$Resource$Users$Labels$Patch & TGlobalFields
     // options?: MethodOptions
   ): Promise<AxiosResponse<Label>> {
+    assert(params.id)
+    assert(params.requestBody)
     const label = this.gmail.labels.find(l => l.id === params.id)
     Object.assign(label, params.requestBody)
     return ok(label)
@@ -266,6 +268,7 @@ export class GmailUsersThreads extends GmailChild
     params: gmail_v1.Params$Resource$Users$Threads$Get & TGlobalFields,
     options?: MethodOptions
   ): Promise<AxiosResponse<Thread>> {
+    assert(params.id)
     const thread = this.gmail.threads.find(t => t.id === params.id)
     if (!thread) {
       throw new NotFoundError()
@@ -277,6 +280,8 @@ export class GmailUsersThreads extends GmailChild
     params: gmail_v1.Params$Resource$Users$Threads$Modify & TGlobalFields,
     options?: MethodOptions
   ): Promise<AxiosResponse<Thread>> {
+    assert(params.id)
+    assert(params.requestBody)
     const thread = this.gmail.threads.find(t => t.id === params.id)
     if (!thread) {
       throw new NotFoundError()
@@ -351,9 +356,10 @@ export class TasksTasks extends TasksChild
     params?: tasks_v1.Params$Resource$Tasks$Get & TGlobalFields,
     options?: MethodOptions
   ): Promise<AxiosResponse<Task>> {
+    assert(params.task)
+    assert(params.tasklist)
     // TODO check params.tasklist
     // TODO check params.task
-    // TODO check params.requestBody
     // TODO check params.maxResults
     const task = this.root.data.tasks.find(
       t => t.tasklist === params.tasklist && t.id === params.task
@@ -368,8 +374,8 @@ export class TasksTasks extends TasksChild
     params: tasks_v1.Params$Resource$Tasks$Insert & TGlobalFields,
     options?: MethodOptions
   ): Promise<AxiosResponse<Task>> {
-    // TODO check params.tasklist
-    // TODO check params.requestBody
+    assert(params.tasklist)
+    assert(params.requestBody)
     // TODO check params.parent
     const defaults = {
       kind: 'tasks#task'
@@ -390,7 +396,9 @@ export class TasksTasks extends TasksChild
     params: tasks_v1.Params$Resource$Tasks$Patch & TGlobalFields,
     options?: MethodOptions
   ): Promise<AxiosResponse<Task>> {
-    // TODO check params.requestBody
+    assert(params.requestBody)
+    assert(params.task)
+    assert(params.tasklist)
     // TODO check params.requestBody.parent
     const task = this.root.data.tasks.find(
       t => t.tasklist === params.tasklist && t.id === params.task
@@ -409,6 +417,8 @@ export class TasksTasks extends TasksChild
     params: tasks_v1.Params$Resource$Tasks$Patch & TGlobalFields,
     options?: MethodOptions
   ): Promise<AxiosResponse<void>> {
+    assert(params.task)
+    assert(params.tasklist)
     const task = this.root.data.tasks.find(
       t => t.tasklist === params.tasklist && t.id === params.task
     )
@@ -449,7 +459,7 @@ export class TasksTasklists extends TasksChild {
     params: tasks_v1.Params$Resource$Tasklists$Insert & TGlobalFields,
     options?: MethodOptions
   ): Promise<AxiosResponse<TaskList>> {
-    // TODO check params.requestBody
+    assert(params.requestBody)
     const list: TaskList = Object.create(params.requestBody)
     list.updated = moment()
       .utc()
