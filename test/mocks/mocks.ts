@@ -358,8 +358,6 @@ export class TasksTasks extends TasksChild
   ): Promise<AxiosResponse<Task>> {
     assert(params.task)
     assert(params.tasklist)
-    // TODO check params.tasklist
-    // TODO check params.task
     // TODO check params.maxResults
     const task = this.root.data.tasks.find(
       t => t.tasklist === params.tasklist && t.id === params.task
@@ -377,6 +375,7 @@ export class TasksTasks extends TasksChild
     assert(params.tasklist)
     assert(params.requestBody)
     // TODO check params.parent
+    // TODO calculate params.position
     const defaults = {
       kind: 'tasks#task'
     }
@@ -400,16 +399,19 @@ export class TasksTasks extends TasksChild
     assert(params.task)
     assert(params.tasklist)
     // TODO check params.requestBody.parent
-    const task = this.root.data.tasks.find(
+    // TODO calculate params.position
+    const i = this.root.data.tasks.findIndex(
       t => t.tasklist === params.tasklist && t.id === params.task
     )
+    const task = this.root.data.tasks[i]
     if (!task) {
       throw new NotFoundError()
     }
-    Object.assign(task, params.requestBody)
-    task.updated = moment()
+    const patched = cloneAndPatch(task, params.requestBody)
+    patched.updated = moment()
       .utc()
       .toISOString()
+    this.root.data.tasks[i] = patched
     return ok(task)
   }
 
@@ -432,6 +434,14 @@ export class TasksTasks extends TasksChild
     task.deleted = true
     return ok(void 0)
   }
+
+  // TODO update?
+}
+
+function cloneAndPatch<T extends object>(source: T, patch: Partial<T>) {
+  const patched = Object.create(source)
+  Object.assign(patched, patch)
+  return patched
 }
 
 export class TasksTasklists extends TasksChild {
@@ -467,6 +477,37 @@ export class TasksTasklists extends TasksChild {
     list.kind = 'tasks#taskList'
     list.id = Math.random().toString()
     this.root.data.lists.push(list)
+    return ok(list)
+  }
+
+  async patch(
+    params: tasks_v1.Params$Resource$Tasklists$Patch & TGlobalFields,
+    options?: MethodOptions
+  ): Promise<AxiosResponse<TaskList>> {
+    assert(params.requestBody)
+    assert(params.tasklist)
+    const i = this.root.data.lists.findIndex(l => l.id === params.tasklist)
+    const list = this.root.data.lists[i]
+    if (!list) {
+      throw new NotFoundError()
+    }
+    const patched = cloneAndPatch(list, params.requestBody)
+    patched.updated = moment()
+      .utc()
+      .toISOString()
+    this.root.data.lists[i] = patched
+    return ok(list)
+  }
+
+  async get(
+    params?: tasks_v1.Params$Resource$Tasklists$Get & TGlobalFields,
+    options?: MethodOptions
+  ): Promise<AxiosResponse<TaskList>> {
+    assert(params.tasklist)
+    const list = this.root.data.lists.find(l => l.id === params.tasklist)
+    if (!list) {
+      throw new NotFoundError()
+    }
     return ok(list)
   }
 }

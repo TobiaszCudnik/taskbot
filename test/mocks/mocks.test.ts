@@ -8,6 +8,7 @@ import { DBRecord } from '../../src/sync/root'
 // @ts-ignore
 import * as data from '../data.json'
 import { createRawEmail } from '../../src/utils'
+import * as delay from 'delay'
 
 let gmail: Gmail
 let tasks: Tasks
@@ -94,13 +95,52 @@ describe('tasks', () => {
   it('modify a task', async () => {
     await fixturesToTasks(tasks, data)
     const res_lists = await tasks.tasklists.list({})
-    const res_tasks = await tasks.tasks.list({
-      tasklist: res_lists.data.items[0].id
+    const tasklist = res_lists.data.items[0].id
+    let res_tasks = await tasks.tasks.list({
+      tasklist
     })
-    tasks.tasks.patch({tasklist: })
-    expect(res_tasks.data.items).toHaveLength(5)
+    let task = res_tasks.data.items[0]
+    const title = Math.random().toString()
+    const old_updated = task.updated
+    task.title = title
+    // delay to assert the updated date
+    await delay(1)
+    tasks.tasks.patch({
+      tasklist,
+      task: task.id,
+      requestBody: task
+    })
+    // re-read
+    res_tasks = await tasks.tasks.list({
+      tasklist
+    })
+    task = res_tasks.data.items[0]
+    // assert
+    expect(task.title).toEqual(title)
+    expect(task.updated).not.toEqual(old_updated)
   })
-  it.skip('modify a list', async () => {})
+  it('modify a list', async () => {
+    await fixturesToTasks(tasks, data)
+    const res_lists = await tasks.tasklists.list({})
+    let tasklist = res_lists.data.items[0]
+    const title = Math.random().toString()
+    const old_updated = tasklist.updated
+    tasklist.title = title
+    // delay to assert the updated date
+    await delay(1)
+    tasks.tasklists.patch({
+      tasklist: tasklist.id,
+      requestBody: tasklist
+    })
+    // re-read
+    const res_list = await tasks.tasklists.get({
+      tasklist: tasklist.id
+    })
+    tasklist = res_list.data
+    // assert
+    expect(tasklist.title).toEqual(title)
+    expect(tasklist.updated).not.toEqual(old_updated)
+  })
 })
 
 async function fixturesToThreads(gmail: Gmail, data: DBRecord[]) {
