@@ -10,6 +10,7 @@ import { simpleParser } from 'mailparser'
 import { Base64 } from 'js-base64'
 import * as filter from 'lucene-filter'
 import * as md5 from 'md5'
+import * as clone from 'deepcopy'
 
 // ----- COMMON
 
@@ -37,9 +38,13 @@ type Response = {
   statusText?: string
 }
 
+/**
+ * @param data
+ * @param response
+ */
 function ok<T>(data: T, response: Response = {}): AxiosResponse<T> {
   return {
-    data,
+    data: clone(data),
     status: response.status || 200,
     statusText: response.statusText || 'OK',
     headers: response.headers || {},
@@ -195,9 +200,10 @@ export class GmailUsersLabels extends GmailChild
   ): Promise<AxiosResponse<Label>> {
     assert(params.id)
     assert(params.requestBody)
-    const label = this.gmail.labels.find(l => l.id === params.id)
-    Object.assign(label, params.requestBody)
-    return ok(label)
+    const data = this.gmail.labels
+    const i = data.findIndex(l => l.id === params.id)
+    data[i] = cloneAndPatch(data[i], params.requestBody)
+    return ok(data[i])
   }
 
   async get(
@@ -222,30 +228,6 @@ export class GmailUsersLabels extends GmailChild
   }
 }
 
-function query(threads: Thread[], labels: Label[], q: string) {
-  function parse(query) {
-    return query.replace(/label:([\w-!]+)/, 'label:/(,|^)$1(,|$)/')
-  }
-  // merge labels into a string
-  threads = threads.map((thread: Thread) => {
-    // TODO dont replace in text
-    thread.label = thread.labelIds
-      .map(id => {
-        const label = labels.find(l => l.id == id)
-        if (!label) {
-          throw new Error(`label ${id} doesnt exist`)
-        }
-        return label.name
-      })
-      .join(',')
-      .replace(/ /g, '-')
-      .replace(/\//g, '-')
-      .toLocaleLowerCase()
-    return thread
-  })
-  return threads.filter(filter(parse(q || '')))
-}
-
 export class GmailUsersThreads extends GmailChild
   implements MockedAPI<gmail_v1.Resource$Users$Threads> {
   async list(
@@ -256,7 +238,7 @@ export class GmailUsersThreads extends GmailChild
 
     // evaluate the search expression
     if (params.q) {
-      threads = query(threads, this.gmail.labels, params.q)
+      threads = this.query(params.q)
     }
 
     return ok({
@@ -298,6 +280,28 @@ export class GmailUsersThreads extends GmailChild
       }
     }
     return ok(thread)
+  }
+
+  protected query(query: string) {
+    // merge labels into a string
+    const threads = this.gmail.threads.map((thread: Thread) => {
+      // TODO dont replace in text
+      thread.label = thread.labelIds
+        .map(id => {
+          const label = this.gmail.labels.find(l => l.id == id)
+          if (!label) {
+            throw new Error(`label ${id} doesnt exist`)
+          }
+          return label.name
+        })
+        .join(',')
+        .replace(/ /g, '-')
+        .replace(/\//g, '-')
+        .toLocaleLowerCase()
+      return thread
+    })
+    query = query.replace(/label:([\w-!]+)/, 'label:/(,|^)$1(,|$)/')
+    return threads.filter(filter(query))
   }
 }
 
@@ -400,10 +404,11 @@ export class TasksTasks extends TasksChild
     assert(params.tasklist)
     // TODO check params.requestBody.parent
     // TODO calculate params.position
-    const i = this.root.data.tasks.findIndex(
+    const data = this.root.data.tasks
+    const i = data.findIndex(
       t => t.tasklist === params.tasklist && t.id === params.task
     )
-    const task = this.root.data.tasks[i]
+    const task = data[i]
     if (!task) {
       throw new NotFoundError()
     }
@@ -411,8 +416,8 @@ export class TasksTasks extends TasksChild
     patched.updated = moment()
       .utc()
       .toISOString()
-    this.root.data.tasks[i] = patched
-    return ok(task)
+    data[i] = patched
+    return ok(patched)
   }
 
   async delete(
@@ -436,12 +441,6 @@ export class TasksTasks extends TasksChild
   }
 
   // TODO update?
-}
-
-function cloneAndPatch<T extends object>(source: T, patch: Partial<T>) {
-  const patched = Object.create(source)
-  Object.assign(patched, patch)
-  return patched
 }
 
 export class TasksTasklists extends TasksChild {
@@ -486,8 +485,9 @@ export class TasksTasklists extends TasksChild {
   ): Promise<AxiosResponse<TaskList>> {
     assert(params.requestBody)
     assert(params.tasklist)
-    const i = this.root.data.lists.findIndex(l => l.id === params.tasklist)
-    const list = this.root.data.lists[i]
+    const data = this.root.data.lists
+    const i = data.findIndex(l => l.id === params.tasklist)
+    const list = data[i]
     if (!list) {
       throw new NotFoundError()
     }
@@ -495,8 +495,8 @@ export class TasksTasklists extends TasksChild {
     patched.updated = moment()
       .utc()
       .toISOString()
-    this.root.data.lists[i] = patched
-    return ok(list)
+    data[i] = patched
+    return ok(patched)
   }
 
   async get(
@@ -524,3 +524,11 @@ const api = {
 }
 
 export { api as google }
+
+// ----- HELPER FUNCTIONS
+
+function cloneAndPatch<T extends object>(source: T, patch: Partial<T>) {
+  const patched = clone(source)
+  Object.assign(patched, patch)
+  return patched
+}

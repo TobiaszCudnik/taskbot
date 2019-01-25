@@ -1,14 +1,13 @@
-import { Thread } from './mocks'
-import { google, Gmail, Tasks } from './mocks'
+import * as delay from 'delay'
 import { DBRecord } from '../../src/sync/root'
+import { createRawEmail } from '../../src/utils'
 // declare module '../data.json' {
 //   const records: DBRecord[]
 //   export = records
 // }
 // @ts-ignore
-import * as data from '../data.json'
-import { createRawEmail } from '../../src/utils'
-import * as delay from 'delay'
+import * as fixtures from '../data.json'
+import { Gmail, google, Tasks, Thread } from './mocks'
 
 let gmail: Gmail
 let tasks: Tasks
@@ -18,72 +17,94 @@ beforeEach(() => {
 })
 
 describe('gmail', () => {
-  it('query by labels', async () => {
-    await fixturesToThreads(gmail, data)
-    let res
-    // next action
-    res = await gmail.users.threads.list({
-      q: 'label:!s-next-action'
+  describe('threads', () => {
+    it('query by labels', async () => {
+      await fixturesToThreads(gmail, fixtures)
+      let res
+      // next action
+      res = await gmail.users.threads.list({
+        q: 'label:!s-next-action'
+      })
+      expect(res.data.threads).toHaveLength(3)
+      // action
+      res = await gmail.users.threads.list({
+        q: 'label:!s-action'
+      })
+      expect(res.data.threads).toHaveLength(5)
     })
-    expect(res.data.threads).toHaveLength(3)
-    // action
-    res = await gmail.users.threads.list({
-      q: 'label:!s-action'
+    it('send email', async () => {
+      const raw = createRawEmail(
+        {
+          from: 'from@com.com',
+          to: 'test@gmail.com',
+          subject: 'test subject'
+        },
+        'test content'
+      )
+      // next action
+      await gmail.users.messages.send({
+        requestBody: { raw }
+      })
+      const res = await gmail.users.threads.list({})
+      expect(res.data.threads).toHaveLength(1)
+      const thread = res.data.threads[0] as Thread
+      // mocks-only fields (non GMail API)
+      expect(thread.from).toEqual('from@com.com')
+      expect(thread.to).toEqual('test@gmail.com')
+      expect(thread.subject).toEqual('test subject')
     })
-    expect(res.data.threads).toHaveLength(5)
+    it("modify thread's labels", async () => {
+      // next action
+      await fixturesToThreads(gmail, fixtures)
+      const list = await gmail.users.threads.list({
+        q: 'label:!s-next-action'
+      })
+      const [label_action, label_next] = gmail.getLabelIDs([
+        '!s-action',
+        '!s-next-action'
+      ])
+      const thread = list.data.threads[0] as Thread
+      expect(thread.labelIds).toContain(label_next)
+      await gmail.users.threads.modify({
+        id: thread.id,
+        requestBody: {
+          addLabelIds: [label_action],
+          removeLabelIds: [label_next]
+        }
+      })
+      const get = await gmail.users.threads.get({
+        id: thread.id
+      })
+      expect(get.data.labelIds).toContain(label_action)
+      expect(get.data.labelIds).not.toContain(label_next)
+    })
   })
-  it('send email', async () => {
-    const raw = createRawEmail(
-      {
-        from: 'from@com.com',
-        to: 'test@gmail.com',
-        subject: 'test subject'
-      },
-      'test content'
-    )
-    // next action
-    await gmail.users.messages.send({
-      requestBody: { raw }
+  describe('labels', () => {
+    it('list labels', async () => {
+      await fixturesToThreads(gmail, fixtures)
+      const list = await gmail.users.labels.list({})
+      expect(list.data.labels).toHaveLength(13)
     })
-    const res = await gmail.users.threads.list({})
-    expect(res.data.threads).toHaveLength(1)
-    const thread = res.data.threads[0] as Thread
-    // mocks-only fields (non GMail API)
-    expect(thread.from).toEqual('from@com.com')
-    expect(thread.to).toEqual('test@gmail.com')
-    expect(thread.subject).toEqual('test subject')
+    it('patch a label', async () => {
+      await fixturesToThreads(gmail, fixtures)
+      const list = await gmail.users.labels.list({})
+      const id = list.data.labels[0].id
+      const name = 'foo'
+      await gmail.users.labels.patch({
+        id,
+        requestBody: {
+          name
+        }
+      })
+      const get = await gmail.users.labels.get({ id })
+      expect(get.data.name).toEqual(name)
+    })
   })
-  it('modify labels', async () => {
-    // next action
-    await fixturesToThreads(gmail, data)
-    const list = await gmail.users.threads.list({
-      q: 'label:!s-next-action'
-    })
-    const [label_action, label_next] = gmail.getLabelIDs([
-      '!s-action',
-      '!s-next-action'
-    ])
-    const thread = list.data.threads[0] as Thread
-    expect(thread.labelIds).toContain(label_next)
-    await gmail.users.threads.modify({
-      id: thread.id,
-      requestBody: {
-        addLabelIds: [label_action],
-        removeLabelIds: [label_next]
-      }
-    })
-    const get = await gmail.users.threads.get({
-      id: thread.id
-    })
-    expect(get.data.labelIds).toContain(label_action)
-    expect(get.data.labelIds).not.toContain(label_next)
-  })
-  // TODO test labels.patch
 })
 
 describe('tasks', () => {
   it('list tasks', async () => {
-    await fixturesToTasks(tasks, data)
+    await fixturesToTasks(tasks, fixtures)
     const res_lists = await tasks.tasklists.list({})
     expect(res_lists.data.items).toHaveLength(3)
 
@@ -92,8 +113,8 @@ describe('tasks', () => {
     })
     expect(res_tasks.data.items).toHaveLength(5)
   })
-  it('modify a task', async () => {
-    await fixturesToTasks(tasks, data)
+  it('patch a task', async () => {
+    await fixturesToTasks(tasks, fixtures)
     const res_lists = await tasks.tasklists.list({})
     const tasklist = res_lists.data.items[0].id
     let res_tasks = await tasks.tasks.list({
@@ -102,13 +123,14 @@ describe('tasks', () => {
     let task = res_tasks.data.items[0]
     const title = Math.random().toString()
     const old_updated = task.updated
-    task.title = title
     // delay to assert the updated date
     await delay(1)
     tasks.tasks.patch({
       tasklist,
       task: task.id,
-      requestBody: task
+      requestBody: {
+        title
+      }
     })
     // re-read
     res_tasks = await tasks.tasks.list({
@@ -119,18 +141,19 @@ describe('tasks', () => {
     expect(task.title).toEqual(title)
     expect(task.updated).not.toEqual(old_updated)
   })
-  it('modify a list', async () => {
-    await fixturesToTasks(tasks, data)
+  it('patch a list', async () => {
+    await fixturesToTasks(tasks, fixtures)
     const res_lists = await tasks.tasklists.list({})
     let tasklist = res_lists.data.items[0]
     const title = Math.random().toString()
     const old_updated = tasklist.updated
-    tasklist.title = title
     // delay to assert the updated date
     await delay(1)
     tasks.tasklists.patch({
       tasklist: tasklist.id,
-      requestBody: tasklist
+      requestBody: {
+        title
+      }
     })
     // re-read
     const res_list = await tasks.tasklists.get({
