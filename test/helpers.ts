@@ -19,6 +19,7 @@ import RootSync from '../src/sync/root'
 import * as delay from 'delay'
 import { OAuth2Client } from 'google-auth-library'
 import { google, gmail_v1, tasks_v1 } from 'googleapis'
+import { google as mocks } from './mocks/mocks'
 
 export type Label = gmail_v1.Schema$Label
 export type Thread = gmail_v1.Schema$Thread
@@ -47,6 +48,7 @@ export default async function createHelpers() {
   let gtasks_sync: GTasksSync
   const log_inner = debug('tests')
   const log = (msg, ...rest) => {
+    console.log(msg, ...rest)
     // @ts-ignore
     if (debug.disabled) return
     log_inner(msg, ...rest)
@@ -165,11 +167,12 @@ export default async function createHelpers() {
     config.sync_frequency = 10000 * 100
     config.gtasks.sync_frequency = 10000 * 100
     sync = new RootSync(config, logger, connections)
-    console.log('BEFORE')
+    // process.on('SIGINT', exit)
+    // process.on('exit', exit)
     setTimeout(() => {
       console.log('PRINT EXIT')
       exit(sync)
-    }, 5000)
+    }, 6000)
     // disable heartbeat
     sync.state.on('HeartBeat_enter', () => false)
     sync.state.on('Scheduled_enter', () => false)
@@ -193,18 +196,27 @@ export default async function createHelpers() {
     await delay(0)
 
     // build the API clients and the Auth object
-    // TODO extract
-    gtasks = google.tasks('v1')
-    gmail = google.gmail('v1')
-    // @ts-ignore
-    auth = new google.auth.OAuth2(
-      config.google.client_id,
-      config.google.client_secret,
-      config.google.redirect_url
-    )
-    auth.credentials = {
-      access_token: config.google.access_token,
-      refresh_token: config.google.refresh_token
+    if (process.env['MOCK']) {
+      // @ts-ignore
+      gtasks = mocks.tasks('v1')
+      // @ts-ignore
+      gmail = mocks.gmail('v1')
+      // @ts-ignore
+      auth = {}
+    } else {
+      // TODO extract
+      gtasks = google.tasks('v1')
+      gmail = google.gmail('v1')
+      // @ts-ignore
+      auth = new google.auth.OAuth2(
+        config.google.client_id,
+        config.google.client_secret,
+        config.google.redirect_url
+      )
+      auth.credentials = {
+        access_token: config.google.access_token,
+        refresh_token: config.google.refresh_token
+      }
     }
     // TODO
     // const token = await new Promise(resolve => {
@@ -244,9 +256,10 @@ export default async function createHelpers() {
         throw new Error('MaxWritesExceeded')
       })
     }
+    debugger
     assert(gtasks_sync, 'gtasks sync missing')
     assert(gmail_sync, 'gmail sync missing')
-    // trigger sync
+    // trigger the initial sync
     sync.state.add('Syncing')
     log('connected')
     await sync.state.when('WritingDone')

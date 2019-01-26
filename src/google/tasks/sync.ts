@@ -270,6 +270,7 @@ export default class GTasksSync extends SyncWriter<
   async createTaskLists(names, abort: TAbortFunction) {
     await Promise.all(
       names.map(async name => {
+        // TODO prevent tasklists without names
         this.log(`Creating a new list tasklist '${name}'`)
         const params: tasks_v1.Params$Resource$Tasklists$Insert = {
           requestBody: {

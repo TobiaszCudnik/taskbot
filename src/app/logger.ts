@@ -73,13 +73,13 @@ export default class Logger {
       msgs[0] = (msgs[0] && msgs[0].toString()) || ''
       // dont log to console on PROD, except for errors
       // if (!debug.disabled && (!isProd() || level == 'error')) {
-      // TODO temp
-      console.log(...msgs)
       // @ts-ignore
       if (!debug.disabled) {
         // @ts-ignore
         terminal(...msgs)
       }
+      // TODO temp
+      console.log(name, ...msgs)
       // optional file logging
       if (!process.env['DEBUG_FILE']) return
       // const labels = { ...base_labels }

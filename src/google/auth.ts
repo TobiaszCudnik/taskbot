@@ -63,7 +63,7 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
     // support mocked APIs
     if (process.env['MOCK']) {
       this.log('Mocking GoogleAuth')
-      this.add('Ready')
+      this.add(['TokenRefreshed', 'CredentialsSet'])
       return
     }
     this.client = new OAuth2Client(
@@ -79,6 +79,9 @@ export default class Auth extends AsyncMachine<TStates, IBind, IEmit> {
   }
 
   CredentialsSet_state(access_token: string, refresh_token: string) {
+    if (process.env['MOCK']) {
+      return
+    }
     this.client.setCredentials({
       access_token: access_token,
       refresh_token: refresh_token

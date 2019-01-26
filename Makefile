@@ -190,7 +190,6 @@ test-mocks:
 test-gtasks-mocked:
 	make fix-lucene
 	DEBUG=root:\*-info,\*-error,app-info,\*-am \
-		DEBUG_AM=3 \
 		MOCK=true \
 		npx jest \
 			gtasks

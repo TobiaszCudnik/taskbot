@@ -123,7 +123,6 @@ export default class Connections {
     retries = 3
     // @ts-ignore TODO fix type
   ): T {
-    debugger
     // prepare a version of params for logging
     let params_log = null
     if (!params) {
