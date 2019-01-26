@@ -305,6 +305,7 @@ export class GmailUsersThreads extends GmailChild
       return thread
     })
     query = query.replace(/label:([\w-!]+)/, 'label:/(,|^)$1(,|$)/')
+    console.log(`lucene query ${query}`)
     return threads.filter(filter(query))
   }
 }

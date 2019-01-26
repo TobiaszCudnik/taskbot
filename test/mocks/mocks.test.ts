@@ -18,20 +18,6 @@ beforeEach(() => {
 
 describe('gmail', () => {
   describe('threads', () => {
-    it('query by labels', async () => {
-      await fixturesToThreads(gmail, fixtures)
-      let res
-      // next action
-      res = await gmail.users.threads.list({
-        q: 'label:!s-next-action'
-      })
-      expect(res.data.threads).toHaveLength(3)
-      // action
-      res = await gmail.users.threads.list({
-        q: 'label:!s-action'
-      })
-      expect(res.data.threads).toHaveLength(5)
-    })
     it('send email', async () => {
       const raw = createRawEmail(
         {
@@ -53,6 +39,24 @@ describe('gmail', () => {
       expect(thread.to).toEqual('test@gmail.com')
       expect(thread.subject).toEqual('test subject')
     })
+    it('query by labels', async () => {
+      await fixturesToThreads(gmail, fixtures)
+      let res
+      // next action
+      res = await gmail.users.threads.list({
+        q: 'label:!s-next-action'
+      })
+      expect(res.data.threads).toHaveLength(3)
+      // action
+      res = await gmail.users.threads.list({
+        q: 'label:!s-action'
+      })
+      expect(res.data.threads).toHaveLength(5)
+    })
+    it.skip('query by special labels', async () => {
+      // 'label:!T/Sync GTasks'
+      // 'from:foo@gmail.com to:bar@gmail.com '
+    });
     it("modify thread's labels", async () => {
       // next action
       await fixturesToThreads(gmail, fixtures)

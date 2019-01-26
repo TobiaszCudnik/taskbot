@@ -77,9 +77,9 @@ export default class Logger {
       if (!debug.disabled) {
         // @ts-ignore
         terminal(...msgs)
+        // TODO temp
+        console.log(name, ...msgs)
       }
-      // TODO temp
-      console.log(name, ...msgs)
       // optional file logging
       if (!process.env['DEBUG_FILE']) return
       // const labels = { ...base_labels }

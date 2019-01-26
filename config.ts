@@ -290,7 +290,7 @@ const config: IConfigPublic = {
     // query unread self emails in the inbox (gmail only)
     (config: IConfig) => ({
       name: 'inbox-labels',
-      gmail_query: `in:inbox label:unread from:${config.google.username} to:${
+      gmail_query: `label:inbox label:unread from:${config.google.username} to:${
         config.google.username
       }`,
       db_query: r => {

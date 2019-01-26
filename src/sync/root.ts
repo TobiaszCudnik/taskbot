@@ -473,7 +473,7 @@ export default class RootSync extends SyncWriter<
     this.config = { ...config }
     // parse lazy list configs
     // IConfig into IConfigParsed
-    this.config.data_lists = this.config.lists.map(
+    this.config.lists = this.config.lists.map(
       list => (_.isFunction(list) ? list(this.config) : list)
     )
   }

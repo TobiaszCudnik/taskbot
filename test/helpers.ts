@@ -169,10 +169,10 @@ export default async function createHelpers() {
     sync = new RootSync(config, logger, connections)
     // process.on('SIGINT', exit)
     // process.on('exit', exit)
-    setTimeout(() => {
-      console.log('PRINT EXIT')
-      exit(sync)
-    }, 6000)
+    // setTimeout(() => {
+    //   console.log('PRINT EXIT')
+    //   exit(sync)
+    // }, 6000)
     // disable heartbeat
     sync.state.on('HeartBeat_enter', () => false)
     sync.state.on('Scheduled_enter', () => false)
