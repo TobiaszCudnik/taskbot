@@ -8,7 +8,7 @@ import { normalizeLabelName } from '../../src/google/gmail/sync'
 import { TGlobalFields } from '../../src/google/sync'
 import { simpleParser } from 'mailparser'
 import { Base64 } from 'js-base64'
-import * as filter from 'lucene-filter'
+import * as gmailQuery from 'gmail-string-query'
 import * as md5 from 'md5'
 import * as clone from 'deepcopy'
 
@@ -304,10 +304,7 @@ export class GmailUsersThreads extends GmailChild
         .toLocaleLowerCase()
       return thread
     })
-    query = query.replace(/label:([\w-!]+)/g, 'label:/(,|^)$1(,|$)/')
-    query = query.replace(/(to|from):([^\s)]+)/g, '$1:"$2"')
-    console.log(`lucene query ${query}`)
-    return threads.filter(filter(query))
+    return threads.filter(gmailQuery(query))
   }
 }
 
