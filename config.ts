@@ -1,4 +1,5 @@
 import * as _ from 'lodash'
+import { normalizeLabelName } from './src/google/gmail/sync'
 import LabelFilterSync from './src/sync/label-filter'
 import { DBRecord } from './src/sync/root'
 import { IConfig, IConfigPublic } from './src/types'
@@ -275,7 +276,7 @@ const config: IConfigPublic = {
         // @ts-ignore `!T/sync-tasks`
         .filter(l => l.prefix == '!T/')
         // @ts-ignore `P/name` or `name`
-        .map(l => `label:${l.prefix || ''}${l.name}`)
+        .map(l => `label:${normalizeLabelName(l.prefix || '' + l.name)}`)
         .join(' ')
 
       return {
@@ -290,9 +291,9 @@ const config: IConfigPublic = {
     // query unread self emails in the inbox (gmail only)
     (config: IConfig) => ({
       name: 'inbox-labels',
-      gmail_query: `label:inbox label:unread from:${config.google.username} to:${
+      gmail_query: `label:inbox label:unread from:${
         config.google.username
-      }`,
+      } to:${config.google.username}`,
       db_query: r => {
         const ret =
           hasLabel(r, 'INBOX') && hasLabel(r, 'UNREAD') && !hasLabel(r, '!S')

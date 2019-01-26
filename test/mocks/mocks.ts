@@ -304,7 +304,8 @@ export class GmailUsersThreads extends GmailChild
         .toLocaleLowerCase()
       return thread
     })
-    query = query.replace(/label:([\w-!]+)/, 'label:/(,|^)$1(,|$)/')
+    query = query.replace(/label:([\w-!]+)/g, 'label:/(,|^)$1(,|$)/')
+    query = query.replace(/(to|from):([^\s)]+)/g, '$1:"$2"')
     console.log(`lucene query ${query}`)
     return threads.filter(filter(query))
   }

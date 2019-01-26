@@ -256,7 +256,6 @@ export default async function createHelpers() {
         throw new Error('MaxWritesExceeded')
       })
     }
-    debugger
     assert(gtasks_sync, 'gtasks sync missing')
     assert(gmail_sync, 'gmail sync missing')
     // trigger the initial sync

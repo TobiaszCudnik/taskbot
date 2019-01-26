@@ -39,7 +39,7 @@ describe('gmail', () => {
       expect(thread.to).toEqual('test@gmail.com')
       expect(thread.subject).toEqual('test subject')
     })
-    it('query by labels', async () => {
+    it('query by a single label', async () => {
       await fixturesToThreads(gmail, fixtures)
       let res
       // next action
@@ -53,10 +53,44 @@ describe('gmail', () => {
       })
       expect(res.data.threads).toHaveLength(5)
     })
-    it.skip('query by special labels', async () => {
-      // 'label:!T/Sync GTasks'
-      // 'from:foo@gmail.com to:bar@gmail.com '
-    });
+    it('query by multiple labels', async () => {
+      debugger
+      await fixturesToThreads(gmail, fixtures)
+      const res = await gmail.users.threads.list({
+        q: 'label:!s-next-action OR label:!s-action'
+      })
+      expect(res.data.threads).toHaveLength(8)
+    })
+    it('query an empty data set', async () => {
+      await gmail.users.threads.list({
+        q: 'label:!s-next-action'
+      })
+    })
+    it('query by a single email', async () => {
+      await fixturesToThreads(gmail, fixtures)
+      let res = await gmail.users.threads.list({
+        q: 'from:from@gmail.com'
+      })
+      expect(res.data.threads).toHaveLength(13)
+      res = await gmail.users.threads.list({
+        q: 'to:test@gmail.com'
+      })
+      expect(res.data.threads).toHaveLength(13)
+    })
+    it('query by multiple emails', async () => {
+      await fixturesToThreads(gmail, fixtures)
+      let res = await gmail.users.threads.list({
+        q: 'from:from@gmail.com OR to:test@gmail.com'
+      })
+      expect(res.data.threads).toHaveLength(13)
+    })
+    it('query by multiple emails without an operator', async () => {
+      await fixturesToThreads(gmail, fixtures)
+      let res = await gmail.users.threads.list({
+        q: 'from:from@gmail.com to:test@gmail.com'
+      })
+      expect(res.data.threads).toHaveLength(13)
+    })
     it("modify thread's labels", async () => {
       // next action
       await fixturesToThreads(gmail, fixtures)
