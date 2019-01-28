@@ -1,3 +1,5 @@
+///<reference path="../../typings/global.d.ts"/>
+
 import { AxiosResponse } from 'axios'
 import { MethodOptions } from 'googleapis-common'
 // import * as sinon from 'sinon'
@@ -337,6 +339,10 @@ export class GmailUsersThreads extends GmailChild
         .replace(/ /g, '-')
         .replace(/\//g, '-')
         .toLocaleLowerCase()
+      // always add the "all" label when no "trash"
+      if (!thread.label.match(/(^|,)trash($|,)/)) {
+        thread.label += ',all'
+      }
       return thread
     })
     return threads.filter(gmailQuery(query))
