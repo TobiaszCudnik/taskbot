@@ -100,7 +100,6 @@ describe(`gtasks (sync_type: ${scenario})`, function() {
       await h.syncListScenario(scenario)
       const list = await h.listQuery('label:!s-next-action')
       // assert
-      debugger
       expect(list.threads).toHaveLength(1)
       for (const field of ['historyId', 'id']) {
         expect(Object.keys(list.threads[0])).toContain(field)

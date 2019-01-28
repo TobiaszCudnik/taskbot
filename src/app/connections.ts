@@ -182,8 +182,8 @@ export default class Connections {
         // @ts-ignore
         res = await method.call(context, params, options)
         const was2xx = res && res.status.toString().match(/^2/)
-        const wasNoContent = res && res.statusText == 'No Content'
-        if (was2xx && res.data === undefined && !wasNoContent) {
+        // throw when no content, but not for `204 (No Content)`
+        if (was2xx && res.data === undefined && res.status !== 204) {
           throw Error('Empty response on 2xx')
         } else if (res === undefined) {
           throw Error('Response and body empty')

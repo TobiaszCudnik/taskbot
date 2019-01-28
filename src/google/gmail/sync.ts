@@ -779,6 +779,9 @@ export default class GmailSync extends SyncWriter<
       `Subject: ${subject}`
     ].join('\r\n')
 
+    // TODO [DEP0005] DeprecationWarning: Buffer() is deprecated due to security
+    //   and usability issues. Please use the Buffer.alloc(),
+    //   Buffer.allocUnsafe(), or Buffer.from() methods instead
     return new Buffer(email)
       .toString('base64')
       .replace(/\+/g, '-')
@@ -895,6 +898,7 @@ export default class GmailSync extends SyncWriter<
     return email ? email[1] : author
   }
 
+  // TODO change to getThreadRecipient
   getThreadAddressee(thread: TThread) {
     if (!thread.messages || !thread.messages.length)
       throw new Error(`Thread content not fetched, id: ${thread.id}`)

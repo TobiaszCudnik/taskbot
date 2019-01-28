@@ -154,7 +154,23 @@ export class GmailUsersMessages extends GmailChild
     const msg: Message = {
       id: Math.random().toString(),
       threadId,
-      labelIds: clone(params.requestBody.labelIds) || []
+      labelIds: clone(params.requestBody.labelIds) || [],
+      payload: {
+        headers: [
+          {
+            name: 'From',
+            value: mail.from.text
+          },
+          {
+            name: 'To',
+            value: mail.to.text
+          },
+          {
+            name: 'Subject',
+            value: mail.subject
+          }
+        ]
+      }
       // TODO more fields
     }
     const thread: Thread = {
@@ -183,7 +199,7 @@ export class GmailUsersMessages extends GmailChild
     params: gmail_v1.Params$Resource$Users$Messages$Insert & TGlobalFields
     // options?: MethodOptions
   ): Promise<AxiosResponse<Message>> {
-    throw Error('TODO')
+    return this.send(params)
   }
 }
 
@@ -302,7 +318,7 @@ export class GmailUsersThreads extends GmailChild
     // remove in place
     data.splice(i, 1)
     log(`deleted thread ${params.id}`)
-    return ok(void 0)
+    return ok(void 0, { status: 204, statusText: 'No Content' })
   }
 
   protected query(query: string) {
@@ -454,7 +470,7 @@ export class TasksTasks extends TasksChild
   }
 
   async delete(
-    params: tasks_v1.Params$Resource$Tasks$Patch & TGlobalFields,
+    params: tasks_v1.Params$Resource$Tasks$Delete & TGlobalFields,
     options?: MethodOptions
   ): Promise<AxiosResponse<void>> {
     assert(params.task)
@@ -470,7 +486,7 @@ export class TasksTasks extends TasksChild
       .toISOString()
     // mark as deleted
     task.deleted = true
-    return ok(void 0)
+    return ok(void 0, { status: 204, statusText: 'No Content' })
   }
 
   // TODO update?
@@ -563,7 +579,7 @@ export class TasksTasklists extends TasksChild {
       t => t.tasklist === params.tasklist
     )
     log(`deleted tasklist ${params.tasklist}`)
-    return ok(void 0)
+    return ok(void 0, { status: 204, statusText: 'No Content' })
   }
 }
 
