@@ -182,9 +182,29 @@ test-mocks:
 		mocks
 
 test-gtasks-mocked:
-	DEBUG=root:\*-info,\*-error,app-info,\*-am \
+	DEBUG=root:\*-info,\*-error,app-info,\*-am,gtasks-\*,mock-\* \
 		MOCK=true \
 		npx jest \
 			gtasks
+
+test-gmail-mocked:
+	DEBUG=root:\*-info,\*-error,app-info,\*-am,gmail-\*,mock-\* \
+		MOCK=true \
+		npx jest \
+			gmail
+
+test-sync-mocked:
+	DEBUG=root:\*-info,\*-error,app-info,\*-am,gmail-\*,gtasks-\*,mock-\* \
+		MOCK=true \
+		npx jest \
+			sync
+
+test-mocked:
+		SCENARIO=0 MOCK=true \
+			npx jest
+		SCENARIO=1 MOCK=true \
+			npx jest
+		SCENARIO=2 MOCK=true \
+			npx jest
 
 .PHONY: test break build

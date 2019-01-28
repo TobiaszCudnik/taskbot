@@ -276,7 +276,7 @@ const config: IConfigPublic = {
         // @ts-ignore `!T/sync-tasks`
         .filter(l => l.prefix == '!T/')
         // @ts-ignore `P/name` or `name`
-        .map(l => `label:${normalizeLabelName(l.prefix || '' + l.name)}`)
+        .map(l => `label:${normalizeLabelName((l.prefix || '') + l.name)}`)
         .join(' ')
 
       return {

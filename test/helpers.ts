@@ -21,6 +21,11 @@ import { OAuth2Client } from 'google-auth-library'
 import { google, gmail_v1, tasks_v1 } from 'googleapis'
 import { google as mocks } from './mocks/mocks'
 
+if (process.env['MOCK']) {
+  // mock 'googleapis'
+  global.GOOGLEAPIS_MOCK = mocks
+}
+
 export type Label = gmail_v1.Schema$Label
 export type Thread = gmail_v1.Schema$Thread
 export type Task = tasks_v1.Schema$Task

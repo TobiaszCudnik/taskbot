@@ -53,7 +53,8 @@ describe(`sync (sync_type: ${scenario})`, function() {
     })
   })
   it.skip('syncs notes', function() {})
-  it('new status removes the old one', async function() {
+  // TODO breaks the API mocks
+  it.only('new status removes the old one', async function() {
     h.log('\n\nnew status removes the old one')
     await h.reset()
     const thread_id_1 = await h.gmail_sync.createThread('sync-1', [
@@ -63,7 +64,7 @@ describe(`sync (sync_type: ${scenario})`, function() {
       '!S/Next Action'
     ])
     await h.syncList()
-    // add !S/Action
+    // add !S/Finished
     // TODO extract to a helper
     await h.req<gmail_v1.Params$Resource$Users$Threads$Modify>(
       'gmail.users.threads.modify',
@@ -76,7 +77,7 @@ describe(`sync (sync_type: ${scenario})`, function() {
         }
       }
     )
-    // add !S/Expired
+    // add !S/Pending
     // TODO extract to a helper
     await h.req<gmail_v1.Params$Resource$Users$Threads$Modify>(
       'gmail.users.threads.modify',
@@ -85,7 +86,7 @@ describe(`sync (sync_type: ${scenario})`, function() {
         userId: 'me',
         fields: 'id',
         requestBody: {
-          addLabelIds: [h.labelID('!S/Expired')]
+          addLabelIds: [h.labelID('!S/Pending')]
         }
       }
     )
@@ -100,7 +101,7 @@ describe(`sync (sync_type: ${scenario})`, function() {
     const record_2 = h.gmail_sync.getRecordByGmailID(thread_id_2)
     expect(record_2.labels).toMatchObject({
       '!S/Next Action': { active: false },
-      '!S/Expired': { active: true }
+      '!S/Pending': { active: true }
     })
   })
 })

@@ -279,7 +279,8 @@ describe(`gmail (sync_type: ${scenario})`, function() {
       )
     })
 
-    it('syncs !S/Expired as a completion', async function() {
+    // TODO Expired isnt a completion
+    it.skip('syncs !S/Expired as a completion', async function() {
       h.log('\n\nTEST: syncs !S/Expired as a completion')
       await h.reset()
       // create a new thread

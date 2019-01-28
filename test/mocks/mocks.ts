@@ -13,6 +13,8 @@ import { Base64 } from 'js-base64'
 import * as gmailQuery from 'gmail-string-query'
 import * as md5 from 'md5'
 import * as clone from 'deepcopy'
+import * as randomId from 'simple-random-id'
+import * as debug from 'debug'
 
 // ----- COMMON
 
@@ -60,8 +62,10 @@ export class NotFoundError extends Error {
   code: 404
 }
 
-function log(...msgs: any[]) {
-  console.log('[mock]', ...msgs)
+function now() {
+  return moment()
+    .utc()
+    .toISOString()
 }
 
 // ----- GMAIL
@@ -87,6 +91,7 @@ export class Gmail {
   historyId: string = '0'
   // API
   users = new GmailUsers(this)
+  log = debug('mock-gmail')
 
   constructor() {
     this.email = 'mock@google.com'
@@ -151,12 +156,14 @@ export class GmailUsersMessages extends GmailChild
   ): Promise<AxiosResponse<Message>> {
     const hid = (parseInt(this.gmail.historyId) + 1).toString()
     // TODO match the schema
-    const threadId = Math.random().toString()
+    const threadId = randomId()
     const mail = await simpleParser(Base64.decode(params.requestBody.raw))
+    const labelIds = clone(params.requestBody.labelIds) || []
+    labelIds.push('UNREAD')
     const msg: Message = {
-      id: Math.random().toString(),
+      id: randomId(),
       threadId,
-      labelIds: clone(params.requestBody.labelIds) || [],
+      labelIds,
       payload: {
         headers: [
           {
@@ -180,7 +187,7 @@ export class GmailUsersMessages extends GmailChild
       id: threadId,
       snippet: (mail.text || '').substr(0, 200),
       messages: [msg],
-      labelIds: clone(params.requestBody.labelIds) || [],
+      labelIds,
       subject: mail.subject,
       to: mail.to.text,
       from: mail.from.text,
@@ -207,6 +214,21 @@ export class GmailUsersMessages extends GmailChild
 
 export class GmailUsersLabels extends GmailChild
   implements MockedAPI<gmail_v1.Resource$Users$Labels> {
+  constructor(gmail: Gmail) {
+    super(gmail)
+    // create predefined (system) labels
+    this.gmail.labels.push({
+      id: 'INBOX',
+      name: 'INBOX',
+      type: 'system'
+    })
+    this.gmail.labels.push({
+      id: 'UNREAD',
+      name: 'UNREAD',
+      type: 'system'
+    })
+  }
+
   async list(
     params: gmail_v1.Params$Resource$Users$Labels$List & TGlobalFields
     // options?: MethodOptions
@@ -263,6 +285,7 @@ export class GmailUsersThreads extends GmailChild
       threads = this.query(params.q)
     }
 
+    this.gmail.log(`list threads ${params.q}`)
     return ok({
       threads
     })
@@ -277,6 +300,7 @@ export class GmailUsersThreads extends GmailChild
     if (!thread) {
       throw new NotFoundError()
     }
+    this.gmail.log(`get thread ${params.id}`)
     return ok(thread)
   }
 
@@ -304,6 +328,7 @@ export class GmailUsersThreads extends GmailChild
         thread.labelIds.push(id)
       }
     }
+    this.gmail.log(`modified thread ${params.id}`)
     return ok(thread)
   }
 
@@ -319,7 +344,7 @@ export class GmailUsersThreads extends GmailChild
     }
     // remove in place
     data.splice(i, 1)
-    log(`deleted thread ${params.id}`)
+    this.gmail.log(`deleted thread ${params.id}`)
     return ok(void 0, { status: 204, statusText: 'No Content' })
   }
 
@@ -338,7 +363,7 @@ export class GmailUsersThreads extends GmailChild
         .join(',')
         .replace(/ /g, '-')
         .replace(/\//g, '-')
-        .toLocaleLowerCase()
+        .toLowerCase()
       // always add the "all" label when no "trash"
       if (!thread.label.match(/(^|,)trash($|,)/)) {
         thread.label += ',all'
@@ -364,6 +389,7 @@ export class Tasks {
     tasks: [],
     lists: []
   }
+  log = debug('mock-gtasks')
 
   tasks = new TasksTasks(this)
   tasklists = new TasksTasklists(this)
@@ -397,6 +423,7 @@ export class TasksTasks extends TasksChild
       }
       items.push(item)
     }
+    this.root.log('list tasks', items.length, params)
     // TODO support the 'If-None-Match' header
     return ok(
       {
@@ -417,6 +444,7 @@ export class TasksTasks extends TasksChild
   ): Promise<AxiosResponse<Task>> {
     assert(params.task)
     assert(params.tasklist)
+    this.root.log('get task', params)
     // TODO check params.maxResults
     const task = this.root.data.tasks.find(
       t => t.tasklist === params.tasklist && t.id === params.task
@@ -433,19 +461,21 @@ export class TasksTasks extends TasksChild
   ): Promise<AxiosResponse<Task>> {
     assert(params.tasklist)
     assert(params.requestBody)
+    this.root.log('insert task', params)
     // TODO check params.parent
     // TODO calculate params.position
     const defaults = {
-      kind: 'tasks#task'
+      kind: 'tasks#task',
+      status: 'needsAction'
     }
-    const task: Task = clone(params.requestBody)
-    task.updated = moment()
-      .utc()
-      .toISOString()
-    // TODO dates
+    const task: Task = Object.assign(defaults, clone(params.requestBody))
+    task.updated = now()
     task.kind = 'tasks#task'
-    task.id = Math.random().toString()
+    task.id = randomId()
     task.tasklist = params.tasklist
+    if (task.status === 'completed') {
+      task.completed = now()
+    }
     this.root.data.tasks.push(task)
     return ok(task)
   }
@@ -457,6 +487,7 @@ export class TasksTasks extends TasksChild
     assert(params.requestBody)
     assert(params.task)
     assert(params.tasklist)
+    this.root.log('patch task', params)
     // TODO check params.requestBody.parent
     // TODO calculate params.position
     const data = this.root.data.tasks
@@ -468,9 +499,10 @@ export class TasksTasks extends TasksChild
       throw new NotFoundError()
     }
     const patched = cloneAndPatch(task, params.requestBody)
-    patched.updated = moment()
-      .utc()
-      .toISOString()
+    patched.updated = now()
+    if (patched.status === 'completed' && task.status !== 'completed') {
+      patched.completed = now()
+    }
     data[i] = patched
     return ok(patched)
   }
@@ -481,15 +513,14 @@ export class TasksTasks extends TasksChild
   ): Promise<AxiosResponse<void>> {
     assert(params.task)
     assert(params.tasklist)
+    this.root.log('delete task', params)
     const task = this.root.data.tasks.find(
       t => t.tasklist === params.tasklist && t.id === params.task
     )
     if (!task) {
       throw new NotFoundError()
     }
-    task.updated = moment()
-      .utc()
-      .toISOString()
+    task.updated = now()
     // mark as deleted
     task.deleted = true
     return ok(void 0, { status: 204, statusText: 'No Content' })
@@ -503,7 +534,7 @@ export class TasksTasklists extends TasksChild {
     params: tasks_v1.Params$Resource$Tasklists$List & TGlobalFields,
     options?: MethodOptions
   ): Promise<AxiosResponse<tasks_v1.Schema$TaskLists>> {
-    log('tasks.tasklists.list', params)
+    this.root.log('tasks.tasklists.list', params)
     // TODO support the 'If-None-Match' header
     // TODO check params.maxResults
     const items = this.root.data.lists
@@ -530,9 +561,9 @@ export class TasksTasklists extends TasksChild {
       .utc()
       .toISOString()
     list.kind = 'tasks#taskList'
-    list.id = Math.random().toString()
+    list.id = randomId()
     this.root.data.lists.push(list)
-    log(`added tasklist ${list.title}`)
+    this.root.log(`added tasklist ${list.title}`)
     return ok(list)
   }
 
@@ -584,7 +615,7 @@ export class TasksTasklists extends TasksChild {
     this.root.data.tasks = this.root.data.tasks.filter(
       t => t.tasklist === params.tasklist
     )
-    log(`deleted tasklist ${params.tasklist}`)
+    this.root.log(`deleted tasklist ${params.tasklist}`)
     return ok(void 0, { status: 204, statusText: 'No Content' })
   }
 }
