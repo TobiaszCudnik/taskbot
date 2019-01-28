@@ -78,7 +78,7 @@ export default class Logger {
         // @ts-ignore
         terminal(...msgs)
         // TODO temp
-        console.log(name, ...msgs)
+        // console.log(name, ...msgs)
       }
       // optional file logging
       if (!process.env['DEBUG_FILE']) return

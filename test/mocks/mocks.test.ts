@@ -116,6 +116,15 @@ describe('gmail', () => {
       expect(get.data.labelIds).toContain(label_action)
       expect(get.data.labelIds).not.toContain(label_next)
     })
+    it('delete a thread', async () => {
+      await fixturesToThreads(gmail, fixtures)
+      const list = await gmail.users.threads.list({})
+      await gmail.users.threads.delete({
+        id: list.data.threads[0].id
+      })
+      const list2 = await gmail.users.threads.list({})
+      expect(list.data.threads.length - list2.data.threads.length).toEqual(1)
+    })
   })
   describe('labels', () => {
     it('list labels', async () => {
@@ -202,6 +211,18 @@ describe('tasks', () => {
     expect(tasklist.title).toEqual(title)
     expect(tasklist.updated).not.toEqual(old_updated)
   })
+  it('remove tasklist', async () => {
+    await fixturesToTasks(tasks, fixtures)
+    const list = await tasks.tasklists.list({})
+    const tasklist = list.data.items[0].id
+    await tasks.tasklists.delete({
+      tasklist
+    })
+    const list2 = await tasks.tasklists.list({})
+    expect(list.data.items.length - list2.data.items.length).toEqual(1)
+    // TODO assert all the lists tasks have been deleted too
+  })
+  it.skip('remove task', () => {})
 })
 
 async function fixturesToThreads(gmail: Gmail, data: DBRecord[]) {

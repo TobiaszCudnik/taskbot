@@ -48,7 +48,6 @@ export default async function createHelpers() {
   let gtasks_sync: GTasksSync
   const log_inner = debug('tests')
   const log = (msg, ...rest) => {
-    console.log(msg, ...rest)
     // @ts-ignore
     if (debug.disabled) return
     log_inner(msg, ...rest)
@@ -158,7 +157,7 @@ export default async function createHelpers() {
   }
 
   async function initTest() {
-    // disableDebug()
+    disableDebug()
     // init sync
     const logger = new Logger()
     const connections = new Connections(logger)
@@ -263,7 +262,7 @@ export default async function createHelpers() {
     log('connected')
     await sync.state.when('WritingDone')
     log('initial sync OK')
-    // enableDebug()
+    enableDebug()
   }
 
   // TODO retry on Backend Error

@@ -58,6 +58,10 @@ export class NotFoundError extends Error {
   code: 404
 }
 
+function log(...msgs: any[]) {
+  console.log('[mock]', ...msgs)
+}
+
 // ----- GMAIL
 
 export interface Thread extends gmail_v1.Schema$Thread {
@@ -74,13 +78,12 @@ type Message = gmail_v1.Schema$Message
 export class Gmail {
   // non-API
   email: string
-  // API
-  // TODO keep 'from' and 'to' directly in Thread
+  // TODO keep in `Gmail.data`
   threads: Thread[] = []
   labels: Label[] = []
   messages: Message[] = []
   historyId: string = '0'
-
+  // API
   users = new GmailUsers(this)
 
   constructor() {
@@ -286,6 +289,22 @@ export class GmailUsersThreads extends GmailChild
     return ok(thread)
   }
 
+  async delete(
+    params: gmail_v1.Params$Resource$Users$Threads$Delete & TGlobalFields,
+    options?: MethodOptions
+  ): Promise<AxiosResponse<void>> {
+    assert(params.id)
+    const data = this.gmail.threads
+    const i = data.findIndex(t => t.id === params.id)
+    if (!data[i]) {
+      throw new NotFoundError()
+    }
+    // remove in place
+    data.splice(i, 1)
+    log(`deleted thread ${params.id}`)
+    return ok(void 0)
+  }
+
   protected query(query: string) {
     // merge labels into a string
     const threads = this.gmail.threads.map((thread: Thread) => {
@@ -462,7 +481,7 @@ export class TasksTasklists extends TasksChild {
     params: tasks_v1.Params$Resource$Tasklists$List & TGlobalFields,
     options?: MethodOptions
   ): Promise<AxiosResponse<tasks_v1.Schema$TaskLists>> {
-    console.log('[mock] tasks.tasklists.list', params)
+    log('tasks.tasklists.list', params)
     // TODO support the 'If-None-Match' header
     // TODO check params.maxResults
     const items = this.root.data.lists
@@ -491,6 +510,7 @@ export class TasksTasklists extends TasksChild {
     list.kind = 'tasks#taskList'
     list.id = Math.random().toString()
     this.root.data.lists.push(list)
+    log(`added tasklist ${list.title}`)
     return ok(list)
   }
 
@@ -525,16 +545,39 @@ export class TasksTasklists extends TasksChild {
     }
     return ok(list)
   }
+
+  async delete(
+    params?: tasks_v1.Params$Resource$Tasklists$Delete & TGlobalFields,
+    options?: MethodOptions
+  ): Promise<AxiosResponse<void>> {
+    assert(params.tasklist)
+    const data = this.root.data.lists
+    const i = data.findIndex(l => l.id === params.tasklist)
+    if (!data[i]) {
+      throw new NotFoundError()
+    }
+    // remove in-place
+    data.splice(i, 1)
+    // remove tasks from the deleted list
+    this.root.data.tasks = this.root.data.tasks.filter(
+      t => t.tasklist === params.tasklist
+    )
+    log(`deleted tasklist ${params.tasklist}`)
+    return ok(void 0)
+  }
 }
 
 // ----- PUBLIC API
 
+global.GMAIL_MOCK = new Gmail()
+global.TASKS_MOCK = new Tasks()
+
 const api = {
   gmail(version: string): Gmail {
-    return new Gmail()
+    return global.GMAIL_MOCK
   },
   tasks(version: string): Tasks {
-    return new Tasks()
+    return global.TASKS_MOCK
   }
 }
 
