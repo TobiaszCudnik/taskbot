@@ -31,19 +31,6 @@ export type Thread = gmail_v1.Schema$Thread
 export type Task = tasks_v1.Schema$Task
 export type TaskList = tasks_v1.Schema$TaskList
 
-function exit(sync) {
-  console.log(`\nUser ${sync.config.user.id}: ${sync.config.google.username}`)
-  console.log(sync.getMachines())
-  const data = (sync.data && sync.data.toString()) || ''
-  if (data.trim()) {
-    console.log(`\nUser ${sync.config.user.id}: ${sync.config.google.username}`)
-    console.log(data)
-    const subs = sync.subs.google.subs
-    console.log(subs.gmail.toString())
-    console.log(subs.tasks.toString())
-  }
-}
-
 export default async function createHelpers() {
   let gtasks: tasks_v1.Tasks
   let gmail: gmail_v1.Gmail
@@ -51,7 +38,7 @@ export default async function createHelpers() {
   let sync: RootSync
   let gmail_sync: GmailSync
   let gtasks_sync: GTasksSync
-  const log_inner = debug('tests')
+  const log_inner = debug('test')
   const log = (msg, ...rest) => {
     // @ts-ignore
     if (debug.disabled) return
@@ -87,7 +74,8 @@ export default async function createHelpers() {
     modifyLabels,
     printDB,
     deleteTask,
-    log
+    log,
+    printStates
   }
 
   async function modifyLabels(
@@ -153,12 +141,22 @@ export default async function createHelpers() {
   }
 
   function printDB() {
+    // TODO print the mocks DB
+    log('DB empty')
     if (!sync.data) return
     log('\nInternal DB:')
     log(sync.data.toString())
     log('\nAPI DBs:')
     log(gmail_sync.toString())
     log(gtasks_sync.toString())
+    if (process.env['MOCK']) {
+      log('\nMock DBs:')
+      log(gmail.toString())
+    }
+  }
+
+  function printStates() {
+    log(sync.getMachines(false))
   }
 
   async function initTest() {

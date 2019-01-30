@@ -21,6 +21,7 @@ beforeAll(async function() {
 })
 afterAll(function() {
   if (h) {
+    h.printStates()
     h.printDB()
   }
 })

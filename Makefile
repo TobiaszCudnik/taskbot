@@ -194,7 +194,8 @@ test-gmail-mocked:
 			gmail
 
 test-sync-mocked:
-	DEBUG=root:\*-info,\*-error,app-info,\*-am,gmail-\*,gtasks-\*,mock-\* \
+	#DEBUG=root:\*-info,\*-error,app-info,\*-am,gmail-\*,gtasks-\*,mock-\*,test
+	DEBUG=mock-gmail\*,gmail-list-next:\*,gtasks-list-next:\*,test \
 		MOCK=true \
 		npx jest \
 			sync
