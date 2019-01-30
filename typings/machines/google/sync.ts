@@ -13,31 +13,20 @@ export { IBindBase, IEmitBase, AsyncMachine }
 
 /** machine.bind('Enabled', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-  (
-    event: 'Enabled_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'Enabled_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
+  (event: 'Enabled_enter', listener: (/* param1: any?, param2: any? */) => boolean | undefined, context?: Object): this;
+  (event: 'Enabled_state', listener: (/* param1: any?, param2: any? */) => any, context?: Object): this;
 }
 
 /** machine.emit('Enabled', param1, param2) */
 export interface IEmit extends IEmitBase {
-  (event: 'Enabled_enter' /*, param1: any?, param2: any? */): boolean | void
-  (event: 'Enabled_state' /*, param1: any?, param2: any? */): boolean | void
+  (event: 'Enabled_enter' /*, param1: any?, param2: any? */): boolean | void;
+  (event: 'Enabled_state' /*, param1: any?, param2: any? */): boolean | void;
 }
 
 /** Method declarations */
 export interface ITransitions {
-  Enabled_enter /* param1: any?, param2: any? */?(): boolean | void
-  Enabled_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
+  Enabled_enter?(/* param1: any?, param2: any? */): boolean | void;
+  Enabled_state?(/* param1: any?, param2: any? */): boolean | void | Promise<boolean | void>;
 }
 
 // ----- ----- ----- ----- -----
@@ -46,35 +35,20 @@ export interface ITransitions {
 
 /** machine.bind('Initializing', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-  (
-    event: 'Initializing_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'Initializing_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
+  (event: 'Initializing_enter', listener: (/* param1: any?, param2: any? */) => boolean | undefined, context?: Object): this;
+  (event: 'Initializing_state', listener: (/* param1: any?, param2: any? */) => any, context?: Object): this;
 }
 
 /** machine.emit('Initializing', param1, param2) */
 export interface IEmit extends IEmitBase {
-  (event: 'Initializing_enter' /*, param1: any?, param2: any? */):
-    | boolean
-    | void
-  (event: 'Initializing_state' /*, param1: any?, param2: any? */):
-    | boolean
-    | void
+  (event: 'Initializing_enter' /*, param1: any?, param2: any? */): boolean | void;
+  (event: 'Initializing_state' /*, param1: any?, param2: any? */): boolean | void;
 }
 
 /** Method declarations */
 export interface ITransitions {
-  Initializing_enter /* param1: any?, param2: any? */?(): boolean | void
-  Initializing_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
+  Initializing_enter?(/* param1: any?, param2: any? */): boolean | void;
+  Initializing_state?(/* param1: any?, param2: any? */): boolean | void | Promise<boolean | void>;
 }
 
 // ----- ----- ----- ----- -----
@@ -83,31 +57,20 @@ export interface ITransitions {
 
 /** machine.bind('Ready', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-  (
-    event: 'Ready_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'Ready_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
+  (event: 'Ready_enter', listener: (/* param1: any?, param2: any? */) => boolean | undefined, context?: Object): this;
+  (event: 'Ready_state', listener: (/* param1: any?, param2: any? */) => any, context?: Object): this;
 }
 
 /** machine.emit('Ready', param1, param2) */
 export interface IEmit extends IEmitBase {
-  (event: 'Ready_enter' /*, param1: any?, param2: any? */): boolean | void
-  (event: 'Ready_state' /*, param1: any?, param2: any? */): boolean | void
+  (event: 'Ready_enter' /*, param1: any?, param2: any? */): boolean | void;
+  (event: 'Ready_state' /*, param1: any?, param2: any? */): boolean | void;
 }
 
 /** Method declarations */
 export interface ITransitions {
-  Ready_enter /* param1: any?, param2: any? */?(): boolean | void
-  Ready_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
+  Ready_enter?(/* param1: any?, param2: any? */): boolean | void;
+  Ready_state?(/* param1: any?, param2: any? */): boolean | void | Promise<boolean | void>;
 }
 
 // ----- ----- ----- ----- -----
@@ -116,31 +79,20 @@ export interface ITransitions {
 
 /** machine.bind('ConfigSet', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-  (
-    event: 'ConfigSet_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'ConfigSet_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
+  (event: 'ConfigSet_enter', listener: (/* param1: any?, param2: any? */) => boolean | undefined, context?: Object): this;
+  (event: 'ConfigSet_state', listener: (/* param1: any?, param2: any? */) => any, context?: Object): this;
 }
 
 /** machine.emit('ConfigSet', param1, param2) */
 export interface IEmit extends IEmitBase {
-  (event: 'ConfigSet_enter' /*, param1: any?, param2: any? */): boolean | void
-  (event: 'ConfigSet_state' /*, param1: any?, param2: any? */): boolean | void
+  (event: 'ConfigSet_enter' /*, param1: any?, param2: any? */): boolean | void;
+  (event: 'ConfigSet_state' /*, param1: any?, param2: any? */): boolean | void;
 }
 
 /** Method declarations */
 export interface ITransitions {
-  ConfigSet_enter /* param1: any?, param2: any? */?(): boolean | void
-  ConfigSet_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
+  ConfigSet_enter?(/* param1: any?, param2: any? */): boolean | void;
+  ConfigSet_state?(/* param1: any?, param2: any? */): boolean | void | Promise<boolean | void>;
 }
 
 // ----- ----- ----- ----- -----
@@ -149,31 +101,20 @@ export interface ITransitions {
 
 /** machine.bind('SubsInited', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-  (
-    event: 'SubsInited_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'SubsInited_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
+  (event: 'SubsInited_enter', listener: (/* param1: any?, param2: any? */) => boolean | undefined, context?: Object): this;
+  (event: 'SubsInited_state', listener: (/* param1: any?, param2: any? */) => any, context?: Object): this;
 }
 
 /** machine.emit('SubsInited', param1, param2) */
 export interface IEmit extends IEmitBase {
-  (event: 'SubsInited_enter' /*, param1: any?, param2: any? */): boolean | void
-  (event: 'SubsInited_state' /*, param1: any?, param2: any? */): boolean | void
+  (event: 'SubsInited_enter' /*, param1: any?, param2: any? */): boolean | void;
+  (event: 'SubsInited_state' /*, param1: any?, param2: any? */): boolean | void;
 }
 
 /** Method declarations */
 export interface ITransitions {
-  SubsInited_enter /* param1: any?, param2: any? */?(): boolean | void
-  SubsInited_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
+  SubsInited_enter?(/* param1: any?, param2: any? */): boolean | void;
+  SubsInited_state?(/* param1: any?, param2: any? */): boolean | void | Promise<boolean | void>;
 }
 
 // ----- ----- ----- ----- -----
@@ -182,31 +123,20 @@ export interface ITransitions {
 
 /** machine.bind('SubsReady', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-  (
-    event: 'SubsReady_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'SubsReady_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
+  (event: 'SubsReady_enter', listener: (/* param1: any?, param2: any? */) => boolean | undefined, context?: Object): this;
+  (event: 'SubsReady_state', listener: (/* param1: any?, param2: any? */) => any, context?: Object): this;
 }
 
 /** machine.emit('SubsReady', param1, param2) */
 export interface IEmit extends IEmitBase {
-  (event: 'SubsReady_enter' /*, param1: any?, param2: any? */): boolean | void
-  (event: 'SubsReady_state' /*, param1: any?, param2: any? */): boolean | void
+  (event: 'SubsReady_enter' /*, param1: any?, param2: any? */): boolean | void;
+  (event: 'SubsReady_state' /*, param1: any?, param2: any? */): boolean | void;
 }
 
 /** Method declarations */
 export interface ITransitions {
-  SubsReady_enter /* param1: any?, param2: any? */?(): boolean | void
-  SubsReady_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
+  SubsReady_enter?(/* param1: any?, param2: any? */): boolean | void;
+  SubsReady_state?(/* param1: any?, param2: any? */): boolean | void | Promise<boolean | void>;
 }
 
 // ----- ----- ----- ----- -----
@@ -215,31 +145,20 @@ export interface ITransitions {
 
 /** machine.bind('Reading', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-  (
-    event: 'Reading_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'Reading_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
+  (event: 'Reading_enter', listener: (/* param1: any?, param2: any? */) => boolean | undefined, context?: Object): this;
+  (event: 'Reading_state', listener: (/* param1: any?, param2: any? */) => any, context?: Object): this;
 }
 
 /** machine.emit('Reading', param1, param2) */
 export interface IEmit extends IEmitBase {
-  (event: 'Reading_enter' /*, param1: any?, param2: any? */): boolean | void
-  (event: 'Reading_state' /*, param1: any?, param2: any? */): boolean | void
+  (event: 'Reading_enter' /*, param1: any?, param2: any? */): boolean | void;
+  (event: 'Reading_state' /*, param1: any?, param2: any? */): boolean | void;
 }
 
 /** Method declarations */
 export interface ITransitions {
-  Reading_enter /* param1: any?, param2: any? */?(): boolean | void
-  Reading_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
+  Reading_enter?(/* param1: any?, param2: any? */): boolean | void;
+  Reading_state?(/* param1: any?, param2: any? */): boolean | void | Promise<boolean | void>;
 }
 
 // ----- ----- ----- ----- -----
@@ -248,31 +167,20 @@ export interface ITransitions {
 
 /** machine.bind('ReadingDone', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-  (
-    event: 'ReadingDone_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'ReadingDone_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
+  (event: 'ReadingDone_enter', listener: (/* param1: any?, param2: any? */) => boolean | undefined, context?: Object): this;
+  (event: 'ReadingDone_state', listener: (/* param1: any?, param2: any? */) => any, context?: Object): this;
 }
 
 /** machine.emit('ReadingDone', param1, param2) */
 export interface IEmit extends IEmitBase {
-  (event: 'ReadingDone_enter' /*, param1: any?, param2: any? */): boolean | void
-  (event: 'ReadingDone_state' /*, param1: any?, param2: any? */): boolean | void
+  (event: 'ReadingDone_enter' /*, param1: any?, param2: any? */): boolean | void;
+  (event: 'ReadingDone_state' /*, param1: any?, param2: any? */): boolean | void;
 }
 
 /** Method declarations */
 export interface ITransitions {
-  ReadingDone_enter /* param1: any?, param2: any? */?(): boolean | void
-  ReadingDone_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
+  ReadingDone_enter?(/* param1: any?, param2: any? */): boolean | void;
+  ReadingDone_state?(/* param1: any?, param2: any? */): boolean | void | Promise<boolean | void>;
 }
 
 // ----- ----- ----- ----- -----
@@ -281,31 +189,20 @@ export interface ITransitions {
 
 /** machine.bind('Syncing', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-  (
-    event: 'Syncing_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'Syncing_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
+  (event: 'Syncing_enter', listener: (/* param1: any?, param2: any? */) => boolean | undefined, context?: Object): this;
+  (event: 'Syncing_state', listener: (/* param1: any?, param2: any? */) => any, context?: Object): this;
 }
 
 /** machine.emit('Syncing', param1, param2) */
 export interface IEmit extends IEmitBase {
-  (event: 'Syncing_enter' /*, param1: any?, param2: any? */): boolean | void
-  (event: 'Syncing_state' /*, param1: any?, param2: any? */): boolean | void
+  (event: 'Syncing_enter' /*, param1: any?, param2: any? */): boolean | void;
+  (event: 'Syncing_state' /*, param1: any?, param2: any? */): boolean | void;
 }
 
 /** Method declarations */
 export interface ITransitions {
-  Syncing_enter /* param1: any?, param2: any? */?(): boolean | void
-  Syncing_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
+  Syncing_enter?(/* param1: any?, param2: any? */): boolean | void;
+  Syncing_state?(/* param1: any?, param2: any? */): boolean | void | Promise<boolean | void>;
 }
 
 // ----- ----- ----- ----- -----
@@ -314,31 +211,20 @@ export interface ITransitions {
 
 /** machine.bind('SyncDone', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-  (
-    event: 'SyncDone_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'SyncDone_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
+  (event: 'SyncDone_enter', listener: (/* param1: any?, param2: any? */) => boolean | undefined, context?: Object): this;
+  (event: 'SyncDone_state', listener: (/* param1: any?, param2: any? */) => any, context?: Object): this;
 }
 
 /** machine.emit('SyncDone', param1, param2) */
 export interface IEmit extends IEmitBase {
-  (event: 'SyncDone_enter' /*, param1: any?, param2: any? */): boolean | void
-  (event: 'SyncDone_state' /*, param1: any?, param2: any? */): boolean | void
+  (event: 'SyncDone_enter' /*, param1: any?, param2: any? */): boolean | void;
+  (event: 'SyncDone_state' /*, param1: any?, param2: any? */): boolean | void;
 }
 
 /** Method declarations */
 export interface ITransitions {
-  SyncDone_enter /* param1: any?, param2: any? */?(): boolean | void
-  SyncDone_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
+  SyncDone_enter?(/* param1: any?, param2: any? */): boolean | void;
+  SyncDone_state?(/* param1: any?, param2: any? */): boolean | void | Promise<boolean | void>;
 }
 
 // ----- ----- ----- ----- -----
@@ -347,31 +233,20 @@ export interface ITransitions {
 
 /** machine.bind('Cached', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-  (
-    event: 'Cached_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'Cached_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
+  (event: 'Cached_enter', listener: (/* param1: any?, param2: any? */) => boolean | undefined, context?: Object): this;
+  (event: 'Cached_state', listener: (/* param1: any?, param2: any? */) => any, context?: Object): this;
 }
 
 /** machine.emit('Cached', param1, param2) */
 export interface IEmit extends IEmitBase {
-  (event: 'Cached_enter' /*, param1: any?, param2: any? */): boolean | void
-  (event: 'Cached_state' /*, param1: any?, param2: any? */): boolean | void
+  (event: 'Cached_enter' /*, param1: any?, param2: any? */): boolean | void;
+  (event: 'Cached_state' /*, param1: any?, param2: any? */): boolean | void;
 }
 
 /** Method declarations */
 export interface ITransitions {
-  Cached_enter /* param1: any?, param2: any? */?(): boolean | void
-  Cached_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
+  Cached_enter?(/* param1: any?, param2: any? */): boolean | void;
+  Cached_state?(/* param1: any?, param2: any? */): boolean | void | Promise<boolean | void>;
 }
 
 // ----- ----- ----- ----- -----
@@ -380,31 +255,20 @@ export interface ITransitions {
 
 /** machine.bind('Dirty', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-  (
-    event: 'Dirty_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'Dirty_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
+  (event: 'Dirty_enter', listener: (/* param1: any?, param2: any? */) => boolean | undefined, context?: Object): this;
+  (event: 'Dirty_state', listener: (/* param1: any?, param2: any? */) => any, context?: Object): this;
 }
 
 /** machine.emit('Dirty', param1, param2) */
 export interface IEmit extends IEmitBase {
-  (event: 'Dirty_enter' /*, param1: any?, param2: any? */): boolean | void
-  (event: 'Dirty_state' /*, param1: any?, param2: any? */): boolean | void
+  (event: 'Dirty_enter' /*, param1: any?, param2: any? */): boolean | void;
+  (event: 'Dirty_state' /*, param1: any?, param2: any? */): boolean | void;
 }
 
 /** Method declarations */
 export interface ITransitions {
-  Dirty_enter /* param1: any?, param2: any? */?(): boolean | void
-  Dirty_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
+  Dirty_enter?(/* param1: any?, param2: any? */): boolean | void;
+  Dirty_state?(/* param1: any?, param2: any? */): boolean | void | Promise<boolean | void>;
 }
 
 // ----- ----- ----- ----- -----
@@ -413,35 +277,20 @@ export interface ITransitions {
 
 /** machine.bind('QuotaExceeded', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-  (
-    event: 'QuotaExceeded_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'QuotaExceeded_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
+  (event: 'QuotaExceeded_enter', listener: (/* param1: any?, param2: any? */) => boolean | undefined, context?: Object): this;
+  (event: 'QuotaExceeded_state', listener: (/* param1: any?, param2: any? */) => any, context?: Object): this;
 }
 
 /** machine.emit('QuotaExceeded', param1, param2) */
 export interface IEmit extends IEmitBase {
-  (event: 'QuotaExceeded_enter' /*, param1: any?, param2: any? */):
-    | boolean
-    | void
-  (event: 'QuotaExceeded_state' /*, param1: any?, param2: any? */):
-    | boolean
-    | void
+  (event: 'QuotaExceeded_enter' /*, param1: any?, param2: any? */): boolean | void;
+  (event: 'QuotaExceeded_state' /*, param1: any?, param2: any? */): boolean | void;
 }
 
 /** Method declarations */
 export interface ITransitions {
-  QuotaExceeded_enter /* param1: any?, param2: any? */?(): boolean | void
-  QuotaExceeded_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
+  QuotaExceeded_enter?(/* param1: any?, param2: any? */): boolean | void;
+  QuotaExceeded_state?(/* param1: any?, param2: any? */): boolean | void | Promise<boolean | void>;
 }
 
 // ----- ----- ----- ----- -----
@@ -450,31 +299,20 @@ export interface ITransitions {
 
 /** machine.bind('Restarting', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-  (
-    event: 'Restarting_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'Restarting_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
+  (event: 'Restarting_enter', listener: (/* param1: any?, param2: any? */) => boolean | undefined, context?: Object): this;
+  (event: 'Restarting_state', listener: (/* param1: any?, param2: any? */) => any, context?: Object): this;
 }
 
 /** machine.emit('Restarting', param1, param2) */
 export interface IEmit extends IEmitBase {
-  (event: 'Restarting_enter' /*, param1: any?, param2: any? */): boolean | void
-  (event: 'Restarting_state' /*, param1: any?, param2: any? */): boolean | void
+  (event: 'Restarting_enter' /*, param1: any?, param2: any? */): boolean | void;
+  (event: 'Restarting_state' /*, param1: any?, param2: any? */): boolean | void;
 }
 
 /** Method declarations */
 export interface ITransitions {
-  Restarting_enter /* param1: any?, param2: any? */?(): boolean | void
-  Restarting_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
+  Restarting_enter?(/* param1: any?, param2: any? */): boolean | void;
+  Restarting_state?(/* param1: any?, param2: any? */): boolean | void | Promise<boolean | void>;
 }
 
 // ----- ----- ----- ----- -----
@@ -483,31 +321,20 @@ export interface ITransitions {
 
 /** machine.bind('Restarted', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-  (
-    event: 'Restarted_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'Restarted_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
+  (event: 'Restarted_enter', listener: (/* param1: any?, param2: any? */) => boolean | undefined, context?: Object): this;
+  (event: 'Restarted_state', listener: (/* param1: any?, param2: any? */) => any, context?: Object): this;
 }
 
 /** machine.emit('Restarted', param1, param2) */
 export interface IEmit extends IEmitBase {
-  (event: 'Restarted_enter' /*, param1: any?, param2: any? */): boolean | void
-  (event: 'Restarted_state' /*, param1: any?, param2: any? */): boolean | void
+  (event: 'Restarted_enter' /*, param1: any?, param2: any? */): boolean | void;
+  (event: 'Restarted_state' /*, param1: any?, param2: any? */): boolean | void;
 }
 
 /** Method declarations */
 export interface ITransitions {
-  Restarted_enter /* param1: any?, param2: any? */?(): boolean | void
-  Restarted_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
+  Restarted_enter?(/* param1: any?, param2: any? */): boolean | void;
+  Restarted_state?(/* param1: any?, param2: any? */): boolean | void | Promise<boolean | void>;
 }
 
 // ----- ----- ----- ----- -----
@@ -516,35 +343,20 @@ export interface ITransitions {
 
 /** machine.bind('MaxReadsExceeded', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-  (
-    event: 'MaxReadsExceeded_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'MaxReadsExceeded_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
+  (event: 'MaxReadsExceeded_enter', listener: (/* param1: any?, param2: any? */) => boolean | undefined, context?: Object): this;
+  (event: 'MaxReadsExceeded_state', listener: (/* param1: any?, param2: any? */) => any, context?: Object): this;
 }
 
 /** machine.emit('MaxReadsExceeded', param1, param2) */
 export interface IEmit extends IEmitBase {
-  (event: 'MaxReadsExceeded_enter' /*, param1: any?, param2: any? */):
-    | boolean
-    | void
-  (event: 'MaxReadsExceeded_state' /*, param1: any?, param2: any? */):
-    | boolean
-    | void
+  (event: 'MaxReadsExceeded_enter' /*, param1: any?, param2: any? */): boolean | void;
+  (event: 'MaxReadsExceeded_state' /*, param1: any?, param2: any? */): boolean | void;
 }
 
 /** Method declarations */
 export interface ITransitions {
-  MaxReadsExceeded_enter /* param1: any?, param2: any? */?(): boolean | void
-  MaxReadsExceeded_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
+  MaxReadsExceeded_enter?(/* param1: any?, param2: any? */): boolean | void;
+  MaxReadsExceeded_state?(/* param1: any?, param2: any? */): boolean | void | Promise<boolean | void>;
 }
 
 // ----- ----- ----- ----- -----
@@ -553,31 +365,20 @@ export interface ITransitions {
 
 /** machine.bind('Writing', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-  (
-    event: 'Writing_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'Writing_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
+  (event: 'Writing_enter', listener: (/* param1: any?, param2: any? */) => boolean | undefined, context?: Object): this;
+  (event: 'Writing_state', listener: (/* param1: any?, param2: any? */) => any, context?: Object): this;
 }
 
 /** machine.emit('Writing', param1, param2) */
 export interface IEmit extends IEmitBase {
-  (event: 'Writing_enter' /*, param1: any?, param2: any? */): boolean | void
-  (event: 'Writing_state' /*, param1: any?, param2: any? */): boolean | void
+  (event: 'Writing_enter' /*, param1: any?, param2: any? */): boolean | void;
+  (event: 'Writing_state' /*, param1: any?, param2: any? */): boolean | void;
 }
 
 /** Method declarations */
 export interface ITransitions {
-  Writing_enter /* param1: any?, param2: any? */?(): boolean | void
-  Writing_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
+  Writing_enter?(/* param1: any?, param2: any? */): boolean | void;
+  Writing_state?(/* param1: any?, param2: any? */): boolean | void | Promise<boolean | void>;
 }
 
 // ----- ----- ----- ----- -----
@@ -586,31 +387,20 @@ export interface ITransitions {
 
 /** machine.bind('WritingDone', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-  (
-    event: 'WritingDone_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'WritingDone_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
+  (event: 'WritingDone_enter', listener: (/* param1: any?, param2: any? */) => boolean | undefined, context?: Object): this;
+  (event: 'WritingDone_state', listener: (/* param1: any?, param2: any? */) => any, context?: Object): this;
 }
 
 /** machine.emit('WritingDone', param1, param2) */
 export interface IEmit extends IEmitBase {
-  (event: 'WritingDone_enter' /*, param1: any?, param2: any? */): boolean | void
-  (event: 'WritingDone_state' /*, param1: any?, param2: any? */): boolean | void
+  (event: 'WritingDone_enter' /*, param1: any?, param2: any? */): boolean | void;
+  (event: 'WritingDone_state' /*, param1: any?, param2: any? */): boolean | void;
 }
 
 /** Method declarations */
 export interface ITransitions {
-  WritingDone_enter /* param1: any?, param2: any? */?(): boolean | void
-  WritingDone_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
+  WritingDone_enter?(/* param1: any?, param2: any? */): boolean | void;
+  WritingDone_state?(/* param1: any?, param2: any? */): boolean | void | Promise<boolean | void>;
 }
 
 // ----- ----- ----- ----- -----
@@ -619,35 +409,20 @@ export interface ITransitions {
 
 /** machine.bind('MaxWritesExceeded', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-  (
-    event: 'MaxWritesExceeded_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'MaxWritesExceeded_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
+  (event: 'MaxWritesExceeded_enter', listener: (/* param1: any?, param2: any? */) => boolean | undefined, context?: Object): this;
+  (event: 'MaxWritesExceeded_state', listener: (/* param1: any?, param2: any? */) => any, context?: Object): this;
 }
 
 /** machine.emit('MaxWritesExceeded', param1, param2) */
 export interface IEmit extends IEmitBase {
-  (event: 'MaxWritesExceeded_enter' /*, param1: any?, param2: any? */):
-    | boolean
-    | void
-  (event: 'MaxWritesExceeded_state' /*, param1: any?, param2: any? */):
-    | boolean
-    | void
+  (event: 'MaxWritesExceeded_enter' /*, param1: any?, param2: any? */): boolean | void;
+  (event: 'MaxWritesExceeded_state' /*, param1: any?, param2: any? */): boolean | void;
 }
 
 /** Method declarations */
 export interface ITransitions {
-  MaxWritesExceeded_enter /* param1: any?, param2: any? */?(): boolean | void
-  MaxWritesExceeded_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
+  MaxWritesExceeded_enter?(/* param1: any?, param2: any? */): boolean | void;
+  MaxWritesExceeded_state?(/* param1: any?, param2: any? */): boolean | void | Promise<boolean | void>;
 }
 
 // ----- ----- ----- ----- -----
@@ -656,35 +431,20 @@ export interface ITransitions {
 
 /** machine.bind('Authenticated', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-  (
-    event: 'Authenticated_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'Authenticated_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
+  (event: 'Authenticated_enter', listener: (/* param1: any?, param2: any? */) => boolean | undefined, context?: Object): this;
+  (event: 'Authenticated_state', listener: (/* param1: any?, param2: any? */) => any, context?: Object): this;
 }
 
 /** machine.emit('Authenticated', param1, param2) */
 export interface IEmit extends IEmitBase {
-  (event: 'Authenticated_enter' /*, param1: any?, param2: any? */):
-    | boolean
-    | void
-  (event: 'Authenticated_state' /*, param1: any?, param2: any? */):
-    | boolean
-    | void
+  (event: 'Authenticated_enter' /*, param1: any?, param2: any? */): boolean | void;
+  (event: 'Authenticated_state' /*, param1: any?, param2: any? */): boolean | void;
 }
 
 /** Method declarations */
 export interface ITransitions {
-  Authenticated_enter /* param1: any?, param2: any? */?(): boolean | void
-  Authenticated_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
+  Authenticated_enter?(/* param1: any?, param2: any? */): boolean | void;
+  Authenticated_state?(/* param1: any?, param2: any? */): boolean | void | Promise<boolean | void>;
 }
 
 // ----- ----- -----
@@ -693,493 +453,492 @@ export interface ITransitions {
 
 /** All the possible transition methods the machine can define */
 export interface ITransitions {
-  Enabled_Any?(): boolean | void
-  Enabled_Initializing?(): boolean | void
-  Enabled_Ready?(): boolean | void
-  Enabled_ConfigSet?(): boolean | void
-  Enabled_SubsInited?(): boolean | void
-  Enabled_SubsReady?(): boolean | void
-  Enabled_Reading?(): boolean | void
-  Enabled_ReadingDone?(): boolean | void
-  Enabled_Syncing?(): boolean | void
-  Enabled_SyncDone?(): boolean | void
-  Enabled_Cached?(): boolean | void
-  Enabled_Dirty?(): boolean | void
-  Enabled_QuotaExceeded?(): boolean | void
-  Enabled_Restarting?(): boolean | void
-  Enabled_Restarted?(): boolean | void
-  Enabled_MaxReadsExceeded?(): boolean | void
-  Enabled_Writing?(): boolean | void
-  Enabled_WritingDone?(): boolean | void
-  Enabled_MaxWritesExceeded?(): boolean | void
-  Enabled_Authenticated?(): boolean | void
-  Enabled_Exception?(): boolean | void
-  Enabled_exit?(): boolean | void
-  Enabled_end?(): boolean | void | Promise<boolean | void>
-  Initializing_Enabled?(): boolean | void
-  Initializing_Any?(): boolean | void
-  Initializing_Ready?(): boolean | void
-  Initializing_ConfigSet?(): boolean | void
-  Initializing_SubsInited?(): boolean | void
-  Initializing_SubsReady?(): boolean | void
-  Initializing_Reading?(): boolean | void
-  Initializing_ReadingDone?(): boolean | void
-  Initializing_Syncing?(): boolean | void
-  Initializing_SyncDone?(): boolean | void
-  Initializing_Cached?(): boolean | void
-  Initializing_Dirty?(): boolean | void
-  Initializing_QuotaExceeded?(): boolean | void
-  Initializing_Restarting?(): boolean | void
-  Initializing_Restarted?(): boolean | void
-  Initializing_MaxReadsExceeded?(): boolean | void
-  Initializing_Writing?(): boolean | void
-  Initializing_WritingDone?(): boolean | void
-  Initializing_MaxWritesExceeded?(): boolean | void
-  Initializing_Authenticated?(): boolean | void
-  Initializing_Exception?(): boolean | void
-  Initializing_exit?(): boolean | void
-  Initializing_end?(): boolean | void | Promise<boolean | void>
-  Ready_Enabled?(): boolean | void
-  Ready_Initializing?(): boolean | void
-  Ready_Any?(): boolean | void
-  Ready_ConfigSet?(): boolean | void
-  Ready_SubsInited?(): boolean | void
-  Ready_SubsReady?(): boolean | void
-  Ready_Reading?(): boolean | void
-  Ready_ReadingDone?(): boolean | void
-  Ready_Syncing?(): boolean | void
-  Ready_SyncDone?(): boolean | void
-  Ready_Cached?(): boolean | void
-  Ready_Dirty?(): boolean | void
-  Ready_QuotaExceeded?(): boolean | void
-  Ready_Restarting?(): boolean | void
-  Ready_Restarted?(): boolean | void
-  Ready_MaxReadsExceeded?(): boolean | void
-  Ready_Writing?(): boolean | void
-  Ready_WritingDone?(): boolean | void
-  Ready_MaxWritesExceeded?(): boolean | void
-  Ready_Authenticated?(): boolean | void
-  Ready_Exception?(): boolean | void
-  Ready_exit?(): boolean | void
-  Ready_end?(): boolean | void | Promise<boolean | void>
-  ConfigSet_Enabled?(): boolean | void
-  ConfigSet_Initializing?(): boolean | void
-  ConfigSet_Ready?(): boolean | void
-  ConfigSet_Any?(): boolean | void
-  ConfigSet_SubsInited?(): boolean | void
-  ConfigSet_SubsReady?(): boolean | void
-  ConfigSet_Reading?(): boolean | void
-  ConfigSet_ReadingDone?(): boolean | void
-  ConfigSet_Syncing?(): boolean | void
-  ConfigSet_SyncDone?(): boolean | void
-  ConfigSet_Cached?(): boolean | void
-  ConfigSet_Dirty?(): boolean | void
-  ConfigSet_QuotaExceeded?(): boolean | void
-  ConfigSet_Restarting?(): boolean | void
-  ConfigSet_Restarted?(): boolean | void
-  ConfigSet_MaxReadsExceeded?(): boolean | void
-  ConfigSet_Writing?(): boolean | void
-  ConfigSet_WritingDone?(): boolean | void
-  ConfigSet_MaxWritesExceeded?(): boolean | void
-  ConfigSet_Authenticated?(): boolean | void
-  ConfigSet_Exception?(): boolean | void
-  ConfigSet_exit?(): boolean | void
-  ConfigSet_end?(): boolean | void | Promise<boolean | void>
-  SubsInited_Enabled?(): boolean | void
-  SubsInited_Initializing?(): boolean | void
-  SubsInited_Ready?(): boolean | void
-  SubsInited_ConfigSet?(): boolean | void
-  SubsInited_Any?(): boolean | void
-  SubsInited_SubsReady?(): boolean | void
-  SubsInited_Reading?(): boolean | void
-  SubsInited_ReadingDone?(): boolean | void
-  SubsInited_Syncing?(): boolean | void
-  SubsInited_SyncDone?(): boolean | void
-  SubsInited_Cached?(): boolean | void
-  SubsInited_Dirty?(): boolean | void
-  SubsInited_QuotaExceeded?(): boolean | void
-  SubsInited_Restarting?(): boolean | void
-  SubsInited_Restarted?(): boolean | void
-  SubsInited_MaxReadsExceeded?(): boolean | void
-  SubsInited_Writing?(): boolean | void
-  SubsInited_WritingDone?(): boolean | void
-  SubsInited_MaxWritesExceeded?(): boolean | void
-  SubsInited_Authenticated?(): boolean | void
-  SubsInited_Exception?(): boolean | void
-  SubsInited_exit?(): boolean | void
-  SubsInited_end?(): boolean | void | Promise<boolean | void>
-  SubsReady_Enabled?(): boolean | void
-  SubsReady_Initializing?(): boolean | void
-  SubsReady_Ready?(): boolean | void
-  SubsReady_ConfigSet?(): boolean | void
-  SubsReady_SubsInited?(): boolean | void
-  SubsReady_Any?(): boolean | void
-  SubsReady_Reading?(): boolean | void
-  SubsReady_ReadingDone?(): boolean | void
-  SubsReady_Syncing?(): boolean | void
-  SubsReady_SyncDone?(): boolean | void
-  SubsReady_Cached?(): boolean | void
-  SubsReady_Dirty?(): boolean | void
-  SubsReady_QuotaExceeded?(): boolean | void
-  SubsReady_Restarting?(): boolean | void
-  SubsReady_Restarted?(): boolean | void
-  SubsReady_MaxReadsExceeded?(): boolean | void
-  SubsReady_Writing?(): boolean | void
-  SubsReady_WritingDone?(): boolean | void
-  SubsReady_MaxWritesExceeded?(): boolean | void
-  SubsReady_Authenticated?(): boolean | void
-  SubsReady_Exception?(): boolean | void
-  SubsReady_exit?(): boolean | void
-  SubsReady_end?(): boolean | void | Promise<boolean | void>
-  Reading_Enabled?(): boolean | void
-  Reading_Initializing?(): boolean | void
-  Reading_Ready?(): boolean | void
-  Reading_ConfigSet?(): boolean | void
-  Reading_SubsInited?(): boolean | void
-  Reading_SubsReady?(): boolean | void
-  Reading_Any?(): boolean | void
-  Reading_ReadingDone?(): boolean | void
-  Reading_Syncing?(): boolean | void
-  Reading_SyncDone?(): boolean | void
-  Reading_Cached?(): boolean | void
-  Reading_Dirty?(): boolean | void
-  Reading_QuotaExceeded?(): boolean | void
-  Reading_Restarting?(): boolean | void
-  Reading_Restarted?(): boolean | void
-  Reading_MaxReadsExceeded?(): boolean | void
-  Reading_Writing?(): boolean | void
-  Reading_WritingDone?(): boolean | void
-  Reading_MaxWritesExceeded?(): boolean | void
-  Reading_Authenticated?(): boolean | void
-  Reading_Exception?(): boolean | void
-  Reading_exit?(): boolean | void
-  Reading_end?(): boolean | void | Promise<boolean | void>
-  ReadingDone_Enabled?(): boolean | void
-  ReadingDone_Initializing?(): boolean | void
-  ReadingDone_Ready?(): boolean | void
-  ReadingDone_ConfigSet?(): boolean | void
-  ReadingDone_SubsInited?(): boolean | void
-  ReadingDone_SubsReady?(): boolean | void
-  ReadingDone_Reading?(): boolean | void
-  ReadingDone_Any?(): boolean | void
-  ReadingDone_Syncing?(): boolean | void
-  ReadingDone_SyncDone?(): boolean | void
-  ReadingDone_Cached?(): boolean | void
-  ReadingDone_Dirty?(): boolean | void
-  ReadingDone_QuotaExceeded?(): boolean | void
-  ReadingDone_Restarting?(): boolean | void
-  ReadingDone_Restarted?(): boolean | void
-  ReadingDone_MaxReadsExceeded?(): boolean | void
-  ReadingDone_Writing?(): boolean | void
-  ReadingDone_WritingDone?(): boolean | void
-  ReadingDone_MaxWritesExceeded?(): boolean | void
-  ReadingDone_Authenticated?(): boolean | void
-  ReadingDone_Exception?(): boolean | void
-  ReadingDone_exit?(): boolean | void
-  ReadingDone_end?(): boolean | void | Promise<boolean | void>
-  Syncing_Enabled?(): boolean | void
-  Syncing_Initializing?(): boolean | void
-  Syncing_Ready?(): boolean | void
-  Syncing_ConfigSet?(): boolean | void
-  Syncing_SubsInited?(): boolean | void
-  Syncing_SubsReady?(): boolean | void
-  Syncing_Reading?(): boolean | void
-  Syncing_ReadingDone?(): boolean | void
-  Syncing_Any?(): boolean | void
-  Syncing_SyncDone?(): boolean | void
-  Syncing_Cached?(): boolean | void
-  Syncing_Dirty?(): boolean | void
-  Syncing_QuotaExceeded?(): boolean | void
-  Syncing_Restarting?(): boolean | void
-  Syncing_Restarted?(): boolean | void
-  Syncing_MaxReadsExceeded?(): boolean | void
-  Syncing_Writing?(): boolean | void
-  Syncing_WritingDone?(): boolean | void
-  Syncing_MaxWritesExceeded?(): boolean | void
-  Syncing_Authenticated?(): boolean | void
-  Syncing_Exception?(): boolean | void
-  Syncing_exit?(): boolean | void
-  Syncing_end?(): boolean | void | Promise<boolean | void>
-  SyncDone_Enabled?(): boolean | void
-  SyncDone_Initializing?(): boolean | void
-  SyncDone_Ready?(): boolean | void
-  SyncDone_ConfigSet?(): boolean | void
-  SyncDone_SubsInited?(): boolean | void
-  SyncDone_SubsReady?(): boolean | void
-  SyncDone_Reading?(): boolean | void
-  SyncDone_ReadingDone?(): boolean | void
-  SyncDone_Syncing?(): boolean | void
-  SyncDone_Any?(): boolean | void
-  SyncDone_Cached?(): boolean | void
-  SyncDone_Dirty?(): boolean | void
-  SyncDone_QuotaExceeded?(): boolean | void
-  SyncDone_Restarting?(): boolean | void
-  SyncDone_Restarted?(): boolean | void
-  SyncDone_MaxReadsExceeded?(): boolean | void
-  SyncDone_Writing?(): boolean | void
-  SyncDone_WritingDone?(): boolean | void
-  SyncDone_MaxWritesExceeded?(): boolean | void
-  SyncDone_Authenticated?(): boolean | void
-  SyncDone_Exception?(): boolean | void
-  SyncDone_exit?(): boolean | void
-  SyncDone_end?(): boolean | void | Promise<boolean | void>
-  Cached_Enabled?(): boolean | void
-  Cached_Initializing?(): boolean | void
-  Cached_Ready?(): boolean | void
-  Cached_ConfigSet?(): boolean | void
-  Cached_SubsInited?(): boolean | void
-  Cached_SubsReady?(): boolean | void
-  Cached_Reading?(): boolean | void
-  Cached_ReadingDone?(): boolean | void
-  Cached_Syncing?(): boolean | void
-  Cached_SyncDone?(): boolean | void
-  Cached_Any?(): boolean | void
-  Cached_Dirty?(): boolean | void
-  Cached_QuotaExceeded?(): boolean | void
-  Cached_Restarting?(): boolean | void
-  Cached_Restarted?(): boolean | void
-  Cached_MaxReadsExceeded?(): boolean | void
-  Cached_Writing?(): boolean | void
-  Cached_WritingDone?(): boolean | void
-  Cached_MaxWritesExceeded?(): boolean | void
-  Cached_Authenticated?(): boolean | void
-  Cached_Exception?(): boolean | void
-  Cached_exit?(): boolean | void
-  Cached_end?(): boolean | void | Promise<boolean | void>
-  Dirty_Enabled?(): boolean | void
-  Dirty_Initializing?(): boolean | void
-  Dirty_Ready?(): boolean | void
-  Dirty_ConfigSet?(): boolean | void
-  Dirty_SubsInited?(): boolean | void
-  Dirty_SubsReady?(): boolean | void
-  Dirty_Reading?(): boolean | void
-  Dirty_ReadingDone?(): boolean | void
-  Dirty_Syncing?(): boolean | void
-  Dirty_SyncDone?(): boolean | void
-  Dirty_Cached?(): boolean | void
-  Dirty_Any?(): boolean | void
-  Dirty_QuotaExceeded?(): boolean | void
-  Dirty_Restarting?(): boolean | void
-  Dirty_Restarted?(): boolean | void
-  Dirty_MaxReadsExceeded?(): boolean | void
-  Dirty_Writing?(): boolean | void
-  Dirty_WritingDone?(): boolean | void
-  Dirty_MaxWritesExceeded?(): boolean | void
-  Dirty_Authenticated?(): boolean | void
-  Dirty_Exception?(): boolean | void
-  Dirty_exit?(): boolean | void
-  Dirty_end?(): boolean | void | Promise<boolean | void>
-  QuotaExceeded_Enabled?(): boolean | void
-  QuotaExceeded_Initializing?(): boolean | void
-  QuotaExceeded_Ready?(): boolean | void
-  QuotaExceeded_ConfigSet?(): boolean | void
-  QuotaExceeded_SubsInited?(): boolean | void
-  QuotaExceeded_SubsReady?(): boolean | void
-  QuotaExceeded_Reading?(): boolean | void
-  QuotaExceeded_ReadingDone?(): boolean | void
-  QuotaExceeded_Syncing?(): boolean | void
-  QuotaExceeded_SyncDone?(): boolean | void
-  QuotaExceeded_Cached?(): boolean | void
-  QuotaExceeded_Dirty?(): boolean | void
-  QuotaExceeded_Any?(): boolean | void
-  QuotaExceeded_Restarting?(): boolean | void
-  QuotaExceeded_Restarted?(): boolean | void
-  QuotaExceeded_MaxReadsExceeded?(): boolean | void
-  QuotaExceeded_Writing?(): boolean | void
-  QuotaExceeded_WritingDone?(): boolean | void
-  QuotaExceeded_MaxWritesExceeded?(): boolean | void
-  QuotaExceeded_Authenticated?(): boolean | void
-  QuotaExceeded_Exception?(): boolean | void
-  QuotaExceeded_exit?(): boolean | void
-  QuotaExceeded_end?(): boolean | void | Promise<boolean | void>
-  Restarting_Enabled?(): boolean | void
-  Restarting_Initializing?(): boolean | void
-  Restarting_Ready?(): boolean | void
-  Restarting_ConfigSet?(): boolean | void
-  Restarting_SubsInited?(): boolean | void
-  Restarting_SubsReady?(): boolean | void
-  Restarting_Reading?(): boolean | void
-  Restarting_ReadingDone?(): boolean | void
-  Restarting_Syncing?(): boolean | void
-  Restarting_SyncDone?(): boolean | void
-  Restarting_Cached?(): boolean | void
-  Restarting_Dirty?(): boolean | void
-  Restarting_QuotaExceeded?(): boolean | void
-  Restarting_Any?(): boolean | void
-  Restarting_Restarted?(): boolean | void
-  Restarting_MaxReadsExceeded?(): boolean | void
-  Restarting_Writing?(): boolean | void
-  Restarting_WritingDone?(): boolean | void
-  Restarting_MaxWritesExceeded?(): boolean | void
-  Restarting_Authenticated?(): boolean | void
-  Restarting_Exception?(): boolean | void
-  Restarting_exit?(): boolean | void
-  Restarting_end?(): boolean | void | Promise<boolean | void>
-  Restarted_Enabled?(): boolean | void
-  Restarted_Initializing?(): boolean | void
-  Restarted_Ready?(): boolean | void
-  Restarted_ConfigSet?(): boolean | void
-  Restarted_SubsInited?(): boolean | void
-  Restarted_SubsReady?(): boolean | void
-  Restarted_Reading?(): boolean | void
-  Restarted_ReadingDone?(): boolean | void
-  Restarted_Syncing?(): boolean | void
-  Restarted_SyncDone?(): boolean | void
-  Restarted_Cached?(): boolean | void
-  Restarted_Dirty?(): boolean | void
-  Restarted_QuotaExceeded?(): boolean | void
-  Restarted_Restarting?(): boolean | void
-  Restarted_Any?(): boolean | void
-  Restarted_MaxReadsExceeded?(): boolean | void
-  Restarted_Writing?(): boolean | void
-  Restarted_WritingDone?(): boolean | void
-  Restarted_MaxWritesExceeded?(): boolean | void
-  Restarted_Authenticated?(): boolean | void
-  Restarted_Exception?(): boolean | void
-  Restarted_exit?(): boolean | void
-  Restarted_end?(): boolean | void | Promise<boolean | void>
-  MaxReadsExceeded_Enabled?(): boolean | void
-  MaxReadsExceeded_Initializing?(): boolean | void
-  MaxReadsExceeded_Ready?(): boolean | void
-  MaxReadsExceeded_ConfigSet?(): boolean | void
-  MaxReadsExceeded_SubsInited?(): boolean | void
-  MaxReadsExceeded_SubsReady?(): boolean | void
-  MaxReadsExceeded_Reading?(): boolean | void
-  MaxReadsExceeded_ReadingDone?(): boolean | void
-  MaxReadsExceeded_Syncing?(): boolean | void
-  MaxReadsExceeded_SyncDone?(): boolean | void
-  MaxReadsExceeded_Cached?(): boolean | void
-  MaxReadsExceeded_Dirty?(): boolean | void
-  MaxReadsExceeded_QuotaExceeded?(): boolean | void
-  MaxReadsExceeded_Restarting?(): boolean | void
-  MaxReadsExceeded_Restarted?(): boolean | void
-  MaxReadsExceeded_Any?(): boolean | void
-  MaxReadsExceeded_Writing?(): boolean | void
-  MaxReadsExceeded_WritingDone?(): boolean | void
-  MaxReadsExceeded_MaxWritesExceeded?(): boolean | void
-  MaxReadsExceeded_Authenticated?(): boolean | void
-  MaxReadsExceeded_Exception?(): boolean | void
-  MaxReadsExceeded_exit?(): boolean | void
-  MaxReadsExceeded_end?(): boolean | void | Promise<boolean | void>
-  Writing_Enabled?(): boolean | void
-  Writing_Initializing?(): boolean | void
-  Writing_Ready?(): boolean | void
-  Writing_ConfigSet?(): boolean | void
-  Writing_SubsInited?(): boolean | void
-  Writing_SubsReady?(): boolean | void
-  Writing_Reading?(): boolean | void
-  Writing_ReadingDone?(): boolean | void
-  Writing_Syncing?(): boolean | void
-  Writing_SyncDone?(): boolean | void
-  Writing_Cached?(): boolean | void
-  Writing_Dirty?(): boolean | void
-  Writing_QuotaExceeded?(): boolean | void
-  Writing_Restarting?(): boolean | void
-  Writing_Restarted?(): boolean | void
-  Writing_MaxReadsExceeded?(): boolean | void
-  Writing_Any?(): boolean | void
-  Writing_WritingDone?(): boolean | void
-  Writing_MaxWritesExceeded?(): boolean | void
-  Writing_Authenticated?(): boolean | void
-  Writing_Exception?(): boolean | void
-  Writing_exit?(): boolean | void
-  Writing_end?(): boolean | void | Promise<boolean | void>
-  WritingDone_Enabled?(): boolean | void
-  WritingDone_Initializing?(): boolean | void
-  WritingDone_Ready?(): boolean | void
-  WritingDone_ConfigSet?(): boolean | void
-  WritingDone_SubsInited?(): boolean | void
-  WritingDone_SubsReady?(): boolean | void
-  WritingDone_Reading?(): boolean | void
-  WritingDone_ReadingDone?(): boolean | void
-  WritingDone_Syncing?(): boolean | void
-  WritingDone_SyncDone?(): boolean | void
-  WritingDone_Cached?(): boolean | void
-  WritingDone_Dirty?(): boolean | void
-  WritingDone_QuotaExceeded?(): boolean | void
-  WritingDone_Restarting?(): boolean | void
-  WritingDone_Restarted?(): boolean | void
-  WritingDone_MaxReadsExceeded?(): boolean | void
-  WritingDone_Writing?(): boolean | void
-  WritingDone_Any?(): boolean | void
-  WritingDone_MaxWritesExceeded?(): boolean | void
-  WritingDone_Authenticated?(): boolean | void
-  WritingDone_Exception?(): boolean | void
-  WritingDone_exit?(): boolean | void
-  WritingDone_end?(): boolean | void | Promise<boolean | void>
-  MaxWritesExceeded_Enabled?(): boolean | void
-  MaxWritesExceeded_Initializing?(): boolean | void
-  MaxWritesExceeded_Ready?(): boolean | void
-  MaxWritesExceeded_ConfigSet?(): boolean | void
-  MaxWritesExceeded_SubsInited?(): boolean | void
-  MaxWritesExceeded_SubsReady?(): boolean | void
-  MaxWritesExceeded_Reading?(): boolean | void
-  MaxWritesExceeded_ReadingDone?(): boolean | void
-  MaxWritesExceeded_Syncing?(): boolean | void
-  MaxWritesExceeded_SyncDone?(): boolean | void
-  MaxWritesExceeded_Cached?(): boolean | void
-  MaxWritesExceeded_Dirty?(): boolean | void
-  MaxWritesExceeded_QuotaExceeded?(): boolean | void
-  MaxWritesExceeded_Restarting?(): boolean | void
-  MaxWritesExceeded_Restarted?(): boolean | void
-  MaxWritesExceeded_MaxReadsExceeded?(): boolean | void
-  MaxWritesExceeded_Writing?(): boolean | void
-  MaxWritesExceeded_WritingDone?(): boolean | void
-  MaxWritesExceeded_Any?(): boolean | void
-  MaxWritesExceeded_Authenticated?(): boolean | void
-  MaxWritesExceeded_Exception?(): boolean | void
-  MaxWritesExceeded_exit?(): boolean | void
-  MaxWritesExceeded_end?(): boolean | void | Promise<boolean | void>
-  Authenticated_Enabled?(): boolean | void
-  Authenticated_Initializing?(): boolean | void
-  Authenticated_Ready?(): boolean | void
-  Authenticated_ConfigSet?(): boolean | void
-  Authenticated_SubsInited?(): boolean | void
-  Authenticated_SubsReady?(): boolean | void
-  Authenticated_Reading?(): boolean | void
-  Authenticated_ReadingDone?(): boolean | void
-  Authenticated_Syncing?(): boolean | void
-  Authenticated_SyncDone?(): boolean | void
-  Authenticated_Cached?(): boolean | void
-  Authenticated_Dirty?(): boolean | void
-  Authenticated_QuotaExceeded?(): boolean | void
-  Authenticated_Restarting?(): boolean | void
-  Authenticated_Restarted?(): boolean | void
-  Authenticated_MaxReadsExceeded?(): boolean | void
-  Authenticated_Writing?(): boolean | void
-  Authenticated_WritingDone?(): boolean | void
-  Authenticated_MaxWritesExceeded?(): boolean | void
-  Authenticated_Any?(): boolean | void
-  Authenticated_Exception?(): boolean | void
-  Authenticated_exit?(): boolean | void
-  Authenticated_end?(): boolean | void | Promise<boolean | void>
-  Exception_Enabled?(): boolean | void
-  Exception_Initializing?(): boolean | void
-  Exception_Ready?(): boolean | void
-  Exception_ConfigSet?(): boolean | void
-  Exception_SubsInited?(): boolean | void
-  Exception_SubsReady?(): boolean | void
-  Exception_Reading?(): boolean | void
-  Exception_ReadingDone?(): boolean | void
-  Exception_Syncing?(): boolean | void
-  Exception_SyncDone?(): boolean | void
-  Exception_Cached?(): boolean | void
-  Exception_Dirty?(): boolean | void
-  Exception_QuotaExceeded?(): boolean | void
-  Exception_Restarting?(): boolean | void
-  Exception_Restarted?(): boolean | void
-  Exception_MaxReadsExceeded?(): boolean | void
-  Exception_Writing?(): boolean | void
-  Exception_WritingDone?(): boolean | void
-  Exception_MaxWritesExceeded?(): boolean | void
-  Exception_Authenticated?(): boolean | void
-  Exception_exit?(): boolean | void
-  Exception_end?(): boolean | void | Promise<boolean | void>
+  Enabled_Any?(): boolean | void;
+  Enabled_Initializing?(): boolean | void;
+  Enabled_Ready?(): boolean | void;
+  Enabled_ConfigSet?(): boolean | void;
+  Enabled_SubsInited?(): boolean | void;
+  Enabled_SubsReady?(): boolean | void;
+  Enabled_Reading?(): boolean | void;
+  Enabled_ReadingDone?(): boolean | void;
+  Enabled_Syncing?(): boolean | void;
+  Enabled_SyncDone?(): boolean | void;
+  Enabled_Cached?(): boolean | void;
+  Enabled_Dirty?(): boolean | void;
+  Enabled_QuotaExceeded?(): boolean | void;
+  Enabled_Restarting?(): boolean | void;
+  Enabled_Restarted?(): boolean | void;
+  Enabled_MaxReadsExceeded?(): boolean | void;
+  Enabled_Writing?(): boolean | void;
+  Enabled_WritingDone?(): boolean | void;
+  Enabled_MaxWritesExceeded?(): boolean | void;
+  Enabled_Authenticated?(): boolean | void;
+  Enabled_Exception?(): boolean | void;
+  Enabled_exit?(): boolean | void;
+  Enabled_end?(): boolean | void | Promise<boolean | void>;
+  Initializing_Enabled?(): boolean | void;
+  Initializing_Any?(): boolean | void;
+  Initializing_Ready?(): boolean | void;
+  Initializing_ConfigSet?(): boolean | void;
+  Initializing_SubsInited?(): boolean | void;
+  Initializing_SubsReady?(): boolean | void;
+  Initializing_Reading?(): boolean | void;
+  Initializing_ReadingDone?(): boolean | void;
+  Initializing_Syncing?(): boolean | void;
+  Initializing_SyncDone?(): boolean | void;
+  Initializing_Cached?(): boolean | void;
+  Initializing_Dirty?(): boolean | void;
+  Initializing_QuotaExceeded?(): boolean | void;
+  Initializing_Restarting?(): boolean | void;
+  Initializing_Restarted?(): boolean | void;
+  Initializing_MaxReadsExceeded?(): boolean | void;
+  Initializing_Writing?(): boolean | void;
+  Initializing_WritingDone?(): boolean | void;
+  Initializing_MaxWritesExceeded?(): boolean | void;
+  Initializing_Authenticated?(): boolean | void;
+  Initializing_Exception?(): boolean | void;
+  Initializing_exit?(): boolean | void;
+  Initializing_end?(): boolean | void | Promise<boolean | void>;
+  Ready_Enabled?(): boolean | void;
+  Ready_Initializing?(): boolean | void;
+  Ready_Any?(): boolean | void;
+  Ready_ConfigSet?(): boolean | void;
+  Ready_SubsInited?(): boolean | void;
+  Ready_SubsReady?(): boolean | void;
+  Ready_Reading?(): boolean | void;
+  Ready_ReadingDone?(): boolean | void;
+  Ready_Syncing?(): boolean | void;
+  Ready_SyncDone?(): boolean | void;
+  Ready_Cached?(): boolean | void;
+  Ready_Dirty?(): boolean | void;
+  Ready_QuotaExceeded?(): boolean | void;
+  Ready_Restarting?(): boolean | void;
+  Ready_Restarted?(): boolean | void;
+  Ready_MaxReadsExceeded?(): boolean | void;
+  Ready_Writing?(): boolean | void;
+  Ready_WritingDone?(): boolean | void;
+  Ready_MaxWritesExceeded?(): boolean | void;
+  Ready_Authenticated?(): boolean | void;
+  Ready_Exception?(): boolean | void;
+  Ready_exit?(): boolean | void;
+  Ready_end?(): boolean | void | Promise<boolean | void>;
+  ConfigSet_Enabled?(): boolean | void;
+  ConfigSet_Initializing?(): boolean | void;
+  ConfigSet_Ready?(): boolean | void;
+  ConfigSet_Any?(): boolean | void;
+  ConfigSet_SubsInited?(): boolean | void;
+  ConfigSet_SubsReady?(): boolean | void;
+  ConfigSet_Reading?(): boolean | void;
+  ConfigSet_ReadingDone?(): boolean | void;
+  ConfigSet_Syncing?(): boolean | void;
+  ConfigSet_SyncDone?(): boolean | void;
+  ConfigSet_Cached?(): boolean | void;
+  ConfigSet_Dirty?(): boolean | void;
+  ConfigSet_QuotaExceeded?(): boolean | void;
+  ConfigSet_Restarting?(): boolean | void;
+  ConfigSet_Restarted?(): boolean | void;
+  ConfigSet_MaxReadsExceeded?(): boolean | void;
+  ConfigSet_Writing?(): boolean | void;
+  ConfigSet_WritingDone?(): boolean | void;
+  ConfigSet_MaxWritesExceeded?(): boolean | void;
+  ConfigSet_Authenticated?(): boolean | void;
+  ConfigSet_Exception?(): boolean | void;
+  ConfigSet_exit?(): boolean | void;
+  ConfigSet_end?(): boolean | void | Promise<boolean | void>;
+  SubsInited_Enabled?(): boolean | void;
+  SubsInited_Initializing?(): boolean | void;
+  SubsInited_Ready?(): boolean | void;
+  SubsInited_ConfigSet?(): boolean | void;
+  SubsInited_Any?(): boolean | void;
+  SubsInited_SubsReady?(): boolean | void;
+  SubsInited_Reading?(): boolean | void;
+  SubsInited_ReadingDone?(): boolean | void;
+  SubsInited_Syncing?(): boolean | void;
+  SubsInited_SyncDone?(): boolean | void;
+  SubsInited_Cached?(): boolean | void;
+  SubsInited_Dirty?(): boolean | void;
+  SubsInited_QuotaExceeded?(): boolean | void;
+  SubsInited_Restarting?(): boolean | void;
+  SubsInited_Restarted?(): boolean | void;
+  SubsInited_MaxReadsExceeded?(): boolean | void;
+  SubsInited_Writing?(): boolean | void;
+  SubsInited_WritingDone?(): boolean | void;
+  SubsInited_MaxWritesExceeded?(): boolean | void;
+  SubsInited_Authenticated?(): boolean | void;
+  SubsInited_Exception?(): boolean | void;
+  SubsInited_exit?(): boolean | void;
+  SubsInited_end?(): boolean | void | Promise<boolean | void>;
+  SubsReady_Enabled?(): boolean | void;
+  SubsReady_Initializing?(): boolean | void;
+  SubsReady_Ready?(): boolean | void;
+  SubsReady_ConfigSet?(): boolean | void;
+  SubsReady_SubsInited?(): boolean | void;
+  SubsReady_Any?(): boolean | void;
+  SubsReady_Reading?(): boolean | void;
+  SubsReady_ReadingDone?(): boolean | void;
+  SubsReady_Syncing?(): boolean | void;
+  SubsReady_SyncDone?(): boolean | void;
+  SubsReady_Cached?(): boolean | void;
+  SubsReady_Dirty?(): boolean | void;
+  SubsReady_QuotaExceeded?(): boolean | void;
+  SubsReady_Restarting?(): boolean | void;
+  SubsReady_Restarted?(): boolean | void;
+  SubsReady_MaxReadsExceeded?(): boolean | void;
+  SubsReady_Writing?(): boolean | void;
+  SubsReady_WritingDone?(): boolean | void;
+  SubsReady_MaxWritesExceeded?(): boolean | void;
+  SubsReady_Authenticated?(): boolean | void;
+  SubsReady_Exception?(): boolean | void;
+  SubsReady_exit?(): boolean | void;
+  SubsReady_end?(): boolean | void | Promise<boolean | void>;
+  Reading_Enabled?(): boolean | void;
+  Reading_Initializing?(): boolean | void;
+  Reading_Ready?(): boolean | void;
+  Reading_ConfigSet?(): boolean | void;
+  Reading_SubsInited?(): boolean | void;
+  Reading_SubsReady?(): boolean | void;
+  Reading_Any?(): boolean | void;
+  Reading_ReadingDone?(): boolean | void;
+  Reading_Syncing?(): boolean | void;
+  Reading_SyncDone?(): boolean | void;
+  Reading_Cached?(): boolean | void;
+  Reading_Dirty?(): boolean | void;
+  Reading_QuotaExceeded?(): boolean | void;
+  Reading_Restarting?(): boolean | void;
+  Reading_Restarted?(): boolean | void;
+  Reading_MaxReadsExceeded?(): boolean | void;
+  Reading_Writing?(): boolean | void;
+  Reading_WritingDone?(): boolean | void;
+  Reading_MaxWritesExceeded?(): boolean | void;
+  Reading_Authenticated?(): boolean | void;
+  Reading_Exception?(): boolean | void;
+  Reading_exit?(): boolean | void;
+  Reading_end?(): boolean | void | Promise<boolean | void>;
+  ReadingDone_Enabled?(): boolean | void;
+  ReadingDone_Initializing?(): boolean | void;
+  ReadingDone_Ready?(): boolean | void;
+  ReadingDone_ConfigSet?(): boolean | void;
+  ReadingDone_SubsInited?(): boolean | void;
+  ReadingDone_SubsReady?(): boolean | void;
+  ReadingDone_Reading?(): boolean | void;
+  ReadingDone_Any?(): boolean | void;
+  ReadingDone_Syncing?(): boolean | void;
+  ReadingDone_SyncDone?(): boolean | void;
+  ReadingDone_Cached?(): boolean | void;
+  ReadingDone_Dirty?(): boolean | void;
+  ReadingDone_QuotaExceeded?(): boolean | void;
+  ReadingDone_Restarting?(): boolean | void;
+  ReadingDone_Restarted?(): boolean | void;
+  ReadingDone_MaxReadsExceeded?(): boolean | void;
+  ReadingDone_Writing?(): boolean | void;
+  ReadingDone_WritingDone?(): boolean | void;
+  ReadingDone_MaxWritesExceeded?(): boolean | void;
+  ReadingDone_Authenticated?(): boolean | void;
+  ReadingDone_Exception?(): boolean | void;
+  ReadingDone_exit?(): boolean | void;
+  ReadingDone_end?(): boolean | void | Promise<boolean | void>;
+  Syncing_Enabled?(): boolean | void;
+  Syncing_Initializing?(): boolean | void;
+  Syncing_Ready?(): boolean | void;
+  Syncing_ConfigSet?(): boolean | void;
+  Syncing_SubsInited?(): boolean | void;
+  Syncing_SubsReady?(): boolean | void;
+  Syncing_Reading?(): boolean | void;
+  Syncing_ReadingDone?(): boolean | void;
+  Syncing_Any?(): boolean | void;
+  Syncing_SyncDone?(): boolean | void;
+  Syncing_Cached?(): boolean | void;
+  Syncing_Dirty?(): boolean | void;
+  Syncing_QuotaExceeded?(): boolean | void;
+  Syncing_Restarting?(): boolean | void;
+  Syncing_Restarted?(): boolean | void;
+  Syncing_MaxReadsExceeded?(): boolean | void;
+  Syncing_Writing?(): boolean | void;
+  Syncing_WritingDone?(): boolean | void;
+  Syncing_MaxWritesExceeded?(): boolean | void;
+  Syncing_Authenticated?(): boolean | void;
+  Syncing_Exception?(): boolean | void;
+  Syncing_exit?(): boolean | void;
+  Syncing_end?(): boolean | void | Promise<boolean | void>;
+  SyncDone_Enabled?(): boolean | void;
+  SyncDone_Initializing?(): boolean | void;
+  SyncDone_Ready?(): boolean | void;
+  SyncDone_ConfigSet?(): boolean | void;
+  SyncDone_SubsInited?(): boolean | void;
+  SyncDone_SubsReady?(): boolean | void;
+  SyncDone_Reading?(): boolean | void;
+  SyncDone_ReadingDone?(): boolean | void;
+  SyncDone_Syncing?(): boolean | void;
+  SyncDone_Any?(): boolean | void;
+  SyncDone_Cached?(): boolean | void;
+  SyncDone_Dirty?(): boolean | void;
+  SyncDone_QuotaExceeded?(): boolean | void;
+  SyncDone_Restarting?(): boolean | void;
+  SyncDone_Restarted?(): boolean | void;
+  SyncDone_MaxReadsExceeded?(): boolean | void;
+  SyncDone_Writing?(): boolean | void;
+  SyncDone_WritingDone?(): boolean | void;
+  SyncDone_MaxWritesExceeded?(): boolean | void;
+  SyncDone_Authenticated?(): boolean | void;
+  SyncDone_Exception?(): boolean | void;
+  SyncDone_exit?(): boolean | void;
+  SyncDone_end?(): boolean | void | Promise<boolean | void>;
+  Cached_Enabled?(): boolean | void;
+  Cached_Initializing?(): boolean | void;
+  Cached_Ready?(): boolean | void;
+  Cached_ConfigSet?(): boolean | void;
+  Cached_SubsInited?(): boolean | void;
+  Cached_SubsReady?(): boolean | void;
+  Cached_Reading?(): boolean | void;
+  Cached_ReadingDone?(): boolean | void;
+  Cached_Syncing?(): boolean | void;
+  Cached_SyncDone?(): boolean | void;
+  Cached_Any?(): boolean | void;
+  Cached_Dirty?(): boolean | void;
+  Cached_QuotaExceeded?(): boolean | void;
+  Cached_Restarting?(): boolean | void;
+  Cached_Restarted?(): boolean | void;
+  Cached_MaxReadsExceeded?(): boolean | void;
+  Cached_Writing?(): boolean | void;
+  Cached_WritingDone?(): boolean | void;
+  Cached_MaxWritesExceeded?(): boolean | void;
+  Cached_Authenticated?(): boolean | void;
+  Cached_Exception?(): boolean | void;
+  Cached_exit?(): boolean | void;
+  Cached_end?(): boolean | void | Promise<boolean | void>;
+  Dirty_Enabled?(): boolean | void;
+  Dirty_Initializing?(): boolean | void;
+  Dirty_Ready?(): boolean | void;
+  Dirty_ConfigSet?(): boolean | void;
+  Dirty_SubsInited?(): boolean | void;
+  Dirty_SubsReady?(): boolean | void;
+  Dirty_Reading?(): boolean | void;
+  Dirty_ReadingDone?(): boolean | void;
+  Dirty_Syncing?(): boolean | void;
+  Dirty_SyncDone?(): boolean | void;
+  Dirty_Cached?(): boolean | void;
+  Dirty_Any?(): boolean | void;
+  Dirty_QuotaExceeded?(): boolean | void;
+  Dirty_Restarting?(): boolean | void;
+  Dirty_Restarted?(): boolean | void;
+  Dirty_MaxReadsExceeded?(): boolean | void;
+  Dirty_Writing?(): boolean | void;
+  Dirty_WritingDone?(): boolean | void;
+  Dirty_MaxWritesExceeded?(): boolean | void;
+  Dirty_Authenticated?(): boolean | void;
+  Dirty_Exception?(): boolean | void;
+  Dirty_exit?(): boolean | void;
+  Dirty_end?(): boolean | void | Promise<boolean | void>;
+  QuotaExceeded_Enabled?(): boolean | void;
+  QuotaExceeded_Initializing?(): boolean | void;
+  QuotaExceeded_Ready?(): boolean | void;
+  QuotaExceeded_ConfigSet?(): boolean | void;
+  QuotaExceeded_SubsInited?(): boolean | void;
+  QuotaExceeded_SubsReady?(): boolean | void;
+  QuotaExceeded_Reading?(): boolean | void;
+  QuotaExceeded_ReadingDone?(): boolean | void;
+  QuotaExceeded_Syncing?(): boolean | void;
+  QuotaExceeded_SyncDone?(): boolean | void;
+  QuotaExceeded_Cached?(): boolean | void;
+  QuotaExceeded_Dirty?(): boolean | void;
+  QuotaExceeded_Any?(): boolean | void;
+  QuotaExceeded_Restarting?(): boolean | void;
+  QuotaExceeded_Restarted?(): boolean | void;
+  QuotaExceeded_MaxReadsExceeded?(): boolean | void;
+  QuotaExceeded_Writing?(): boolean | void;
+  QuotaExceeded_WritingDone?(): boolean | void;
+  QuotaExceeded_MaxWritesExceeded?(): boolean | void;
+  QuotaExceeded_Authenticated?(): boolean | void;
+  QuotaExceeded_Exception?(): boolean | void;
+  QuotaExceeded_exit?(): boolean | void;
+  QuotaExceeded_end?(): boolean | void | Promise<boolean | void>;
+  Restarting_Enabled?(): boolean | void;
+  Restarting_Initializing?(): boolean | void;
+  Restarting_Ready?(): boolean | void;
+  Restarting_ConfigSet?(): boolean | void;
+  Restarting_SubsInited?(): boolean | void;
+  Restarting_SubsReady?(): boolean | void;
+  Restarting_Reading?(): boolean | void;
+  Restarting_ReadingDone?(): boolean | void;
+  Restarting_Syncing?(): boolean | void;
+  Restarting_SyncDone?(): boolean | void;
+  Restarting_Cached?(): boolean | void;
+  Restarting_Dirty?(): boolean | void;
+  Restarting_QuotaExceeded?(): boolean | void;
+  Restarting_Any?(): boolean | void;
+  Restarting_Restarted?(): boolean | void;
+  Restarting_MaxReadsExceeded?(): boolean | void;
+  Restarting_Writing?(): boolean | void;
+  Restarting_WritingDone?(): boolean | void;
+  Restarting_MaxWritesExceeded?(): boolean | void;
+  Restarting_Authenticated?(): boolean | void;
+  Restarting_Exception?(): boolean | void;
+  Restarting_exit?(): boolean | void;
+  Restarting_end?(): boolean | void | Promise<boolean | void>;
+  Restarted_Enabled?(): boolean | void;
+  Restarted_Initializing?(): boolean | void;
+  Restarted_Ready?(): boolean | void;
+  Restarted_ConfigSet?(): boolean | void;
+  Restarted_SubsInited?(): boolean | void;
+  Restarted_SubsReady?(): boolean | void;
+  Restarted_Reading?(): boolean | void;
+  Restarted_ReadingDone?(): boolean | void;
+  Restarted_Syncing?(): boolean | void;
+  Restarted_SyncDone?(): boolean | void;
+  Restarted_Cached?(): boolean | void;
+  Restarted_Dirty?(): boolean | void;
+  Restarted_QuotaExceeded?(): boolean | void;
+  Restarted_Restarting?(): boolean | void;
+  Restarted_Any?(): boolean | void;
+  Restarted_MaxReadsExceeded?(): boolean | void;
+  Restarted_Writing?(): boolean | void;
+  Restarted_WritingDone?(): boolean | void;
+  Restarted_MaxWritesExceeded?(): boolean | void;
+  Restarted_Authenticated?(): boolean | void;
+  Restarted_Exception?(): boolean | void;
+  Restarted_exit?(): boolean | void;
+  Restarted_end?(): boolean | void | Promise<boolean | void>;
+  MaxReadsExceeded_Enabled?(): boolean | void;
+  MaxReadsExceeded_Initializing?(): boolean | void;
+  MaxReadsExceeded_Ready?(): boolean | void;
+  MaxReadsExceeded_ConfigSet?(): boolean | void;
+  MaxReadsExceeded_SubsInited?(): boolean | void;
+  MaxReadsExceeded_SubsReady?(): boolean | void;
+  MaxReadsExceeded_Reading?(): boolean | void;
+  MaxReadsExceeded_ReadingDone?(): boolean | void;
+  MaxReadsExceeded_Syncing?(): boolean | void;
+  MaxReadsExceeded_SyncDone?(): boolean | void;
+  MaxReadsExceeded_Cached?(): boolean | void;
+  MaxReadsExceeded_Dirty?(): boolean | void;
+  MaxReadsExceeded_QuotaExceeded?(): boolean | void;
+  MaxReadsExceeded_Restarting?(): boolean | void;
+  MaxReadsExceeded_Restarted?(): boolean | void;
+  MaxReadsExceeded_Any?(): boolean | void;
+  MaxReadsExceeded_Writing?(): boolean | void;
+  MaxReadsExceeded_WritingDone?(): boolean | void;
+  MaxReadsExceeded_MaxWritesExceeded?(): boolean | void;
+  MaxReadsExceeded_Authenticated?(): boolean | void;
+  MaxReadsExceeded_Exception?(): boolean | void;
+  MaxReadsExceeded_exit?(): boolean | void;
+  MaxReadsExceeded_end?(): boolean | void | Promise<boolean | void>;
+  Writing_Enabled?(): boolean | void;
+  Writing_Initializing?(): boolean | void;
+  Writing_Ready?(): boolean | void;
+  Writing_ConfigSet?(): boolean | void;
+  Writing_SubsInited?(): boolean | void;
+  Writing_SubsReady?(): boolean | void;
+  Writing_Reading?(): boolean | void;
+  Writing_ReadingDone?(): boolean | void;
+  Writing_Syncing?(): boolean | void;
+  Writing_SyncDone?(): boolean | void;
+  Writing_Cached?(): boolean | void;
+  Writing_Dirty?(): boolean | void;
+  Writing_QuotaExceeded?(): boolean | void;
+  Writing_Restarting?(): boolean | void;
+  Writing_Restarted?(): boolean | void;
+  Writing_MaxReadsExceeded?(): boolean | void;
+  Writing_Any?(): boolean | void;
+  Writing_WritingDone?(): boolean | void;
+  Writing_MaxWritesExceeded?(): boolean | void;
+  Writing_Authenticated?(): boolean | void;
+  Writing_Exception?(): boolean | void;
+  Writing_exit?(): boolean | void;
+  Writing_end?(): boolean | void | Promise<boolean | void>;
+  WritingDone_Enabled?(): boolean | void;
+  WritingDone_Initializing?(): boolean | void;
+  WritingDone_Ready?(): boolean | void;
+  WritingDone_ConfigSet?(): boolean | void;
+  WritingDone_SubsInited?(): boolean | void;
+  WritingDone_SubsReady?(): boolean | void;
+  WritingDone_Reading?(): boolean | void;
+  WritingDone_ReadingDone?(): boolean | void;
+  WritingDone_Syncing?(): boolean | void;
+  WritingDone_SyncDone?(): boolean | void;
+  WritingDone_Cached?(): boolean | void;
+  WritingDone_Dirty?(): boolean | void;
+  WritingDone_QuotaExceeded?(): boolean | void;
+  WritingDone_Restarting?(): boolean | void;
+  WritingDone_Restarted?(): boolean | void;
+  WritingDone_MaxReadsExceeded?(): boolean | void;
+  WritingDone_Writing?(): boolean | void;
+  WritingDone_Any?(): boolean | void;
+  WritingDone_MaxWritesExceeded?(): boolean | void;
+  WritingDone_Authenticated?(): boolean | void;
+  WritingDone_Exception?(): boolean | void;
+  WritingDone_exit?(): boolean | void;
+  WritingDone_end?(): boolean | void | Promise<boolean | void>;
+  MaxWritesExceeded_Enabled?(): boolean | void;
+  MaxWritesExceeded_Initializing?(): boolean | void;
+  MaxWritesExceeded_Ready?(): boolean | void;
+  MaxWritesExceeded_ConfigSet?(): boolean | void;
+  MaxWritesExceeded_SubsInited?(): boolean | void;
+  MaxWritesExceeded_SubsReady?(): boolean | void;
+  MaxWritesExceeded_Reading?(): boolean | void;
+  MaxWritesExceeded_ReadingDone?(): boolean | void;
+  MaxWritesExceeded_Syncing?(): boolean | void;
+  MaxWritesExceeded_SyncDone?(): boolean | void;
+  MaxWritesExceeded_Cached?(): boolean | void;
+  MaxWritesExceeded_Dirty?(): boolean | void;
+  MaxWritesExceeded_QuotaExceeded?(): boolean | void;
+  MaxWritesExceeded_Restarting?(): boolean | void;
+  MaxWritesExceeded_Restarted?(): boolean | void;
+  MaxWritesExceeded_MaxReadsExceeded?(): boolean | void;
+  MaxWritesExceeded_Writing?(): boolean | void;
+  MaxWritesExceeded_WritingDone?(): boolean | void;
+  MaxWritesExceeded_Any?(): boolean | void;
+  MaxWritesExceeded_Authenticated?(): boolean | void;
+  MaxWritesExceeded_Exception?(): boolean | void;
+  MaxWritesExceeded_exit?(): boolean | void;
+  MaxWritesExceeded_end?(): boolean | void | Promise<boolean | void>;
+  Authenticated_Enabled?(): boolean | void;
+  Authenticated_Initializing?(): boolean | void;
+  Authenticated_Ready?(): boolean | void;
+  Authenticated_ConfigSet?(): boolean | void;
+  Authenticated_SubsInited?(): boolean | void;
+  Authenticated_SubsReady?(): boolean | void;
+  Authenticated_Reading?(): boolean | void;
+  Authenticated_ReadingDone?(): boolean | void;
+  Authenticated_Syncing?(): boolean | void;
+  Authenticated_SyncDone?(): boolean | void;
+  Authenticated_Cached?(): boolean | void;
+  Authenticated_Dirty?(): boolean | void;
+  Authenticated_QuotaExceeded?(): boolean | void;
+  Authenticated_Restarting?(): boolean | void;
+  Authenticated_Restarted?(): boolean | void;
+  Authenticated_MaxReadsExceeded?(): boolean | void;
+  Authenticated_Writing?(): boolean | void;
+  Authenticated_WritingDone?(): boolean | void;
+  Authenticated_MaxWritesExceeded?(): boolean | void;
+  Authenticated_Any?(): boolean | void;
+  Authenticated_Exception?(): boolean | void;
+  Authenticated_exit?(): boolean | void;
+  Authenticated_end?(): boolean | void | Promise<boolean | void>;
+  Exception_Enabled?(): boolean | void;
+  Exception_Initializing?(): boolean | void;
+  Exception_Ready?(): boolean | void;
+  Exception_ConfigSet?(): boolean | void;
+  Exception_SubsInited?(): boolean | void;
+  Exception_SubsReady?(): boolean | void;
+  Exception_Reading?(): boolean | void;
+  Exception_ReadingDone?(): boolean | void;
+  Exception_Syncing?(): boolean | void;
+  Exception_SyncDone?(): boolean | void;
+  Exception_Cached?(): boolean | void;
+  Exception_Dirty?(): boolean | void;
+  Exception_QuotaExceeded?(): boolean | void;
+  Exception_Restarting?(): boolean | void;
+  Exception_Restarted?(): boolean | void;
+  Exception_MaxReadsExceeded?(): boolean | void;
+  Exception_Writing?(): boolean | void;
+  Exception_WritingDone?(): boolean | void;
+  Exception_MaxWritesExceeded?(): boolean | void;
+  Exception_Authenticated?(): boolean | void;
+  Exception_exit?(): boolean | void;
+  Exception_end?(): boolean | void | Promise<boolean | void>;
 }
 
 /** All the state names */
-export type TStates =
-  | 'Enabled'
+export type TStates = 'Enabled'
   | 'Initializing'
   | 'Ready'
   | 'ConfigSet'
@@ -1198,11 +957,10 @@ export type TStates =
   | 'Writing'
   | 'WritingDone'
   | 'MaxWritesExceeded'
-  | 'Authenticated'
+  | 'Authenticated';
 
 /** All the transition names */
-export type TTransitions =
-  | 'Enabled_Any'
+export type TTransitions = 'Enabled_Any'
   | 'Enabled_Initializing'
   | 'Enabled_Ready'
   | 'Enabled_ConfigSet'
@@ -1683,7 +1441,7 @@ export type TTransitions =
   | 'Exception_MaxWritesExceeded'
   | 'Exception_Authenticated'
   | 'Exception_exit'
-  | 'Exception_end'
+  | 'Exception_end';
 
 /** Typesafe state interface */
 export interface IState extends IStateBase<TStates> {}
@@ -1693,34 +1451,34 @@ export interface IStateExt<T extends string> extends IStateBase<T | TStates> {}
 
 export interface IBind extends IBindBase {
   // Non-params events and transitions
-  (event: TTransitions, listener: () => boolean | void, context?: Object): this
+  (event: TTransitions, listener: () => boolean | void, context?: Object): this;
 }
 
 export interface IEmit extends IEmitBase {
   // Non-params events and transitions
-  (event: TTransitions): boolean | void
+  (event: TTransitions): boolean | void;
 }
 
 export interface IJSONStates {
-  Enabled: IState
-  Initializing: IState
-  Ready: IState
-  ConfigSet: IState
-  SubsInited: IState
-  SubsReady: IState
-  Reading: IState
-  ReadingDone: IState
-  Syncing: IState
-  SyncDone: IState
-  Cached: IState
-  Dirty: IState
-  QuotaExceeded: IState
-  Restarting: IState
-  Restarted: IState
-  MaxReadsExceeded: IState
-  Writing: IState
-  WritingDone: IState
-  MaxWritesExceeded: IState
-  Authenticated: IState
-  Exception?: IState
+  Enabled: IState;
+  Initializing: IState;
+  Ready: IState;
+  ConfigSet: IState;
+  SubsInited: IState;
+  SubsReady: IState;
+  Reading: IState;
+  ReadingDone: IState;
+  Syncing: IState;
+  SyncDone: IState;
+  Cached: IState;
+  Dirty: IState;
+  QuotaExceeded: IState;
+  Restarting: IState;
+  Restarted: IState;
+  MaxReadsExceeded: IState;
+  Writing: IState;
+  WritingDone: IState;
+  MaxWritesExceeded: IState;
+  Authenticated: IState;
+  Exception?: IState;
 }

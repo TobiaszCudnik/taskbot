@@ -13,35 +13,20 @@ export { IBindBase, IEmitBase, AsyncMachine }
 
 /** machine.bind('CredentialsSet', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-  (
-    event: 'CredentialsSet_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'CredentialsSet_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
+  (event: 'CredentialsSet_enter', listener: (/* param1: any?, param2: any? */) => boolean | undefined, context?: Object): this;
+  (event: 'CredentialsSet_state', listener: (/* param1: any?, param2: any? */) => any, context?: Object): this;
 }
 
 /** machine.emit('CredentialsSet', param1, param2) */
 export interface IEmit extends IEmitBase {
-  (event: 'CredentialsSet_enter' /*, param1: any?, param2: any? */):
-    | boolean
-    | void
-  (event: 'CredentialsSet_state' /*, param1: any?, param2: any? */):
-    | boolean
-    | void
+  (event: 'CredentialsSet_enter' /*, param1: any?, param2: any? */): boolean | void;
+  (event: 'CredentialsSet_state' /*, param1: any?, param2: any? */): boolean | void;
 }
 
 /** Method declarations */
 export interface ITransitions {
-  CredentialsSet_enter /* param1: any?, param2: any? */?(): boolean | void
-  CredentialsSet_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
+  CredentialsSet_enter?(/* param1: any?, param2: any? */): boolean | void;
+  CredentialsSet_state?(/* param1: any?, param2: any? */): boolean | void | Promise<boolean | void>;
 }
 
 // ----- ----- ----- ----- -----
@@ -50,31 +35,20 @@ export interface ITransitions {
 
 /** machine.bind('Ready', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-  (
-    event: 'Ready_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'Ready_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
+  (event: 'Ready_enter', listener: (/* param1: any?, param2: any? */) => boolean | undefined, context?: Object): this;
+  (event: 'Ready_state', listener: (/* param1: any?, param2: any? */) => any, context?: Object): this;
 }
 
 /** machine.emit('Ready', param1, param2) */
 export interface IEmit extends IEmitBase {
-  (event: 'Ready_enter' /*, param1: any?, param2: any? */): boolean | void
-  (event: 'Ready_state' /*, param1: any?, param2: any? */): boolean | void
+  (event: 'Ready_enter' /*, param1: any?, param2: any? */): boolean | void;
+  (event: 'Ready_state' /*, param1: any?, param2: any? */): boolean | void;
 }
 
 /** Method declarations */
 export interface ITransitions {
-  Ready_enter /* param1: any?, param2: any? */?(): boolean | void
-  Ready_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
+  Ready_enter?(/* param1: any?, param2: any? */): boolean | void;
+  Ready_state?(/* param1: any?, param2: any? */): boolean | void | Promise<boolean | void>;
 }
 
 // ----- ----- ----- ----- -----
@@ -83,31 +57,20 @@ export interface ITransitions {
 
 /** machine.bind('Error', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-  (
-    event: 'Error_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'Error_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
+  (event: 'Error_enter', listener: (/* param1: any?, param2: any? */) => boolean | undefined, context?: Object): this;
+  (event: 'Error_state', listener: (/* param1: any?, param2: any? */) => any, context?: Object): this;
 }
 
 /** machine.emit('Error', param1, param2) */
 export interface IEmit extends IEmitBase {
-  (event: 'Error_enter' /*, param1: any?, param2: any? */): boolean | void
-  (event: 'Error_state' /*, param1: any?, param2: any? */): boolean | void
+  (event: 'Error_enter' /*, param1: any?, param2: any? */): boolean | void;
+  (event: 'Error_state' /*, param1: any?, param2: any? */): boolean | void;
 }
 
 /** Method declarations */
 export interface ITransitions {
-  Error_enter /* param1: any?, param2: any? */?(): boolean | void
-  Error_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
+  Error_enter?(/* param1: any?, param2: any? */): boolean | void;
+  Error_state?(/* param1: any?, param2: any? */): boolean | void | Promise<boolean | void>;
 }
 
 // ----- ----- ----- ----- -----
@@ -116,35 +79,20 @@ export interface ITransitions {
 
 /** machine.bind('TokenRefreshed', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-  (
-    event: 'TokenRefreshed_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'TokenRefreshed_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
+  (event: 'TokenRefreshed_enter', listener: (/* param1: any?, param2: any? */) => boolean | undefined, context?: Object): this;
+  (event: 'TokenRefreshed_state', listener: (/* param1: any?, param2: any? */) => any, context?: Object): this;
 }
 
 /** machine.emit('TokenRefreshed', param1, param2) */
 export interface IEmit extends IEmitBase {
-  (event: 'TokenRefreshed_enter' /*, param1: any?, param2: any? */):
-    | boolean
-    | void
-  (event: 'TokenRefreshed_state' /*, param1: any?, param2: any? */):
-    | boolean
-    | void
+  (event: 'TokenRefreshed_enter' /*, param1: any?, param2: any? */): boolean | void;
+  (event: 'TokenRefreshed_state' /*, param1: any?, param2: any? */): boolean | void;
 }
 
 /** Method declarations */
 export interface ITransitions {
-  TokenRefreshed_enter /* param1: any?, param2: any? */?(): boolean | void
-  TokenRefreshed_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
+  TokenRefreshed_enter?(/* param1: any?, param2: any? */): boolean | void;
+  TokenRefreshed_state?(/* param1: any?, param2: any? */): boolean | void | Promise<boolean | void>;
 }
 
 // ----- ----- ----- ----- -----
@@ -175,35 +123,20 @@ export interface ITransitions {
 
 /** machine.bind('RefreshingToken', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-  (
-    event: 'RefreshingToken_enter',
-    listener: () => /* param1: any?, param2: any? */ boolean | undefined,
-    context?: Object
-  ): this
-  (
-    event: 'RefreshingToken_state',
-    listener: () => /* param1: any?, param2: any? */ any,
-    context?: Object
-  ): this
+  (event: 'RefreshingToken_enter', listener: (/* param1: any?, param2: any? */) => boolean | undefined, context?: Object): this;
+  (event: 'RefreshingToken_state', listener: (/* param1: any?, param2: any? */) => any, context?: Object): this;
 }
 
 /** machine.emit('RefreshingToken', param1, param2) */
 export interface IEmit extends IEmitBase {
-  (event: 'RefreshingToken_enter' /*, param1: any?, param2: any? */):
-    | boolean
-    | void
-  (event: 'RefreshingToken_state' /*, param1: any?, param2: any? */):
-    | boolean
-    | void
+  (event: 'RefreshingToken_enter' /*, param1: any?, param2: any? */): boolean | void;
+  (event: 'RefreshingToken_state' /*, param1: any?, param2: any? */): boolean | void;
 }
 
 /** Method declarations */
 export interface ITransitions {
-  RefreshingToken_enter /* param1: any?, param2: any? */?(): boolean | void
-  RefreshingToken_state /* param1: any?, param2: any? */?():
-    | boolean
-    | void
-    | Promise<boolean | void>
+  RefreshingToken_enter?(/* param1: any?, param2: any? */): boolean | void;
+  RefreshingToken_state?(/* param1: any?, param2: any? */): boolean | void | Promise<boolean | void>;
 }
 
 // ----- ----- -----
@@ -277,8 +210,7 @@ export interface ITransitions {
 }
 
 /** All the state names */
-export type TStates =
-  | 'CredentialsSet'
+export type TStates = 'CredentialsSet'
   | 'Ready'
   | 'Error'
   | 'TokenRefreshed'
@@ -286,8 +218,7 @@ export type TStates =
   | 'RefreshingToken';
 
 /** All the transition names */
-export type TTransitions =
-  | 'CredentialsSet_Any'
+export type TTransitions = 'CredentialsSet_Any'
   | 'CredentialsSet_Ready'
   | 'CredentialsSet_Error'
   | 'CredentialsSet_TokenRefreshed'
@@ -348,7 +279,7 @@ export type TTransitions =
   | 'Exception_Enabled'
   | 'Exception_RefreshingToken'
   | 'Exception_exit'
-  | 'Exception_end'
+  | 'Exception_end';
 
 /** Typesafe state interface */
 export interface IState extends IStateBase<TStates> {}
@@ -358,12 +289,12 @@ export interface IStateExt<T extends string> extends IStateBase<T | TStates> {}
 
 export interface IBind extends IBindBase {
   // Non-params events and transitions
-  (event: TTransitions, listener: () => boolean | void, context?: Object): this
+  (event: TTransitions, listener: () => boolean | void, context?: Object): this;
 }
 
 export interface IEmit extends IEmitBase {
   // Non-params events and transitions
-  (event: TTransitions): boolean | void
+  (event: TTransitions): boolean | void;
 }
 
 export interface IJSONStates {
