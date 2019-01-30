@@ -114,9 +114,12 @@ export default class GTasksSync extends SyncWriter<
     const requests = this.root.connections.requests.gtasks
     const i = _.sortedIndex(
       requests,
-      moment()
-        .subtract(100, 'seconds')
-        .unix()
+      parseInt(
+        moment()
+          .subtract(100, 'seconds')
+          .format('x'),
+        10
+      )
     )
     return Math.min(
       1,
@@ -249,7 +252,9 @@ export default class GTasksSync extends SyncWriter<
     options?: MethodOptions
     // @ts-ignore TODO fix type
   ): T {
-    this.root.connections.requests.gtasks.push(moment().unix())
+    this.root.connections.requests.gtasks.push(
+      parseInt(moment().format('x'), 10)
+    )
     // @ts-ignore
     params.auth = this.auth.client
     // check the internal per-user quota

@@ -54,8 +54,7 @@ describe(`sync (sync_type: ${scenario})`, function() {
     })
   })
   it.skip('syncs notes', function() {})
-  // TODO breaks the API mocks
-  it.only('new status removes the old one', async function() {
+  it('new status removes the old one', async function() {
     h.log('\n\nnew status removes the old one')
     await h.reset()
     const thread_id_1 = await h.gmail_sync.createThread('sync-1', [

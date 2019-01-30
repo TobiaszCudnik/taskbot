@@ -41,9 +41,12 @@ export default class GC {
     }
     // truncate to the oldest possible entry
     if (this.max_time_minutes) {
-      const oldest = moment()
-        .subtract(this.max_time_minutes, 'minutes')
-        .unix()
+      const oldest = parseInt(
+        moment()
+          .subtract(this.max_time_minutes, 'minutes')
+          .format('x'),
+        10
+      )
       index = Math.max(index, sortedIndex(this.data, oldest))
     }
     if (!index) return

@@ -194,18 +194,31 @@ test-gmail-mocked:
 			gmail
 
 test-sync-mocked:
-	#DEBUG=root:\*-info,\*-error,app-info,\*-am,gmail-\*,gtasks-\*,mock-\*,test
 	DEBUG=mock-gmail\*,gmail-list-next:\*,gtasks-list-next:\*,test,root:\*-verbose,record-diff\*,db-verbose \
 		MOCK=true \
 		npx jest \
 			sync
 
+test-sync:
+	DEBUG=mock-gmail\*,gmail-list-next:\*,gtasks-list-next:\*,test,root:\*-verbose,record-diff\*,db-verbose \
+		npx jest \
+			sync
+
+test-gmail:
+	DEBUG=root:\*-info,\*-error,app-info,\*-am,gmail-\*,mock-\* \
+		npx jest \
+			gmail
+
+test-mocked-default:
+		MOCK=true \
+			npx jest
+
 test-mocked:
-		SCENARIO=0 MOCK=true \
+		-SCENARIO=0 MOCK=true \
 			npx jest
-		SCENARIO=1 MOCK=true \
+		-SCENARIO=1 MOCK=true \
 			npx jest
-		SCENARIO=2 MOCK=true \
+		-SCENARIO=2 MOCK=true \
 			npx jest
 
 .PHONY: test break build

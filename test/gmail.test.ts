@@ -251,9 +251,11 @@ describe(`gmail (sync_type: ${scenario})`, function() {
         '!T/Sync GTasks'
       ])
       // check if gtasks-next will be synced
-      const last_read = list.last_read_end.unix()
+      const last_read = parseInt(list.last_read_end.format('x'), 10)
       await h.syncListScenario(scenario, '!actions')
-      expect(list.last_read_end.unix()).toBeGreaterThan(last_read)
+      expect(parseInt(list.last_read_end.format('x'), 10)).toBeGreaterThan(
+        last_read
+      )
     })
 
     it('syncs text labels for new self emails', async function() {

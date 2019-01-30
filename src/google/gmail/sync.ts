@@ -110,7 +110,8 @@ export default class GmailSync extends SyncWriter<
 {
   state: AsyncMachine<TStates, IBind, IEmit>
   api: gmail_v1.Gmail
-  history_id_timeout = 1
+  // miliseconds
+  history_id_timeout = 1000
   history_id_latest: number | null
   last_sync_time: number
   labels: TLabel[]
@@ -207,9 +208,12 @@ export default class GmailSync extends SyncWriter<
       records_without_threads.map(async (record: DBRecord) => {
         let thread = this.threads.get(record.gmail_id)
         // TODO time to config
-        const too_old = moment()
-          .subtract(this.config.gmail.orphans_freq_min || 5, 'minutes')
-          .unix()
+        const too_old = parseInt(
+          moment()
+            .subtract(this.config.gmail.orphans_freq_min || 5, 'minutes')
+            .format('x'),
+          10
+        )
         // @ts-ignore `fetched` is set manually
         if (!thread || thread.fetched < too_old) {
           this.log_verbose('re-fetching')
@@ -320,8 +324,11 @@ export default class GmailSync extends SyncWriter<
     )) as any
     if (abort && abort()) return
     this.history_id_latest = parseInt(response.data.historyId, 10)
-    this.history_ids.push({ id: this.history_id_latest, time: moment().unix() })
-    this.last_sync_time = moment().unix()
+    this.history_ids.push({
+      id: this.history_id_latest,
+      time: parseInt(moment().format('x'), 10)
+    })
+    this.last_sync_time = parseInt(moment().format('x'), 10)
     this.state.add('HistoryIdFetched')
   }
 
@@ -567,7 +574,8 @@ export default class GmailSync extends SyncWriter<
   isHistoryIdValid() {
     return (
       this.history_id_latest &&
-      moment().unix() < this.last_sync_time + this.history_id_timeout
+      parseInt(moment().format('x'), 10) <
+        this.last_sync_time + this.history_id_timeout
     )
   }
 
@@ -718,7 +726,7 @@ export default class GmailSync extends SyncWriter<
     }
     // memorize the time the resource was fetched
     // @ts-ignore
-    thread.data.fetched = moment().unix()
+    thread.data.fetched = parseInt(moment().format('x'), 10)
     this.threads.set(thread.data.id, thread.data)
 
     if (abort && abort()) return null

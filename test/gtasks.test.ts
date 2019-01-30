@@ -64,9 +64,9 @@ describe(`gtasks (sync_type: ${scenario})`, function() {
     // await h.req('gtasks.tasklists.delete', {
     //   tasklist: list.list.id
     // })
-    // const last_read = list.last_read_end.unix()
+    // const last_read = parseInt(list.last_read_end.format('x'), 10)
     // await h.syncList(false, true)
-    // expect(list.last_read_end.unix()).toBeGreaterThan(last_read)
+    // expect(parseInt(list.last_read_end.format('x'), 10)).toBeGreaterThan(last_read)
   })
 
   it('un-hides a task after its completion', async function() {

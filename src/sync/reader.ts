@@ -116,7 +116,8 @@ export abstract class SyncReader<
   // TODO use TimeArray, calculate the daily quota
   get daily_quota_ok() {
     const check =
-      !this.quota_next_sync || this.quota_next_sync < moment().unix()
+      !this.quota_next_sync ||
+      this.quota_next_sync < parseInt(moment().format('x'), 10)
     // clean up
     if (check && this.quota_next_sync) {
       this.state.drop('QuotaExceeded')
@@ -219,12 +220,15 @@ export abstract class SyncReader<
     switch (reason) {
       case 'dailyLimitExceeded':
         // delay syncing per API endpoint until midnight PDF
-        const next_sync = moment()
-          .tz('America/Los_Angeles')
-          .add(1, 'day')
-          .startOf('day')
-          .tz(moment.tz.guess())
-          .unix()
+        const next_sync = parseInt(
+          moment()
+            .tz('America/Los_Angeles')
+            .add(1, 'day')
+            .startOf('day')
+            .tz(moment.tz.guess())
+            .format('x'),
+          10
+        )
         // TODO extract google specific code to GoogleAPIMixin
         // @ts-ignore
         if (this.gtasks) {
@@ -303,11 +307,21 @@ export abstract class SyncReader<
     for (const sync of this.subs_flat) {
       // inbound
       for (const [source, target, flags] of this.sub_states_inbound) {
-        sync.state.pipe(source, this.state, target, flags)
+        sync.state.pipe(
+          source,
+          this.state,
+          target,
+          flags
+        )
       }
       // outbound
       for (const [source, target, flags] of this.sub_states_outbound) {
-        this.state.pipe(source, sync.state, target, flags)
+        this.state.pipe(
+          source,
+          sync.state,
+          target,
+          flags
+        )
       }
     }
   }

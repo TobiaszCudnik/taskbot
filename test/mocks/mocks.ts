@@ -544,9 +544,10 @@ export class TasksTasks extends TasksChild
     }
     const patched = cloneAndPatch(task, params.requestBody)
     patched.updated = now()
-    if (patched.status === 'completed' && task.status !== 'completed') {
-      patched.completed = now()
-    }
+    patched.completed =
+      patched.status === 'completed' && task.status !== 'completed'
+        ? now()
+        : null
     data[i] = patched
     return ok(patched)
   }

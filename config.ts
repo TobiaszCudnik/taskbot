@@ -300,7 +300,7 @@ const config: IConfigPublic = {
         if (!ret) return false
         // TODO this shouldn't happen here
         r.labels['UNREAD'].active = false
-        r.labels['UNREAD'].updated = moment().unix()
+        r.labels['UNREAD'].updated = parseInt(moment().format('x'), 10)
         return ret
       },
       enter: {},

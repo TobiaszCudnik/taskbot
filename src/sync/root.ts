@@ -230,7 +230,7 @@ export default class RootSync extends SyncWriter<
   // ----- -----
 
   HeartBeat_state() {
-    const now = moment().unix()
+    const now = parseInt(moment().format('x'), 10)
     const is = state => this.state.is(state)
     if (is('Restarting')) {
       // TODO timeout
@@ -244,13 +244,13 @@ export default class RootSync extends SyncWriter<
       restart('None of the action states is set')
     } else if (
       is('Reading') &&
-      this.last_read_start.unix() + this.read_timeout < now
+      parseInt(this.last_read_start.format('x'), 10) + this.read_timeout < now
     ) {
       this.logStates('Before restart')
       restart('Reading timeout')
     } else if (
       is('Writing') &&
-      this.last_write_start.unix() + this.write_timeout < now
+      parseInt(this.last_write_start.format('x'), 10) + this.write_timeout < now
     ) {
       this.logStates('Before restart')
       restart('Writing timeout')
@@ -292,7 +292,7 @@ export default class RootSync extends SyncWriter<
   // TODO support ETIMEDOUT
   async Exception_state(err: Error) {
     this.log_error('ERROR: %O', err, { user_id: this.config.user.id })
-    this.exceptions.push(moment().unix())
+    this.exceptions.push(parseInt(moment().format('x'), 10))
 
     // TODO merge with Restarted_state()
     if (this.isExceptionFlood()) {
@@ -473,8 +473,8 @@ export default class RootSync extends SyncWriter<
     this.config = { ...config }
     // parse lazy list configs
     // IConfig into IConfigParsed
-    this.config.lists = this.config.lists.map(
-      list => (_.isFunction(list) ? list(this.config) : list)
+    this.config.lists = this.config.lists.map(list =>
+      _.isFunction(list) ? list(this.config) : list
     )
   }
 
@@ -493,9 +493,12 @@ export default class RootSync extends SyncWriter<
   // Returns true in case of more than 100 exceptions during the last 10 minutes
   isExceptionFlood() {
     // TODO values from the config
-    const min_range = moment()
-      .subtract(10, 'minutes')
-      .unix()
+    const min_range = parseInt(
+      moment()
+        .subtract(10, 'minutes')
+        .format('x'),
+      10
+    )
     const index = sortedIndex(this.exceptions, min_range)
     return this.exceptions.length - index > 100
   }

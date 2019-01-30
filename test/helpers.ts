@@ -1,6 +1,6 @@
 ///<reference path="../typings/index.d.ts"/>
 
-export const DELAY = 500
+export const DELAY = process.env['MOCK'] ? 0 : 500
 export const scenarios = [0, 1, 2]
 
 import * as assert from 'assert'

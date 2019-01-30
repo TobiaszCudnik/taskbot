@@ -374,8 +374,8 @@ export default class GTasksListSync extends SyncReader<
       content: this.getContent(task.notes),
       labels: {},
       updated: {
-        latest: moment(task.updated).unix(),
-        gtasks: moment(task.updated).unix(),
+        latest: parseInt(moment(task.updated).format('x'), 10),
+        gtasks: parseInt(moment(task.updated).format('x'), 10),
         gmail_hid: null
       },
       gtasks_ids: {
@@ -423,7 +423,7 @@ export default class GTasksListSync extends SyncReader<
   // TODO support duplicating in case of a conflict ???
   mergeRecord(task: TTask, record: DBRecord): boolean {
     const before = clone(record)
-    const task_updated = moment(task.updated).unix()
+    const task_updated = parseInt(moment(task.updated).format('x'), 10)
     // apply title labels on the initial record's sync
     let text_labels_updated = false
     record.gtasks_ids = record.gtasks_ids || {}
