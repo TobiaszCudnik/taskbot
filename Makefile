@@ -209,6 +209,11 @@ test-gmail:
 		npx jest \
 			gmail
 
+test-gtasks:
+	DEBUG=root:\*-info,\*-error,app-info,\*-am,gtasks-\*,mock-\* \
+		npx jest \
+			gtasks
+
 test-mocked-default:
 		MOCK=true \
 			npx jest
