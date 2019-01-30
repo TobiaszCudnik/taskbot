@@ -1,8 +1,7 @@
 import { TAsyncMachine } from 'asyncmachine'
-import * as debug from 'debug'
+import { Base64 } from 'js-base64'
 import Logger from './app/logger'
 import { TRawEmail } from './types'
-import { Base64 } from 'js-base64'
 
 export function machineLogToDebug(
   logger: Logger,
