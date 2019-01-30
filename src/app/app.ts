@@ -1,17 +1,18 @@
+import * as merge from 'deepmerge'
 import * as firebase from 'firebase-admin'
 import * as fs from 'fs'
-import { test_user } from '../../config-accounts'
+import { OAuth2Client } from 'google-auth-library'
 import { Credentials as GoogleCredentials } from 'google-auth-library/build/src/auth/credentials'
 import { gmail_v1 } from 'googleapis/build/src/apis/gmail/v1'
+import { Base64 } from 'js-base64'
+import * as moment from 'moment-timezone'
+import { test_user } from '../../config-accounts'
 import { TGlobalFields } from '../google/sync'
 import RootSync, { TStatsUser } from '../sync/root'
-import { IConfig, IAccount, IConfigAccount, TRawEmail } from '../types'
+import { IAccount, IConfig, IConfigAccount } from '../types'
 import { createRawEmail, isProdEnv, isTestEnv, TRawEmailInput } from '../utils'
 import Connections from './connections'
 import Logger from './logger'
-import * as merge from 'deepmerge'
-import * as moment from 'moment-timezone'
-import { OAuth2Client } from 'google-auth-library'
 
 const email_invitation = fs.readFileSync(
   'www/pages/content/email-invitation.md',

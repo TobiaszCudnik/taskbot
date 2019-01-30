@@ -1,32 +1,28 @@
 import { machine, PipeFlags } from 'asyncmachine'
 import { TAbortFunction } from 'asyncmachine/types'
 import { AxiosResponse } from 'axios'
-import * as _ from 'lodash'
-import { Moment } from 'moment'
-import * as moment from 'moment'
 import * as delay from 'delay'
-import * as roundTo from 'round-to'
+import * as regexEscape from 'escape-string-regexp'
 import { tasks_v1 } from 'googleapis'
+import { MethodOptions } from 'googleapis-common/build/src/api'
+import * as _ from 'lodash'
+import * as moment from 'moment'
+import { Moment } from 'moment'
+import * as roundTo from 'round-to'
 // Machine types
 import {
   AsyncMachine,
   IBind,
   IEmit,
   IJSONStates,
-  TStates,
-  IBindBase,
-  IEmitBase,
-  ITransitions
+  TStates
 } from '../../../typings/machines/google/tasks/sync'
-import GC from '../../sync/gc'
 import RootSync, { DBRecord } from '../../sync/root'
 import { sync_writer_state, SyncWriter } from '../../sync/writer'
-import { IConfig, IConfigParsed } from '../../types'
+import { IConfigParsed } from '../../types'
 import Auth from '../auth'
 import { TGlobalFields } from '../sync'
 import GTasksListSync from './sync-list'
-import * as regexEscape from 'escape-string-regexp'
-import { MethodOptions } from 'googleapis-common/build/src/api'
 
 const SEC = 1000
 

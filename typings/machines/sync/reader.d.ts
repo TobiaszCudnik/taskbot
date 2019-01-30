@@ -3,7 +3,7 @@ import AsyncMachine from 'asyncmachine';
 export { IBindBase, IEmitBase, AsyncMachine };
 /** machine.bind('Enabled', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-    (event: 'Enabled_enter', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'Enabled_enter', listener: () => /* param1: any?, param2: any? */ boolean | undefined, context?: Object): this;
     (event: 'Enabled_state', listener: () => any, context?: Object): this;
 }
 /** machine.emit('Enabled', param1, param2) */
@@ -18,7 +18,7 @@ export interface ITransitions {
 }
 /** machine.bind('Initializing', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-    (event: 'Initializing_enter', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'Initializing_enter', listener: () => /* param1: any?, param2: any? */ boolean | undefined, context?: Object): this;
     (event: 'Initializing_state', listener: () => any, context?: Object): this;
 }
 /** machine.emit('Initializing', param1, param2) */
@@ -33,7 +33,7 @@ export interface ITransitions {
 }
 /** machine.bind('Ready', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-    (event: 'Ready_enter', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'Ready_enter', listener: () => /* param1: any?, param2: any? */ boolean | undefined, context?: Object): this;
     (event: 'Ready_state', listener: () => any, context?: Object): this;
 }
 /** machine.emit('Ready', param1, param2) */
@@ -48,7 +48,7 @@ export interface ITransitions {
 }
 /** machine.bind('ConfigSet', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-    (event: 'ConfigSet_enter', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'ConfigSet_enter', listener: () => /* param1: any?, param2: any? */ boolean | undefined, context?: Object): this;
     (event: 'ConfigSet_state', listener: () => any, context?: Object): this;
 }
 /** machine.emit('ConfigSet', param1, param2) */
@@ -63,7 +63,7 @@ export interface ITransitions {
 }
 /** machine.bind('SubsInited', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-    (event: 'SubsInited_enter', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'SubsInited_enter', listener: () => /* param1: any?, param2: any? */ boolean | undefined, context?: Object): this;
     (event: 'SubsInited_state', listener: () => any, context?: Object): this;
 }
 /** machine.emit('SubsInited', param1, param2) */
@@ -78,7 +78,7 @@ export interface ITransitions {
 }
 /** machine.bind('SubsReady', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-    (event: 'SubsReady_enter', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'SubsReady_enter', listener: () => /* param1: any?, param2: any? */ boolean | undefined, context?: Object): this;
     (event: 'SubsReady_state', listener: () => any, context?: Object): this;
 }
 /** machine.emit('SubsReady', param1, param2) */
@@ -93,7 +93,7 @@ export interface ITransitions {
 }
 /** machine.bind('Reading', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-    (event: 'Reading_enter', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'Reading_enter', listener: () => /* param1: any?, param2: any? */ boolean | undefined, context?: Object): this;
     (event: 'Reading_state', listener: () => any, context?: Object): this;
 }
 /** machine.emit('Reading', param1, param2) */
@@ -108,7 +108,7 @@ export interface ITransitions {
 }
 /** machine.bind('ReadingDone', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-    (event: 'ReadingDone_enter', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'ReadingDone_enter', listener: () => /* param1: any?, param2: any? */ boolean | undefined, context?: Object): this;
     (event: 'ReadingDone_state', listener: () => any, context?: Object): this;
 }
 /** machine.emit('ReadingDone', param1, param2) */
@@ -123,7 +123,7 @@ export interface ITransitions {
 }
 /** machine.bind('Syncing', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-    (event: 'Syncing_enter', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'Syncing_enter', listener: () => /* param1: any?, param2: any? */ boolean | undefined, context?: Object): this;
     (event: 'Syncing_state', listener: () => any, context?: Object): this;
 }
 /** machine.emit('Syncing', param1, param2) */
@@ -138,7 +138,7 @@ export interface ITransitions {
 }
 /** machine.bind('SyncDone', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-    (event: 'SyncDone_enter', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'SyncDone_enter', listener: () => /* param1: any?, param2: any? */ boolean | undefined, context?: Object): this;
     (event: 'SyncDone_state', listener: () => any, context?: Object): this;
 }
 /** machine.emit('SyncDone', param1, param2) */
@@ -153,7 +153,7 @@ export interface ITransitions {
 }
 /** machine.bind('Cached', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-    (event: 'Cached_enter', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'Cached_enter', listener: () => /* param1: any?, param2: any? */ boolean | undefined, context?: Object): this;
     (event: 'Cached_state', listener: () => any, context?: Object): this;
 }
 /** machine.emit('Cached', param1, param2) */
@@ -168,7 +168,7 @@ export interface ITransitions {
 }
 /** machine.bind('Dirty', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-    (event: 'Dirty_enter', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'Dirty_enter', listener: () => /* param1: any?, param2: any? */ boolean | undefined, context?: Object): this;
     (event: 'Dirty_state', listener: () => any, context?: Object): this;
 }
 /** machine.emit('Dirty', param1, param2) */
@@ -183,7 +183,7 @@ export interface ITransitions {
 }
 /** machine.bind('QuotaExceeded', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-    (event: 'QuotaExceeded_enter', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'QuotaExceeded_enter', listener: () => /* param1: any?, param2: any? */ boolean | undefined, context?: Object): this;
     (event: 'QuotaExceeded_state', listener: () => any, context?: Object): this;
 }
 /** machine.emit('QuotaExceeded', param1, param2) */
@@ -198,7 +198,7 @@ export interface ITransitions {
 }
 /** machine.bind('Restarting', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-    (event: 'Restarting_enter', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'Restarting_enter', listener: () => /* param1: any?, param2: any? */ boolean | undefined, context?: Object): this;
     (event: 'Restarting_state', listener: () => any, context?: Object): this;
 }
 /** machine.emit('Restarting', param1, param2) */
@@ -213,7 +213,7 @@ export interface ITransitions {
 }
 /** machine.bind('Restarted', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-    (event: 'Restarted_enter', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'Restarted_enter', listener: () => /* param1: any?, param2: any? */ boolean | undefined, context?: Object): this;
     (event: 'Restarted_state', listener: () => any, context?: Object): this;
 }
 /** machine.emit('Restarted', param1, param2) */
@@ -228,7 +228,7 @@ export interface ITransitions {
 }
 /** machine.bind('MaxReadsExceeded', (param1, param2) => {}) */
 export interface IBind extends IBindBase {
-    (event: 'MaxReadsExceeded_enter', listener: () => boolean | undefined, context?: Object): this;
+    (event: 'MaxReadsExceeded_enter', listener: () => /* param1: any?, param2: any? */ boolean | undefined, context?: Object): this;
     (event: 'MaxReadsExceeded_state', listener: () => any, context?: Object): this;
 }
 /** machine.emit('MaxReadsExceeded', param1, param2) */

@@ -1,6 +1,8 @@
 /*.iml
+/**/.DS_Store
 /.idea
 /node_modules/
+/www/node_modules/
 /.codio
 /.vscode
 /.alm
@@ -13,6 +15,15 @@
 /src/**/*.js
 /src/**/*.d.ts
 /src/**/*.js.map
+/bin/**/*.js
+/bin/**/*.d.ts
+/bin/**/*.js.map
+/www/src/**/*.js
+/www/src/**/*.d.ts
+/www/src/**/*.js.map
+/*.js
+/*.d.ts
+/*.js.map
 /test/**/*.js
 /test/**/*.d.ts
 /test/**/*.js.map
@@ -26,9 +37,9 @@
 /combined.log
 /snapshot-exception.json
 /snapshot.json
-/typings/machines/**/**.js
-/typings/machines/**/**.js.map
-/typings/machines/**/**.d.ts
+/typings/machines/**/*.js
+/typings/machines/**/*.js.map
+/typings/machines/**/*.d.ts
 /logs/
 /wiki/
 /static/privacy-policy-output.html
