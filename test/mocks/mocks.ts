@@ -1,7 +1,7 @@
 ///<reference path="../../typings/global.d.ts"/>
 
 import * as assert from 'assert'
-import { AxiosResponse } from 'axios'
+import { GaxiosResponse } from 'gaxios'
 import * as debug from 'debug'
 import * as clone from 'deepcopy'
 import * as gmailQuery from 'gmail-string-query'
@@ -46,7 +46,7 @@ type Response = {
  * @param data
  * @param response
  */
-function ok<T>(data: T, response: Response = {}): AxiosResponse<T> {
+function ok<T>(data: T, response: Response = {}): GaxiosResponse<T> {
   return {
     data: clone(data),
     status: response.status || 200,
@@ -157,7 +157,7 @@ export class GmailUsers extends GmailChild
     options?: MethodOptions,
     // TODO this sould error
     a?: string
-  ): Promise<AxiosResponse<gmail_v1.Schema$Profile>> {
+  ): Promise<GaxiosResponse<gmail_v1.Schema$Profile>> {
     return ok({
       emailAddress: this.gmail.email,
       historyId: this.gmail.historyId.toString(),
@@ -172,7 +172,7 @@ export class GmailUsersMessages extends GmailChild
   async send(
     params: gmail_v1.Params$Resource$Users$Messages$Send & TGlobalFields
     // options?: MethodOptions
-  ): Promise<AxiosResponse<Message>> {
+  ): Promise<GaxiosResponse<Message>> {
     this.gmail.historyId++
     const historyId = this.gmail.historyId.toString()
     const threadId = randomId()
@@ -226,7 +226,7 @@ export class GmailUsersMessages extends GmailChild
   async insert(
     params: gmail_v1.Params$Resource$Users$Messages$Insert & TGlobalFields
     // options?: MethodOptions
-  ): Promise<AxiosResponse<Message>> {
+  ): Promise<GaxiosResponse<Message>> {
     return this.send(params)
   }
 }
@@ -251,7 +251,7 @@ export class GmailUsersLabels extends GmailChild
   async list(
     params: gmail_v1.Params$Resource$Users$Labels$List & TGlobalFields
     // options?: MethodOptions
-  ): Promise<AxiosResponse<gmail_v1.Schema$ListLabelsResponse>> {
+  ): Promise<GaxiosResponse<gmail_v1.Schema$ListLabelsResponse>> {
     return ok({
       labels: this.gmail.labels
     })
@@ -260,7 +260,7 @@ export class GmailUsersLabels extends GmailChild
   async patch(
     params: gmail_v1.Params$Resource$Users$Labels$Patch & TGlobalFields
     // options?: MethodOptions
-  ): Promise<AxiosResponse<Label>> {
+  ): Promise<GaxiosResponse<Label>> {
     assert(params.id)
     assert(params.requestBody)
     const data = this.gmail.labels
@@ -272,7 +272,7 @@ export class GmailUsersLabels extends GmailChild
   async get(
     params: gmail_v1.Params$Resource$Users$Labels$Get & TGlobalFields
     // options?: MethodOptions
-  ): Promise<AxiosResponse<Label>> {
+  ): Promise<GaxiosResponse<Label>> {
     const label = this.gmail.labels.find(l => l.id === params.id)
     if (!label) {
       throw new NotFoundError()
@@ -283,7 +283,7 @@ export class GmailUsersLabels extends GmailChild
   async create(
     params: gmail_v1.Params$Resource$Users$Labels$Create & TGlobalFields
     // options?: MethodOptions
-  ): Promise<AxiosResponse<Label>> {
+  ): Promise<GaxiosResponse<Label>> {
     const label = clone(params.requestBody)
     label.id = normalizeLabelName(label.name)
     this.gmail.labels.push(label)
@@ -296,7 +296,7 @@ export class GmailUsersThreads extends GmailChild
   async list(
     params: gmail_v1.Params$Resource$Users$Threads$List & TGlobalFields,
     options?: MethodOptions
-  ): Promise<AxiosResponse<gmail_v1.Schema$ListThreadsResponse>> {
+  ): Promise<GaxiosResponse<gmail_v1.Schema$ListThreadsResponse>> {
     let threads = this.gmail.threads
 
     // evaluate the search expression
@@ -314,7 +314,7 @@ export class GmailUsersThreads extends GmailChild
   async get(
     params: gmail_v1.Params$Resource$Users$Threads$Get & TGlobalFields,
     options?: MethodOptions
-  ): Promise<AxiosResponse<Thread>> {
+  ): Promise<GaxiosResponse<Thread>> {
     assert(params.id)
     const thread = this.gmail.threads.find(t => t.id === params.id)
     if (!thread) {
@@ -327,7 +327,7 @@ export class GmailUsersThreads extends GmailChild
   async modify(
     params: gmail_v1.Params$Resource$Users$Threads$Modify & TGlobalFields,
     options?: MethodOptions
-  ): Promise<AxiosResponse<Thread>> {
+  ): Promise<GaxiosResponse<Thread>> {
     assert(params.id)
     assert(params.requestBody)
     const thread = this.gmail.threads.find(t => t.id === params.id)
@@ -371,7 +371,7 @@ export class GmailUsersThreads extends GmailChild
   async delete(
     params: gmail_v1.Params$Resource$Users$Threads$Delete & TGlobalFields,
     options?: MethodOptions
-  ): Promise<AxiosResponse<void>> {
+  ): Promise<GaxiosResponse<void>> {
     assert(params.id)
     const data = this.gmail.threads
     const i = data.findIndex(t => t.id === params.id)
@@ -448,7 +448,7 @@ export class TasksTasks extends TasksChild
   async list(
     params: tasks_v1.Params$Resource$Tasks$List & TGlobalFields,
     options?: MethodOptions
-  ): Promise<AxiosResponse<tasks_v1.Schema$Tasks>> {
+  ): Promise<GaxiosResponse<tasks_v1.Schema$Tasks>> {
     assert(params.tasklist)
     const items = []
     for (const item of this.root.data.tasks) {
@@ -485,7 +485,7 @@ export class TasksTasks extends TasksChild
   async get(
     params?: tasks_v1.Params$Resource$Tasks$Get & TGlobalFields,
     options?: MethodOptions
-  ): Promise<AxiosResponse<Task>> {
+  ): Promise<GaxiosResponse<Task>> {
     assert(params.task)
     assert(params.tasklist)
     this.root.log('get task', params)
@@ -502,7 +502,7 @@ export class TasksTasks extends TasksChild
   async insert(
     params: tasks_v1.Params$Resource$Tasks$Insert & TGlobalFields,
     options?: MethodOptions
-  ): Promise<AxiosResponse<Task>> {
+  ): Promise<GaxiosResponse<Task>> {
     assert(params.tasklist)
     assert(params.requestBody)
     this.root.log('insert task', params)
@@ -527,7 +527,7 @@ export class TasksTasks extends TasksChild
   async patch(
     params: tasks_v1.Params$Resource$Tasks$Patch & TGlobalFields,
     options?: MethodOptions
-  ): Promise<AxiosResponse<Task>> {
+  ): Promise<GaxiosResponse<Task>> {
     assert(params.requestBody)
     assert(params.task)
     assert(params.tasklist)
@@ -555,7 +555,7 @@ export class TasksTasks extends TasksChild
   async delete(
     params: tasks_v1.Params$Resource$Tasks$Delete & TGlobalFields,
     options?: MethodOptions
-  ): Promise<AxiosResponse<void>> {
+  ): Promise<GaxiosResponse<void>> {
     assert(params.task)
     assert(params.tasklist)
     this.root.log('delete task', params)
@@ -578,7 +578,7 @@ export class TasksTasklists extends TasksChild {
   async list(
     params: tasks_v1.Params$Resource$Tasklists$List & TGlobalFields,
     options?: MethodOptions
-  ): Promise<AxiosResponse<tasks_v1.Schema$TaskLists>> {
+  ): Promise<GaxiosResponse<tasks_v1.Schema$TaskLists>> {
     this.root.log('tasks.tasklists.list', params)
     // TODO support the 'If-None-Match' header
     // TODO check params.maxResults
@@ -599,7 +599,7 @@ export class TasksTasklists extends TasksChild {
   async insert(
     params: tasks_v1.Params$Resource$Tasklists$Insert & TGlobalFields,
     options?: MethodOptions
-  ): Promise<AxiosResponse<TaskList>> {
+  ): Promise<GaxiosResponse<TaskList>> {
     assert(params.requestBody)
     const list: TaskList = clone(params.requestBody)
     list.updated = moment()
@@ -615,7 +615,7 @@ export class TasksTasklists extends TasksChild {
   async patch(
     params: tasks_v1.Params$Resource$Tasklists$Patch & TGlobalFields,
     options?: MethodOptions
-  ): Promise<AxiosResponse<TaskList>> {
+  ): Promise<GaxiosResponse<TaskList>> {
     assert(params.requestBody)
     assert(params.tasklist)
     const data = this.root.data.lists
@@ -635,7 +635,7 @@ export class TasksTasklists extends TasksChild {
   async get(
     params?: tasks_v1.Params$Resource$Tasklists$Get & TGlobalFields,
     options?: MethodOptions
-  ): Promise<AxiosResponse<TaskList>> {
+  ): Promise<GaxiosResponse<TaskList>> {
     assert(params.tasklist)
     const list = this.root.data.lists.find(l => l.id === params.tasklist)
     if (!list) {
@@ -647,7 +647,7 @@ export class TasksTasklists extends TasksChild {
   async delete(
     params?: tasks_v1.Params$Resource$Tasklists$Delete & TGlobalFields,
     options?: MethodOptions
-  ): Promise<AxiosResponse<void>> {
+  ): Promise<GaxiosResponse<void>> {
     assert(params.tasklist)
     const data = this.root.data.lists
     const i = data.findIndex(l => l.id === params.tasklist)

@@ -1,6 +1,6 @@
 import { machine, PipeFlags } from 'asyncmachine'
 import { TAbortFunction } from 'asyncmachine/types'
-import { AxiosResponse } from 'axios'
+import { GaxiosResponse } from 'gaxios'
 import * as delay from 'delay'
 import * as regexEscape from 'escape-string-regexp'
 import { tasks_v1 } from 'googleapis'
@@ -190,7 +190,7 @@ export default class GTasksSync extends SyncWriter<
     if (this.etags.task_lists) {
       params.headers['If-None-Match'] = this.etags.task_lists
     }
-    const res: AxiosResponse<TTaskListsRes> = await this.req(
+    const res: GaxiosResponse<TTaskListsRes> = await this.req(
       'tasklists.list',
       this.api.tasklists.list,
       this.api.tasklists,
@@ -469,7 +469,7 @@ export default class GTasksSync extends SyncWriter<
       if (previous_sibling_id) {
         params.previous = previous_sibling_id
       }
-      const res: AxiosResponse<TTask> = await this.req(
+      const res: GaxiosResponse<TTask> = await this.req(
         'tasks.insert',
         this.api.tasks.insert,
         this.api.tasks,
@@ -609,7 +609,7 @@ export default class GTasksSync extends SyncWriter<
             this.log(
               `Adding a new task '${record.title}' to '${sync.list.title}'`
             )
-            type TResponse = AxiosResponse<TTask>
+            type TResponse = GaxiosResponse<TTask>
             const res: TResponse = await this.req(
               'tasks.insert',
               this.api.tasks.insert,

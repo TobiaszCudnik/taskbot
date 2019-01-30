@@ -1,5 +1,5 @@
 import { machine } from 'asyncmachine'
-import { AxiosResponse } from 'axios'
+import { GaxiosResponse } from 'gaxios'
 import { gmail_v1 } from 'googleapis'
 // Machine types
 import {
@@ -126,7 +126,7 @@ export default class GmailQuery {
         params.pageToken = prevRes.nextPageToken
       }
 
-      type TResponse = AxiosResponse<gmail_v1.Schema$ListThreadsResponse>
+      type TResponse = GaxiosResponse<gmail_v1.Schema$ListThreadsResponse>
 
       let list: TResponse = await this.gmail.req(
         'users.threads.list',

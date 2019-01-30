@@ -1,10 +1,10 @@
 import { Semaphore } from 'await-semaphore'
-import { google, gmail_v1, tasks_v1 } from 'googleapis'
+import { GaxiosResponse } from 'gaxios'
+import { gmail_v1, google, tasks_v1 } from 'googleapis'
+import { MethodOptions } from 'googleapis-common/build/src/api'
 import * as https from 'https'
 import GC from '../sync/gc'
-import { log_fn, default as Logger } from './logger'
-import { AxiosResponse } from 'axios'
-import { MethodOptions } from 'googleapis-common/build/src/api'
+import { default as Logger, log_fn } from './logger'
 
 /**
  * TODO logger mixin
@@ -33,8 +33,8 @@ export default class Connections {
   log_stats: log_fn
 
   apis: {
-    gtasks: google.tasks.v1.Tasks | null
-    gmail: google.gmail.v1.Gmail | null
+    gtasks: tasks_v1.Tasks | null
+    gmail: gmail_v1.Gmail | null
   } = {
     gtasks: null,
     gmail: null
@@ -153,7 +153,7 @@ export default class Connections {
       return null
     }
 
-    let res: AxiosResponse<any>
+    let res: GaxiosResponse<any>
     // run the query with retries
     for (let try_n = 1; try_n <= retries; try_n++) {
       // TODO keep username as a part of json (logger API)

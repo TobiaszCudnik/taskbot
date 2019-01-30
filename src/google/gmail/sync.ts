@@ -1,6 +1,6 @@
 import { machine } from 'asyncmachine'
 import { TAbortFunction } from 'asyncmachine/types'
-import { AxiosResponse } from 'axios'
+import { GaxiosResponse } from 'gaxios'
 import * as merge from 'deepmerge'
 import * as delay from 'delay'
 import * as regexEscape from 'escape-string-regexp'
@@ -283,7 +283,7 @@ export default class GmailSync extends SyncWriter<
       userId: 'me',
       fields: 'labels(id,name,color,labelListVisibility,messageListVisibility)'
     }
-    const res: AxiosResponse<
+    const res: GaxiosResponse<
       gmail_v1.Schema$ListLabelsResponse
     > = (await this.req(
       'users.labels.list',
@@ -314,7 +314,7 @@ export default class GmailSync extends SyncWriter<
       userId: 'me',
       fields: 'historyId'
     }
-    const response: AxiosResponse<gmail_v1.Schema$Profile> = (await this.req(
+    const response: GaxiosResponse<gmail_v1.Schema$Profile> = (await this.req(
       'users.getProfile',
       this.api.users.getProfile,
       this.api.users,
@@ -442,7 +442,7 @@ export default class GmailSync extends SyncWriter<
           id,
           fields: 'id,name,color'
         }
-        const res: AxiosResponse<gmail_v1.Schema$Label> = (await await this.req(
+        const res: GaxiosResponse<gmail_v1.Schema$Label> = (await await this.req(
           'users.labels.get',
           this.api.users.labels.get,
           this.api.users.labels,
@@ -666,7 +666,7 @@ export default class GmailSync extends SyncWriter<
       }
     }
 
-    let ret: AxiosResponse<gmail_v1.Schema$Thread> = (await this.req(
+    let ret: GaxiosResponse<gmail_v1.Schema$Thread> = (await this.req(
       'users.threads.modify',
       this.api.users.threads.modify,
       this.api.users.threads,
@@ -704,7 +704,7 @@ export default class GmailSync extends SyncWriter<
       // @ts-ignore wrong d.ts
       metadataHeaders: ['SUBJECT', 'FROM', 'TO']
     }
-    let thread: AxiosResponse<gmail_v1.Schema$Thread> = (await this.req(
+    let thread: GaxiosResponse<gmail_v1.Schema$Thread> = (await this.req(
       'users.threads.get',
       this.api.users.threads.get,
       this.api.users.threads,
@@ -764,7 +764,7 @@ export default class GmailSync extends SyncWriter<
         labelIds: labels.map(l => this.getLabelID(l))
       }
     }
-    const ret: AxiosResponse<gmail_v1.Schema$Message> = (await this.req(
+    const ret: GaxiosResponse<gmail_v1.Schema$Message> = (await this.req(
       'users.messages.insert',
       this.api.users.messages.insert,
       this.api.users.messages,
@@ -839,7 +839,7 @@ export default class GmailSync extends SyncWriter<
             ...gmail_def
           }
         }
-        const res: AxiosResponse<gmail_v1.Schema$Label> = (await this.req(
+        const res: GaxiosResponse<gmail_v1.Schema$Label> = (await this.req(
           'users.labels.create',
           this.api.users.labels.create,
           this.api.users.labels,
