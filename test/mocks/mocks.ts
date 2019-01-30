@@ -129,6 +129,14 @@ export class Gmail {
         .join('\n')
     )
   }
+
+  reset() {
+    this.threads = []
+    this.labels = []
+    this.messages = []
+    this.historyId = 0
+    this.users = new GmailUsers(this)
+  }
 }
 
 class GmailChild {
@@ -166,13 +174,14 @@ export class GmailUsersMessages extends GmailChild
     // options?: MethodOptions
   ): Promise<AxiosResponse<Message>> {
     this.gmail.historyId++
-    // TODO match the schema
+    const historyId = this.gmail.historyId.toString()
     const threadId = randomId()
     const mail = await simpleParser(Base64.decode(params.requestBody.raw))
     const labelIds = clone(params.requestBody.labelIds) || []
-    labelIds.push('UNREAD')
+    labelIds.push('UNREAD', 'INBOX')
     const msg: Message = {
       id: randomId(),
+      historyId,
       threadId,
       labelIds,
       payload: {
@@ -194,7 +203,7 @@ export class GmailUsersMessages extends GmailChild
       // TODO more fields
     }
     const thread: Thread = {
-      historyId: this.gmail.historyId.toString(),
+      historyId,
       id: threadId,
       snippet: (mail.text || '').substr(0, 200),
       messages: [msg],
@@ -350,7 +359,11 @@ export class GmailUsersThreads extends GmailChild
       }
     }
     this.gmail.historyId++
-    thread.historyId = this.gmail.historyId.toString()
+    const hid = this.gmail.historyId.toString()
+    thread.historyId = hid
+    for (const msg of thread.messages) {
+      msg.historyId = hid
+    }
     this.gmail.log(`modified thread ${params.id}`, thread.subject, add, remove)
     return ok(thread)
   }
@@ -419,6 +432,11 @@ export class Tasks {
 
   tasks = new TasksTasks(this)
   tasklists = new TasksTasklists(this)
+
+  reset() {
+    this.tasks = new TasksTasks(this)
+    this.tasklists = new TasksTasklists(this)
+  }
 }
 
 export class TasksChild {

@@ -11,9 +11,13 @@ import { Gmail, google, Tasks, Thread } from './mocks'
 
 let gmail: Gmail
 let tasks: Tasks
-beforeEach(() => {
+beforeAll(() => {
   gmail = google.gmail('v1')
   tasks = google.tasks('v1')
+})
+beforeEach(() => {
+  gmail.reset()
+  tasks.reset()
 })
 
 describe('gmail', () => {
@@ -130,7 +134,7 @@ describe('gmail', () => {
     it('list labels', async () => {
       await fixturesToThreads(gmail, fixtures)
       const list = await gmail.users.labels.list({})
-      expect(list.data.labels).toHaveLength(13)
+      expect(list.data.labels).toHaveLength(15)
     })
     it('patch a label', async () => {
       await fixturesToThreads(gmail, fixtures)
@@ -232,7 +236,7 @@ async function fixturesToThreads(gmail: Gmail, data: DBRecord[]) {
         // TODO parse "From gtd.bot.sandbox+letter@gmail.com"
         from: 'from@gmail.com',
         to: 'test@gmail.com',
-        subject: 'test subject'
+        subject: row.title
       },
       row.content
     )

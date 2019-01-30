@@ -41,7 +41,7 @@ start-staging-env:
 		node src/app/bootstrap.js
 
 start-am:
-	DEBUG=\*-error,connections-verbose,db-diff,record-diff-verbose,root:\*-info,gmail-root,gtasks-root,\*inbox-labels\*,\*task-labels\*,\*gmail\*pending\*,\*next\*,\*-am \
+	DEBUG=\*-error,connections-verbose,record-diff-verbose,root:\*-info,gmail-root,gtasks-root,\*inbox-labels\*,\*task-labels\*,\*gmail\*pending\*,\*next\*,\*-am \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node --inspect \
@@ -101,7 +101,7 @@ debug:
 	DEBUG=root DEBUG_FILE=1 node --inspect-brk src/app/bootstrap.js
 
 debug-list-next:
-	DEBUG=google\*-info,gmail-root\*-info,gtasks-root\*-info,gmail-query-next\*,gmail-list-next\*,gtasks-list-next\*,\*-error,db-diff,record-diff-verbose \
+	DEBUG=google\*-info,gmail-root\*-info,gtasks-root\*-info,gmail-query-next\*,gmail-list-next\*,gtasks-list-next\*,\*-error,record-diff-verbose \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node --inspect src/app/bootstrap.js
@@ -195,7 +195,7 @@ test-gmail-mocked:
 
 test-sync-mocked:
 	#DEBUG=root:\*-info,\*-error,app-info,\*-am,gmail-\*,gtasks-\*,mock-\*,test
-	DEBUG=mock-gmail\*,gmail-list-next:\*,gtasks-list-next:\*,test \
+	DEBUG=mock-gmail\*,gmail-list-next:\*,gtasks-list-next:\*,test,root:\*-verbose,record-diff\*,db-verbose \
 		MOCK=true \
 		npx jest \
 			sync
