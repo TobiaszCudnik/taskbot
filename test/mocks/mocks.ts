@@ -5,7 +5,7 @@ import { GaxiosResponse } from 'gaxios'
 import * as debug from 'debug'
 import * as clone from 'deepcopy'
 import * as gmailQuery from 'gmail-string-query'
-// import * as sinon from 'sinon'
+import { TTask } from '../../src/google/tasks/sync'
 import { tasks_v1 } from '../../typings/googleapis/tasks'
 import { gmail_v1 } from '../../typings/googleapis/gmail'
 import { MethodOptions } from 'googleapis-common'
@@ -20,9 +20,7 @@ import { TGlobalFields } from '../../src/google/sync'
 // ----- COMMON
 
 type MethodNames<T> = {
-  [K in keyof T]: T[K] extends (...args: any) => any
-    ? K
-    : never
+  [K in keyof T]: T[K] extends (...args: any) => any ? K : never
 }[keyof T]
 
 type MockedAPI<T> = Partial<Pick<T, MethodNames<T>>>
@@ -424,6 +422,25 @@ export class Tasks {
   reset() {
     this.tasks = new TasksTasks(this)
     this.tasklists = new TasksTasklists(this)
+  }
+
+  // TODO order by position
+  // TODO support nesting
+  toString() {
+    return (
+      this.data.lists
+        .map(l => {
+          return (
+            `GTasks mock - ${l.title}\n` +
+            this.data.tasks
+              .filter(t => t.tasklist === l.id)
+              .filter(t => t.title && t.title.trim())
+              .map(t => (t.status == 'completed' ? 'c ' : '- ') + t.title)
+              .join('\n')
+          )
+        })
+        .join('\n') + '\n'
+    )
   }
 }
 

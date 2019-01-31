@@ -178,6 +178,7 @@ export default async function createHelpers() {
     if (process.env['MOCK']) {
       log('\nMock DBs:')
       log(gmail.toString())
+      log(gtasks.toString())
     }
   }
 
@@ -302,7 +303,7 @@ export default async function createHelpers() {
     params: P & TGlobalFields,
     options: MethodOptions = {}
   ): Promise<GaxiosResponse<R>> {
-    log(`req ${method}:\n%O`, params)
+    log(`req ${name}:\n%O`, params)
     if (DELAY) {
       await delay(delay)
     }
