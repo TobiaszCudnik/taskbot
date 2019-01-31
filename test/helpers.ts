@@ -1,10 +1,9 @@
 ///<reference path="../typings/index.d.ts"/>
 
 export const DELAY = process.env['MOCK'] ? 0 : 500
-export const scenarios = [0, 1, 2]
 
 import * as assert from 'assert'
-import { GaxiosResponse } from 'gaxios'
+import { GaxiosPromise, GaxiosResponse } from 'gaxios'
 import * as debug from 'debug'
 import { MethodOptions } from 'googleapis-common'
 import * as _ from 'lodash'
@@ -18,8 +17,10 @@ import GTasksSync from '../src/google/tasks/sync'
 import RootSync from '../src/sync/root'
 import * as delay from 'delay'
 import { OAuth2Client } from 'google-auth-library'
-import { google, gmail_v1, tasks_v1 } from 'googleapis'
+import { google } from 'googleapis'
 import { google as mocks } from './mocks/mocks'
+import { gmail_v1 } from '../typings/googleapis/gmail'
+import { tasks_v1 } from '../typings/googleapis/tasks'
 
 if (process.env['MOCK']) {
   // mock 'googleapis'
@@ -83,15 +84,20 @@ export default async function createHelpers() {
     add: string[] = [],
     remove: string[] = []
   ) {
-    await req('gmail.users.threads.modify', {
-      id: thread_id,
-      userId: 'me',
-      fields: 'id',
-      requestBody: {
-        addLabelIds: add.map(labelID),
-        removeLabelIds: remove.map(labelID)
+    await req(
+      'gmail.users.threads.modify',
+      gmail.users.threads.modify,
+      gmail.users.threads,
+      {
+        id: thread_id,
+        userId: 'me',
+        fields: 'id',
+        requestBody: {
+          addLabelIds: add.map(labelID),
+          removeLabelIds: remove.map(labelID)
+        }
       }
-    })
+    )
   }
 
   function hasLabel(thread: Thread, label: string): boolean {
@@ -101,42 +107,62 @@ export default async function createHelpers() {
   async function listQuery(
     query = 'label:!s-next-action'
   ): Promise<gmail_v1.Schema$ListThreadsResponse> {
-    const res = await req('gmail.users.threads.list', {
-      maxResults: 1000,
-      q: query,
-      userId: 'me',
-      // TODO is 'snippet' useful?
-      fields: 'nextPageToken,threads(historyId,id)'
-    })
+    const res = await req(
+      'gmail.users.threads.list',
+      gmail.users.threads.list,
+      gmail.users.threads,
+      {
+        maxResults: 1000,
+        q: query,
+        userId: 'me',
+        // TODO is 'snippet' useful?
+        fields: 'nextPageToken,threads(historyId,id)'
+      }
+    )
     return res.data
   }
 
   async function deleteThread(thread_id: string): Promise<true> {
-    await req('gmail.users.threads.delete', {
-      userId: 'me',
-      id: thread_id
-    })
+    await req(
+      'gmail.users.threads.delete',
+      gmail.users.threads.delete,
+      gmail.users.threads,
+      {
+        userId: 'me',
+        id: thread_id
+      }
+    )
     return true
   }
 
   async function getThread(id: string): Promise<Thread> {
-    const res: GaxiosResponse<Thread> = await req('gmail.users.threads.get', {
-      id,
-      userId: 'me',
-      metadataHeaders: ['SUBJECT', 'FROM', 'TO'],
-      format: 'metadata',
-      fields: 'id,historyId,messages(id,labelIds,payload(headers))'
-    })
+    const res: GaxiosResponse<Thread> = await req(
+      'gmail.users.threads.get',
+      gmail.users.threads.get,
+      gmail.users.threads,
+      {
+        id,
+        userId: 'me',
+        metadataHeaders: ['SUBJECT', 'FROM', 'TO'],
+        format: 'metadata',
+        fields: 'id,historyId,messages(id,labelIds,payload(headers))'
+      }
+    )
     return res.data
   }
 
   async function listTasklist(name = '!next'): Promise<tasks_v1.Schema$Tasks> {
-    const res = await req('gtasks.tasks.list', {
-      maxResults: 1000,
-      tasklist: gtasks_sync.getListByName(name).list.id,
-      fields: 'etag,items(id,title,notes,updated,etag,status,parent)',
-      showHidden: false
-    })
+    const res = await req(
+      'gtasks.tasks.list',
+      gtasks.tasks.list,
+      gtasks.tasks,
+      {
+        maxResults: '1000',
+        tasklist: gtasks_sync.getListByName(name).list.id,
+        fields: 'etag,items(id,title,notes,updated,etag,status,parent)',
+        showHidden: false
+      }
+    )
     return res.data
   }
 
@@ -269,15 +295,10 @@ export default async function createHelpers() {
   }
 
   // TODO retry on Backend Error
-  // async function req<P, R>(
-  //   name: string,
-  //   method: (params: P, options: MethodOptions) => AxiosPromise<R>,
-  //   context: object,
-  //   params: P & TGlobalFields,
-  //   options: MethodOptions = {}
-  // ): Promise<GaxiosResponse<R>> {
-  async function req<P, R = null>(
-    method: string,
+  async function req<P, R>(
+    name: string,
+    method: (params: P, options: MethodOptions) => GaxiosPromise<R>,
+    context: object,
     params: P & TGlobalFields,
     options: MethodOptions = {}
   ): Promise<GaxiosResponse<R>> {
@@ -289,16 +310,17 @@ export default async function createHelpers() {
     params.auth = auth
     // @ts-ignore prevent JIT from shadowing those, so eval works
     void (gmail, gtasks)
-    const fn = eval(method)
     // remove the method name
-    const context = eval(method.replace(/\.\w+$/, ''))
+    // const context = eval(method.replace(/\.\w+$/, ''))
     // TODO keep alive
-    return await fn.call(context, params, options)
+    return await method.call(context, params, options)
   }
 
   async function truncateQuery(query) {
-    const res: GaxiosResponse<gmail_v1.Schema$ListThreadsResponse> = await req(
+    const res = await req(
       'gmail.users.threads.list',
+      gmail.users.threads.list,
+      gmail.users.threads,
       {
         maxResults: 1000,
         q: query,
@@ -311,10 +333,15 @@ export default async function createHelpers() {
     await Promise.all(
       threads.map(
         async thread =>
-          await req('gmail.users.threads.delete', {
-            id: thread.id,
-            userId: 'me'
-          })
+          await req(
+            'gmail.users.threads.delete',
+            gmail.users.threads.delete,
+            gmail.users.threads,
+            {
+              id: thread.id,
+              userId: 'me'
+            }
+          )
       )
     )
   }
@@ -323,6 +350,8 @@ export default async function createHelpers() {
     // get all the lists
     const res: GaxiosResponse<tasks_v1.Schema$TaskLists> = await req(
       'gtasks.tasklists.list',
+      gtasks.tasklists.list,
+      gtasks.tasklists,
       {}
     )
     const lists = res.data.items || []
@@ -331,7 +360,12 @@ export default async function createHelpers() {
       lists.map(async (list: TaskList) => {
         // skip the default one
         if (list.title == 'My Tasks') return
-        await req('gtasks.tasklists.delete', { tasklist: list.id })
+        await req(
+          'gtasks.tasklists.delete',
+          gtasks.tasklists.delete,
+          gtasks.tasklists,
+          { tasklist: list.id }
+        )
       })
     )
     log('removed all tasks')
@@ -343,6 +377,8 @@ export default async function createHelpers() {
     // get all the lists
     const res: GaxiosResponse<tasks_v1.Schema$Tasks> = await req(
       'gtasks.tasks.list',
+      gtasks.tasks.list,
+      gtasks.tasks,
       {
         tasklist: list.list.id
       }
@@ -351,7 +387,7 @@ export default async function createHelpers() {
     // delete every list
     await Promise.all(
       lists.map(async (task: TaskList) => {
-        await req('gtasks.tasks.delete', {
+        await req('gtasks.tasks.delete', gtasks.tasks.delete, gtasks.tasks, {
           tasklist: list.list.id,
           task: task.id
         })
@@ -420,11 +456,16 @@ export default async function createHelpers() {
     task_id: string,
     list: string = '!next'
   ): Promise<Task> {
-    const res: GaxiosResponse<Task> = await req('gtasks.tasks.get', {
-      tasklist: gtasks_sync.getListByName(list).list.id,
-      task: task_id,
-      fields: 'id,title,updated,status,notes'
-    })
+    const res: GaxiosResponse<Task> = await req(
+      'gtasks.tasks.get',
+      gtasks.tasks.get,
+      gtasks.tasks,
+      {
+        tasklist: gtasks_sync.getListByName(list).list.id,
+        task: task_id,
+        fields: 'id,title,updated,status,notes'
+      }
+    )
     return res.data
   }
 
@@ -438,16 +479,21 @@ export default async function createHelpers() {
     completed = false,
     parent?: string
   ): Promise<string> {
-    const res: GaxiosResponse<Task> = await req('gtasks.tasks.insert', {
-      tasklist: gtasks_sync.getListByName(list).list.id,
-      fields: 'id',
-      parent,
-      requestBody: {
-        title,
-        notes,
-        status: completed ? 'completed' : 'needsAction'
+    const res: GaxiosResponse<Task> = await req(
+      'gtasks.tasks.insert',
+      gtasks.tasks.insert,
+      gtasks.tasks,
+      {
+        tasklist: gtasks_sync.getListByName(list).list.id,
+        fields: 'id',
+        parent,
+        requestBody: {
+          title,
+          notes,
+          status: completed ? 'completed' : 'needsAction'
+        }
       }
-    })
+    )
     return res.data.id
   }
 
@@ -458,12 +504,17 @@ export default async function createHelpers() {
    * @return Task ID
    */
   async function patchTask(id, patch: Task, list = '!next'): Promise<string> {
-    const res: GaxiosResponse<Task> = await req('gtasks.tasks.patch', {
-      tasklist: gtasks_sync.getListByName(list).list.id,
-      task: id,
-      fields: 'id',
-      requestBody: patch
-    })
+    const res: GaxiosResponse<Task> = await req(
+      'gtasks.tasks.patch',
+      gtasks.tasks.patch,
+      gtasks.tasks,
+      {
+        tasklist: gtasks_sync.getListByName(list).list.id,
+        task: id,
+        fields: 'id',
+        requestBody: patch
+      }
+    )
     return res.data.id
   }
 
@@ -519,7 +570,7 @@ export default async function createHelpers() {
   }
 
   async function deleteTask(id, list = '!next') {
-    return await req('gtasks.tasks.delete', {
+    return await req('gtasks.tasks.delete', gtasks.tasks.delete, gtasks.tasks, {
       tasklist: gtasks_sync.getListByName(list).list.id,
       task: id
     })
