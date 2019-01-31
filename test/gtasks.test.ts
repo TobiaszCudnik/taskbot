@@ -214,12 +214,16 @@ describe(`gtasks (sync_type: ${scenario})`, function() {
       await h.reset()
       // create a task
       const task_id = await h.addTask('gtasks-gmail-1')
+      // sync to get the task into the local DB
+      await h.syncListScenario(scenario)
       // complete and hide
       await h.patchTask(task_id, {
         title: 'gtasks-gmail-1 #project_1 #project_2',
         status: 'completed',
         hidden: true
       })
+      // sync again and expect the unhide a when completed-and-hidden
+      // at the same time
       await h.syncListScenario(scenario)
       const data = h.sync.data.data
       expect(data).toHaveLength(1)

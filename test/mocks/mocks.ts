@@ -435,7 +435,12 @@ export class Tasks {
             this.data.tasks
               .filter(t => t.tasklist === l.id)
               .filter(t => t.title && t.title.trim())
-              .map(t => (t.status == 'completed' ? 'c ' : '- ') + t.title)
+              .map(
+                t =>
+                  (t.status == 'completed' ? 'c ' : '- ') +
+                  (t.hidden ? '(h) ' : '') +
+                  t.title
+              )
               .join('\n')
           )
         })
