@@ -66,8 +66,10 @@ describe(`sync (sync_type: ${scenario})`, function() {
     await h.syncList()
     // add !S/Finished
     // TODO extract to a helper
-    await h.req<gmail_v1.Params$Resource$Users$Threads$Modify>(
+    await h.req(
       'gmail.users.threads.modify',
+      h.gmail.users.threads.modify,
+      h.gmail.users.threads,
       {
         id: thread_id_1,
         userId: 'me',
@@ -79,8 +81,10 @@ describe(`sync (sync_type: ${scenario})`, function() {
     )
     // add !S/Pending
     // TODO extract to a helper
-    await h.req<gmail_v1.Params$Resource$Users$Threads$Modify>(
+    await h.req(
       'gmail.users.threads.modify',
+      h.gmail.users.threads.modify,
+      h.gmail.users.threads,
       {
         id: thread_id_2,
         userId: 'me',

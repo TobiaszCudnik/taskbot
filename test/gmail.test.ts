@@ -34,10 +34,12 @@ describe(`gmail (sync_type: ${scenario})`, function() {
       h.log('\n\nTEST: should create the labels')
       // TODO test with missing labels
       // TODO test adding colors to existing labels
-      const list = await h.req<
-        gmail_v1.Params$Resource$Users$Labels$List,
-        gmail_v1.Schema$ListLabelsResponse
-      >('gmail.users.labels.list', { userId: 'me' })
+      const list = await h.req(
+        'gmail.users.labels.list',
+        h.gmail.users.labels.list,
+        h.gmail.users.labels,
+        { userId: 'me' }
+      )
       const expected = [
         // name, bg, fg, hidden
         ['!S/Next Action', '#fb4c2f', '#ffffff', false],
@@ -188,14 +190,19 @@ describe(`gmail (sync_type: ${scenario})`, function() {
       await h.syncList(true, false)
       // move to !a
       h.log('moving to !S/Action')
-      await h.req('gmail.users.threads.modify', {
-        id: thread_id,
-        userId: 'me',
-        fields: 'id',
-        requestBody: {
-          addLabelIds: [h.labelID('!S/Action')]
+      await h.req(
+        'gmail.users.threads.modify',
+        h.gmail.users.threads.modify,
+        h.gmail.users.threads,
+        {
+          id: thread_id,
+          userId: 'me',
+          fields: 'id',
+          requestBody: {
+            addLabelIds: [h.labelID('!S/Action')]
+          }
         }
-      })
+      )
       // sync
       await h.syncListScenario(scenario)
       // list both !na and !a
@@ -224,14 +231,19 @@ describe(`gmail (sync_type: ${scenario})`, function() {
       ])
       await h.syncList(true, false)
       h.log('adding !S/Finished')
-      await h.req('gmail.users.threads.modify', {
-        id: thread_id,
-        userId: 'me',
-        fields: 'id',
-        requestBody: {
-          addLabelIds: [h.labelID('!S/Finished')]
+      await h.req(
+        'gmail.users.threads.modify',
+        h.gmail.users.threads.modify,
+        h.gmail.users.threads,
+        {
+          id: thread_id,
+          userId: 'me',
+          fields: 'id',
+          requestBody: {
+            addLabelIds: [h.labelID('!S/Finished')]
+          }
         }
-      })
+      )
       await h.syncListScenario(scenario)
       const list_next = await h.listTasklist('!next')
       // assert the result
@@ -291,14 +303,19 @@ describe(`gmail (sync_type: ${scenario})`, function() {
       ])
       await h.syncList(true, false)
       h.log('mark as !S/Expired')
-      await h.req('gmail.users.threads.modify', {
-        id: thread_id,
-        userId: 'me',
-        fields: 'id',
-        requestBody: {
-          addLabelIds: [h.labelID('!S/Expired')]
+      await h.req(
+        'gmail.users.threads.modify',
+        h.gmail.users.threads.modify,
+        h.gmail.users.threads,
+        {
+          id: thread_id,
+          userId: 'me',
+          fields: 'id',
+          requestBody: {
+            addLabelIds: [h.labelID('!S/Expired')]
+          }
         }
-      })
+      )
       await h.syncListScenario(scenario)
       // get directly from the API
       const res = await h.listTasklist()

@@ -1,6 +1,5 @@
 ///<reference path="../typings/index.d.ts"/>
 
-import * as debug from 'debug'
 import createHelpers from './helpers'
 
 const scenario = parseInt(process.env['SCENARIO'], 10) || 0

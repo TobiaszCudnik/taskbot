@@ -31,10 +31,12 @@ afterAll(function() {
 describe(`gtasks (sync_type: ${scenario})`, function() {
   if (!scenario) {
     it('should create the lists', async function() {
-      const res = await h.req<
-        tasks_v1.Params$Resource$Tasklists$List,
-        tasks_v1.Schema$TaskLists
-      >('gtasks.tasklists.list', {})
+      const res = await h.req(
+        'gtasks.tasklists.list',
+        h.gtasks.tasklists.list,
+        h.gtasks.tasklists,
+        {}
+      )
       const list_names = res.data.items.map(l => l.title.toLowerCase())
       for (const list of h.sync.config_parsed.lists) {
         // skip gmail-only res
