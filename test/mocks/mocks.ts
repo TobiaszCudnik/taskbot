@@ -6,7 +6,8 @@ import * as debug from 'debug'
 import * as clone from 'deepcopy'
 import * as gmailQuery from 'gmail-string-query'
 // import * as sinon from 'sinon'
-import { gmail_v1, tasks_v1 } from 'googleapis'
+import { tasks_v1 } from '../../typings/googleapis/tasks'
+import { gmail_v1 } from '../../typings/googleapis/gmail'
 import { MethodOptions } from 'googleapis-common'
 import { Base64 } from 'js-base64'
 import { simpleParser } from 'mailparser'
@@ -18,23 +19,13 @@ import { TGlobalFields } from '../../src/google/sync'
 
 // ----- COMMON
 
-// conditional and mapped types
-// all methods returning a promise
-type ReturnsPromise<T> = {
+type MethodNames<T> = {
   [K in keyof T]: T[K] extends (...args: any) => any
-    ? ReturnType<T[K]> extends Promise<any>
-      ? K
-      : never
+    ? K
     : never
 }[keyof T]
-type AsyncMethods<T> = Pick<T, ReturnsPromise<T>>
-// all class fields
-// type NonFunctionPropertyNames<T> = {
-//   [K in keyof T]: T[K] extends Function ? never : K
-// }[keyof T]
-// type NonFunctionProperties<T> = Pick<T, NonFunctionPropertyNames<T>>
 
-type MockedAPI<T> = Partial<AsyncMethods<T>>
+type MockedAPI<T> = Partial<Pick<T, MethodNames<T>>>
 
 type Response = {
   headers?: {}
@@ -50,7 +41,6 @@ function ok<T>(data: T, response: Response = {}): GaxiosResponse<T> {
   return {
     data: clone(data),
     status: response.status || 200,
-    statusText: response.statusText || 'OK',
     headers: response.headers || {},
     // TODO?
     config: {}
@@ -154,9 +144,7 @@ export class GmailUsers extends GmailChild
 
   async getProfile(
     params: gmail_v1.Params$Resource$Users$Getprofile & TGlobalFields,
-    options?: MethodOptions,
-    // TODO this sould error
-    a?: string
+    options?: MethodOptions
   ): Promise<GaxiosResponse<gmail_v1.Schema$Profile>> {
     return ok({
       emailAddress: this.gmail.email,
