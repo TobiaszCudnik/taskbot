@@ -1,6 +1,5 @@
 import { machine } from 'asyncmachine'
-import { GaxiosResponse } from 'gaxios'
-import { gmail_v1 } from 'googleapis'
+import { gmail_v1 } from '../../../typings/googleapis/gmail'
 // Machine types
 import {
   AsyncMachine,
@@ -57,9 +56,9 @@ export default class GmailQuery {
     public fetch_msgs = false
   ) {
     // TODO loose the cast
-    this.state = <AsyncMachine<TStates, IBind, IEmit>>(<any>machine(
-      sync_state
-    ).id('Gmail/query: ' + this.name))
+    this.state = <AsyncMachine<TStates, IBind, IEmit>>(
+      (<any>machine(sync_state).id('Gmail/query: ' + this.name))
+    )
     this.state.setTarget(this)
 
     this.log = this.gmail.root.logger.createLogger({
@@ -126,13 +125,10 @@ export default class GmailQuery {
         params.pageToken = prevRes.nextPageToken
       }
 
-      type TResponse = GaxiosResponse<gmail_v1.Schema$ListThreadsResponse>
-
-      let list: TResponse = await this.gmail.req(
+      let list = await this.gmail.req(
         'users.threads.list',
         this.gmail.api.users.threads.list,
         this.gmail.api.users.threads,
-        // @ts-ignore manually typed params
         params,
         abort
       )

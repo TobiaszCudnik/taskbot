@@ -1,8 +1,11 @@
 import { Semaphore } from 'await-semaphore'
-import { GaxiosResponse } from 'gaxios'
-import { gmail_v1, google, tasks_v1 } from 'googleapis'
+import { GaxiosPromise, GaxiosResponse } from 'gaxios'
+import { google } from 'googleapis'
+import { gmail_v1 } from '../../typings/googleapis/gmail'
+import { tasks_v1 } from '../../typings/googleapis/tasks'
 import { MethodOptions } from 'googleapis-common/build/src/api'
 import * as https from 'https'
+import { TGlobalFields } from '../google/sync'
 import GC from '../sync/gc'
 import { default as Logger, log_fn } from './logger'
 
@@ -112,21 +115,21 @@ export default class Connections {
   }
 
   // TODO take abort() as the second param
-  async req<A, T>(
+  async req<P, R>(
     user_id: string,
     method_name: string,
-    method: (params: A) => T,
+    method: (params: P, options: MethodOptions) => GaxiosPromise<R>,
     context: object,
-    params: A,
+    params: P & TGlobalFields,
     abort: (() => boolean) | null | undefined,
     options: MethodOptions = {},
     retries = 3
     // @ts-ignore TODO fix type
-  ): T {
+  ): Promise<GaxiosResponse<R>> {
     // prepare a version of params for logging
     let params_log = null
     if (!params) {
-      params = {} as A
+      params = {} as P
     }
     // @ts-ignore
     params_log = { method_name, ...params }

@@ -2,7 +2,6 @@ import { machine } from 'asyncmachine'
 import { TAbortFunction } from 'asyncmachine/types'
 import * as clone from 'deepcopy'
 import * as delay from 'delay'
-import { GaxiosResponse } from 'gaxios'
 import { tasks_v1 } from 'googleapis'
 import * as _ from 'lodash'
 import * as moment from 'moment'
@@ -91,8 +90,7 @@ export default class GTasksListSync extends SyncReader<
         ? { 'If-None-Match': this.etags.tasks }
         : {}
     }
-    type TResponse = GaxiosResponse<TTasksRes>
-    const res: TResponse = await this.gtasks.req(
+    const res = await this.gtasks.req(
       'api.tasks.list',
       this.gtasks.api.tasks.list,
       this.gtasks.api.tasks,
@@ -278,11 +276,10 @@ export default class GTasksListSync extends SyncReader<
           hidden: false
         }
       }
-      type TResponse = GaxiosResponse<TTask>
       // check if not hidden (new google's clients behavior)
       // only during the first merge run
       // @ts-ignore manually typed
-      const refreshed: TResponse | null =
+      const refreshed =
         this.root.merge_tries == 1
           ? await this.gtasks.req(
               'api.tasks.patch',

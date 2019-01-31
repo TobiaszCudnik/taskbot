@@ -129,9 +129,9 @@ export interface IFirebaseConfig {
 }
 
 export interface IConfigWWW {
-  firebase: IFirebaseConfig,
+  firebase: IFirebaseConfig
   firebase_staging?: Partial<IFirebaseConfig>
-  firebase_dev?: Partial<IFirebaseConfig>,
+  firebase_dev?: Partial<IFirebaseConfig>
   ga_tracking_id: string
 }
 

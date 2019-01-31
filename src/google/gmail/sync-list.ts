@@ -49,7 +49,10 @@ export default class GmailListSync extends SyncReader<
       true
     )
     // this.query.state.add('Enabled')
-    this.state.pipe(['Enabled', 'Dirty'], this.query.state)
+    this.state.pipe(
+      ['Enabled', 'Dirty'],
+      this.query.state
+    )
   }
 
   // ----- -----

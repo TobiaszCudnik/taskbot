@@ -1,10 +1,10 @@
 import { machine } from 'asyncmachine'
 import { TAbortFunction } from 'asyncmachine/types'
-import { GaxiosResponse } from 'gaxios'
+import { GaxiosPromise, GaxiosResponse } from 'gaxios'
 import * as merge from 'deepmerge'
 import * as delay from 'delay'
 import * as regexEscape from 'escape-string-regexp'
-import { gmail_v1 } from 'googleapis'
+import { gmail_v1 } from '../../../typings/googleapis/gmail'
 import { MethodOptions } from 'googleapis-common/build/src/api'
 import * as _ from 'lodash'
 import { trim } from 'lodash'
@@ -279,20 +279,17 @@ export default class GmailSync extends SyncWriter<
 
   async FetchingLabels_state() {
     const abort = this.state.getAbort('FetchingLabels')
-    const params: gmail_v1.Params$Resource$Users$Labels$List & TGlobalFields = {
-      userId: 'me',
-      fields: 'labels(id,name,color,labelListVisibility,messageListVisibility)'
-    }
-    const res: GaxiosResponse<
-      gmail_v1.Schema$ListLabelsResponse
-    > = (await this.req(
+    const res = await this.req(
       'users.labels.list',
       this.api.users.labels.list,
       this.api.users.labels,
-      // @ts-ignore params typed manually
-      params,
+      {
+        userId: 'me',
+        fields:
+          'labels(id,name,color,labelListVisibility,messageListVisibility)'
+      },
       abort
-    )) as any
+    )
     if (abort()) return
     this.labels = res.data.labels
     await this.assertPredefinedLabelsExist(abort)
@@ -310,18 +307,16 @@ export default class GmailSync extends SyncWriter<
 
   async FetchingHistoryId_state(abort?: () => boolean) {
     this.log('[FETCH] history ID')
-    const params: gmail_v1.Params$Resource$Users$Getprofile & TGlobalFields = {
-      userId: 'me',
-      fields: 'historyId'
-    }
-    const response: GaxiosResponse<gmail_v1.Schema$Profile> = (await this.req(
+    const response = await this.req(
       'users.getProfile',
       this.api.users.getProfile,
       this.api.users,
-      // @ts-ignore params typed manually
-      params,
+      {
+        userId: 'me',
+        fields: 'historyId'
+      },
       abort
-    )) as any
+    )
     if (abort && abort()) return
     this.history_id_latest = parseInt(response.data.historyId, 10)
     this.history_ids.push({
@@ -343,15 +338,15 @@ export default class GmailSync extends SyncWriter<
   /**
    * Request decorator
    */
-  async req<A, T>(
+  async req<P, R>(
     method_name: string,
-    method: (params: A) => T,
+    method: (params: P, options: MethodOptions) => GaxiosPromise<R>,
     context: object,
-    params: A,
+    params: P,
     abort: (() => boolean) | null | undefined,
     options?: MethodOptions
     // @ts-ignore TODO fix type
-  ): T {
+  ): Promise<GaxiosResponse<R>> {
     // @ts-ignore
     params.auth = this.auth.client
     return await this.root.connections.req(
@@ -411,17 +406,16 @@ export default class GmailSync extends SyncWriter<
         if (sync) {
           this.log(`Syncing label '${label.name}'`)
           const patch = this.labelDefToGmailDef(def)
-          const params: gmail_v1.Params$Resource$Users$Labels$Patch = {
-            userId: 'me',
-            id: label.id,
-            requestBody: patch
-          }
           await this.req(
             'users.labels.patch',
             this.api.users.labels.patch,
             this.api.users.labels,
             // @ts-ignore params typed manually
-            params,
+            {
+              userId: 'me',
+              id: label.id,
+              requestBody: patch
+            },
             abort
           )
           Object.assign(label, patch)
@@ -436,20 +430,17 @@ export default class GmailSync extends SyncWriter<
     }
     await Promise.all(
       this.labels_to_fetch.map(async id => {
-        const params: gmail_v1.Params$Resource$Users$Labels$Get &
-          TGlobalFields = {
-          userId: 'me',
-          id,
-          fields: 'id,name,color'
-        }
-        const res: GaxiosResponse<gmail_v1.Schema$Label> = (await await this.req(
+        const res = await await this.req(
           'users.labels.get',
           this.api.users.labels.get,
           this.api.users.labels,
-          // @ts-ignore params typed manually
-          params,
+          {
+            userId: 'me',
+            id,
+            fields: 'id,name,color'
+          },
           abort
-        )) as any
+        )
         this.labels.push(res.data)
       })
     )
@@ -655,25 +646,21 @@ export default class GmailSync extends SyncWriter<
 
     this.log(log_msg)
 
-    const params: gmail_v1.Params$Resource$Users$Threads$Modify &
-      TGlobalFields = {
-      id: thread_id,
-      userId: 'me',
-      fields: 'id',
-      requestBody: {
-        addLabelIds: add_label_ids,
-        removeLabelIds: remove_label_ids
-      }
-    }
-
-    let ret: GaxiosResponse<gmail_v1.Schema$Thread> = (await this.req(
+    let ret = await this.req(
       'users.threads.modify',
       this.api.users.threads.modify,
       this.api.users.threads,
-      // @ts-ignore params typed manually
-      params,
+      {
+        id: thread_id,
+        userId: 'me',
+        fields: 'id',
+        requestBody: {
+          addLabelIds: add_label_ids,
+          removeLabelIds: remove_label_ids
+        }
+      },
       abort
-    )) as any
+    )
     // immediately re-fetch the thread, so its refreshed even if included in
     // any other query
     // TODO catch the error when thread disappears
@@ -696,22 +683,20 @@ export default class GmailSync extends SyncWriter<
     caller = ''
   ): Promise<TThread | null> {
     // TODO limit the max msgs amount
-    const params: gmail_v1.Params$Resource$Users$Threads$Get & TGlobalFields = {
-      id,
-      userId: 'me',
-      format: 'metadata',
-      fields: 'id,historyId,messages(id,labelIds,payload(headers))',
-      // @ts-ignore wrong d.ts
-      metadataHeaders: ['SUBJECT', 'FROM', 'TO']
-    }
-    let thread: GaxiosResponse<gmail_v1.Schema$Thread> = (await this.req(
+    let thread = await this.req(
       'users.threads.get',
       this.api.users.threads.get,
       this.api.users.threads,
-      // @ts-ignore params typed manually
-      params,
+      {
+        id,
+        userId: 'me',
+        format: 'metadata',
+        fields: 'id,historyId,messages(id,labelIds,payload(headers))',
+        // @ts-ignore wrong d.ts
+        metadataHeaders: ['SUBJECT', 'FROM', 'TO']
+      },
       abort
-    )) as any
+    )
     if (!thread) {
       // TODO stacktrace / label
       const previous = this.threads.get(id)
@@ -755,23 +740,20 @@ export default class GmailSync extends SyncWriter<
   ): Promise<string | null> {
     await this.createLabelsIfMissing(labels, abort)
     this.log(`Creating thread '${subject}' (${labels.join(', ')})`)
-    const params: gmail_v1.Params$Resource$Users$Messages$Insert &
-      TGlobalFields = {
-      userId: 'me',
-      fields: 'threadId',
-      requestBody: {
-        raw: this.createEmail(subject),
-        labelIds: labels.map(l => this.getLabelID(l))
-      }
-    }
-    const ret: GaxiosResponse<gmail_v1.Schema$Message> = (await this.req(
+    const ret = await this.req(
       'users.messages.insert',
       this.api.users.messages.insert,
       this.api.users.messages,
-      // @ts-ignore params typed manually
-      params,
+      {
+        userId: 'me',
+        fields: 'threadId',
+        requestBody: {
+          raw: this.createEmail(subject),
+          labelIds: labels.map(l => this.getLabelID(l))
+        }
+      },
       abort
-    )) as any
+    )
     this.log_verbose(`New thread ID - '${ret.data.threadId}'`)
     return ret.data.threadId
   }
@@ -830,21 +812,19 @@ export default class GmailSync extends SyncWriter<
         // decorate with local definiton
         const gmail_def = def ? this.labelDefToGmailDef(def) : null
         this.log(`Creating a new label '${name}'`)
-        const params: gmail_v1.Params$Resource$Users$Labels$Create = {
-          userId: 'me',
-          requestBody: {
-            labelListVisibility: 'labelShow',
-            messageListVisibility: 'show',
-            name,
-            ...gmail_def
-          }
-        }
-        const res: GaxiosResponse<gmail_v1.Schema$Label> = (await this.req(
+        const res = (await this.req(
           'users.labels.create',
           this.api.users.labels.create,
           this.api.users.labels,
-          // @ts-ignore params typed manually
-          params,
+          {
+            userId: 'me',
+            requestBody: {
+              labelListVisibility: 'labelShow',
+              messageListVisibility: 'show',
+              name,
+              ...gmail_def
+            }
+          },
           abort
         )) as any
         this.labels.push(res.data)

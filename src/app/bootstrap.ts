@@ -113,10 +113,4 @@ async function exit() {
 }
 
 // TODO move to app
-create_repl(
-  app.syncs,
-  connections,
-  logger,
-  init_am_inspector,
-  config.repl_port
-)
+create_repl(app.syncs, connections, logger, init_am_inspector, config.repl_port)

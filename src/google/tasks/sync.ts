@@ -1,9 +1,9 @@
 import { machine, PipeFlags } from 'asyncmachine'
 import { TAbortFunction } from 'asyncmachine/types'
-import { GaxiosResponse } from 'gaxios'
+import { GaxiosPromise, GaxiosResponse } from 'gaxios'
 import * as delay from 'delay'
 import * as regexEscape from 'escape-string-regexp'
-import { tasks_v1 } from 'googleapis'
+import { tasks_v1 } from '../../../typings/googleapis/tasks'
 import { MethodOptions } from 'googleapis-common/build/src/api'
 import * as _ from 'lodash'
 import * as moment from 'moment'
@@ -190,7 +190,7 @@ export default class GTasksSync extends SyncWriter<
     if (this.etags.task_lists) {
       params.headers['If-None-Match'] = this.etags.task_lists
     }
-    const res: GaxiosResponse<TTaskListsRes> = await this.req(
+    const res = await this.req(
       'tasklists.list',
       this.api.tasklists.list,
       this.api.tasklists,
@@ -239,15 +239,15 @@ export default class GTasksSync extends SyncWriter<
    * Request decorator
    * TODO extract as a GoogleRequestMixin
    */
-  async req<A, T>(
+  async req<P, R>(
     method_name: string,
-    method: (params: A) => T,
-    pointer: object,
-    params: A,
+    method: (params: P, options: MethodOptions) => GaxiosPromise<R>,
+    context: object,
+    params: P,
     abort: (() => boolean) | null | undefined,
     options?: MethodOptions
     // @ts-ignore TODO fix type
-  ): T {
+  ): Promise<GaxiosResponse<R>> {
     this.root.connections.requests.gtasks.push(
       parseInt(moment().format('x'), 10)
     )
@@ -259,9 +259,9 @@ export default class GTasksSync extends SyncWriter<
     }
     return await this.root.connections.req(
       this.root.config.user.id,
-      'gtasks.' + method_name,
+      'gtasks' + method_name,
       method,
-      pointer,
+      context,
       params,
       abort,
       options
@@ -272,17 +272,15 @@ export default class GTasksSync extends SyncWriter<
     await Promise.all(
       names.map(async name => {
         this.log(`Creating a new list tasklist '${name}'`)
-        const params: tasks_v1.Params$Resource$Tasklists$Insert = {
-          requestBody: {
-            title: name
-          }
-        }
         await this.req(
           'tasklists.insert',
           this.api.tasklists.insert,
           this.api.tasklists,
-          // @ts-ignore typed manually
-          params,
+          {
+            requestBody: {
+              title: name
+            }
+          },
           abort
         )
       })
@@ -469,7 +467,7 @@ export default class GTasksSync extends SyncWriter<
       if (previous_sibling_id) {
         params.previous = previous_sibling_id
       }
-      const res: GaxiosResponse<TTask> = await this.req(
+      const res = await this.req(
         'tasks.insert',
         this.api.tasks.insert,
         this.api.tasks,
@@ -595,27 +593,23 @@ export default class GTasksSync extends SyncWriter<
             if (task_id) return
             // omit tasks marked for deletion
             if (record.to_delete) return
-            const params: tasks_v1.Params$Resource$Tasks$Insert &
-              TGlobalFields = {
-              tasklist: sync.list.id,
-              fields: 'id',
-              requestBody: {
-                title:
-                  record.title +
-                  this.root.getRecordLabelsAsText(record, sync.config),
-                notes: this.addGmailID(record.content, record.gmail_id)
-              }
-            }
             this.log(
               `Adding a new task '${record.title}' to '${sync.list.title}'`
             )
-            type TResponse = GaxiosResponse<TTask>
-            const res: TResponse = await this.req(
+            const res = await this.req(
               'tasks.insert',
               this.api.tasks.insert,
               this.api.tasks,
-              // @ts-ignore manual typing
-              params,
+              {
+                tasklist: sync.list.id,
+                fields: 'id',
+                requestBody: {
+                  title:
+                    record.title +
+                    this.root.getRecordLabelsAsText(record, sync.config),
+                  notes: this.addGmailID(record.content, record.gmail_id)
+                }
+              },
               abort
             )
             if (abort && abort()) abort()

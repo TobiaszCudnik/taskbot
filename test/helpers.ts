@@ -136,7 +136,7 @@ export default async function createHelpers() {
   }
 
   async function getThread(id: string): Promise<Thread> {
-    const res: GaxiosResponse<Thread> = await req(
+    const res = await req(
       'gmail.users.threads.get',
       gmail.users.threads.get,
       gmail.users.threads,
@@ -348,7 +348,7 @@ export default async function createHelpers() {
 
   async function truncateGTasks() {
     // get all the lists
-    const res: GaxiosResponse<tasks_v1.Schema$TaskLists> = await req(
+    const res = await req(
       'gtasks.tasklists.list',
       gtasks.tasklists.list,
       gtasks.tasklists,
@@ -375,7 +375,7 @@ export default async function createHelpers() {
     const list = gtasks_sync.getListByName(name)
     assert(list, `list doesn't exist`)
     // get all the lists
-    const res: GaxiosResponse<tasks_v1.Schema$Tasks> = await req(
+    const res = await req(
       'gtasks.tasks.list',
       gtasks.tasks.list,
       gtasks.tasks,
@@ -456,7 +456,7 @@ export default async function createHelpers() {
     task_id: string,
     list: string = '!next'
   ): Promise<Task> {
-    const res: GaxiosResponse<Task> = await req(
+    const res = await req(
       'gtasks.tasks.get',
       gtasks.tasks.get,
       gtasks.tasks,
@@ -479,7 +479,7 @@ export default async function createHelpers() {
     completed = false,
     parent?: string
   ): Promise<string> {
-    const res: GaxiosResponse<Task> = await req(
+    const res = await req(
       'gtasks.tasks.insert',
       gtasks.tasks.insert,
       gtasks.tasks,
@@ -504,7 +504,7 @@ export default async function createHelpers() {
    * @return Task ID
    */
   async function patchTask(id, patch: Task, list = '!next'): Promise<string> {
-    const res: GaxiosResponse<Task> = await req(
+    const res = await req(
       'gtasks.tasks.patch',
       gtasks.tasks.patch,
       gtasks.tasks,

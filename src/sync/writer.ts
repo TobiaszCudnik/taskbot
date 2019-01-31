@@ -130,7 +130,10 @@ export abstract class SyncWriter<
     super.bindToSubs()
     for (const sync of this.subs_flat_writers) {
       // inbound
-      sync.state.pipe('WritingDone', this.state_writer)
+      sync.state.pipe(
+        'WritingDone',
+        this.state_writer
+      )
       // outbound
       this.state_writer.pipe(
         'Writing',

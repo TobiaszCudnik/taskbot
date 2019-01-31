@@ -4,7 +4,8 @@
     "lib": ["es2017", "es2016", "es2016.array.include", "dom"],
     "declaration": true,
     "module": "commonjs",
-    "sourceMap": true
+    "sourceMap": true,
+    "skipLibCheck": true
     //        "strict": true
     // "noUnusedLocals": true,
     // "noUnusedParameters": true,
