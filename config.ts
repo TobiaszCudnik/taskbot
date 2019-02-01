@@ -75,6 +75,8 @@ const config: IConfigPublic = {
   gtasks: {
     // per user
     request_quota_100_user: 500,
+    // when to delay based on user quota
+    request_quota_100_user_cap: 0.25,
     // global
     request_quota_day: 50_000,
     quota_exceeded_delay: 50,

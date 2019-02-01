@@ -373,6 +373,7 @@ export default class RootSync extends SyncWriter<
         sync.state.drop('ReadingDone')
         await sync.state.whenNot('ReadingDone')
       })
+      this.last_read_tries++
       return this.state.add('Reading')
       // TODO `time` to the config
     } else if (this.last_read_tries > 10) {

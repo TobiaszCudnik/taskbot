@@ -1,7 +1,6 @@
 ///<reference path="../typings/index.d.ts"/>
 ///<reference path="../typings/global.d.ts"/>
 
-import { tasks_v1 } from 'googleapis'
 import createHelpers from './helpers'
 
 const scenario = parseInt(process.env['SCENARIO'], 10) || 0
@@ -86,7 +85,7 @@ describe(`gtasks (sync_type: ${scenario})`, function() {
 
   describe.skip('db', function() {
     it('syncs new tasks', async function() {})
-    it('syncs tasks removalsa', function() {})
+    it('syncs tasks removals', function() {})
   })
 
   describe('gmail', function() {

@@ -239,7 +239,7 @@ export default class GTasksSync extends SyncWriter<
    * Request decorator
    * TODO extract as a GoogleRequestMixin
    */
-  async req<P, R>(
+  async req<P extends tasks_v1.StandardParameters, R>(
     method_name: string,
     method: (params: P, options: MethodOptions) => GaxiosPromise<R>,
     context: object,
@@ -253,6 +253,8 @@ export default class GTasksSync extends SyncWriter<
     )
     // @ts-ignore
     params.auth = this.auth.client
+    // ID for the quota calculation
+    params.quotaUser = this.root.config.user.uid
     // check the internal per-user quota
     if (this.user_quota == 1) {
       this.state.add('QuotaExceeded')

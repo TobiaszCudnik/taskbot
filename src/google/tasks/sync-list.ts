@@ -163,19 +163,24 @@ export default class GTasksListSync extends SyncReader<
       this.log(`QuotaExceeded, skipping reading`)
       return false
     }
-    if (this.state.is('Dirty') || !this.last_read_end) {
-      this.log_verbose(`Forced read - Dirty`)
-      return true
-    }
     // TODO check users internal quota to avoid too many dirty refreshes
     // Reuse the previous version if running out of quota and data is expected
     // to be the same
-    // TODO move to the config
-    if (this.gtasks.short_quota_usage >= 0.25) {
+    if (
+      this.gtasks.short_quota_usage >=
+      this.root.config.gtasks.request_quota_100_user_cap
+    ) {
       this.log_verbose(
         `Reading skipped - short quota is ${this.gtasks.short_quota_usage}`
       )
+      // TODO mark that the sync didnt happen because of the quota and it
+      //   should be redone, eg 'FreqQuotaExceeded', which is unset when
+      //   the sync starts
       return false
+    }
+    if (this.state.is('Dirty') || !this.last_read_end) {
+      this.log_verbose(`Forced read - Dirty`)
+      return true
     }
     const since_last_read = moment.duration(moment().diff(this.last_read_start))
     const sync_frequency = this.sync_frequency

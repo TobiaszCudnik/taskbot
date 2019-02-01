@@ -1,12 +1,17 @@
 ///<reference path="../typings/index.d.ts"/>
 
-export const DELAY = process.env['MOCK'] ? 0 : 500
+export const DELAY = process.env['MOCK'] ? 0 : 1000
 
 import * as assert from 'assert'
-import { GaxiosPromise, GaxiosResponse } from 'gaxios'
 import * as debug from 'debug'
+import * as delay from 'delay'
+import { GaxiosPromise, GaxiosResponse } from 'gaxios'
+import { OAuth2Client } from 'google-auth-library'
+import { google } from 'googleapis'
 import { MethodOptions } from 'googleapis-common'
 import * as _ from 'lodash'
+import * as md5 from 'md5'
+import * as moment from 'moment'
 import { test_user } from '../config-accounts'
 import { getConfig } from '../src/app/config'
 import Connections from '../src/app/connections'
@@ -15,12 +20,9 @@ import GmailSync from '../src/google/gmail/sync'
 import { TGlobalFields } from '../src/google/sync'
 import GTasksSync from '../src/google/tasks/sync'
 import RootSync from '../src/sync/root'
-import * as delay from 'delay'
-import { OAuth2Client } from 'google-auth-library'
-import { google } from 'googleapis'
-import { google as mocks } from './mocks/mocks'
 import { gmail_v1 } from '../typings/googleapis/gmail'
 import { tasks_v1 } from '../typings/googleapis/tasks'
+import { google as mocks } from './mocks/mocks'
 
 if (process.env['MOCK']) {
   // mock 'googleapis'
@@ -39,6 +41,7 @@ export default async function createHelpers() {
   let sync: RootSync
   let gmail_sync: GmailSync
   let gtasks_sync: GTasksSync
+  const quota_user = md5(test_user.email)
   const log_inner = debug('test')
   const log = (msg, ...rest) => {
     // @ts-ignore
@@ -307,6 +310,12 @@ export default async function createHelpers() {
     if (DELAY) {
       await delay(delay)
     }
+    // log requests in `sync.connections` for proper quota calculation
+    if (name.includes('gtasks')) {
+      sync.connections.requests.gtasks.push(parseInt(moment().format('x'), 10))
+      // @ts-ignore
+      params.quotaUser = quota_user
+    }
     // @ts-ignore
     params.auth = auth
     // @ts-ignore prevent JIT from shadowing those, so eval works
@@ -457,16 +466,11 @@ export default async function createHelpers() {
     task_id: string,
     list: string = '!next'
   ): Promise<Task> {
-    const res = await req(
-      'gtasks.tasks.get',
-      gtasks.tasks.get,
-      gtasks.tasks,
-      {
-        tasklist: gtasks_sync.getListByName(list).list.id,
-        task: task_id,
-        fields: 'id,title,updated,status,notes'
-      }
-    )
+    const res = await req('gtasks.tasks.get', gtasks.tasks.get, gtasks.tasks, {
+      tasklist: gtasks_sync.getListByName(list).list.id,
+      task: task_id,
+      fields: 'id,title,updated,status,notes'
+    })
     return res.data
   }
 

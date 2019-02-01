@@ -1,36 +1,26 @@
 import { machine } from 'asyncmachine'
 import { TAbortFunction } from 'asyncmachine/types'
-import { GaxiosPromise, GaxiosResponse } from 'gaxios'
 import * as merge from 'deepmerge'
 import * as delay from 'delay'
 import * as regexEscape from 'escape-string-regexp'
-import { gmail_v1 } from '../../../typings/googleapis/gmail'
+import { GaxiosPromise, GaxiosResponse } from 'gaxios'
 import { MethodOptions } from 'googleapis-common/build/src/api'
 import * as _ from 'lodash'
 import { trim } from 'lodash'
 import * as moment from 'moment'
+import { gmail_v1 } from '../../../typings/googleapis/gmail'
 // Machine types
 import {
   AsyncMachine,
   IBind,
   IEmit,
   IJSONStates,
-  TStates,
-  IBindBase,
-  IEmitBase,
-  ITransitions
+  TStates
 } from '../../../typings/machines/google/gmail/sync'
 import RootSync, { DBRecord } from '../../sync/root'
 import { sync_writer_state, SyncWriter } from '../../sync/writer'
-import {
-  IConfig,
-  IConfigParsed,
-  ILabelDefinition,
-  IListConfig,
-  TRawEmail
-} from '../../types'
+import { IConfigParsed, ILabelDefinition, TRawEmail } from '../../types'
 import Auth from '../auth'
-import { TGlobalFields } from '../sync'
 import GmailListSync from './sync-list'
 
 const SEC = 1000
@@ -338,7 +328,7 @@ export default class GmailSync extends SyncWriter<
   /**
    * Request decorator
    */
-  async req<P, R>(
+  async req<P extends gmail_v1.StandardParameters, R>(
     method_name: string,
     method: (params: P, options: MethodOptions) => GaxiosPromise<R>,
     context: object,

@@ -107,6 +107,7 @@ export interface IConfigPublic {
   exception_flood_delay: number
   gtasks: {
     request_quota_100_user: number
+    request_quota_100_user_cap: number,
     request_quota_day: number
     quota_exceeded_delay: number
     // seconds
