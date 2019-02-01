@@ -18,6 +18,11 @@ beforeAll(async function() {
     'P/project_3'
   ])
 })
+if (process.env['MOCK']) {
+  beforeEach(() => {
+    h.sync.subs.google.honor_quotas = false
+  })
+}
 afterAll(function() {
   if (h) {
     h.printDB()
@@ -66,6 +71,7 @@ describe(`gmail (sync_type: ${scenario})`, function() {
   if (!scenario) {
     it('refreshes on Dirty', async function() {
       h.log('\n\nTEST: refreshes on Dirty')
+      h.sync.subs.google.honor_quotas = true
       await h.syncList(true, false)
       const list = h.gmail_sync.getListByName('!next')
       expect(list.shouldRead()).toBeFalsy()

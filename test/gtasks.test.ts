@@ -21,6 +21,11 @@ beforeAll(async function() {
     'L/location_3'
   ])
 })
+if (process.env['MOCK']) {
+  beforeEach(() => {
+    h.sync.subs.google.honor_quotas = false
+  })
+}
 afterAll(function() {
   if (h) {
     h.printDB()
@@ -51,6 +56,7 @@ describe(`gtasks (sync_type: ${scenario})`, function() {
 
   if (!scenario) {
     it('refreshes on Dirty', async function() {
+      h.sync.subs.google.honor_quotas = true
       await h.syncList(false, true)
       const list = h.gtasks_sync.getListByName('!next')
       expect(list.shouldRead()).toBeFalsy()

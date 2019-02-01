@@ -159,6 +159,9 @@ export default class GTasksListSync extends SyncReader<
       this.log(`List doesn't exist, skipping reading`)
       return false
     }
+    if (!this.root.subs.google.honor_quotas) {
+      return true
+    }
     if (this.state.is('QuotaExceeded')) {
       this.log(`QuotaExceeded, skipping reading`)
       return false

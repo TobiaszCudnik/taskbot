@@ -256,7 +256,7 @@ export default class GTasksSync extends SyncWriter<
     // ID for the quota calculation
     params.quotaUser = this.root.config.user.uid
     // check the internal per-user quota
-    if (this.user_quota == 1) {
+    if (this.root.subs.google.honor_quotas && this.user_quota == 1) {
       this.state.add('QuotaExceeded')
     }
     return await this.root.connections.req(

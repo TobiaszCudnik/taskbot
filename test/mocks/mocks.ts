@@ -434,6 +434,7 @@ export class Tasks {
             this.data.tasks
               .filter(t => t.tasklist === l.id)
               .filter(t => t.title && t.title.trim())
+              .filter(t => !t.deleted)
               .map(
                 t =>
                   (t.status == 'completed' ? 'c ' : '- ') +
@@ -568,9 +569,11 @@ export class TasksTasks extends TasksChild
     assert(params.task)
     assert(params.tasklist)
     this.root.log('delete task', params)
-    const task = this.root.data.tasks.find(
+    const data = this.root.data.tasks
+    const i = data.findIndex(
       t => t.tasklist === params.tasklist && t.id === params.task
     )
+    const task = data[i]
     if (!task) {
       throw new NotFoundError()
     }

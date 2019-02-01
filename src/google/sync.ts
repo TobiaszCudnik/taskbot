@@ -56,6 +56,8 @@ export default class GoogleSync extends SyncWriter<
     tasks: GTasksSync
   }
 
+  honor_quotas = true
+
   constructor(root: RootSync) {
     super(root.config, root)
     this.auth = new Auth(root.config.google, root.config.user.id, root.logger)

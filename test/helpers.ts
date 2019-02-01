@@ -235,6 +235,8 @@ export default async function createHelpers() {
       gmail = mocks.gmail('v1')
       // @ts-ignore
       auth = {}
+      // disable quotas
+      sync.subs.google.honor_quotas = false
     } else {
       // TODO extract
       gtasks = google.tasks('v1')
