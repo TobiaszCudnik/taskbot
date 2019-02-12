@@ -15,7 +15,8 @@ import {
   IEmitBase,
   ITransitions
 } from '../../../typings/machines/google/gmail/sync-list'
-import RootSync, { DBRecord } from '../../sync/root'
+import { DBRecord } from '../../sync/record'
+import RootSync from '../../sync/root'
 import { SyncReader, sync_reader_state } from '../../sync/reader'
 import { IListConfig } from '../../types'
 import GmailQuery from './query'
@@ -207,7 +208,7 @@ export default class GmailListSync extends SyncReader<
       // option 4 - mark as an orphan an let FetchingOrphans handle it
       // this.gmail.threads.delete(record.gmail_id)
       this.printRecordDiff(before, record, 'threads to close')
-      record.gmail_orphan = true
+      record.state.add('GmailMissingThread')
       return record
     })
 

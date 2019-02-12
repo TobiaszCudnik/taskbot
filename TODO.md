@@ -17,6 +17,8 @@
 
 ## Milestone 1:
 
+* automatically add !na to drafts
+  * unless changes to another action status
 * periodically "Clean completed" tasks
   * switch in the settings
 * progress bar when auto-signin in

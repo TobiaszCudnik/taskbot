@@ -1,4 +1,4 @@
-import { DBRecord } from './sync/root'
+import { DBRecord } from './sync/record'
 import { Credentials as GoogleCredentials } from 'google-auth-library/build/src/auth/credentials'
 
 export type TModifyLabels = {

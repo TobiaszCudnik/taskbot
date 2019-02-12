@@ -1,5 +1,5 @@
 import * as delay from 'delay'
-import { DBRecord } from '../../src/sync/root'
+import { DBRecord } from '../../src/sync/record'
 import { createRawEmail } from '../../src/utils'
 // declare module '../data.json' {
 //   const records: DBRecord[]

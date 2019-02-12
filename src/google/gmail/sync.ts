@@ -17,7 +17,8 @@ import {
   IJSONStates,
   TStates
 } from '../../../typings/machines/google/gmail/sync'
-import RootSync, { DBRecord } from '../../sync/root'
+import { DBRecord } from '../../sync/record'
+import RootSync from '../../sync/root'
 import { sync_writer_state, SyncWriter } from '../../sync/writer'
 import { IConfigParsed, ILabelDefinition, TRawEmail } from '../../types'
 import Auth from '../auth'
@@ -184,6 +185,7 @@ export default class GmailSync extends SyncWriter<
   // - downloaded
   // - existing
   // If not, delete the bogus ID and let Writing handle adding
+  // TODO rename to MissingThreads
   async FetchingOrphans_state() {
     const abort = this.state.getAbort('FetchingOrphans')
     // TODO fake cast, wrong d.ts, missing lokijs fields

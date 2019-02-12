@@ -15,7 +15,8 @@ import {
   IBindBase,
   IEmitBase
 } from '../../../typings/machines/google/tasks/sync-list'
-import RootSync, { DBRecord } from '../../sync/root'
+import { DBRecord } from '../../sync/record'
+import RootSync from '../../sync/root'
 import { SyncReader, sync_reader_state } from '../../sync/reader'
 import { IListConfig } from '../../types'
 import { TGlobalFields } from '../sync'
@@ -438,9 +439,10 @@ export default class GTasksListSync extends SyncReader<
     }
     record.content = this.getContent(task.notes)
     // mark as found in case of moving
-    if (record.gtasks_moving) {
-      record.to_delete = false
-    }
+    // TODO handled by state mergers, test
+    // if (record.gtasks_moving) {
+    //   record.to_delete = false
+    // }
     // add to the gtasks id map
     record.gtasks_ids[task.id] = this.list.id
     if (task_updated <= record.updated.gtasks) {

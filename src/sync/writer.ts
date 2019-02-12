@@ -5,7 +5,7 @@ import {
   IJSONStates,
   IState,
   TStates,
-  ITransitions
+  // ITransitions
 } from '../../typings/machines/sync/writer'
 import { SyncReader, sync_reader_state } from './reader'
 import * as moment from 'moment'

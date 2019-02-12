@@ -17,7 +17,8 @@ import {
   IJSONStates,
   TStates
 } from '../../../typings/machines/google/tasks/sync'
-import RootSync, { DBRecord } from '../../sync/root'
+import { DBRecord, DBRecordID, TMergeState } from '../../sync/record'
+import RootSync from '../../sync/root'
 import { sync_writer_state, SyncWriter } from '../../sync/writer'
 import { IConfigParsed } from '../../types'
 import Auth from '../auth'
@@ -164,7 +165,7 @@ export default class GTasksSync extends SyncWriter<
     // cleanup the tmp flags
     // TODO dont use `where`, update the indexes
     this.root.data.where((record: DBRecord) => {
-      delete record.gtasks_hidden_completed
+      this.merger(record.gmail_id).drop('GtasksHiddenCompleted')
       return false
     })
     const last_read = moment.max(this.subs_flat.map(s => s.last_read_start))

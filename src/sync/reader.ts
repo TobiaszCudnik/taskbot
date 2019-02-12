@@ -20,7 +20,8 @@ import {
 import { TModifyLabels } from '../types'
 import { machineLogToDebug } from '../utils'
 import Logger, { log_fn } from '../app/logger'
-import RootSync, { DBRecord } from './root'
+import { DBRecord, DBRecordID, TMergeState } from './record'
+import RootSync from './root'
 
 export { IState }
 export const sync_reader_state: IJSONStates = {
@@ -288,6 +289,15 @@ export abstract class SyncReader<
 
   getState() {
     return machine(sync_reader_state).id('SyncReader')
+  }
+
+  /**
+   * Return true of false based on the mergers state per record.
+   *
+   * `undefined` if the merger doesnt exist.
+   */
+  merger(gmail_id: DBRecordID): TMergeState {
+    return this.root.mergers.get(gmail_id)
   }
 
   async merge(abort: TAbortFunction): Promise<any[]> {

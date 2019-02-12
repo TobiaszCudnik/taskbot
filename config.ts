@@ -1,7 +1,7 @@
 import * as _ from 'lodash'
 import { normalizeLabelName } from './src/google/gmail/sync'
 import LabelFilterSync from './src/sync/label-filter'
-import { DBRecord } from './src/sync/root'
+import { DBRecord } from './src/sync/record'
 import { IConfig, IConfigPublic } from './src/types'
 import { isTestEnv } from './src/utils'
 import moment = require('moment-timezone')

@@ -3,36 +3,34 @@ import { machine } from 'asyncmachine'
 import { TAbortFunction } from 'asyncmachine/types'
 import 'colors'
 import * as debug from 'debug'
+import * as merge from 'deepmerge'
 import * as delay from 'delay'
 import * as diff from 'diff'
 import * as regexEscape from 'escape-string-regexp'
-import { sortedIndex, reverse } from 'lodash'
+import * as _ from 'lodash'
+import { reverse, sortedIndex } from 'lodash'
 import * as Loki from 'lokijs'
-import * as moment from 'moment'
 import * as md5 from 'md5'
+import * as moment from 'moment'
+import { TStates as TReaderStates } from '../../typings/machines/sync/reader'
 // Machine types
 import {
   AsyncMachine,
   IBind,
   IEmit,
   IJSONStates,
-  TStates,
-  IBindBase,
-  IEmitBase,
-  ITransitions
+  TStates
 } from '../../typings/machines/sync/root'
 import Connections from '../app/connections'
+import Logger from '../app/logger'
 import GoogleSync from '../google/sync'
 import { IConfig, IConfigParsed, ILabelDefinition, IListConfig } from '../types'
 import { isProdEnv } from '../utils'
 import GC from './gc'
 import LabelFilterSync from './label-filter'
-import Logger, { log_fn } from '../app/logger'
-import { SyncReader, sync_reader_state } from './reader'
-import { SyncWriter, sync_writer_state } from './writer'
-import * as _ from 'lodash'
-import { TStates as TReaderStates } from '../../typings/machines/sync/reader'
-import * as merge from 'deepmerge'
+import { sync_reader_state, SyncReader } from './reader'
+import { DBRecordID, DBRecord, TMergeState, createRecordMerger } from './record'
+import { sync_writer_state, SyncWriter } from './writer'
 
 // TODO move to utils.ts
 const SEC = 1000
@@ -103,50 +101,6 @@ export type DB = Loki.Collection<DBRecord>
 //   MISSING
 // }
 
-/**
- * Local DB record format.
- */
-export interface DBRecord {
-  gmail_id?: DBRecordID
-  title: string
-  content: string
-  updated: {
-    // must be timestamp
-    latest: number | null
-    gtasks: number | null
-    // history ID
-    gmail_hid: number | null
-  }
-  parent?: DBRecordID
-  labels: { [name: string]: DBRecordLabel }
-  // different task ids per list
-  gtasks_ids?: { [task_id: string]: string }
-  // TODO
-  // gtasks_ids?: {
-  //   [task_id: string]: {
-  //     list_id: string
-  //     status: GTasksStatus
-  //     updated: string
-  //   }
-  // }
-  // marks the record for deletion
-  to_delete?: boolean
-  gtasks_moving?: boolean
-  gtasks_uncompleted?: boolean
-  // TODO maybe store as gmail_lists[id] = boolean instead?
-  gmail_orphan?: boolean
-  gtasks_hidden_completed?: boolean
-}
-
-export type DBRecordID = string
-
-export interface DBRecordLabel {
-  // time
-  updated: number
-  // added or removed
-  active: boolean
-}
-
 export type TStatsUser = {
   // client
   client_last_read: string
@@ -189,6 +143,7 @@ export default class RootSync extends SyncWriter<
   last_gtasks: string
 
   logger: Logger
+  mergers: Map<DBRecordID, TMergeState>
 
   // seconds
   // TODO to the config
@@ -333,7 +288,7 @@ export default class RootSync extends SyncWriter<
           let ret = '- ' + root.logText(r.title)
           const snippet = r.content.replace(/\n/g, '')
           ret += snippet ? `  (${root.logText(snippet)})\n  ` : '\n  '
-          ret += r.to_delete ? `  TO DELETE\n` : ''
+          ret += root.merger(r.gmail_id).is('ToDelete') ? `  TO DELETE\n` : ''
           ret += Object.entries(r.labels)
             .filter(([name, data]) => {
               return data.active
@@ -346,6 +301,12 @@ export default class RootSync extends SyncWriter<
         })
         .join('\n')
     }
+    // make sure every record has a merger
+    // override data.insert()
+    // @ts-ignore
+    this.data.insert = _.wrap(this.data.insert, (func, record: DBRecord) => {
+      this.mergers.set(record.gmail_id, createRecordMerger())
+    })
   }
 
   SubsInited_state() {
@@ -417,24 +378,25 @@ export default class RootSync extends SyncWriter<
     }
   }
 
-  dirtyWriters() {
-    return this.subs_all_writers
-      .filter(s => s.state.is('Dirty') && s.state.not('QuotaExceeded'))
-      .map(s => s.state.id())
-  }
-
   // TODO show how many sources were actually synced
   SyncDone_state() {
+    // for (const record of this.data.data) {
+    //   // delete merge flags
+    //   delete record.gtasks_uncompleted
+    //   delete record.gtasks_moving
+    //   delete record.gtasks_hidden_completed
+    // }
     // remove records pending for removal from the DB
-    for (const record of this.data.data) {
-      // delete merge flags
-      delete record.gtasks_uncompleted
-      delete record.gtasks_moving
-      delete record.gtasks_hidden_completed
-    }
     this.data
       .chain()
-      .find({ to_delete: true })
+      .where((r: DBRecord) => {
+        const del = this.merger(r.gmail_id).is(['Merged', 'ToDelete'])
+        if (del) {
+          // delete the merger
+          this.mergers.delete(r.gmail_id)
+        }
+        return del
+      })
       .remove()
     this.log(
       `SYNC DONE (${this.last_sync_reads} reads):\n` +
@@ -489,6 +451,12 @@ export default class RootSync extends SyncWriter<
     }
     let states = this.getMachines(include_inactive)
     this.log_verbose(states)
+  }
+
+  dirtyWriters() {
+    return this.subs_all_writers
+      .filter(s => s.state.is('Dirty') && s.state.not('QuotaExceeded'))
+      .map(s => s.state.id())
   }
 
   // Returns true in case of more than 100 exceptions during the last 10 minutes

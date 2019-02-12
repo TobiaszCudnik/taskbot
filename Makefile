@@ -124,27 +124,40 @@ am-types:
 	mkdir -p typings/machines/google/gmail
 	mkdir -p typings/machines/google/tasks
 
+	touch typings/machines/sync/reader.js
 	$(AM_TYPES_BIN) src/sync/reader.js -e sync_reader_state \
 		-o typings/machines/sync/reader.ts
+	touch typings/machines/sync/writer.js
 	$(AM_TYPES_BIN) src/sync/writer.js -e sync_writer_state \
 		-o typings/machines/sync/writer.ts
+	touch typings/machines/sync/root.js
 	$(AM_TYPES_BIN) src/sync/root.js -e sync_state \
 		-o typings/machines/sync/root.ts
+	touch typings/machines/sync/record.js
+	$(AM_TYPES_BIN) src/sync/record.js -e merge_state \
+		-o typings/machines/sync/record.ts
 
+	touch typings/machines/google/sync.js
 	$(AM_TYPES_BIN) src/google/sync.js -e sync_state \
 		-o typings/machines/google/sync.ts
+	touch typings/machines/google/auth.js
 	$(AM_TYPES_BIN) src/google/auth.json \
 		-o typings/machines/google/auth.ts
 
+	touch typings/machines/google/tasks/sync.js
 	$(AM_TYPES_BIN) src/google/tasks/sync.js -e sync_state \
 		-o typings/machines/google/tasks/sync.ts
+	touch typings/machines/google/tasks/sync-list.js
 	$(AM_TYPES_BIN) src/google/tasks/sync-list.js -e sync_state \
 		-o typings/machines/google/tasks/sync-list.ts
 
+	touch typings/machines/google/gmail/sync-list.js
 	$(AM_TYPES_BIN) src/google/gmail/sync-list.js -e sync_state \
 		-o typings/machines/google/gmail/sync-list.ts
+	touch typings/machines/google/gmail/sync.js
 	$(AM_TYPES_BIN) src/google/gmail/sync.js -e sync_state \
 		-o typings/machines/google/gmail/sync.ts
+	touch typings/machines/google/gmail/query.js
 	$(AM_TYPES_BIN) src/google/gmail/query.js -e sync_state \
 		-o typings/machines/google/gmail/query.ts
 

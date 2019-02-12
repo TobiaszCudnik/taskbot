@@ -11,7 +11,7 @@ import {
   IEmitBase
 } from '../../typings/machines/sync/reader'
 import { ILabelFilter } from '../types'
-import { DBRecord } from './root'
+import { DBRecord } from './record'
 import { SyncReader } from './reader'
 
 export default class LabelFilterSync extends SyncReader<
