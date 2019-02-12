@@ -165,7 +165,7 @@ export default class GTasksSync extends SyncWriter<
     // cleanup the tmp flags
     // TODO dont use `where`, update the indexes
     this.root.data.where((record: DBRecord) => {
-      this.merger(record.gmail_id).drop('GtasksHiddenCompleted')
+      this.merger(record.id).drop('GtasksHiddenCompleted')
       return false
     })
     const last_read = moment.max(this.subs_flat.map(s => s.last_read_start))
@@ -330,7 +330,8 @@ export default class GTasksSync extends SyncWriter<
               .limit(1)
               .data())
             const record: DBRecord = db_res[0]
-            if (record.to_delete) {
+            const merger = this.merger(record.id)
+            if (merger.is('ToDelete')) {
               return
             }
             // TODO type
@@ -410,10 +411,11 @@ export default class GTasksSync extends SyncWriter<
               .chain()
               .where((record: DBRecord) => {
                 // TODO implement gtasks_hidden_ids
+                const merger = this.merger(record.id)
                 return Boolean(
                   record.gtasks_ids &&
                     record.gtasks_ids[task.id] &&
-                    record.to_delete
+                    merger.is('ToDelete')
                 )
               })
               .limit(1)
@@ -584,18 +586,24 @@ export default class GTasksSync extends SyncWriter<
       this.subs.lists.map(async (sync: GTasksListSync) => {
         const records = this.root.data.where((record: DBRecord) => {
           // TODO implement gtasks_hidden_ids
-          return !record.to_delete && sync.config.db_query(record)
+          const merger = this.merger(record.id)
+          return merger.not('ToDelete') && sync.config.db_query(record)
         })
         await Promise.all(
           records.map(async (record: DBRecord) => {
+            const merger = this.merger(record.id)
             const task_id = _.findKey(
               record.gtasks_ids,
               id => id == sync.list.id
             )
             // omit tasks who are already on the list
-            if (task_id) return
+            if (task_id) {
+              return
+            }
             // omit tasks marked for deletion
-            if (record.to_delete) return
+            if (merger.is('ToDelete')) {
+              return
+            }
             this.log(
               `Adding a new task '${record.title}' to '${sync.list.title}'`
             )

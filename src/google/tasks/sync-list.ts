@@ -5,6 +5,7 @@ import * as delay from 'delay'
 import { tasks_v1 } from 'googleapis'
 import * as _ from 'lodash'
 import * as moment from 'moment'
+import * as randomId from 'simple-random-id'
 // Machine types
 import {
   AsyncMachine,
@@ -275,7 +276,11 @@ export default class GTasksListSync extends SyncReader<
     }
     for (const task of deleted) {
       const record = this.getFromDB(task)
-      if (!record || record.gtasks_hidden_completed) {
+      if (!record) {
+        continue
+      }
+      const merger = this.merger(record.id)
+      if (merger.is('GtasksHiddenCompleted')) {
         continue
       }
       const params: tasks_v1.Params$Resource$Tasks$Patch = {
@@ -309,7 +314,7 @@ export default class GTasksListSync extends SyncReader<
         this.state.add('Dirty')
         // add back to the cache
         this.tasks.items.push(refreshed.data)
-        record.gtasks_hidden_completed = true
+        merger.add('GtasksHiddenCompleted')
       } else {
         // task was really deleted
         this.log(`Task '${record.title}' deleted in GTasks`)
@@ -335,8 +340,7 @@ export default class GTasksListSync extends SyncReader<
           this.mark_to_delete.includes(task.id)
         ) {
           this.log(`Marking record '${record.title}' for deletion`)
-          record.to_delete = true
-          record.gtasks_moving = true
+          merger.add(['ToDelete', 'GtasksMoving'])
         } else {
           // if the task was moved, delete the old ID
           delete record.gtasks_ids[task.id]
@@ -373,9 +377,10 @@ export default class GTasksListSync extends SyncReader<
   }
 
   createRecord(task: TTask): DBRecord {
-    const id = this.gtasks.toGmailID(task)
+    const gmail_id = this.gtasks.toGmailID(task)
     const text_labels = this.root.getLabelsFromText(task.title, true)
     const record: DBRecord = {
+      id: randomId(),
       title: text_labels.text,
       content: this.getContent(task.notes),
       labels: {},
@@ -388,8 +393,8 @@ export default class GTasksListSync extends SyncReader<
         [task.id]: this.list.id
       }
     }
-    if (id) {
-      record.gmail_id = id
+    if (gmail_id) {
+      record.gmail_id = gmail_id
     }
     // apply labels from the list definition
     const labels =

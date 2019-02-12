@@ -7,15 +7,7 @@ import {
   TStates
 } from '../../typings/machines/sync/record'
 
-// TODO create Root.mergers and keep a merger-per-record
-//   dispose then deleting
-// TODO port to states
-//   - to_delete?: boolean
-//   - gtasks_moving?: boolean
-//   - gtasks_uncompleted?: boolean
-//   - gmail_orphan?: boolean
-//   - gtasks_hidden_completed?: boolean
-//   - gtasks_moving?: boolean
+// TODO implement internal IDs for records instead of gmail_id
 export { IState }
 export const merge_state: IJSONStates = {
   // TODO define what Merged means
@@ -51,26 +43,29 @@ export function createRecordMerger(): TMergeState {
  * Local DB record format.
  */
 export interface DBRecord {
-  // TODO internal ID
-  gmail_id?: DBRecordID
+  id: DBRecordID
+  gmail_id?: DBGmailID
   title: string
   content: string
   updated: {
-    // must be timestamp
+    // must be timestamp (miliseconds)
     latest: number | null
     gtasks: number | null
     // history ID
     gmail_hid: number | null
   }
-  parent?: DBRecordID
+  // TODO `id` of `gmail_id`
+  // parent?: DBRecordID
   labels: { [name: string]: DBRecordLabel }
   // different task ids per list
   gtasks_ids?: {
-    [task_id: string]: string
+    [task_id: string]: DBGtasksID
   }
 }
 
 export type DBRecordID = string
+export type DBGmailID = string
+export type DBGtasksID = string
 
 export interface DBRecordLabel {
   // time

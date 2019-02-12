@@ -191,13 +191,18 @@ export default class GmailSync extends SyncWriter<
     // TODO fake cast, wrong d.ts, missing lokijs fields
     // TODO GC the orphaned threads after some time
     const records_without_threads = this.root.data.where((r: DBRecord) => {
-      return (r.gmail_id && !this.threads.get(r.gmail_id)) || r.gmail_orphan
+      const merger = this.merger(r.id)
+      return (
+        (r.gmail_id && !this.threads.get(r.gmail_id)) ||
+        merger.is('GmailThreadMissing')
+      )
     })
     this.log_verbose(
       `Processing ${records_without_threads.length} orphaned threads`
     )
     await Promise.all(
       records_without_threads.map(async (record: DBRecord) => {
+        const merger = this.merger(record.id)
         let thread = this.threads.get(record.gmail_id)
         // TODO time to config
         const too_old = parseInt(
@@ -227,7 +232,7 @@ export default class GmailSync extends SyncWriter<
               }' doesn't exist, marking the record for deletion`
             )
             delete record.gmail_id
-            record.to_delete = true
+            merger.add('ToDelete')
             // @ts-ignore
             this.root.markListsAsDirty(this, record)
             this.root.data.update(record)
@@ -442,9 +447,7 @@ export default class GmailSync extends SyncWriter<
 
   async processThreadsToDelete(abort: () => boolean): Promise<void[]> {
     const to_delete = this.root.data
-      .find({
-        to_delete: true
-      })
+      .where((r: DBRecord) => this.merger(r.id).is('ToDelete'))
       .filter((record: DBRecord) => Boolean(record.gmail_id))
 
     if (to_delete.length) {
@@ -472,7 +475,7 @@ export default class GmailSync extends SyncWriter<
       .find({
         gmail_id: undefined
       })
-      .filter((record: DBRecord) => !record.to_delete)
+      .filter((r: DBRecord) => this.merger(r.id).not('ToDelete'))
 
     if (new_threads.length) {
       this.log(`Creating ${new_threads.length} new threads`)

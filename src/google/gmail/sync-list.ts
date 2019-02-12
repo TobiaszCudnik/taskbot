@@ -1,9 +1,8 @@
 import { machine } from 'asyncmachine'
 import { TAbortFunction } from 'asyncmachine/types'
-import * as debug from 'debug'
 import * as clone from 'deepcopy'
-import * as loki from 'lokijs'
 import * as moment from 'moment'
+import * as randomId from 'simple-random-id'
 // Machine types
 import {
   AsyncMachine,
@@ -208,7 +207,7 @@ export default class GmailListSync extends SyncReader<
       // option 4 - mark as an orphan an let FetchingOrphans handle it
       // this.gmail.threads.delete(record.gmail_id)
       this.printRecordDiff(before, record, 'threads to close')
-      record.state.add('GmailMissingThread')
+      this.merger(record.id).add('GmailThreadMissing')
       return record
     })
 
@@ -222,6 +221,7 @@ export default class GmailListSync extends SyncReader<
     const self_sent = from == me && to == me
     let title = this.gmail.getTitleFromThread(thread)
     const record: DBRecord = {
+      id: randomId(),
       gmail_id: this.toDBID(thread.id),
       title: title,
       content: self_sent ? '' : `From ${from}\n`,

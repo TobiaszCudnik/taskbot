@@ -288,7 +288,7 @@ export default class RootSync extends SyncWriter<
           let ret = '- ' + root.logText(r.title)
           const snippet = r.content.replace(/\n/g, '')
           ret += snippet ? `  (${root.logText(snippet)})\n  ` : '\n  '
-          ret += root.merger(r.gmail_id).is('ToDelete') ? `  TO DELETE\n` : ''
+          ret += root.merger(r.id).is('ToDelete') ? `  TO DELETE\n` : ''
           ret += Object.entries(r.labels)
             .filter(([name, data]) => {
               return data.active
@@ -390,10 +390,10 @@ export default class RootSync extends SyncWriter<
     this.data
       .chain()
       .where((r: DBRecord) => {
-        const del = this.merger(r.gmail_id).is(['Merged', 'ToDelete'])
+        const del = this.merger(r.id).is(['Merged', 'ToDelete'])
         if (del) {
           // delete the merger
-          this.mergers.delete(r.gmail_id)
+          this.mergers.delete(r.id)
         }
         return del
       })

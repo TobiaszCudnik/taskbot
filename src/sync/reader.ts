@@ -296,8 +296,8 @@ export abstract class SyncReader<
    *
    * `undefined` if the merger doesnt exist.
    */
-  merger(gmail_id: DBRecordID): TMergeState {
-    return this.root.mergers.get(gmail_id)
+  merger(id: DBRecordID): TMergeState {
+    return this.root.mergers.get(id)
   }
 
   async merge(abort: TAbortFunction): Promise<any[]> {
