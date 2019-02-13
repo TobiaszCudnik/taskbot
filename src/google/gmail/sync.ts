@@ -1,5 +1,6 @@
 import { machine } from 'asyncmachine'
 import { TAbortFunction } from 'asyncmachine/types'
+import * as clone from 'deepcopy'
 import * as merge from 'deepmerge'
 import * as delay from 'delay'
 import * as regexEscape from 'escape-string-regexp'
@@ -21,6 +22,7 @@ import { DBRecord } from '../../sync/record'
 import RootSync from '../../sync/root'
 import { sync_writer_state, SyncWriter } from '../../sync/writer'
 import { IConfigParsed, ILabelDefinition, TRawEmail } from '../../types'
+import { getTimestamp } from '../../utils'
 import Auth from '../auth'
 import GmailListSync from './sync-list'
 
@@ -315,12 +317,7 @@ export default class GmailSync extends SyncWriter<
       abort
     )
     if (abort && abort()) return
-    this.history_id_latest = parseInt(response.data.historyId, 10)
-    this.history_ids.push({
-      id: this.history_id_latest,
-      time: parseInt(moment().format('x'), 10)
-    })
-    this.last_sync_time = parseInt(moment().format('x'), 10)
+    this.pushHistoryId(response.data.historyId)
     this.state.add('HistoryIdFetched')
   }
 
@@ -362,6 +359,16 @@ export default class GmailSync extends SyncWriter<
       (sync: GmailListSync) =>
         sync.config.name.toLocaleLowerCase() == name.toLocaleLowerCase()
     )
+  }
+
+  pushHistoryId(hid: string) {
+    this.history_id_latest = parseInt(hid, 10)
+    const time = getTimestamp()
+    this.history_ids.push({
+      id: this.history_id_latest,
+      time
+    })
+    this.last_sync_time = time
   }
 
   async assertPredefinedLabelsExist(abort?) {
@@ -485,9 +492,20 @@ export default class GmailSync extends SyncWriter<
         const labels = Object.entries(record.labels)
           .filter(([name, data]) => data.active)
           .map(([name]) => name)
-        const id = await this.createThread(record.title, labels, abort)
+
+        // create the thread and get the IDs back
+        const { id, hid } = await this.createThread(record.title, labels, abort)
+        // TODO clone only in debug
+        const before = clone(record)
+
+        // update the record
         record.gmail_id = id
+        // TODO maybe: dont update the history ID as it wasnt a write???
+        record.updated.gmail_hid = hid
+        record.updated.latest = getTimestamp()
+        this.printRecordDiff(before, record, 'gmail-new-thread')
         this.root.data.update(record)
+
         // mark touched lists as Dirty to trigger a re-read
         // @ts-ignore
         this.root.markListsAsDirty(this, record)
@@ -732,7 +750,7 @@ export default class GmailSync extends SyncWriter<
     subject: string,
     labels: string[] = ['UNREAD', 'INBOX'],
     abort?: () => boolean
-  ): Promise<string | null> {
+  ): Promise<{ id: string; hid: number } | null> {
     await this.createLabelsIfMissing(labels, abort)
     this.log(`Creating thread '${subject}' (${labels.join(', ')})`)
     const ret = await this.req(
@@ -741,7 +759,7 @@ export default class GmailSync extends SyncWriter<
       this.api.users.messages,
       {
         userId: 'me',
-        fields: 'threadId',
+        fields: 'threadId,historyId',
         requestBody: {
           raw: this.createEmail(subject),
           labelIds: labels.map(l => this.getLabelID(l))
@@ -750,7 +768,11 @@ export default class GmailSync extends SyncWriter<
       abort
     )
     this.log_verbose(`New thread ID - '${ret.data.threadId}'`)
-    return ret.data.threadId
+    this.pushHistoryId(ret.data.historyId)
+    return {
+      id: ret.data.threadId,
+      hid: parseInt(ret.data.historyId, 10)
+    }
   }
 
   createEmail(subject: string): TRawEmail {
@@ -800,14 +822,16 @@ export default class GmailSync extends SyncWriter<
   }
 
   async createLabelsIfMissing(labels: string[], abort?) {
-    const no_id = labels.filter(name => !this.getLabelID(name))
+    const no_id = _.uniq(labels).filter(name => !this.getLabelID(name))
     return Promise.all(
       no_id.map(async name => {
         const def = this.root.getLabelDefinition(name)
-        // decorate with local definiton
+        // decorate using a local definition
         const gmail_def = def ? this.labelDefToGmailDef(def) : null
+        // TODO triggered twice for the same missing label
+        //  merge creation of the same label for different threads
         this.log(`Creating a new label '${name}'`)
-        const res = (await this.req(
+        const res = await this.req(
           'users.labels.create',
           this.api.users.labels.create,
           this.api.users.labels,
@@ -821,7 +845,7 @@ export default class GmailSync extends SyncWriter<
             }
           },
           abort
-        )) as any
+        )
         this.labels.push(res.data)
         return res
       })

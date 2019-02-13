@@ -201,8 +201,10 @@ export class GmailUsersMessages extends GmailChild
     const res = clone(params.requestBody)
     this.gmail.messages.push(msg)
     this.gmail.threads.push(thread)
+    this.gmail.log(`create thread ${threadId} (${mail.subject})`)
     return ok({
       threadId,
+      historyId,
       ...res
       // TODO missing fields?
     })
@@ -353,6 +355,7 @@ export class GmailUsersThreads extends GmailChild
     return ok(thread)
   }
 
+  // TODO add to trash, dont delete, update the test
   async delete(
     params: gmail_v1.Params$Resource$Users$Threads$Delete & TGlobalFields,
     options?: MethodOptions

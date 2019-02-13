@@ -219,7 +219,8 @@ export default class GmailListSync extends SyncReader<
     const from = this.gmail.getThreadAuthor(thread)
     const to = this.gmail.getThreadAddressee(thread)
     const self_sent = from == me && to == me
-    let title = this.gmail.getTitleFromThread(thread)
+    const title = this.gmail.getTitleFromThread(thread)
+    const hid = parseInt(thread.historyId, 10)
     const record: DBRecord = {
       id: randomId(),
       gmail_id: this.toDBID(thread.id),
@@ -227,8 +228,8 @@ export default class GmailListSync extends SyncReader<
       content: self_sent ? '' : `From ${from}\n`,
       labels: {},
       updated: {
-        latest: this.gmail.timeFromHistoryID(parseInt(thread.historyId, 10)),
-        gmail_hid: parseInt(thread.historyId, 10),
+        latest: this.gmail.timeFromHistoryID(hid),
+        gmail_hid: hid,
         gtasks: null
       }
     }
@@ -280,7 +281,7 @@ export default class GmailListSync extends SyncReader<
           label.active && label.updated <= this.gmail.timeFromHistoryID(hid)
       )
       .map(([name, label]) => name)
-    this.log_verbose(`merging record ${record.gmail_id}`)
+    this.log_verbose(`merging record gmail_id:${record.gmail_id}`)
     record.updated.gmail_hid = hid
     record.updated.latest = Math.max(
       record.updated.latest,

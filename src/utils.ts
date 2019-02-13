@@ -1,5 +1,6 @@
 import { TAsyncMachine } from 'asyncmachine'
 import { Base64 } from 'js-base64'
+import * as moment from 'moment'
 import Logger from './app/logger'
 import { TRawEmail } from './types'
 
@@ -60,4 +61,12 @@ export function createRawEmail(
     email += `\r\n\r\n${content.replace(`\n`, `\r\n`)}`
   }
   return Base64.encodeURI(email) as TRawEmail
+}
+
+/**
+ * Returns unix timestamp in milliseconds.
+ * @param time
+ */
+export function getTimestamp(time?: string): number {
+  return parseInt(moment(time).format('x'), 10)
 }

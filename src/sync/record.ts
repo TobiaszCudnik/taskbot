@@ -59,6 +59,7 @@ export interface DBRecord {
   labels: { [name: string]: DBRecordLabel }
   // different task ids per list
   gtasks_ids?: {
+    // TODO use complex gtasks_ids with statuses and dates or equivalents
     [task_id: string]: DBGtasksID
   }
 }

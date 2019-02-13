@@ -239,7 +239,7 @@ describe(`gtasks (sync_type: ${scenario})`, function() {
     })
 
     // TODO check
-    it('syncs missing threads', async function() {
+    it.only('syncs missing threads', async function() {
       await h.reset()
       // add 2 tasks
       await Promise.all([

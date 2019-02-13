@@ -192,6 +192,7 @@
 
 ## Refactor
 
+* use `getTimestamp` everywhere
 * google-auth-info not present on the loggers list at the end
 * move from `typings` to `@types`
 * replace async-map with Promise.all(array.map(async ...))

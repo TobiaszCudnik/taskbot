@@ -195,7 +195,8 @@ test-mocks:
 		mocks
 
 test-gtasks-mocked:
-	DEBUG=mock-\*,gmail-list-next:\*,gtasks-list-next:\*,test,root:\*-verbose,record-diff\*,db-verbose \
+	#DEBUG=mock-\*,gmail-list-next:\*,gtasks-list-next:\*,test,root:\*-verbose,record-diff\*,db-verbose
+	DEBUG=mock-\*,gmail-root\*,gmail-list-next:\*,gtasks-list-next:\*,test,root:\*-verbose,record-diff\*,db-verbose \
 		MOCK=true \
 		npx jest \
 			gtasks

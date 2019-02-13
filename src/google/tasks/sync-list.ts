@@ -20,6 +20,7 @@ import { DBRecord } from '../../sync/record'
 import RootSync from '../../sync/root'
 import { SyncReader, sync_reader_state } from '../../sync/reader'
 import { IListConfig } from '../../types'
+import { getTimestamp } from '../../utils'
 import { TGlobalFields } from '../sync'
 import GTasksSync, { TTask, TTaskList, TTasksRes, TTaskTree } from './sync'
 import * as regexEscape from 'escape-string-regexp'
@@ -334,7 +335,7 @@ export default class GTasksListSync extends SyncReader<
         }
         // loop at least three times to let others alter the DB
         if (changed) continue
-        // mark records without any existing task as pending deletion
+        // mark records without any existing tasks as pending deletion
         if (
           Object.keys(record.gtasks_ids).length == 1 &&
           this.mark_to_delete.includes(task.id)
@@ -385,8 +386,8 @@ export default class GTasksListSync extends SyncReader<
       content: this.getContent(task.notes),
       labels: {},
       updated: {
-        latest: parseInt(moment(task.updated).format('x'), 10),
-        gtasks: parseInt(moment(task.updated).format('x'), 10),
+        latest: getTimestamp(task.updated),
+        gtasks: getTimestamp(task.updated),
         gmail_hid: null
       },
       gtasks_ids: {
@@ -434,7 +435,7 @@ export default class GTasksListSync extends SyncReader<
   // TODO support duplicating in case of a conflict ???
   mergeRecord(task: TTask, record: DBRecord): boolean {
     const before = clone(record)
-    const task_updated = parseInt(moment(task.updated).format('x'), 10)
+    const task_updated = getTimestamp(task.updated)
     // apply title labels on the initial record's sync
     let text_labels_updated = false
     record.gtasks_ids = record.gtasks_ids || {}

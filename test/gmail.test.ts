@@ -187,7 +187,7 @@ describe(`gmail (sync_type: ${scenario})`, function() {
       h.log('\n\nTEST: syncs tasks between lists')
       await h.reset()
       // create a thread in !na
-      const thread_id = await h.gmail_sync.createThread('gmail-gtask-1', [
+      const { id } = await h.gmail_sync.createThread('gmail-gtask-1', [
         '!S/Next Action',
         'P/project_1',
         'P/project_2'
@@ -201,7 +201,7 @@ describe(`gmail (sync_type: ${scenario})`, function() {
         h.gmail.users.threads.modify,
         h.gmail.users.threads,
         {
-          id: thread_id,
+          id,
           userId: 'me',
           fields: 'id',
           requestBody: {
@@ -230,7 +230,7 @@ describe(`gmail (sync_type: ${scenario})`, function() {
     it('syncs task completions', async function() {
       h.log('\n\nTEST: syncs task completions')
       await h.reset()
-      const thread_id = await h.gmail_sync.createThread('gmail-gtask-1', [
+      const { id } = await h.gmail_sync.createThread('gmail-gtask-1', [
         '!S/Next Action',
         'P/project_1',
         'P/project_2'
@@ -242,7 +242,7 @@ describe(`gmail (sync_type: ${scenario})`, function() {
         h.gmail.users.threads.modify,
         h.gmail.users.threads,
         {
-          id: thread_id,
+          id,
           userId: 'me',
           fields: 'id',
           requestBody: {
@@ -304,7 +304,7 @@ describe(`gmail (sync_type: ${scenario})`, function() {
       h.log('\n\nTEST: syncs !S/Expired as a completion')
       await h.reset()
       // create a new thread
-      const thread_id = await h.gmail_sync.createThread('gmail-gtask-1', [
+      const { id } = await h.gmail_sync.createThread('gmail-gtask-1', [
         '!S/Next Action'
       ])
       await h.syncList(true, false)
@@ -314,7 +314,7 @@ describe(`gmail (sync_type: ${scenario})`, function() {
         h.gmail.users.threads.modify,
         h.gmail.users.threads,
         {
-          id: thread_id,
+          id,
           userId: 'me',
           fields: 'id',
           requestBody: {
