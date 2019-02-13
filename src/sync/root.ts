@@ -143,7 +143,7 @@ export default class RootSync extends SyncWriter<
   last_gtasks: string
 
   logger: Logger
-  mergers: Map<DBRecordID, TMergeState>
+  mergers = new Map<DBRecordID, TMergeState>()
 
   // seconds
   // TODO to the config
@@ -304,8 +304,10 @@ export default class RootSync extends SyncWriter<
     // make sure every record has a merger
     // override data.insert()
     // @ts-ignore
-    this.data.insert = _.wrap(this.data.insert, (func, record: DBRecord) => {
-      this.mergers.set(record.gmail_id, createRecordMerger())
+    this.data.insert = _.wrap(this.data.insert, (insert, record: DBRecord) => {
+      this.mergers.set(record.id, createRecordMerger())
+      // call the original func, keep the scope
+      return insert.call(this.data, record)
     })
   }
 
