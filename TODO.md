@@ -14,6 +14,7 @@
 * throttle account stats refreshes
 * for some users the login popup doesnt open
   * check if it did and if not, do a full redirect to login
+* drafts with !p dont show up in !na inbox in gmail (query issue)
 
 ## Milestone 1:
 
