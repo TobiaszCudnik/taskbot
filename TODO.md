@@ -14,6 +14,10 @@
 * throttle account stats refreshes
 * for some users the login popup doesnt open
   * check if it did and if not, do a full redirect to login
+* web/account - `Completed tasks` shows only the number of monitored tasks
+  * not all of the `!f` tasks are counted in
+  * create a dedicated query
+  * and take only the estimated amount?
 
 ## Milestone 1:
 
@@ -22,6 +26,10 @@
 * progress bar when auto-signin in
   * go to the page, youre not signed, wait, you signed
   * during waiting - a progress bar should be visible
+* fix layout for google icons inside of buttons
+* keep server stats in firebase (per hour)
+  * number of active users (instances)
+  * number of active tasks from all instances
 * fix layout for google icons inside of buttons
 * keep server stats in firebase (per hour)
   * number of active users (instances)
