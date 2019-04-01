@@ -84,7 +84,7 @@ site:
 deploy-production:
 	# TODO switch to the correct project
 	make build-www
-	gcloud app deploy configs/production.yaml --version=production
+	gcloud app deploy production.yaml --version=production
 	# sudo docker exec -t -i gaeapp /bin/bash
 	# sudo apt-get install mc fish htop
 	# kill -HUP 1
@@ -92,7 +92,7 @@ deploy-production:
 deploy-staging:
 	# TODO switch to the correct project
 	make build-www
-	gcloud app deploy configs/staging.yaml --version=staging
+	gcloud app deploy staging.yaml --version=staging
 	# sudo docker exec -t -i gaeapp /bin/bash
 	# sudo apt-get install mc fish htop
 	# kill -HUP 1
