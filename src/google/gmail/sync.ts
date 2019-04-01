@@ -877,13 +877,18 @@ export default class GmailSync extends SyncWriter<
   }
 
   // TODO change to getThreadRecipient
-  getThreadAddressee(thread: TThread) {
+  getThreadAddressee(thread: TThread): string | null {
     if (!thread.messages || !thread.messages.length)
       throw new Error(`Thread content not fetched, id: ${thread.id}`)
-    const author = thread.messages[0].payload.headers.find(h => h.name == 'To')
-      .value
-    const email = author.match(/<([^<]+)>$/)
-    return email ? email[1] : author
+    try {
+      const author = thread.messages[0].payload.headers.find(
+        h => h.name == 'To'
+      ).value
+      const email = author.match(/<([^<]+)>$/)
+      return email ? email[1] : author
+    } catch {
+      return null
+    }
   }
 
   // eg 'foo #bar baz' -> 'foo bar baz'
