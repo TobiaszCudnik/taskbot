@@ -145,13 +145,13 @@ export default class RootSync extends SyncWriter<
   logger: Logger
   mergers = new Map<DBRecordID, TMergeState>()
 
-  // microseconds
+  // miliseconds
   // TODO to the config
   read_timeout = 2 * 60000
   // TODO react on specific exception types
   // TODO to the config
   write_timeout = 2 * 60000
-  // microseconds
+  // miliseconds
   heartbeat_freq = 10000
   restarts_count = 0
   last_sync_reads = 0
