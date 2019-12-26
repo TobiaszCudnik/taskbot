@@ -1,4 +1,4 @@
-# GTD Bot
+# TaskBot.app
 
 Real time GMail to Google Tasks sync and a GTD workflow manager.
 
