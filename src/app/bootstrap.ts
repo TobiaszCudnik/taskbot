@@ -1,17 +1,18 @@
 // import { Logger as LoggerRemote } from 'ami-logger/remote'
-import { Logger as AMILogger, Network } from 'ami-logger'
-// TODO fix the default exports
-// @ts-ignore
-import RemoteNodeLoggerMixin from 'ami-logger/mixins/remote-node'
-// import WorkerPoolMixin from 'ami-logger/mixins/workerpool'
+import { Granularity, Logger as AMILogger, MachineNetwork } from 'ami-logger'
 // @ts-ignore
 import FileFSStreamMixin from 'ami-logger/mixins/snapshot/fs-stream'
+// TODO fix the default exports
+// @ts-ignore
+// import RemoteNodeLoggerMixin from 'ami-logger/mixins/remote-node'
+import WorkerPoolMixin from 'ami-logger/mixins/workerpool'
 import { TAsyncMachine } from 'asyncmachine'
 import * as debug from 'debug'
 import * as merge from 'deepmerge'
 import * as fs from 'fs'
 // import * as os from 'os'
 import * as _ from 'lodash'
+import * as os from 'os'
 import 'source-map-support/register'
 import config_base from '../../config'
 import config_credentials from '../../config-private'
@@ -28,16 +29,21 @@ config.www = config_www as IConfigWWW
 
 // TODO make it less global
 function init_am_inspector(machines?: TAsyncMachine[]) {
-  // TODO avoid globals
-  global.am_network = new Network(machines)
+  // create the network
+  global.am_network = new MachineNetwork(machines)
+
   // build the logger class
   let LoggerClass = AMILogger
-  LoggerClass = FileFSStreamMixin(LoggerClass)
-  LoggerClass = RemoteNodeLoggerMixin(LoggerClass)
-  // if (os.cpus().length > 1) {
-  //   LoggerClass = WorkerPoolMixin(LoggerClass)
-  // }
-  // TODO avoid globals
+
+  // save to a file
+  // LoggerClass = FileFSStreamMixin(LoggerClass)
+
+  // LoggerClass = RemoteNodeLoggerMixin(LoggerClass)
+
+  // spread diffing among worker threads
+  if (os.cpus().length > 1) {
+    LoggerClass = WorkerPoolMixin(LoggerClass)
+  }
   global.am_logger = new LoggerClass(
     global.am_network,
     // @ts-ignore
@@ -47,7 +53,7 @@ function init_am_inspector(machines?: TAsyncMachine[]) {
       // url: 'http://localhost:3757/'
     }
   )
-  // TODO avoid globals
+  // start logging
   global.am_logger.start()
 }
 
@@ -68,6 +74,9 @@ server(logger, app)
 let exit_printed = false
 async function exit() {
   if (exit_printed) return
+  // console.dir(global.times)
+  exit_printed = true
+
   // TODO avoid globals
   if (global.am_network) {
     // const filename = err.name
@@ -79,6 +88,8 @@ async function exit() {
     await global.am_logger.dispose()
     console.log(`Saved a snapshot to logs/snapshot.json`)
   }
+  // TODO debug
+  process.exit()
   for (const sync of Object.values(app.syncs)) {
     console.log(`\nUser ${sync.config.user.id}: ${sync.config.google.username}`)
     console.log(sync.getMachines())

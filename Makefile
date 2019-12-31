@@ -41,7 +41,7 @@ start-staging-env:
 		node src/app/bootstrap.js
 
 start-am:
-	DEBUG=\*-error,connections-verbose,record-diff-verbose,root:\*-info,gmail-root,gtasks-root,\*inbox-labels\*,\*task-labels\*,\*gmail\*pending\*,\*next\*,\*-am \
+	DEBUG=\*-error,connections-verbose,record-diff-verbose,root:\*-info,gmail-root,gtasks-root,\*inbox-labels\*,\*task-labels\*,\*gmail\*pending\*,\*next\*,\*-am:\* \
 		DEBUG_FILE=1 \
 		DEBUG_AM=1 \
 		node --inspect \
@@ -55,9 +55,13 @@ start-verbose:
 		src/app/bootstrap.js
 
 start-ami:
-	DEBUG=root:\*-info,gmail-root,gtasks DEBUG_FILE=1 DEBUG_AMI=1 DEBUG_AM=1 \
-		node --inspect src/app/bootstrap.js
-		#node --inspect-brk src/app/bootstrap.js
+	#DEBUG=root:\*-info,\*-error,app-info,\*-am:\*
+	DEBUG=root:\*-info,\*-error,app-info \
+		DEBUG_FILE=1 \
+		DEBUG_AMI=1 \
+		DEBUG_AM=1 \
+		node src/app/bootstrap.js
+		#node --inspect src/app/bootstrap.js
 
 start-inspect:
 	DEBUG=root node --inspect src/app/bootstrap.js
