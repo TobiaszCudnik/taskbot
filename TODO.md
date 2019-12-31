@@ -66,6 +66,12 @@
 
 ## Milestone 1.2
 
+* T/bind - mark a thread as "requires a binding"
+  * binding to what?
+* try to integrate with byeokim/gmailpush
+* support read only sources
+  * mark with `T/read-only`
+  * eg edit reminders on ios and still see the list in gmail
 * convert task description (or email content) into subtasks
   * regexp for lists
 * self replies to self emails should be added to the task description
