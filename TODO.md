@@ -22,6 +22,7 @@
 
 ## Milestone 1:
 
+* label drafts with R/draft
 * automatically add !na to drafts
   * unless changes to another action status
 * periodically "Clean completed" tasks
@@ -66,6 +67,9 @@
 
 ## Milestone 1.2
 
+* webui suggesting which project labels can be removed
+  * longest unused ones
+  * offer archiving as `PA/name`? should collapse nicely in the desktop gmail UI (> 1 char)
 * T/bind - mark a thread as "requires a binding"
   * binding to what?
 * try to integrate with byeokim/gmailpush
