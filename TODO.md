@@ -122,6 +122,14 @@
   * sync per api in the last 1h, 24h
 * `A/answer` labels auto-removed after a certain amount of time
 * handle exceptions from `fetchThread`
+* label manager
+  * merge labels
+  * rename labels
+  * change colors-per-type
+* bulk labelling
+  * set a label which translates to a list of labels
+  * eg `B/project1` results in `P/project1 L/somewhere R/invoice`
+  * original label (B/...) gets removed after the expansion
 
 ## TODO
 
