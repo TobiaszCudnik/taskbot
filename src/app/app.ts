@@ -71,22 +71,23 @@ export class App {
     const accounts_ref = this.db.ref('/accounts')
 
     // ADD
-    accounts_ref.on('child_added', async (s: DataSnapshot) => {
-      const account = s.val() as IAccount
-      // cache the account data for diffs
-      this.accounts[s.key] = account
-
-      // handle emails
-      // pass async
-      this.handleWelcomeEmail(account)
-      // pass async
-      this.handleInvitationEmail(account)
-
-      if (!this.isAccountEnabled(account)) {
-        return false
-      }
-      this.createUserInstance(s.key, this.config, account.config)
-    })
+    // TODO tmp sync disabled
+    // accounts_ref.on('child_added', async (s: DataSnapshot) => {
+    //   const account = s.val() as IAccount
+    //   // cache the account data for diffs
+    //   this.accounts[s.key] = account
+    //
+    //   // handle emails
+    //   // pass async
+    //   this.handleWelcomeEmail(account)
+    //   // pass async
+    //   this.handleInvitationEmail(account)
+    //
+    //   if (!this.isAccountEnabled(account)) {
+    //     return false
+    //   }
+    //   this.createUserInstance(s.key, this.config, account.config)
+    // })
 
     // REMOVE
     accounts_ref.on('child_removed', (s: DataSnapshot) => {
@@ -94,37 +95,38 @@ export class App {
     })
 
     // CHANGE
-    accounts_ref.on('child_changed', async (s: DataSnapshot) => {
-      const account = s.val() as IAccount
-      const old_account = this.accounts[s.key]
-
-      // handle emails
-      // pass async
-      this.handleWelcomeEmail(account)
-      // pass async
-      this.handleInvitationEmail(account)
-
-      const config_changed =
-        JSON.stringify(old_account.config) !== JSON.stringify(account.config)
-      const isEnabled = this.isAccountEnabled(account)
-      const wasEnabled = this.isAccountEnabled(old_account)
-      // cache the account data for diffs
-      this.accounts[s.key] = account
-
-      if (config_changed || (wasEnabled && !isEnabled)) {
-        this.removeUserInstance(account.uid)
-      }
-      if (!isEnabled) {
-        return false
-      }
-      if (!this.syncs[s.key]) {
-        this.createUserInstance(s.key, this.config, account.config)
-      } else {
-        // force gtasks sync only on existing instances
-        // pass async
-        this.handleGTasksSync(account)
-      }
-    })
+    // TODO tmp sync disabled
+    // accounts_ref.on('child_changed', async (s: DataSnapshot) => {
+    //   const account = s.val() as IAccount
+    //   const old_account = this.accounts[s.key]
+    //
+    //   // handle emails
+    //   // pass async
+    //   this.handleWelcomeEmail(account)
+    //   // pass async
+    //   this.handleInvitationEmail(account)
+    //
+    //   const config_changed =
+    //     JSON.stringify(old_account.config) !== JSON.stringify(account.config)
+    //   const isEnabled = this.isAccountEnabled(account)
+    //   const wasEnabled = this.isAccountEnabled(old_account)
+    //   // cache the account data for diffs
+    //   this.accounts[s.key] = account
+    //
+    //   if (config_changed || (wasEnabled && !isEnabled)) {
+    //     this.removeUserInstance(account.uid)
+    //   }
+    //   if (!isEnabled) {
+    //     return false
+    //   }
+    //   if (!this.syncs[s.key]) {
+    //     this.createUserInstance(s.key, this.config, account.config)
+    //   } else {
+    //     // force gtasks sync only on existing instances
+    //     // pass async
+    //     this.handleGTasksSync(account)
+    //   }
+    // })
   }
 
   async handleWelcomeEmail(account: IAccount) {
