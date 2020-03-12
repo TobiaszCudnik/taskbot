@@ -1,6 +1,8 @@
-# GTD Bot
+# TaskBot.app
 
 Real time GMail to Google Tasks sync and a GTD workflow manager.
+
+https://taskbot.app
 
 ## Features
 
@@ -39,16 +41,17 @@ Real time GMail to Google Tasks sync and a GTD workflow manager.
 
 * Sharable lists
 * Dedicated PWA
-* Syncing with Todoist
-* Syncing with Remember The Milk
-* Syncing with Google Spreadsheets
-* Syncing with Google Calendar
+* Syncing with:
+  * Google Calendar
+  * Todoist
+  * Remember The Milk
+  * Google Spreadsheets
 * Even faster syncing
-* [and more...](https://github.com/TobiaszCudnik/gtd-bot/blob/master/TODO.md)
+* [and more...](TODO.md)
 
 ## How to use
 
-Although GTD Bot configures automatically as much as possible, there's still a couple of optional, but useful steps:
+Although TaskBot automatically configures as much as possible, there's still a couple of optional, but useful steps:
 
 1.  Auto hide sidebar (top left hamburger menu)
 1.  Enable keyboard shortcuts in GMail
