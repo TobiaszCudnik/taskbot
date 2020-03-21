@@ -16,7 +16,7 @@ export default async function(logger: Logger, app: App) {
   const logger_info = logger.createLogger('http-server', 'info')
   const logger_error = logger.createLogger('http-server', 'error')
 
-  const port = 8080
+  const port = app.config.http_port
   console.log(`Starting the HTTP server on ${port}`)
 
   // static file server

@@ -36,6 +36,7 @@ function checkLabel(r: DBRecord, match: string | RegExp): number {
 
 // @ts-ignore TODO
 const config: IConfigPublic = {
+  http_port: 8080,
   repl_port: 5002,
   google: {
     scopes: [

@@ -88,6 +88,11 @@ export interface IConfig extends IConfigPublic, IConfigPrivate, IConfigAccount {
 }
 
 export interface IConfigPublic {
+  tls?: {
+    key: string,
+    cert: string
+  },
+  http_port: number,
   sync_frequency_multi?: number
   repl_port: number
   google: IConfigPublicGoogle
