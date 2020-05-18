@@ -212,9 +212,7 @@ export default class RootSync extends SyncWriter<
   ) {
     super(config, logger)
     this.log(
-      `Starting the sync service for user ${config.user.id}: ${
-        config.google.username
-      }`
+      `Starting the sync service for user ${config.user.id}: ${config.google.username}`
     )
     connections.addUser(config.user.id)
     // HeartBeat scheduler
@@ -369,10 +367,12 @@ export default class RootSync extends SyncWriter<
     if (dirty.length && this.last_read_tries <= 10) {
       this.log_verbose(`Re-reading because Dirty: ${dirty.join(', ')}`)
       // forcefully drop the done state because Reading is negotiable
-      await this.subs_all.map(async sync => {
-        sync.state.drop('ReadingDone')
-        await sync.state.whenNot('ReadingDone')
-      })
+      await Promise.all(
+        this.subs_all.map(async sync => {
+          sync.state.drop('ReadingDone')
+          await sync.state.whenNot('ReadingDone')
+        })
+      )
       this.last_read_tries++
       return this.state.add('Reading')
       // TODO `time` to the config

@@ -137,7 +137,6 @@ export async function acceptInvite(
   if (!email) {
     return h.response('ID token not valid').code(403)
   }
-  debugger
   // accept the account
   const account = await this.app.getAccount(uid)
   if (account && account.invitation_granted) {
