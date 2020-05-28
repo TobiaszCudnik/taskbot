@@ -398,10 +398,12 @@ export default class RootSync extends SyncWriter<
     if (dirty.length && this.last_write_tries <= 10) {
       this.log(`Re-writing because of Dirty: ${dirty.join(', ')}`)
       // forcefully drop the done state because Writing is negotiable
-      await this.subs_all_writers.map(async sync => {
-        sync.state.drop('WritingDone')
-        await sync.state.whenNot('WritingDone')
-      })
+      await Promise.all(
+        this.subs_all_writers.map(async sync => {
+          sync.state.drop('WritingDone')
+          await sync.state.whenNot('WritingDone')
+        })
+      )
       this.state.add('Writing')
       // TODO `time` to the config
     } else if (this.last_write_tries > 10) {
