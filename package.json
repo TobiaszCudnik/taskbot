@@ -47,7 +47,7 @@
     "gaxios": "^1.2.6",
     "gmail-string-query": "0.0.10",
     "google-auth-library": "^3.0.1",
-    "googleapis": "^37.1.0",
+    "googleapis": "^39.1.0",
     "googleapis-common": "^0.3.0",
     "hapi": "^17.5.3",
     "http-proxy": "^1.18.0",
