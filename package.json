@@ -50,7 +50,7 @@
     "googleapis": "^37.1.0",
     "googleapis-common": "^0.3.0",
     "hapi": "^17.5.3",
-    "http-proxy": "^1.18.0",
+    "http-proxy": "^1.18.1",
     "inert": "^5.1.0",
     "internet-timestamp": "0.0.1",
     "js-base64": "^2.4.8",
