@@ -54,7 +54,7 @@
     "inert": "^5.1.0",
     "internet-timestamp": "0.0.1",
     "js-base64": "^2.4.8",
-    "lodash": "^4.17.10",
+    "lodash": "^4.17.21",
     "lokijs": "^1.5.4",
     "md5": "^2.2.1",
     "moment": "^2.22.1",
