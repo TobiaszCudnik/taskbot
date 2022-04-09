@@ -57,7 +57,7 @@
     "lodash": "^4.17.10",
     "lokijs": "^1.5.4",
     "md5": "^2.2.1",
-    "moment": "^2.22.1",
+    "moment": "^2.29.2",
     "moment-timezone": "^0.5.17",
     "printf": "^0.2.5",
     "remove-html-comments": "^1.0.2",
