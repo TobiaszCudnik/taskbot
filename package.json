@@ -58,7 +58,7 @@
     "lokijs": "^1.5.4",
     "md5": "^2.2.1",
     "moment": "^2.22.1",
-    "moment-timezone": "^0.5.17",
+    "moment-timezone": "^0.5.35",
     "printf": "^0.2.5",
     "remove-html-comments": "^1.0.2",
     "round-to": "^2.0.0",
